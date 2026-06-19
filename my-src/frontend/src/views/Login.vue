@@ -27,7 +27,7 @@
       <div class="hint">
       没有账号？
       <router-link to="/register" style="color:var(--color-brand);font-weight:600;">立即注册</router-link>
-      &nbsp;·&nbsp; 演示账号 <code>admin</code> / <code>admin123</code>
+      <div>演示账号 <code>admin</code> / <code>admin123</code></div>
     </div>
     </div>
   </div>

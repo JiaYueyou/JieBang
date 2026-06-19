@@ -30,7 +30,16 @@
       <header class="app-topbar">
         <div class="topbar-left">
           <div class="topbar-breadcrumb">
-            智联职引 <span class="sep">/</span> <span class="current">{{ pageTitle }}</span>
+            <span>智联职引</span>
+            <template v-for="(crumb, i) in breadcrumbs" :key="i">
+              <span class="sep">/</span>
+              <router-link
+                v-if="i < breadcrumbs.length - 1 && crumb.path"
+                :to="crumb.path"
+                class="crumb-link"
+              >{{ crumb.title }}</router-link>
+              <span v-else :class="{ current: i === breadcrumbs.length - 1 }">{{ crumb.title }}</span>
+            </template>
           </div>
         </div>
         <div class="topbar-right">
@@ -61,7 +70,17 @@ const userStore = useUserStore();
 userStore.restore();
 
 const currentPath = computed(() => route.path);
-const pageTitle = computed(() => (route.meta.title as string) || "");
+const breadcrumbs = computed(() => {
+  const crumbs: { title: string; path: string }[] = [];
+  // 如果当前路由 meta 有 parentTitle，先加父级
+  const pTitle = route.meta.parentTitle as string | undefined;
+  const pPath = route.meta.parentPath as string | undefined;
+  if (pTitle) crumbs.push({ title: pTitle, path: pPath || "" });
+  // 当前页面标题
+  const t = route.meta.title as string | undefined;
+  if (t) crumbs.push({ title: t, path: route.path });
+  return crumbs;
+});
 const currentTime = ref("");
 
 let timer: number;
@@ -72,13 +91,14 @@ onMounted(() => { updateTime(); timer = window.setInterval(updateTime, 30000); }
 onUnmounted(() => clearInterval(timer));
 
 const menuItems = [
-  { path: "/dashboard", title: "首页仪表盘", icon: "Odometer" },
-  { path: "/discover",  title: "新岗位发现", icon: "Aim" },
-  { path: "/changes",   title: "能力动态更新", icon: "Refresh" },
+  { path: "/dashboard", title: "工作台",   icon: "Odometer" },
+  { path: "/jobs",      title: "岗位管理", icon: "Briefcase" },
+  { path: "/matching",  title: "人才匹配", icon: "Connection" },
+  { path: "/career",    title: "转岗指南", icon: "Guide" },
   { path: "/graph",     title: "技能图谱", icon: "Share" },
   { path: "/trends",    title: "趋势分析", icon: "TrendCharts" },
-  { path: "/matching",  title: "匹配诊断", icon: "Connection" },
-  { path: "/learning",  title: "学习路径", icon: "Guide" },
+  { path: "/favorites", title: "我的收藏", icon: "Star" },
+  { path: "/history",   title: "浏览足迹", icon: "Clock" },
   { path: "/admin",     title: "系统管理", icon: "Setting" },
 ];
 

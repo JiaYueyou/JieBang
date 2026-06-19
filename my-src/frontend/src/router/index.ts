@@ -24,49 +24,61 @@ const router = createRouter({
           path: "dashboard",
           name: "Dashboard",
           component: () => import("@/views/Dashboard.vue"),
-          meta: { title: "首页仪表盘", icon: "Odometer" },
+          meta: { title: "工作台" },
         },
         {
-          path: "discover",
-          name: "Discover",
-          component: () => import("@/views/Discover.vue"),
-          meta: { title: "新岗位发现", icon: "Aim" },
-        },
-        {
-          path: "changes",
-          name: "Changes",
-          component: () => import("@/views/Changes.vue"),
-          meta: { title: "能力动态更新", icon: "Refresh" },
-        },
-        {
-          path: "graph",
-          name: "GraphView",
-          component: () => import("@/views/GraphView.vue"),
-          meta: { title: "技能图谱", icon: "Share" },
-        },
-        {
-          path: "trends",
-          name: "Trends",
-          component: () => import("@/views/Trends.vue"),
-          meta: { title: "趋势分析", icon: "TrendCharts" },
+          path: "jobs",
+          name: "JobManagement",
+          component: () => import("@/views/JobManagement.vue"),
+          meta: { title: "岗位管理" },
         },
         {
           path: "matching",
           name: "Matching",
           component: () => import("@/views/Matching.vue"),
-          meta: { title: "匹配诊断", icon: "Connection" },
+          meta: { title: "人才匹配" },
         },
         {
-          path: "learning",
-          name: "Learning",
-          component: () => import("@/views/Learning.vue"),
-          meta: { title: "学习路径", icon: "Guide" },
+          path: "matching/:id",
+          name: "MatchingDetail",
+          component: () => import("@/views/MatchingDetail.vue"),
+          meta: { title: "人才详情", parentTitle: "人才匹配", parentPath: "/matching" },
+        },
+        {
+          path: "career",
+          name: "CareerGuide",
+          component: () => import("@/views/CareerGuide.vue"),
+          meta: { title: "转岗指南" },
+        },
+        {
+          path: "graph",
+          name: "GraphView",
+          component: () => import("@/views/GraphView.vue"),
+          meta: { title: "技能图谱" },
+        },
+        {
+          path: "trends",
+          name: "Trends",
+          component: () => import("@/views/Trends.vue"),
+          meta: { title: "趋势分析" },
+        },
+        {
+          path: "favorites",
+          name: "Favorites",
+          component: () => import("@/views/Favorites.vue"),
+          meta: { title: "我的收藏" },
+        },
+        {
+          path: "history",
+          name: "History",
+          component: () => import("@/views/History.vue"),
+          meta: { title: "浏览足迹" },
         },
         {
           path: "admin",
           name: "Admin",
           component: () => import("@/views/Admin.vue"),
-          meta: { title: "系统管理", icon: "Setting" },
+          meta: { title: "系统管理" },
         },
       ],
     },
@@ -74,7 +86,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from, next) => {
-  document.title = `${to.meta.title || ""} - IT 岗位人才洞察平台`;
+  document.title = `${to.meta.title || ""} - 智联职引`;
   const token = localStorage.getItem("token");
   if (!to.meta.noAuth && !token) {
     next("/login");
