@@ -22,6 +22,10 @@ async def bootstrap_initial_admin() -> None:
     if not INITIAL_ADMIN_ENABLED:
         logger.info("Initial administrator bootstrap is disabled")
         return
+    if not INITIAL_ADMIN_PASSWORD:
+        raise RuntimeError(
+            "INITIAL_ADMIN_PASSWORD is required when INITIAL_ADMIN_ENABLED=true"
+        )
 
     try:
         async with async_session() as db:

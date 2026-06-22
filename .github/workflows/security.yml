@@ -1,0 +1,31 @@
+name: Repository Security
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject forbidden tracked files
+        shell: bash
+        run: |
+          forbidden="$(git ls-files | grep -E '(^|/)(node_modules|dist|build|coverage|__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|\.idea|\.vscode|\.claude|\.claudian|\.codex|\.obsidian|\.playwright-mcp)(/|$)|(^|/)\.env($|\.)|(^|/)\.mcp\.json$|\.py[co]$' | grep -Ev '\.env\.(example|sample|template)$' || true)"
+          if [ -n "$forbidden" ]; then
+            echo "Forbidden tracked files:"
+            echo "$forbidden"
+            exit 1
+          fi
+
+      - name: Scan full Git history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

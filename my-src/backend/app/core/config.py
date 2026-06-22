@@ -5,6 +5,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+
+
+def _required_secret(name: str, *, test_default: str | None = None) -> str:
+    value = os.getenv(name)
+    if value:
+        return value
+    if TESTING and test_default is not None:
+        return test_default
+    raise RuntimeError(f"Required environment variable {name} is not configured")
+
+
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")
@@ -17,16 +29,22 @@ DATABASE_URL = os.getenv(
 )
 
 # Initial administrator bootstrap
-INITIAL_ADMIN_ENABLED = os.getenv("INITIAL_ADMIN_ENABLED", "true").lower() == "true"
+INITIAL_ADMIN_ENABLED = os.getenv(
+    "INITIAL_ADMIN_ENABLED",
+    "true" if TESTING else "false",
+).lower() == "true"
 INITIAL_ADMIN_USERNAME = os.getenv("INITIAL_ADMIN_USERNAME", "admin")
-INITIAL_ADMIN_PASSWORD = os.getenv("INITIAL_ADMIN_PASSWORD", "admin123")
+INITIAL_ADMIN_PASSWORD = os.getenv("INITIAL_ADMIN_PASSWORD")
 
 # Neo4j
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "")
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret")
+JWT_SECRET_KEY = _required_secret(
+    "JWT_SECRET_KEY",
+    test_default="test-only-jwt-secret-key",
+)
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "120"))
 
@@ -42,7 +60,7 @@ CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:63
 CELERY_TASK_ALWAYS_EAGER = (
     os.getenv(
         "CELERY_TASK_ALWAYS_EAGER",
-        "true" if os.getenv("TESTING") == "true" else "false",
+        "true" if TESTING else "false",
     ).lower()
     == "true"
 )

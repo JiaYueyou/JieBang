@@ -7,6 +7,8 @@ os.environ["TESTING"] = "true"
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
+os.environ.setdefault("INITIAL_ADMIN_ENABLED", "true")
+os.environ.setdefault("INITIAL_ADMIN_PASSWORD", "test-only-admin-password")
 
 import pytest
 from httpx import ASGITransport, AsyncClient
