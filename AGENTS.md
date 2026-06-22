@@ -99,3 +99,12 @@ jtt-src/
 - `jtt-src/frontend`: candidate-facing Vue 3 frontend. Run its commands from
   that directory; do not commit its `node_modules`, `dist`, `.npm-cache`, or
   local tool configuration.
+
+## Git Workflow
+
+- Read `docs/git-workflow.md` before creating a branch or PR.
+- Create short-lived branches from the latest `main` using
+  `<type>/<member>-<task>`, for example `feat/jtt-resume-upload`.
+- Never push directly to `main`; merge through a reviewed PR using Squash merge.
+- Before requesting review, run the affected backend/frontend checks and ensure
+  Repository Security reports no tracked secrets or generated files.

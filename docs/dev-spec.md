@@ -280,14 +280,16 @@ onMounted(async () => {
 ### 4.1 分支策略
 
 ```
-main                    # 主分支，只接受经过测试的合并
-├── develop             # 开发主分支，所有 feature 合并到此
-│   ├── feature/a-data      # 成员 A：数据采集与清洗
-│   ├── feature/b-graph     # 成员 B：知识图谱构建
-│   ├── feature/c-nlp       # 成员 C：NLP与智能分析
-│   ├── feature/d-backend   # 成员 D：后端与平台
-│   └── feature/e-frontend  # 成员 E：前端与可视化
+main                         # 受保护主分支，只接受 PR
+├── feat/jtt-resume-upload   # 新功能
+├── fix/fyz-graph-query      # 缺陷修复
+├── refactor/jtt-api-layer   # 重构
+├── docs/fyz-git-guide       # 文档
+└── chore/fyz-update-ci      # 工程配置
 ```
+
+分支统一使用 `<类型>/<成员>-<任务>`。所有分支从最新 `main` 创建，建议在
+1–3 天内通过 PR 合并并删除，不维护长期 `develop` 或个人综合分支。
 
 ### 4.2 提交规范
 
@@ -310,11 +312,15 @@ chore(docker): 添加docker-compose部署配置
 
 ### 4.3 协作流程
 
-1. 从 `develop` 拉取最新代码
-2. 创建个人 `feature/xxx` 分支开发
-3. 完成后提 PR 到 `develop`
-4. 至少 1 人 Code Review 后合并
-5. 每周五 `develop` → `main` 打版本 Tag
+1. 切换 `main`，执行 `git fetch origin` 和 `git pull --ff-only origin main`
+2. 从最新 `main` 创建 `<类型>/<成员>-<任务>` 短期分支
+3. 小步提交，并在提 PR 前执行 `git fetch origin`、`git rebase origin/main`
+4. 完成对应后端/前端测试、构建和密钥检查后推送个人分支
+5. 创建目标为 `main` 的 PR，至少 1 名其他成员批准且全部 CI 通过
+6. 使用 Squash merge 合并，删除远端分支并在本地更新 `main`
+
+禁止直接推送或强推 `main`。完整命令、冲突恢复和 Reviewer 清单见
+`docs/git-workflow.md`。
 
 ---
 

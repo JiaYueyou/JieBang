@@ -1,0 +1,82 @@
+name: Project CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: backend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: fyz-src/backend
+    env:
+      TESTING: "true"
+      JWT_SECRET_KEY: test-only-ci-jwt-secret
+      INITIAL_ADMIN_ENABLED: "true"
+      INITIAL_ADMIN_PASSWORD: test-only-ci-admin-password
+      NEO4J_URI: bolt://127.0.0.1:1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            fyz-src/backend/requirements.txt
+            fyz-src/backend/requirements-dev.txt
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+      - name: Run backend tests
+        run: pytest test -q
+
+  fyz-frontend:
+    name: fyz-frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: fyz-src/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: fyz-src/frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run frontend tests
+        run: npm run test
+      - name: Build frontend
+        run: npm run build
+
+  jtt-frontend:
+    name: jtt-frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: jtt-src/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: jtt-src/frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check and build frontend
+        run: npm run build
