@@ -1,5 +1,6 @@
 <template>
   <div>
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <!-- Tab bar -->
     <div class="jm-tabs anim-fade-up">
       <button class="jm-tab" :class="{ active: tab === 'publish' }" @click="tab = 'publish'">
@@ -76,7 +77,7 @@
                   <el-tag size="small" type="info">{{ generated.level }}</el-tag>
                   <el-tag size="small">{{ generated.department }}</el-tag>
                   <span class="jd-salary">{{ generated.salary_range }}</span>
-                  <FavoriteButton type="job" :target-id="generated.title" :title="generated.title" compact />
+                  <FavoriteButton type="job" :target-id="generated.id" :title="generated.title" compact />
                 </div>
                 <div class="jd-section"><h4>工作职责</h4><ul><li v-for="(r,i) in generated.responsibilities" :key="i">{{ r }}</li></ul></div>
                 <div class="jd-section"><h4>任职要求</h4><ul><li v-for="(r,i) in generated.requirements" :key="i">{{ r }}</li></ul></div>
@@ -114,7 +115,7 @@
             <el-table-column label="操作" width="190" align="center">
               <template #default="{ row }">
                 <div class="table-actions">
-                  <FavoriteButton type="job" :target-id="row.title" :title="row.title" compact />
+                  <FavoriteButton type="job" :target-id="row.id" :title="row.title" compact />
                   <el-button text type="primary" size="small" @click="openDetail(row)">
                     <el-icon><Edit /></el-icon> 编辑
                   </el-button>
@@ -156,7 +157,7 @@
                   <div class="insight-dot"></div>
                   <span class="insight-name">{{ job.name }}</span>
                   <el-tag size="small" :type="job.confidence > 90 ? 'success' : 'warning'">{{ job.confidence }}%</el-tag>
-                  <FavoriteButton type="job" :target-id="job.name" :title="job.name" compact />
+                  <FavoriteButton type="job" :target-id="job.id" :title="job.name" compact />
                 </div>
                 <div class="insight-skills"><el-tag v-for="s in job.core_skills" :key="s" size="small" effect="plain">{{ s }}</el-tag></div>
                 <div class="insight-desc">{{ job.description }}</div>
@@ -180,7 +181,7 @@
               <div class="insight-card" v-for="(ch,i) in capabilityChanges" :key="i">
                 <div class="insight-card-top">
                   <span class="insight-name">{{ ch.job }}</span><span class="insight-period">{{ ch.period }}</span>
-                  <FavoriteButton type="job" :target-id="ch.job" :title="ch.job" compact />
+                  <FavoriteButton type="job" :target-id="ch.job_id" :title="ch.job" compact />
                 </div>
                 <div class="change-tags">
                   <template v-for="s in ch.added" :key="'add_'+s"><el-tag size="small" type="success" effect="dark">+ {{ s }}</el-tag></template>
@@ -287,93 +288,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import { useJobStore } from "@/stores/jobs";
+import DataState from "@/components/common/DataState.vue";
+import type { JobSummary } from "@/domain/types";
 
 const tab = ref<"publish" | "insight">("publish");
 
 // ── Tab A ──
 const jdMode = ref<"req" | "profile">("req");
 const generating = ref(false);
-const generated = ref<any>(null);
+const generated = ref<JobSummary | null>(null);
 const jdForm = reactive({ title: "", level: "", department: "", skillsInput: "" });
-
-const publishedJobs = ref([
-  { title: "Java 高级开发工程师", department: "后台开发组", headcount: 2, status: "open", created_at: "2026-06-15", level: "高级", salary_range: "25K-40K·14薪", responsibilities: ["负责核心业务系统的架构设计","主导关键模块编码与代码审查","技术难点攻关与性能优化"], requirements: ["5年以上Java开发经验","精通Spring Cloud微服务架构","有大型分布式系统经验"], bonus_skills: ["Docker/K8s","大模型应用"] },
-  { title: "AI 算法工程师", department: "AI 研究院", headcount: 3, status: "open", created_at: "2026-06-10", level: "高级", salary_range: "30K-50K·14薪", responsibilities: ["大模型训练与微调","算法模型推理优化"], requirements: ["硕士及以上","精通PyTorch/TensorFlow","有LLM相关经验"], bonus_skills: ["CUDA优化","模型部署"] },
-  { title: "Python 后端开发", department: "数据平台组", headcount: 1, status: "draft", created_at: "2026-06-08", level: "中级", salary_range: "18K-28K·13薪", responsibilities: ["数据平台后端服务开发","API设计与优化"], requirements: ["3年以上Python经验","熟悉FastAPI/Django","熟悉PostgreSQL"], bonus_skills: ["Docker","Redis"] },
-]);
+const store = useJobStore();
+const { jobs: publishedJobs, emergingJobs, capabilityChanges, loading, error } = storeToRefs(store);
+onMounted(() => store.load());
 
 async function generateJD() {
   if (!jdForm.title) { ElMessage.warning("请先输入岗位名称"); return; }
   generating.value = true;
-  await new Promise(r => setTimeout(r, 800));
-  const levelMap: any = { junior: "初级", mid: "中级", senior: "高级", expert: "专家" };
-  generated.value = {
-    title: jdForm.title,
-    level: levelMap[jdForm.level] || "中级",
-    department: jdForm.department || "研发中心",
-    salary_range: "20K - 35K · 14薪",
-    responsibilities: ["负责核心业务系统的架构设计与技术选型","主导关键模块的编码实现与代码审查","参与技术难点的攻关与性能优化","指导初中级工程师，制定团队技术规范"],
-    requirements: ["5 年以上相关开发经验，计算机相关专业本科及以上学历",`精通 ${jdForm.skillsInput.split(",").slice(0, 4).join("、") || "相关技术栈"}`,"具备良好的系统设计能力和问题分析能力","有大型分布式系统开发经验优先"],
-    bonus_skills: ["Docker/K8s", "大模型应用开发", "CI/CD", "技术团队管理"],
-    headcount: 1,
-    status: "open",
-    created_at: new Date().toISOString().slice(0, 10),
-  };
-  generating.value = false;
-  ElMessage.success("JD 生成完成");
+  try {
+    generated.value = await store.generateJD({ ...jdForm });
+    ElMessage.success("JD 生成完成");
+  } catch {
+    ElMessage.error("JD 生成失败，请稍后重试");
+  } finally {
+    generating.value = false;
+  }
 }
 
 function copyJD() {
   const jd = generated.value;
+  if (!jd) return;
   navigator.clipboard.writeText(
     `【${jd.title}】\n${jd.department} · ${jd.level} · ${jd.salary_range}\n\n工作职责：\n${jd.responsibilities.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n任职要求：\n${jd.requirements.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n加分技能：${jd.bonus_skills.join("、")}`
   );
   ElMessage.success("已复制到剪贴板");
 }
 
-function publishFromPreview() {
-  publishedJobs.value.unshift({ ...generated.value });
+async function publishFromPreview() {
+  if (!generated.value) return;
+  await store.create(generated.value);
   ElMessage.success("岗位发布成功");
   generated.value = null;
   jdForm.title = "";
   jdForm.skillsInput = "";
 }
 
-function closeJob(row: any) {
-  row.status = "closed";
+async function closeJob(row: JobSummary) {
+  await store.updateStatus(row.id, "closed");
   ElMessage.success(`已关闭"${row.title}"`);
 }
 
 // ── Detail dialog (shared) ──
 const detailVisible = ref(false);
 const isEditing = ref(false);
-const detailJob = ref<any>(null);
+const detailJob = ref<JobSummary | null>(null);
 
 const bonusSkillsStr = computed({
   get: () => detailJob.value?.bonus_skills?.join(", ") || "",
   set: (val: string) => { if (detailJob.value) detailJob.value.bonus_skills = val.split(",").map((s:string) => s.trim()).filter(Boolean); },
 });
 
-function openDetail(job: any) {
+function openDetail(job: JobSummary) {
   detailJob.value = JSON.parse(JSON.stringify(job));
   isEditing.value = false;
   detailVisible.value = true;
 }
 
-function saveDetail() {
-  const idx = publishedJobs.value.findIndex((j: any) => j.title === detailJob.value.title && j.created_at === detailJob.value.created_at);
-  if (idx >= 0) publishedJobs.value[idx] = { ...detailJob.value };
+async function saveDetail() {
+  if (!detailJob.value) return;
+  await store.update(detailJob.value);
   ElMessage.success("岗位信息已更新");
   detailVisible.value = false;
 }
 
-function deleteDetail() {
-  const idx = publishedJobs.value.findIndex((j: any) => j.title === detailJob.value.title && j.created_at === detailJob.value.created_at);
-  if (idx >= 0) publishedJobs.value.splice(idx, 1);
+async function deleteDetail() {
+  if (!detailJob.value) return;
+  await store.remove(detailJob.value.id);
   ElMessage.success("岗位已删除");
   detailVisible.value = false;
 }
@@ -383,17 +379,4 @@ const skillPreference = ref("");
 const emergingExpanded = ref(false);
 function searchInsight() { ElMessage.success(skillPreference.value ? `正在搜索与"${skillPreference.value}"相关的新岗位...` : "正在搜索全部新岗位..."); }
 
-const emergingJobs = ref([
-  { name: "AI 提示词工程师", core_skills: ["Prompt设计","RAG","LLM微调"], description: "负责企业级大模型应用的提示词工程设计与优化", confidence: 92 },
-  { name: "云原生安全专家", core_skills: ["K8s安全","零信任架构","容器逃逸检测"], description: "面向云原生架构的端到端安全方案设计", confidence: 88 },
-  { name: "MLOps 工程师", core_skills: ["模型部署","特征平台","MLflow"], description: "打通从模型训练到生产部署的全流程", confidence: 85 },
-  { name: "AI 产品体验设计师", core_skills: ["交互设计","Prompt UX","A/B测试"], description: "专注于大模型应用的人机交互体验优化", confidence: 81 },
-  { name: "向量数据库管理员", core_skills: ["Milvus","ChromaDB","向量索引优化"], description: "管理企业级向量数据库集群", confidence: 76 },
-]);
-
-const capabilityChanges = ref([
-  { job: "Java 开发工程师", period: "近 6 个月变化", added: ["RAG 集成","Spring AI","向量数据库基础"], modified: ["微服务架构（Spring Cloud → K8s 云原生）"], removed: ["Struts","JSP","WebLogic"] },
-  { job: "Python 后端开发", period: "近 6 个月变化", added: ["FastAPI","大模型 API 开发","LangChain"], modified: ["异步编程（asyncio 从可选→必备）"], removed: ["Python 2 兼容"] },
-  { job: "前端开发工程师", period: "近 6 个月变化", added: ["Next.js/SSR","WebAssembly","AI 组件集成"], modified: ["TypeScript（从推荐→必备）"], removed: ["jQuery","IE 兼容","AngularJS 1.x"] },
-]);
 </script>

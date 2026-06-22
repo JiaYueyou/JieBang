@@ -18,15 +18,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { Star, StarFilled } from "@element-plus/icons-vue";
-import { useFavorites, type FavoriteTargetType } from "@/composables/useFavorites";
+import { useFavoriteStore } from "@/stores/favorites";
+import type { FavoriteTargetType } from "@/domain/types";
 
 const props = withDefaults(
   defineProps<{
     type: FavoriteTargetType;
-    targetId: string | number;
+    targetId: number;
     title: string;
     showLabel?: boolean;
     compact?: boolean;
@@ -35,11 +36,13 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ change: [active: boolean] }>();
-const { isFavorite, toggleFavorite } = useFavorites();
-const active = computed(() => isFavorite(props.type, props.targetId));
+const favoriteStore = useFavoriteStore();
+const active = computed(() => favoriteStore.isFavorite(props.type, props.targetId));
 
-function handleToggle() {
-  const nextState = toggleFavorite(props.type, props.targetId, props.title);
+onMounted(() => favoriteStore.load());
+
+async function handleToggle() {
+  const nextState = await favoriteStore.toggle(props.type, props.targetId, props.title);
   ElMessage({
     type: "success",
     message: nextState ? `已收藏“${props.title}”` : `已取消收藏“${props.title}”`,

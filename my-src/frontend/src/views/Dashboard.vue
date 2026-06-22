@@ -1,5 +1,6 @@
 <template>
   <div>
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <!-- ═══ Top: Hero Metrics ═══ -->
     <div class="db-hero anim-fade-up">
       <div class="db-hero-card" v-for="card in heroCards" :key="card.label">
@@ -28,7 +29,7 @@
               <div class="db-kanban-head">
                 <span class="db-kanban-title">{{ job.title }}</span>
                 <div class="db-kanban-actions">
-                  <FavoriteButton type="job" :target-id="job.title" :title="job.title" compact />
+                  <FavoriteButton type="job" :target-id="job.job_id" :title="job.title" compact />
                   <el-button text size="small" circle @click="$router.push('/jobs')"><el-icon><Edit /></el-icon></el-button>
                 </div>
               </div>
@@ -124,7 +125,7 @@
             </span>
             <span class="db-hot-col num" style="font-family:var(--font-mono);font-weight:600;">{{ job.demand }}</span>
             <span class="db-hot-col trend" :class="job.trend > 0 ? 'up' : 'down'" style="font-family:var(--font-mono);font-weight:700;">{{ job.trend > 0 ? '+' : '' }}{{ job.trend }}%</span>
-            <FavoriteButton type="job" :target-id="job.title" :title="job.title" compact />
+            <FavoriteButton type="job" :target-id="job.job_id" :title="job.title" compact />
           </div>
         </div>
       </div>
@@ -210,36 +211,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import VChart from "vue-echarts";
 import { use } from "echarts/core";
 import { LineChart } from "echarts/charts";
 import { GridComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import { ArrowDown, Plus, Edit, MoreFilled } from "@element-plus/icons-vue";
-import { talentPool } from "./talentData";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import DataState from "@/components/common/DataState.vue";
+import { useDashboardStore } from "@/stores/dashboard";
+import type { TalentSummary } from "@/domain/types";
 
 use([LineChart, GridComponent, CanvasRenderer]);
 
 const drawerVisible = ref(false);
-const selectedTalent = ref<any>(null);
-const alerts = talentPool;
+const selectedTalent = ref<TalentSummary | null>(null);
+const store = useDashboardStore();
+const { data, loading, error } = storeToRefs(store);
+const heroCards = computed(() => data.value?.heroCards ?? []);
+const kanban = computed(() => data.value?.kanban ?? []);
+const alerts = computed(() => data.value?.highMatches ?? []);
+const hotJobs = computed(() => data.value?.hotJobs ?? []);
+const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
+onMounted(() => store.refresh());
 
-const heroCards = [
-  { value: "12", label: "在招岗位", change: "+12.5%", up: true, color: "brand", action: "发布岗位", link: "/jobs" },
-  { value: "5", label: "高优待处理", change: "+8.3%", up: true, color: "green", action: "上传简历", link: "/matching" },
-  { value: "347", label: "本周新发岗位", change: "-2.1%", up: false, color: "amber", action: "岗位洞察", link: "/jobs" },
-  { value: "3", label: "长期未跟进", change: "-1", up: false, color: "rose", action: "联系人才", link: "/matching" },
-];
-
-const kanban = [
-  { title: "Java 高级开发", total: 28, stages: [{ name: "筛选", count: 12 },{ name: "面试", count: 3 },{ name: "发放", count: 1 },{ name: "入职", count: 0 }] },
-  { title: "AI 算法工程师", total: 14, stages: [{ name: "筛选", count: 10 },{ name: "面试", count: 1 },{ name: "发放", count: 0 },{ name: "入职", count: 0 }] },
-  { title: "Python 后端开发", total: 8, stages: [{ name: "筛选", count: 5 },{ name: "面试", count: 0 },{ name: "发放", count: 0 },{ name: "入职", count: 0 }] },
-];
-
-function openTalent(item: any) {
+function openTalent(item: TalentSummary) {
   selectedTalent.value = item;
   drawerVisible.value = true;
 }
@@ -257,19 +255,4 @@ function sparkOption(data: number[]) {
   };
 }
 
-const hotJobs = [
-  { title: "AI 大模型工程师", demand: 156, city: "北京/上海", trend: 23, spark: [30,45,62,85,110,156] },
-  { title: "云原生架构师", demand: 132, city: "深圳/杭州", trend: 18, spark: [40,55,68,85,108,132] },
-  { title: "数据安全专家", demand: 108, city: "全国", trend: 15, spark: [35,48,60,75,92,108] },
-  { title: "Java 开发工程师", demand: 243, city: "全国", trend: -5, spark: [260,255,250,248,245,243] },
-  { title: "Python 后端开发", demand: 187, city: "北京/成都", trend: 8, spark: [140,148,155,165,175,187] },
-  { title: "前端开发工程师", demand: 165, city: "全国", trend: -3, spark: [170,172,168,166,164,165] },
-];
-
-const emergingSkills = [
-  { name: "AI Agent 开发", combo: "LangChain + Function Calling + 多跳推理", growth: 45, confidence: 92 },
-  { name: "RAG 检索引擎", combo: "向量数据库 + 语义分块 + 重排序", growth: 38, confidence: 89 },
-  { name: "云原生安全", combo: "K8s 安全 + 零信任 + eBPF", growth: 22, confidence: 81 },
-  { name: "LLMOps 工程化", combo: "模型监控 + Prompt 管理 + A/B 评测", growth: 28, confidence: 76 },
-];
 </script>

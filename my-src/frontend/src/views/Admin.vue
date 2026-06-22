@@ -1,5 +1,6 @@
 <template>
   <div class="admin-page">
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <nav class="admin-nav anim-fade-up">
       <div class="admin-nav-items">
         <button
@@ -329,8 +330,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useAdminStore } from "@/stores/admin";
+import DataState from "@/components/common/DataState.vue";
 
 type Section = "overview" | "crawler" | "monitor" | "users" | "settings";
 
@@ -346,6 +350,9 @@ const autoScroll = ref(true);
 const userKeyword = ref("");
 const roleFilter = ref("");
 const statusFilter = ref("");
+const store = useAdminStore();
+const { data: admin, loading, error } = storeToRefs(store);
+onMounted(() => store.load());
 
 const navItems: { value: Section; label: string; desc: string; icon: string; badge?: string }[] = [
   { value: "overview", label: "运行总览", desc: "系统健康与关键指标", icon: "Odometer" },
@@ -355,119 +362,35 @@ const navItems: { value: Section; label: string; desc: string; icon: string; bad
   { value: "settings", label: "系统设置", desc: "平台参数与安全策略", icon: "Setting" },
 ];
 
-const metrics = [
-  { label: "今日 API 请求", value: "48.2K", trend: "↑ 12.4% 较昨日", trendTone: "positive", icon: "Connection", tone: "brand", bars: [28, 42, 38, 60, 52, 74, 68, 88, 72, 94] },
-  { label: "今日采集数据", value: "12,486", trend: "↑ 8.7% 持续增长", trendTone: "positive", icon: "Download", tone: "green", bars: [32, 38, 45, 50, 47, 63, 70, 78, 86, 92] },
-  { label: "平均响应时间", value: "186 ms", trend: "↓ 23 ms 性能改善", trendTone: "positive", icon: "Timer", tone: "amber", bars: [80, 72, 76, 65, 58, 61, 52, 48, 44, 38] },
-  { label: "异常事件", value: "3", trend: "2 项待处理", trendTone: "warning", icon: "WarningFilled", tone: "rose", bars: [20, 20, 38, 20, 20, 55, 20, 70, 35, 42] },
-];
-
-const services = [
-  { name: "FastAPI 服务", desc: "API Gateway · 4 实例", latency: "42 ms", icon: "Connection", tone: "brand" },
-  { name: "MySQL 8.0", desc: "业务数据库 · 主节点", latency: "8 ms", icon: "Coin", tone: "blue" },
-  { name: "Neo4j 5.x", desc: "技能图谱 · 86,420 节点", latency: "31 ms", icon: "Share", tone: "violet" },
-  { name: "DeepSeek Agent", desc: "LLM 推理服务", latency: "1.8 s", icon: "MagicStick", tone: "green" },
-  { name: "Celery Worker", desc: "异步任务 · 3 Workers", latency: "16 ms", icon: "Cpu", tone: "amber" },
-];
-
-const resources = [
-  { label: "CPU", value: 42, detail: "8 Core", color: "#4f6ef6" },
-  { label: "内存", value: 68, detail: "10.9 / 16 GB", color: "#34b37e" },
-  { label: "磁盘", value: 57, detail: "228 / 400 GB", color: "#f59e4b" },
-];
-
-const recentTasks = [
-  { name: "智联招聘增量采集", source: "zl_crawler", time: "2 分钟前", count: "3,240 条", status: "success", statusLabel: "已完成", icon: "CircleCheck" },
-  { name: "科大讯飞岗位同步", source: "iflytek_crawler", time: "正在执行", count: "68%", status: "running", statusLabel: "运行中", icon: "Loading" },
-  { name: "技能实体抽取", source: "DeepSeek Agent", time: "18 分钟前", count: "1,864 条", status: "success", statusLabel: "已完成", icon: "CircleCheck" },
-  { name: "数据去重与清洗", source: "clean_pipeline", time: "34 分钟前", count: "42 条异常", status: "warning", statusLabel: "需复核", icon: "Warning" },
-];
-
-const systemEvents = [
-  { title: "智联招聘接口出现限流", desc: "请求成功率降至 91.2%，已自动降低并发", time: "10:42", level: "warning", icon: "Warning" },
-  { title: "Neo4j 慢查询提醒", desc: "技能树展开查询耗时 1.2 秒", time: "09:18", level: "danger", icon: "Timer" },
-  { title: "系统备份已完成", desc: "MySQL 与 Neo4j 快照已上传", time: "03:00", level: "info", icon: "CircleCheck" },
-];
-
-const crawlers = ref([
-  { id: 1, name: "智联招聘", short: "智", endpoint: "zhaopin.com / IT 岗位", tone: "blue", enabled: true, running: false, today: "6,842", success: 96.4, duration: "18m", progress: 100, schedule: "每 4 小时", nextRun: "18:00" },
-  { id: 2, name: "科大讯飞招聘", short: "讯", endpoint: "iflytek.com / 校招与社招", tone: "brand", enabled: true, running: true, today: "3,120", success: 99.1, duration: "8m", progress: 68, schedule: "每天 3 次", nextRun: "运行中" },
-  { id: 3, name: "BOSS 直聘", short: "B", endpoint: "zhipin.com / 技术岗位", tone: "green", enabled: true, running: false, today: "2,524", success: 93.8, duration: "22m", progress: 100, schedule: "每 6 小时", nextRun: "20:00" },
-  { id: 4, name: "行业报告源", short: "研", endpoint: "PDF / 政策与行业报告", tone: "amber", enabled: false, running: false, today: "0", success: 88.5, duration: "5m", progress: 0, schedule: "每周一", nextRun: "已暂停" },
-]);
-
+const metrics = computed(() => admin.value?.metrics ?? []);
+const services = computed(() => admin.value?.services ?? []);
+const resources = computed(() => admin.value?.resources ?? []);
+const recentTasks = computed(() => admin.value?.recentTasks ?? []);
+const systemEvents = computed(() => admin.value?.systemEvents ?? []);
+const crawlers = computed(() => admin.value?.crawlers ?? []);
+const qualities = computed(() => admin.value?.qualities ?? []);
+const crawlerPolicy = computed(() => admin.value?.crawlerPolicy ?? { concurrency:4,retries:3,interval:5,deduplicate:true });
+const performanceCards = computed(() => admin.value?.performanceCards ?? []);
+const endpoints = computed(() => admin.value?.endpoints ?? []);
+const alertRules = computed(() => admin.value?.alertRules ?? []);
+const logs = computed(() => admin.value?.logs ?? []);
 const runningCrawlerCount = computed(() => crawlers.value.filter((item) => item.running).length);
-const qualities = [
-  { label: "字段完整率", value: "97.4%", percent: 97, note: "缺失字段 324 条", color: "#4f6ef6" },
-  { label: "去重有效率", value: "94.8%", percent: 95, note: "移除重复 685 条", color: "#34b37e" },
-  { label: "技能抽取率", value: "92.1%", percent: 92, note: "待抽取 986 条", color: "#7c6ff7" },
-  { label: "薪资可用率", value: "88.6%", percent: 89, note: "面议岗位 1,424 条", color: "#f59e4b" },
-];
+const filteredLogs = computed(() => logs.value.filter((log) => (!logLevel.value || log.level === logLevel.value) && (!logKeyword.value || `${log.service} ${log.message}`.toLowerCase().includes(logKeyword.value.toLowerCase()))));
 
-const crawlerPolicy = reactive({ concurrency: 4, retries: 3, interval: 5, deduplicate: true });
-const performanceCards = [
-  { label: "请求吞吐", value: "18.6 req/s", note: "+9.2% 较上小时", tone: "green", bars: [30, 38, 35, 52, 60, 58, 76, 68, 82, 90] },
-  { label: "P95 延迟", value: "428 ms", note: "阈值 800 ms", tone: "brand", bars: [48, 42, 55, 46, 62, 58, 52, 68, 61, 54] },
-  { label: "错误率", value: "0.34%", note: "低于 1% 阈值", tone: "green", bars: [18, 12, 25, 16, 14, 28, 12, 20, 14, 17] },
-  { label: "队列积压", value: "24", note: "2 项运行中", tone: "amber", bars: [20, 25, 32, 45, 42, 55, 48, 62, 52, 38] },
-];
-
-const endpoints = [
-  { method: "POST", path: "/api/v1/match/analyze", latency: "1.84 s", percent: 92 },
-  { method: "POST", path: "/api/v1/jobs/generate-jd", latency: "1.42 s", percent: 74 },
-  { method: "GET", path: "/api/v1/graph/tree/{title}", latency: "842 ms", percent: 52 },
-  { method: "GET", path: "/api/v1/trends/skill-heatmap", latency: "516 ms", percent: 34 },
-  { method: "GET", path: "/api/v1/talent-pool/list", latency: "284 ms", percent: 20 },
-];
-
-const alertRules = reactive([
-  { name: "API 错误率", condition: "5 分钟内错误率 > 2%", enabled: true, icon: "Warning", tone: "rose" },
-  { name: "接口响应延迟", condition: "P95 延迟 > 800 ms", enabled: true, icon: "Timer", tone: "amber" },
-  { name: "服务器资源", condition: "CPU 或内存持续 > 85%", enabled: true, icon: "Cpu", tone: "brand" },
-  { name: "采集任务失败", condition: "单任务连续失败 3 次", enabled: true, icon: "Download", tone: "violet" },
-]);
-
-const logs = [
-  { id: 1, time: "14:42:18.324", level: "INFO", service: "api.match", message: "Match analysis completed resume_id=128 score=0.92 duration=1.82s" },
-  { id: 2, time: "14:42:15.108", level: "WARN", service: "crawler.zl", message: "Rate limit detected, concurrency reduced from 4 to 2" },
-  { id: 3, time: "14:42:10.672", level: "INFO", service: "neo4j", message: "Graph query completed nodes=284 relationships=612 duration=31ms" },
-  { id: 4, time: "14:41:58.441", level: "ERROR", service: "agent.deepseek", message: "Upstream timeout request_id=req_8f23 retry=1/3" },
-  { id: 5, time: "14:41:46.927", level: "INFO", service: "celery.worker", message: "Task skill_extract[8f9a] succeeded records=320 duration=42.6s" },
-  { id: 6, time: "14:41:32.115", level: "INFO", service: "auth", message: "User login success user=admin ip=10.0.0.24" },
-];
-const filteredLogs = computed(() => logs.filter((log) => (!logLevel.value || log.level === logLevel.value) && (!logKeyword.value || `${log.service} ${log.message}`.toLowerCase().includes(logKeyword.value.toLowerCase()))));
-
-const users = ref([
-  { id: 1, name: "系统管理员", email: "admin@jiebang.cn", department: "平台研发部", role: "超级管理员", roleTone: "rose", status: "active", lastLogin: "今天 14:32" },
-  { id: 2, name: "张婉清", email: "zhangwq@jiebang.cn", department: "招聘中心", role: "HR 管理员", roleTone: "brand", status: "active", lastLogin: "今天 11:08" },
-  { id: 3, name: "李明哲", email: "limz@jiebang.cn", department: "AI 研究院", role: "部门经理", roleTone: "violet", status: "active", lastLogin: "昨天 18:42" },
-  { id: 4, name: "王思雨", email: "wangsy@jiebang.cn", department: "招聘中心", role: "HR 专员", roleTone: "green", status: "active", lastLogin: "昨天 16:20" },
-  { id: 5, name: "陈浩", email: "chenh@jiebang.cn", department: "数据平台组", role: "数据维护员", roleTone: "amber", status: "disabled", lastLogin: "06月12日" },
-]);
+const users = computed(() => admin.value?.users ?? []);
 const activeUsers = computed(() => users.value.filter((user) => user.status === "active").length);
 const filteredUsers = computed(() => users.value.filter((user) => {
   const query = userKeyword.value.toLowerCase();
   return (!query || `${user.name} ${user.email} ${user.department}`.toLowerCase().includes(query)) && (!roleFilter.value || user.role === roleFilter.value) && (!statusFilter.value || user.status === statusFilter.value);
 }));
-const roles = [
-  { name: "超级管理员", members: 1, tone: "rose", icon: "Key", desc: "拥有平台全部配置及数据权限。", permissions: ["系统设置", "用户管理", "数据管理", "日志审计"] },
-  { name: "HR 管理员", members: 3, tone: "brand", icon: "UserFilled", desc: "管理招聘业务、岗位和人才数据。", permissions: ["岗位管理", "人才匹配", "人才池", "数据导出"] },
-  { name: "部门经理", members: 5, tone: "violet", icon: "OfficeBuilding", desc: "查看团队数据与转岗分析。", permissions: ["团队数据", "转岗指南", "趋势分析"] },
-  { name: "数据维护员", members: 2, tone: "amber", icon: "Coin", desc: "维护采集任务和图谱数据。", permissions: ["爬虫管理", "数据清洗", "图谱维护"] },
-];
+const roles = computed(() => admin.value?.roles ?? []);
+const settings = computed(() => admin.value?.settings ?? {});
+const integrations = computed(() => admin.value?.integrations ?? []);
 
-const settings = reactive({ platformName: "智联职引", timezone: "Asia/Shanghai", language: "zh-CN", autoCleanLogs: true, logRetention: 30, snapshotCycle: "weekly", strongPassword: true, adminMfa: false, sessionHours: 24 });
-const integrations = [
-  { name: "MySQL 业务数据库", endpoint: "mysql:3306 / jiebang", status: "connected" },
-  { name: "Neo4j 技能图谱", endpoint: "neo4j:7687 / neo4j", status: "connected" },
-  { name: "DeepSeek API", endpoint: "api.deepseek.com / v1", status: "connected" },
-  { name: "讯飞文档解析", endpoint: "开放平台文档服务", status: "warning" },
-];
-
-function refreshSystem() { ElMessage.success("系统状态已刷新"); }
+async function refreshSystem() { await store.refresh(); ElMessage.success("系统状态已刷新"); }
 function handleEvent(event: any) { ElMessage.info(`正在查看：${event.title}`); }
-function toggleCrawler(crawler: any) { ElMessage.success(`${crawler.name}已${crawler.enabled ? "启用" : "暂停"}`); }
-function runCrawler(crawler: any) { crawler.running = true; crawler.progress = 8; ElMessage.success(`${crawler.name}采集任务已启动`); window.setTimeout(() => { crawler.progress = 68; }, 600); }
+async function toggleCrawler(crawler: any) { await store.toggleCrawler(crawler.id); ElMessage.success(`${crawler.name}状态已更新`); }
+async function runCrawler(crawler: any) { await store.runCrawler(crawler.id); ElMessage.success(`${crawler.name}采集任务已启动`); }
 function editCrawler(crawler: any) { ElMessage.info(`正在配置：${crawler.name}`); }
 function viewCrawlerLog(crawler: any) { activeSection.value = "monitor"; logKeyword.value = crawler.name; }
 function createSource() { ElMessage.info("添加数据源表单待后端数据源协议确定后接入"); }
@@ -480,11 +403,11 @@ function resetPassword(user: any) { ElMessage.success(`${user.name}的密码重�
 async function toggleUser(user: any) {
   try {
     await ElMessageBox.confirm(`确定${user.status === "active" ? "停用" : "启用"}账号“${user.name}”吗？`, "账号状态");
-    user.status = user.status === "active" ? "disabled" : "active";
+    await store.toggleUser(user.id);
     ElMessage.success("账号状态已更新");
   } catch {}
 }
-function saveSettings() { ElMessage.success("系统设置已保存"); }
+async function saveSettings() { await store.saveSettings(settings.value); ElMessage.success("系统设置已保存"); }
 function testConnection(integration: any) { ElMessage.success(`${integration.name}连接正常`); }
 </script>
 

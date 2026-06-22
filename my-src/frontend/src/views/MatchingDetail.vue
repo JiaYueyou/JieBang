@@ -1,5 +1,6 @@
 <template>
-  <div v-if="talent" class="anim-fade-up">
+  <DataState :loading="loading" :error="error" @retry="store.refresh()" />
+  <div v-if="!loading && talent" class="anim-fade-up">
     <!-- Back button -->
     <div class="md-back">
       <el-button text @click="$router.push('/matching')">
@@ -107,22 +108,27 @@
     </div>
   </div>
 
-  <div v-else class="jm-empty jm-empty-fill">
+  <div v-else-if="!loading" class="jm-empty jm-empty-fill">
     <el-icon style="font-size:40px;color:var(--color-border);"><Warning /></el-icon>
     <p style="margin-top:12px;">未找到该人才信息</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { ArrowLeft, CircleCheck, WarningFilled, Connection, Document, Upload, Warning } from "@element-plus/icons-vue";
-import { talentPool } from "./talentData";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import DataState from "@/components/common/DataState.vue";
+import { useTalentStore } from "@/stores/talents";
 
 const route = useRoute();
+const store = useTalentStore();
+const { talents, loading, error } = storeToRefs(store);
+onMounted(() => store.load());
 const talent = computed(() => {
-  const id = Number(route.params.id);
-  return talentPool.find((t: any) => t.id === id) || null;
+  const id = Number(route.params.resumeId);
+  return talents.value.find((t) => t.resume_id === id) || null;
 });
 </script>

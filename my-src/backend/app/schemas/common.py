@@ -1,7 +1,10 @@
 """统一响应 Schema"""
 
-from typing import Any, Optional
+from typing import Generic, Optional, TypeVar
+
 from pydantic import BaseModel
+
+T = TypeVar("T")
 
 
 class PageMeta(BaseModel):
@@ -11,8 +14,8 @@ class PageMeta(BaseModel):
     total_pages: int
 
 
-class ApiResponse(BaseModel):
+class ApiResponse(BaseModel, Generic[T]):
     code: int = 200
     message: str = "success"
-    data: Optional[Any] = None
+    data: Optional[T] = None
     meta: Optional[PageMeta] = None

@@ -1,5 +1,6 @@
 <template>
   <div>
+    <DataState :loading="isAnalyzing" :error="error" @retry="startAnalyze" />
     <div class="dash-card cg-hero-card anim-fade-up" style="margin-bottom:16px;">
       <div class="dash-card-body" style="padding:20px 24px;">
         <div class="cg-primary-grid">
@@ -112,7 +113,7 @@
                 <span class="cg-rec">推荐度 {{ item.recommendScore }}%</span>
                 <el-tag v-if="item.internal" size="small" type="warning" effect="dark">内部需求</el-tag>
               </div>
-              <FavoriteButton type="job" :target-id="item.job" :title="item.job" compact />
+              <FavoriteButton type="job" :target-id="item.job_id" :title="item.job" compact />
               <div class="cg-match-delta">
                 <div class="cg-match-chip before">{{ item.currentMatch }}%</div>
                 <el-icon><ArrowRight /></el-icon>
@@ -179,16 +180,19 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { storeToRefs } from "pinia";
 import { Search, ArrowRight, Loading, MagicStick, Guide, Upload } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import DataState from "@/components/common/DataState.vue";
+import { useCareerStore } from "@/stores/career";
 
 const skillInput = ref("");
 const enterpriseTech = ref("");
 const enterpriseJobs = ref("");
-const isAnalyzing = ref(false);
 const hasSearched = ref(false);
-const results = ref<any[]>([]);
+const store = useCareerStore();
+const { data: results, loading: isAnalyzing, error } = storeToRefs(store);
 const uploadFiles = ref<UploadFile[]>([]);
 const entUploadFiles = ref<UploadFile[]>([]);
 
@@ -212,26 +216,10 @@ function getDifficultyLabel(difficulty: string) {
 }
 
 async function startAnalyze() {
-  isAnalyzing.value = true;
   hasSearched.value = true;
-  await new Promise(r => setTimeout(r, 1200));
-
-  const hasEnterprise = enterpriseJobs.value.trim().length > 0;
-  const internalJobs = hasEnterprise
-    ? enterpriseJobs.value.split(",").map(s => s.trim()).filter(Boolean)
-    : [];
-
-  results.value = [
-    { rank: 1, job: "AI 应用开发工程师", recommendScore: 94, currentMatch: 68, afterMatch: 91, existing: ["Java","Python基础","Spring Boot","MySQL","Redis"], learningPlan: [{ skill: "PyTorch 基础", time: "4 周", difficulty: "medium", resources: ["官方教程","动手学深度学习","内部AI实训平台"] },{ skill: "LangChain 框架", time: "2 周", difficulty: "easy", resources: ["官方文档","LangChain 实战教程","构建内部问答机器人"] },{ skill: "大模型 API 开发", time: "2 周", difficulty: "easy", resources: ["OpenAI/星火 API文档","Prompt Engineering指南"] }], suggestedProject: "将公司现有的 FAQ 文档接入大模型，构建内部智能知识库问答系统", totalTime: "6-8 周", internal: hasEnterprise && internalJobs.some(j => j.includes("AI") || j.includes("大模型") || j.includes("智能")) },
-    { rank: 2, job: "大数据开发工程师", recommendScore: 87, currentMatch: 55, afterMatch: 87, existing: ["Java","Python","SQL","MySQL"], learningPlan: [{ skill: "Spark 核心开发", time: "3 周", difficulty: "medium", resources: ["Spark权威指南","内部数据平台实践"] },{ skill: "Hadoop/Hive 生态", time: "2 周", difficulty: "medium", resources: ["Hadoop权威指南","公司数仓文档"] },{ skill: "Flink 实时计算", time: "3 周", difficulty: "hard", resources: ["Flink官方文档","实时数据管道项目"] }], suggestedProject: "将现有离线报表迁移为实时数据看板，降低数据延迟到秒级", totalTime: "6-10 周", internal: hasEnterprise && internalJobs.some(j => j.includes("数据") || j.includes("大数据")) },
-    { rank: 3, job: "DevOps 工程师", recommendScore: 82, currentMatch: 48, afterMatch: 84, existing: ["Linux","Shell","Git","Docker基础"], learningPlan: [{ skill: "Kubernetes 实战", time: "4 周", difficulty: "hard", resources: ["K8s官方教程","CKAD备考指南","内部容器化平台"] },{ skill: "CI/CD 流水线", time: "2 周", difficulty: "easy", resources: ["Jenkins/GitLab CI文档","内部 DevOps 规范"] },{ skill: "监控与告警", time: "1 周", difficulty: "easy", resources: ["Prometheus+Grafana","内部运维平台"] }], suggestedProject: "为团队搭建自动化 CI/CD 流水线，配置代码提交自动构建+测试+部署", totalTime: "5-7 周", internal: hasEnterprise && internalJobs.some(j => j.includes("DevOps") || j.includes("运维")) },
-    { rank: 4, job: "技术项目经理", recommendScore: 76, currentMatch: 52, afterMatch: 82, existing: ["Java","项目管理经验","5人团队管理","需求分析"], learningPlan: [{ skill: "敏捷/Scrum 认证", time: "2 周", difficulty: "easy", resources: ["Scrum Guide","CSM认证课程"] },{ skill: "技术架构评审", time: "3 周", difficulty: "medium", resources: ["系统设计面试指南","内部架构评审流程"] },{ skill: "数据驱动决策", time: "2 周", difficulty: "medium", resources: ["SQL进阶","BI工具实战","数据分析方法论"] }], suggestedProject: "主导下一个季度的技术规划会议，输出团队技术路线图与资源分配方案", totalTime: "5-7 周", internal: false },
-  ];
-
-  if (enterpriseJobs.value.trim()) {
-    results.value.sort((a, b) => (b.internal ? 1 : 0) - (a.internal ? 1 : 0) || b.recommendScore - a.recommendScore);
-  }
-
-  isAnalyzing.value = false;
+  await store.analyze(
+    skillInput.value,
+    enterpriseJobs.value.split(",").map((item) => item.trim()).filter(Boolean),
+  );
 }
 </script>

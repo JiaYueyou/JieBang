@@ -1,5 +1,6 @@
 <template>
   <div class="favorites-page">
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <div class="favorites-workbench anim-fade-up">
       <div class="favorites-tabs" role="tablist" aria-label="收藏类型">
         <button
@@ -71,10 +72,10 @@
       <div class="favorites-grid" :class="{ 'list-mode': viewMode === 'list' }">
         <article
           v-for="item in filteredFavorites"
-          :key="`${item.type}-${item.id}`"
+          :key="`${item.target_type}-${item.id}`"
           class="favorite-card"
           :class="[
-            item.type,
+            item.target_type,
             { selected: selectedIds.includes(item.id), 'list-card': viewMode === 'list' },
           ]"
           @click="openDetail(item)"
@@ -92,17 +93,17 @@
           <div class="card-accent"></div>
           <div class="card-main">
             <div class="card-top">
-              <div class="entity-mark" :class="item.type">
-                <span v-if="item.type === 'talent'">{{ item.title.slice(0, 1) }}</span>
+              <div class="entity-mark" :class="item.target_type">
+                <span v-if="item.target_type === 'resume'">{{ item.title.slice(0, 1) }}</span>
                 <el-icon v-else><Briefcase /></el-icon>
               </div>
               <div class="entity-title">
                 <div class="entity-kicker">
-                  {{ item.type === "job" ? item.company : item.subtitle }}
+                  {{ item.target_type === "job" ? item.company : item.subtitle }}
                   <span v-if="item.urgent" class="urgent-dot">急招</span>
                 </div>
                 <h2>{{ item.title }}</h2>
-                <p v-if="item.type === 'talent'">{{ item.company }}</p>
+                <p v-if="item.target_type === 'resume'">{{ item.company }}</p>
               </div>
               <button class="star-button" type="button" title="取消收藏" @click.stop="removeFavorite(item)">
                 <el-icon><StarFilled /></el-icon>
@@ -110,7 +111,7 @@
             </div>
 
             <div class="card-facts">
-              <template v-if="item.type === 'job'">
+              <template v-if="item.target_type === 'job'">
                 <span><el-icon><Location /></el-icon>{{ item.location }}</span>
                 <span><el-icon><Money /></el-icon>{{ item.salary }}</span>
                 <span><el-icon><OfficeBuilding /></el-icon>{{ item.experience }}</span>
@@ -136,7 +137,7 @@
           <div class="card-side">
             <div class="match-score" :class="scoreTone(item.match)">
               <strong>{{ item.match }}%</strong>
-              <span>{{ item.type === "job" ? "画像匹配" : "岗位匹配" }}</span>
+              <span>{{ item.target_type === "job" ? "画像匹配" : "岗位匹配" }}</span>
               <div><i :style="{ width: `${item.match}%` }"></i></div>
             </div>
             <div class="card-actions">
@@ -146,7 +147,7 @@
               </button>
               <button class="primary-action" type="button" @click.stop="handlePrimaryAction(item)">
                 <el-icon><Connection /></el-icon>
-                {{ item.type === "job" ? "查看画像" : "发起匹配" }}
+                {{ item.target_type === "job" ? "查看画像" : "发起匹配" }}
               </button>
             </div>
             <span class="saved-time"><el-icon><Clock /></el-icon>{{ item.savedAt }} 收藏</span>
@@ -168,19 +169,19 @@
     <el-drawer v-model="drawerVisible" :size="drawerSize" destroy-on-close>
       <template #header>
         <div v-if="selectedItem" class="drawer-title">
-          <span>{{ selectedItem.type === "job" ? "岗位收藏详情" : "候选人收藏详情" }}</span>
+          <span>{{ selectedItem.target_type === "job" ? "岗位收藏详情" : "候选人收藏详情" }}</span>
           <small>收藏于 {{ selectedItem.savedAt }}</small>
         </div>
       </template>
 
       <div v-if="selectedItem" class="favorite-drawer">
         <div class="drawer-hero">
-          <div class="entity-mark large" :class="selectedItem.type">
-            <span v-if="selectedItem.type === 'talent'">{{ selectedItem.title.slice(0, 1) }}</span>
+          <div class="entity-mark large" :class="selectedItem.target_type">
+            <span v-if="selectedItem.target_type === 'resume'">{{ selectedItem.title.slice(0, 1) }}</span>
             <el-icon v-else><Briefcase /></el-icon>
           </div>
           <div>
-            <p>{{ selectedItem.type === "job" ? selectedItem.company : selectedItem.subtitle }}</p>
+            <p>{{ selectedItem.target_type === "job" ? selectedItem.company : selectedItem.subtitle }}</p>
             <h2>{{ selectedItem.title }}</h2>
             <span>{{ selectedItem.location }} · {{ selectedItem.experience }}</span>
           </div>
@@ -211,10 +212,10 @@
           <div class="next-step-card">
             <span class="next-step-icon"><el-icon><MagicStick /></el-icon></span>
             <div>
-              <strong>{{ selectedItem.type === "job" ? "基于岗位画像筛选人才" : "与目标岗位进行智能匹配" }}</strong>
+              <strong>{{ selectedItem.target_type === "job" ? "基于岗位画像筛选人才" : "与目标岗位进行智能匹配" }}</strong>
               <p>
                 {{
-                  selectedItem.type === "job"
+                  selectedItem.target_type === "job"
                     ? "从人才池中快速定位技能覆盖度较高的候选人。"
                     : "生成技能覆盖、能力差距与面试问题建议。"
                 }}
@@ -226,7 +227,7 @@
         <div class="drawer-footer">
           <el-button @click="removeFavorite(selectedItem)">取消收藏</el-button>
           <el-button type="primary" @click="handlePrimaryAction(selectedItem)">
-            {{ selectedItem.type === "job" ? "查看岗位画像" : "发起人才匹配" }}
+            {{ selectedItem.target_type === "job" ? "查看岗位画像" : "发起人才匹配" }}
           </el-button>
         </div>
       </div>
@@ -235,156 +236,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
+import { useFavoriteStore } from "@/stores/favorites";
+import DataState from "@/components/common/DataState.vue";
+import type { FavoriteRecord, FavoriteTargetType } from "@/domain/types";
 
-type FavoriteType = "job" | "talent";
+type FavoriteType = FavoriteTargetType;
 type FilterType = "all" | FavoriteType;
 type ViewMode = "grid" | "list";
 
-interface FavoriteItem {
-  id: number;
-  type: FavoriteType;
-  title: string;
-  subtitle: string;
-  company: string;
-  location: string;
-  salary: string;
-  experience: string;
-  education: string;
-  skills: string[];
-  match: number;
-  savedAt: string;
-  savedOrder: number;
-  note: string;
-  urgent?: boolean;
-}
-
 const router = useRouter();
+const store = useFavoriteStore();
+const { records: favorites, loading, error } = storeToRefs(store);
 const activeType = ref<FilterType>("all");
 const keyword = ref("");
 const sortBy = ref("recent");
 const viewMode = ref<ViewMode>("grid");
 const selectedIds = ref<number[]>([]);
 const drawerVisible = ref(false);
-const selectedItem = ref<FavoriteItem | null>(null);
+const selectedItem = ref<FavoriteRecord | null>(null);
 const drawerSize = computed(() => (window.innerWidth < 768 ? "100%" : "520px"));
+onMounted(() => store.load());
+watch(drawerVisible, async (visible) => {
+  if (!visible && selectedItem.value) {
+    await store.updateNote(selectedItem.value.id, selectedItem.value.note);
+  }
+});
 
-const favorites = ref<FavoriteItem[]>([
-  {
-    id: 101,
-    type: "job",
-    title: "AI 大模型应用工程师",
-    subtitle: "研发类岗位",
-    company: "科大讯飞 · AI 研究院",
-    location: "合肥",
-    salary: "25–40K",
-    experience: "3–5 年",
-    education: "本科",
-    skills: ["Python", "RAG", "LangChain", "向量数据库", "模型微调"],
-    match: 94,
-    savedAt: "今天 10:32",
-    savedOrder: 6,
-    note: "技术方向与企业 Agent 项目高度吻合",
-    urgent: true,
-  },
-  {
-    id: 201,
-    type: "talent",
-    title: "林知远",
-    subtitle: "高级 Java 工程师",
-    company: "现任职于某头部电商平台",
-    location: "杭州",
-    salary: "期望 30–35K",
-    experience: "7 年经验",
-    education: "硕士",
-    skills: ["Java", "Spring Cloud", "Kubernetes", "Redis", "高并发"],
-    match: 91,
-    savedAt: "今天 09:18",
-    savedOrder: 5,
-    note: "微服务经验完整，可优先安排技术面",
-  },
-  {
-    id: 102,
-    type: "job",
-    title: "云原生架构师",
-    subtitle: "架构类岗位",
-    company: "星环科技 · 平台架构部",
-    location: "上海",
-    salary: "35–55K",
-    experience: "5–10 年",
-    education: "本科",
-    skills: ["Kubernetes", "Service Mesh", "Go", "DevOps", "微服务"],
-    match: 87,
-    savedAt: "昨天 16:45",
-    savedOrder: 4,
-    note: "",
-  },
-  {
-    id: 202,
-    type: "talent",
-    title: "周沐",
-    subtitle: "算法工程师",
-    company: "专注 NLP 与知识图谱方向",
-    location: "北京",
-    salary: "期望 28–32K",
-    experience: "4 年经验",
-    education: "硕士",
-    skills: ["NLP", "PyTorch", "知识图谱", "BERT", "Prompt 工程"],
-    match: 89,
-    savedAt: "昨天 14:06",
-    savedOrder: 3,
-    note: "知识图谱项目经历值得进一步确认",
-    urgent: true,
-  },
-  {
-    id: 103,
-    type: "job",
-    title: "数据安全专家",
-    subtitle: "安全类岗位",
-    company: "天翼云 · 安全产品中心",
-    location: "北京",
-    salary: "30–50K",
-    experience: "5–10 年",
-    education: "本科",
-    skills: ["数据安全", "零信任", "等保", "云安全", "风险评估"],
-    match: 82,
-    savedAt: "06月16日",
-    savedOrder: 2,
-    note: "关注零信任与数据合规能力要求",
-  },
-  {
-    id: 203,
-    type: "talent",
-    title: "陈屿",
-    subtitle: "前端技术负责人",
-    company: "B 端平台与数据可视化方向",
-    location: "深圳",
-    salary: "期望 32–38K",
-    experience: "8 年经验",
-    education: "本科",
-    skills: ["Vue 3", "TypeScript", "ECharts", "工程化", "团队管理"],
-    match: 85,
-    savedAt: "06月15日",
-    savedOrder: 1,
-    note: "",
-  },
-]);
-
-const jobCount = computed(() => favorites.value.filter((item) => item.type === "job").length);
-const talentCount = computed(() => favorites.value.filter((item) => item.type === "talent").length);
+const jobCount = computed(() => favorites.value.filter((item) => item.target_type === "job").length);
+const talentCount = computed(() => favorites.value.filter((item) => item.target_type === "resume").length);
 
 const tabs = computed(() => [
   { label: "全部收藏", value: "all" as FilterType, icon: "Collection", count: favorites.value.length },
   { label: "岗位", value: "job" as FilterType, icon: "Briefcase", count: jobCount.value },
-  { label: "候选人", value: "talent" as FilterType, icon: "User", count: talentCount.value },
+  { label: "候选人", value: "resume" as FilterType, icon: "User", count: talentCount.value },
 ]);
 
 const filteredFavorites = computed(() => {
   const normalizedKeyword = keyword.value.toLowerCase();
   const result = favorites.value.filter((item) => {
-    const typeMatches = activeType.value === "all" || item.type === activeType.value;
+    const typeMatches = activeType.value === "all" || item.target_type === activeType.value;
     const searchable = [item.title, item.subtitle, item.company, item.location, ...item.skills].join(" ").toLowerCase();
     return typeMatches && (!normalizedKeyword || searchable.includes(normalizedKeyword));
   });
@@ -423,19 +317,19 @@ function toggleSelectAll() {
   selectedIds.value = [...new Set([...selectedIds.value, ...visibleIds])];
 }
 
-function openDetail(item: FavoriteItem) {
+function openDetail(item: FavoriteRecord) {
   selectedItem.value = item;
   drawerVisible.value = true;
 }
 
-async function removeFavorite(item: FavoriteItem) {
+async function removeFavorite(item: FavoriteRecord) {
   try {
     await ElMessageBox.confirm(`确定取消收藏“${item.title}”吗？`, "取消收藏", {
       confirmButtonText: "确认取消",
       cancelButtonText: "保留",
       type: "warning",
     });
-    favorites.value = favorites.value.filter((favorite) => favorite.id !== item.id);
+    await store.removeMany([item.id]);
     selectedIds.value = selectedIds.value.filter((id) => id !== item.id);
     drawerVisible.value = false;
     ElMessage.success("已取消收藏");
@@ -451,8 +345,7 @@ async function removeSelected() {
       cancelButtonText: "保留",
       type: "warning",
     });
-    const removedIds = new Set(selectedIds.value);
-    favorites.value = favorites.value.filter((item) => !removedIds.has(item.id));
+    await store.removeMany(selectedIds.value);
     selectedIds.value = [];
     ElMessage.success("已批量取消收藏");
   } catch {
@@ -460,10 +353,10 @@ async function removeSelected() {
   }
 }
 
-function handlePrimaryAction(item: FavoriteItem) {
+function handlePrimaryAction(item: FavoriteRecord) {
   drawerVisible.value = false;
-  if (item.type === "talent") {
-    router.push(`/matching/${item.id}`);
+  if (item.target_type === "resume") {
+    router.push(`/matching/${item.target_id}`);
     return;
   }
   router.push("/jobs");
@@ -784,7 +677,7 @@ function handlePrimaryAction(item: FavoriteItem) {
   transition: 0.2s var(--ease-out);
 }
 
-.favorite-card.talent .card-accent {
+.favorite-card.resume .card-accent {
   background: linear-gradient(180deg, var(--color-success), #8fd9bc);
 }
 
@@ -845,7 +738,7 @@ function handlePrimaryAction(item: FavoriteItem) {
   font-weight: 700;
 }
 
-.entity-mark.talent {
+.entity-mark.resume {
   background: linear-gradient(145deg, #eaf9f3, #d9f4e9);
   color: var(--color-success);
 }

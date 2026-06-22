@@ -4,9 +4,12 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from app.core.config import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
+from app.core.exceptions import AuthenticationError
+from app.schemas.auth import TokenPrincipal
 
 security = HTTPBearer(auto_error=False)
 
@@ -35,10 +38,17 @@ def decode_token(token: str) -> dict | None:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-):
+) -> TokenPrincipal:
     if not credentials:
-        raise HTTPException(status_code=401, detail="未提供认证信息")
+        raise AuthenticationError("未提供认证信息")
+
     payload = decode_token(credentials.credentials)
     if not payload:
-        raise HTTPException(status_code=401, detail="Token 无效或已过期")
-    return {"user_id": payload.get("user_id"), "username": payload.get("username")}
+        raise AuthenticationError()
+
+    user_id = payload.get("user_id")
+    username = payload.get("username")
+    if not isinstance(user_id, int) or not isinstance(username, str):
+        raise AuthenticationError()
+
+    return TokenPrincipal(user_id=user_id, username=username)

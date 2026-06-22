@@ -46,6 +46,8 @@ DEEPSEEK_API_KEY=sk-your-key-here
 
 > 不配置 API Key 也可运行 Step 1 和 Step 4。Step 2/3 中的 DeepSeek 辅助部分会自动跳过，仅使用规则匹配。
 
+> 安全提示：不要把真实密钥写入 `.env.example` 或提交到 Git。历史示例中曾出现疑似有效密钥，请在 DeepSeek 控制台立即吊销并轮换该密钥。
+
 ### 3. 运行 Pipeline
 
 ```bash

@@ -39,7 +39,7 @@ const router = createRouter({
           meta: { title: "人才匹配" },
         },
         {
-          path: "matching/:id",
+          path: "matching/:resumeId",
           name: "MatchingDetail",
           component: () => import("@/views/MatchingDetail.vue"),
           meta: { title: "人才详情", parentTitle: "人才匹配", parentPath: "/matching" },

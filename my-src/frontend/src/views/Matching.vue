@@ -1,5 +1,6 @@
 <template>
   <div>
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <!-- Filter bar -->
     <div class="dash-card anim-fade-up" style="margin-bottom:16px;">
       <div class="dash-card-body" style="padding:14px 20px;">
@@ -77,18 +78,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { Search, Upload } from "@element-plus/icons-vue";
-import { talentPool, type TalentItem } from "./talentData";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import DataState from "@/components/common/DataState.vue";
+import { useTalentStore } from "@/stores/talents";
+import type { TalentSummary } from "@/domain/types";
 
 const filterName = ref("");
 const filterPosition = ref("");
 const filterDept = ref("");
 const filterScore = ref("");
 const sortBy = ref("score");
+const store = useTalentStore();
+const { talents, loading, error } = storeToRefs(store);
+onMounted(() => store.load());
 
-function sortList(list: TalentItem[]): TalentItem[] {
+function sortList(list: TalentSummary[]): TalentSummary[] {
   if (sortBy.value === "urgent") {
     return [...list].sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || b.score - a.score);
   }
@@ -99,7 +106,7 @@ function sortList(list: TalentItem[]): TalentItem[] {
 }
 
 const filteredList = computed(() => {
-  let list = talentPool;
+  let list = talents.value;
   if (filterName.value) list = list.filter(t => t.name.includes(filterName.value));
   if (filterPosition.value) list = list.filter(t => t.position.includes(filterPosition.value));
   if (filterDept.value) list = list.filter(t => t.department.includes(filterDept.value));
@@ -107,8 +114,8 @@ const filteredList = computed(() => {
   return sortList(list);
 });
 
-const urgentCount = computed(() => talentPool.filter(t => t.urgent).length);
-const highMatchCount = computed(() => talentPool.filter(t => t.score >= 90).length);
+const urgentCount = computed(() => talents.value.filter(t => t.urgent).length);
+const highMatchCount = computed(() => talents.value.filter(t => t.score >= 90).length);
 
 function applyFilter() {}
 </script>

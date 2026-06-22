@@ -4,7 +4,6 @@ import pytest
 
 
 MODULES = [
-    ("/api/v1/jobs/", "岗位管理"),
     ("/api/v1/changes/", "能力更新"),
     ("/api/v1/graph/", "技能图谱"),
     ("/api/v1/matching/", "匹配诊断"),
@@ -31,3 +30,9 @@ class TestPlaceholderModules:
     async def test_nonexistent_route(self, client):
         resp = await client.get("/api/v1/doesnotexist/")
         assert resp.status_code == 404
+        assert resp.json() == {
+            "code": 40400,
+            "message": "请求的资源不存在",
+            "data": None,
+            "meta": None,
+        }

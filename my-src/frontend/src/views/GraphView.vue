@@ -1,5 +1,6 @@
 <template>
   <div>
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <section class="graph-toolbar anim-fade-up">
       <div class="graph-search">
         <el-icon><Search /></el-icon>
@@ -158,39 +159,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { Search } from "@element-plus/icons-vue";
+import { useGraphStore } from "@/stores/graph";
+import DataState from "@/components/common/DataState.vue";
+import type { GraphEdge, GraphNode, GraphType } from "@/domain/types";
 
-type GraphType = "Job" | "SkillArea" | "TechStack" | "TechPoint" | "KnowledgePoint";
 type FilterType = GraphType | "all";
 type StackType = "all" | "ai" | "backend" | "data" | "devops";
 type LevelType = "all" | "junior" | "middle" | "senior";
-
-interface GraphNode {
-  id: string;
-  name: string;
-  type: GraphType;
-  stack: StackType;
-  level: Exclude<LevelType, "all">;
-  x: number;
-  y: number;
-  description: string;
-  importance?: number;
-  frequency?: number;
-}
-
-interface GraphEdge {
-  id: string;
-  source: string;
-  target: string;
-  relation: "REQUIRES_AREA" | "CONTAINS" | "REFINES_TO" | "HAS_KNOWLEDGE" | "RELATED_TO" | "SAME_AS";
-}
 
 const keyword = ref("");
 const selectedStack = ref<StackType>("all");
 const selectedLevel = ref<LevelType>("all");
 const selectedType = ref<FilterType>("all");
-const activeNodeId = ref("job-ai");
+const activeNodeId = ref("");
+const store = useGraphStore();
+const { data, loading, error } = storeToRefs(store);
+const graphNodes = computed(() => data.value.nodes);
+const graphEdges = computed(() => data.value.edges);
+onMounted(async () => {
+  await store.load();
+  activeNodeId.value = graphNodes.value.find(node => node.type === "Job")?.id || graphNodes.value[0]?.id || "";
+});
 
 const typeMeta: Record<GraphType, { label: string; short: string; color: string }> = {
   Job: { label: "L1 岗位", short: "L1", color: "var(--g6-l1)" },
@@ -198,6 +190,8 @@ const typeMeta: Record<GraphType, { label: string; short: string; color: string 
   TechStack: { label: "L3 技术栈", short: "L3", color: "var(--g6-l3)" },
   TechPoint: { label: "L4 技术细节点", short: "L4", color: "var(--g6-l4)" },
   KnowledgePoint: { label: "L5 知识要点", short: "L5", color: "var(--g6-l5)" },
+  SourceDocument: { label: "来源证据", short: "SRC", color: "#94a3b8" },
+  GraphSnapshot: { label: "图谱快照", short: "VER", color: "#64748b" },
 };
 
 const layers = [
@@ -223,62 +217,28 @@ const levelOptions: { label: string; value: LevelType }[] = [
   { label: "高级", value: "senior" },
 ];
 
-const graphNodes: GraphNode[] = [
-  { id: "job-ai", name: "AI 应用开发", type: "Job", stack: "ai", level: "senior", x: 115, y: 124, importance: 0.94, description: "面向企业知识库、智能问答和业务 Agent 的 AI 应用岗位。" },
-  { id: "job-java", name: "Java 高级开发", type: "Job", stack: "backend", level: "senior", x: 115, y: 260, importance: 0.88, description: "负责后端服务、微服务架构与业务平台稳定性建设。" },
-  { id: "job-data", name: "大数据工程师", type: "Job", stack: "data", level: "middle", x: 115, y: 396, importance: 0.82, description: "负责数据采集、数仓建模、离线与实时计算链路。" },
+let filterTimer: ReturnType<typeof setTimeout> | undefined;
+watch([keyword, selectedStack, selectedLevel, selectedType], () => {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(async () => {
+    await store.load(true, {
+      keyword: keyword.value.trim() || undefined,
+      stack: selectedStack.value === "all" ? undefined : selectedStack.value,
+      level: selectedLevel.value === "all" ? undefined : selectedLevel.value,
+      nodeType: selectedType.value === "all" ? undefined : selectedType.value,
+      limit: 1000,
+    });
+    if (!graphNodes.value.some(node => node.id === activeNodeId.value)) {
+      activeNodeId.value = graphNodes.value.find(node => node.type === "Job")?.id || graphNodes.value[0]?.id || "";
+    }
+  }, 250);
+});
 
-  { id: "area-llm", name: "大模型应用", type: "SkillArea", stack: "ai", level: "senior", x: 300, y: 92, importance: 0.95, description: "围绕 LLM API、Agent、RAG 与模型应用工程化的能力域。" },
-  { id: "area-service", name: "服务架构", type: "SkillArea", stack: "backend", level: "senior", x: 300, y: 238, importance: 0.89, description: "高并发后端服务、微服务拆分与稳定性治理能力域。" },
-  { id: "area-pipeline", name: "数据链路", type: "SkillArea", stack: "data", level: "middle", x: 300, y: 396, importance: 0.84, description: "覆盖数据接入、清洗、计算、调度与指标产出的能力域。" },
-
-  { id: "stack-rag", name: "RAG", type: "TechStack", stack: "ai", level: "senior", x: 486, y: 72, frequency: 78, description: "检索增强生成，用于降低幻觉并绑定企业知识源。" },
-  { id: "stack-agent", name: "LangChain Agent", type: "TechStack", stack: "ai", level: "senior", x: 486, y: 142, frequency: 63, description: "工具调用、任务规划和多步推理编排框架。" },
-  { id: "stack-spring", name: "Spring Cloud", type: "TechStack", stack: "backend", level: "senior", x: 486, y: 238, frequency: 86, description: "Java 微服务体系，覆盖注册发现、配置、网关和服务治理。" },
-  { id: "stack-redis", name: "Redis", type: "TechStack", stack: "backend", level: "middle", x: 486, y: 310, frequency: 74, description: "缓存、分布式锁、限流和高性能数据结构。" },
-  { id: "stack-flink", name: "Flink", type: "TechStack", stack: "data", level: "middle", x: 486, y: 396, frequency: 58, description: "实时计算引擎，适合流式指标、实时风控和数据管道。" },
-
-  { id: "point-vector", name: "向量检索", type: "TechPoint", stack: "ai", level: "senior", x: 674, y: 64, frequency: 51, description: "Embedding、召回、重排和向量数据库查询优化。" },
-  { id: "point-prompt", name: "Prompt 编排", type: "TechPoint", stack: "ai", level: "middle", x: 674, y: 146, frequency: 67, description: "提示模板、上下文注入、输出约束和评测闭环。" },
-  { id: "point-gateway", name: "网关治理", type: "TechPoint", stack: "backend", level: "senior", x: 674, y: 224, frequency: 46, description: "鉴权、限流、灰度、熔断和链路追踪入口治理。" },
-  { id: "point-cache", name: "缓存一致性", type: "TechPoint", stack: "backend", level: "middle", x: 674, y: 310, frequency: 55, description: "缓存穿透、击穿、雪崩与数据一致性策略。" },
-  { id: "point-window", name: "窗口计算", type: "TechPoint", stack: "data", level: "middle", x: 674, y: 396, frequency: 39, description: "滚动窗口、滑动窗口、会话窗口及水位线机制。" },
-
-  { id: "knowledge-rerank", name: "召回与重排评估", type: "KnowledgePoint", stack: "ai", level: "senior", x: 836, y: 64, frequency: 32, description: "评估检索命中率、MRR、上下文覆盖率和答案引用质量。" },
-  { id: "knowledge-template", name: "结构化输出约束", type: "KnowledgePoint", stack: "ai", level: "middle", x: 836, y: 146, frequency: 44, description: "通过 JSON schema、few-shot 和校验器约束模型输出。" },
-  { id: "knowledge-resilience", name: "熔断降级策略", type: "KnowledgePoint", stack: "backend", level: "senior", x: 836, y: 224, frequency: 36, description: "高可用系统中的超时、重试、隔离和降级设计。" },
-  { id: "knowledge-cache", name: "热点 Key 治理", type: "KnowledgePoint", stack: "backend", level: "middle", x: 836, y: 310, frequency: 42, description: "热点发现、本地缓存、分片和预热策略。" },
-  { id: "knowledge-watermark", name: "Watermark 机制", type: "KnowledgePoint", stack: "data", level: "middle", x: 836, y: 396, frequency: 28, description: "处理乱序数据、延迟数据和窗口触发语义。" },
-];
-
-const graphEdges: GraphEdge[] = [
-  { id: "e1", source: "job-ai", target: "area-llm", relation: "REQUIRES_AREA" },
-  { id: "e2", source: "job-java", target: "area-service", relation: "REQUIRES_AREA" },
-  { id: "e3", source: "job-data", target: "area-pipeline", relation: "REQUIRES_AREA" },
-  { id: "e4", source: "area-llm", target: "stack-rag", relation: "CONTAINS" },
-  { id: "e5", source: "area-llm", target: "stack-agent", relation: "CONTAINS" },
-  { id: "e6", source: "area-service", target: "stack-spring", relation: "CONTAINS" },
-  { id: "e7", source: "area-service", target: "stack-redis", relation: "CONTAINS" },
-  { id: "e8", source: "area-pipeline", target: "stack-flink", relation: "CONTAINS" },
-  { id: "e9", source: "stack-rag", target: "point-vector", relation: "REFINES_TO" },
-  { id: "e10", source: "stack-agent", target: "point-prompt", relation: "REFINES_TO" },
-  { id: "e11", source: "stack-spring", target: "point-gateway", relation: "REFINES_TO" },
-  { id: "e12", source: "stack-redis", target: "point-cache", relation: "REFINES_TO" },
-  { id: "e13", source: "stack-flink", target: "point-window", relation: "REFINES_TO" },
-  { id: "e14", source: "point-vector", target: "knowledge-rerank", relation: "HAS_KNOWLEDGE" },
-  { id: "e15", source: "point-prompt", target: "knowledge-template", relation: "HAS_KNOWLEDGE" },
-  { id: "e16", source: "point-gateway", target: "knowledge-resilience", relation: "HAS_KNOWLEDGE" },
-  { id: "e17", source: "point-cache", target: "knowledge-cache", relation: "HAS_KNOWLEDGE" },
-  { id: "e18", source: "point-window", target: "knowledge-watermark", relation: "HAS_KNOWLEDGE" },
-  { id: "e19", source: "stack-rag", target: "stack-redis", relation: "RELATED_TO" },
-  { id: "e20", source: "point-vector", target: "point-cache", relation: "SAME_AS" },
-];
-
-const nodeMap = computed(() => Object.fromEntries(graphNodes.map(node => [node.id, node])));
+const nodeMap = computed(() => Object.fromEntries(graphNodes.value.map(node => [node.id, node])));
 
 const filteredNodes = computed(() => {
   const text = keyword.value.trim().toLowerCase();
-  return graphNodes.filter((node) => {
+  return graphNodes.value.filter((node) => {
     const matchesStack = selectedStack.value === "all" || node.stack === selectedStack.value;
     const matchesLevel = selectedLevel.value === "all" || node.level === selectedLevel.value;
     const matchesType = selectedType.value === "all" || node.type === selectedType.value;
@@ -292,16 +252,16 @@ const filteredNodes = computed(() => {
 
 const visibleIds = computed(() => new Set(filteredNodes.value.map(node => node.id)));
 
-const filteredEdges = computed(() => graphEdges.filter(edge => visibleIds.value.has(edge.source) && visibleIds.value.has(edge.target)));
+const filteredEdges = computed(() => graphEdges.value.filter(edge => visibleIds.value.has(edge.source) && visibleIds.value.has(edge.target)));
 
-const activeNode = computed(() => graphNodes.find(node => node.id === activeNodeId.value) || filteredNodes.value[0]);
+const activeNode = computed(() => graphNodes.value.find(node => node.id === activeNodeId.value) || filteredNodes.value[0]);
 
 const relatedNodes = computed(() => {
   if (!activeNode.value) return [];
-  const ids = graphEdges
+  const ids = graphEdges.value
     .filter(edge => edge.source === activeNode.value?.id || edge.target === activeNode.value?.id)
     .map(edge => edge.source === activeNode.value?.id ? edge.target : edge.source);
-  return graphNodes.filter(node => ids.includes(node.id));
+  return graphNodes.value.filter(node => ids.includes(node.id));
 });
 
 const currentViewTitle = computed(() => {
@@ -317,6 +277,8 @@ function nodeRadius(node: GraphNode) {
     TechStack: 22,
     TechPoint: 19,
     KnowledgePoint: 16,
+    SourceDocument: 14,
+    GraphSnapshot: 18,
   };
   return radiusMap[node.type];
 }

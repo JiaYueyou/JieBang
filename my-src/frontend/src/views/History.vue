@@ -1,5 +1,6 @@
 <template>
   <div class="history-page">
+    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
     <section class="history-toolbar anim-fade-up">
       <div class="history-tabs" role="tablist" aria-label="足迹分类">
         <button
@@ -105,14 +106,14 @@
                     <FavoriteButton
                       v-if="item.type === 'job'"
                       type="job"
-                      :target-id="item.targetId || item.id"
+                      :target-id="numericTargetId(item)"
                       :title="item.title"
                       compact
                     />
                     <FavoriteButton
                       v-if="item.type === 'resume'"
                       type="resume"
-                      :target-id="item.targetId || item.id"
+                      :target-id="numericTargetId(item)"
                       :title="item.title"
                       compact
                     />
@@ -205,31 +206,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import { useHistoryStore } from "@/stores/history";
+import DataState from "@/components/common/DataState.vue";
+import type { HistoryRecord, HistoryType } from "@/domain/types";
 
-type HistoryType = "job" | "resume" | "search" | "graph" | "match";
 type FilterType = "all" | HistoryType;
 type DateRange = "all" | "today" | "week" | "month";
 
-interface HistoryRecord {
-  id: number;
-  type: HistoryType;
-  targetId?: number | string;
-  title: string;
-  description: string;
-  source: string;
-  dateKey: "today" | "yesterday" | "week" | "month";
-  date: string;
-  time: string;
-  tags: string[];
-  url: string;
-  badge?: string;
-}
-
 const router = useRouter();
+const store = useHistoryStore();
+const { records, insights, loading, error } = storeToRefs(store);
 const activeType = ref<FilterType>("all");
 const dateRange = ref<DateRange>("all");
 const keyword = ref("");
@@ -242,122 +233,7 @@ const typeMeta: Record<HistoryType, { label: string; icon: string }> = {
   match: { label: "匹配报告", icon: "DataAnalysis" },
 };
 
-const records = ref<HistoryRecord[]>([
-  {
-    id: 1,
-    type: "resume",
-    targetId: 1,
-    title: "李思远 · Java 高级开发",
-    description: "查看候选人技能覆盖、项目经历与岗位匹配分析。",
-    source: "人才匹配",
-    dateKey: "today",
-    date: "06月19日 · 星期五",
-    time: "14:36",
-    tags: ["Java", "Spring Boot", "92% 匹配"],
-    url: "/matching/1",
-    badge: "高匹配",
-  },
-  {
-    id: 2,
-    type: "job",
-    targetId: "AI 大模型应用工程师",
-    title: "AI 大模型应用工程师",
-    description: "浏览岗位画像、技能要求与市场薪资区间。",
-    source: "岗位洞察",
-    dateKey: "today",
-    date: "06月19日 · 星期五",
-    time: "13:52",
-    tags: ["RAG", "LangChain", "25–40K"],
-    url: "/jobs",
-  },
-  {
-    id: 3,
-    type: "search",
-    title: "搜索：具备 RAG 项目经验的后端工程师",
-    description: "筛选条件：3 年以上经验、Python、向量数据库、北京或远程。",
-    source: "全局搜索",
-    dateKey: "today",
-    date: "06月19日 · 星期五",
-    time: "11:08",
-    tags: ["RAG", "Python", "北京"],
-    url: "/matching",
-  },
-  {
-    id: 4,
-    type: "graph",
-    title: "AI 应用开发 · 五层技能树",
-    description: "展开查看岗位、技能域、技能项与知识点之间的关联。",
-    source: "技能图谱",
-    dateKey: "today",
-    date: "06月19日 · 星期五",
-    time: "10:24",
-    tags: ["AI 应用", "技能树", "L1–L5"],
-    url: "/graph",
-  },
-  {
-    id: 5,
-    type: "match",
-    targetId: 3,
-    title: "赵明哲 × AI 算法工程师",
-    description: "查看 87% 综合匹配报告，以及大模型部署与 CUDA 能力差距。",
-    source: "智能匹配",
-    dateKey: "yesterday",
-    date: "06月18日 · 星期四",
-    time: "17:42",
-    tags: ["87% 匹配", "PyTorch", "NLP"],
-    url: "/matching/3",
-  },
-  {
-    id: 6,
-    type: "resume",
-    targetId: 2,
-    title: "王语晴 · Python 后端开发",
-    description: "回看简历原件、FastAPI 技能差距及目标岗位信息。",
-    source: "人才匹配",
-    dateKey: "yesterday",
-    date: "06月18日 · 星期四",
-    time: "15:16",
-    tags: ["Python", "Django", "89% 匹配"],
-    url: "/matching/2",
-  },
-  {
-    id: 7,
-    type: "job",
-    targetId: "云原生架构师",
-    title: "云原生架构师",
-    description: "查看 Service Mesh、Kubernetes 与 DevOps 能力需求变化。",
-    source: "岗位管理",
-    dateKey: "week",
-    date: "06月16日 · 星期二",
-    time: "16:05",
-    tags: ["Kubernetes", "Service Mesh", "架构"],
-    url: "/jobs",
-  },
-  {
-    id: 8,
-    type: "search",
-    title: "搜索：Java 高级开发",
-    description: "按匹配度优先查看后台开发组候选人才。",
-    source: "人才匹配",
-    dateKey: "week",
-    date: "06月16日 · 星期二",
-    time: "09:48",
-    tags: ["Java", "高级", "后台开发组"],
-    url: "/matching",
-  },
-  {
-    id: 9,
-    type: "graph",
-    title: "Java 开发工程师能力变化",
-    description: "比较 Spring AI、RAG 集成与传统 Java Web 技能的变化趋势。",
-    source: "技能图谱",
-    dateKey: "month",
-    date: "06月08日 · 星期一",
-    time: "14:20",
-    tags: ["Spring AI", "RAG", "能力变化"],
-    url: "/graph",
-  },
-]);
+onMounted(() => store.load());
 
 const tabs = computed(() => [
   { label: "全部", value: "all" as FilterType, icon: "Collection", count: records.value.length },
@@ -406,25 +282,18 @@ const groupedRecords = computed(() => {
     .filter((group) => group.items.length);
 });
 
-const focusStats = [
-  { label: "AI / 大模型", percent: 88, count: 12 },
-  { label: "后端开发", percent: 72, count: 9 },
-  { label: "云原生", percent: 48, count: 6 },
-];
+const focusStats = computed(() => insights.value.focusStats);
 
 const frequentRecords = computed(() => {
-  const candidates = [
-    { title: "AI 大模型应用工程师", count: 5 },
-    { title: "李思远 · Java 高级开发", count: 3 },
-    { title: "AI 应用开发 · 五层技能树", count: 3 },
-  ];
-  return candidates
-    .map((item) => ({
-      ...item,
-      record: records.value.find((record) => record.title === item.title),
-    }))
-    .filter((item): item is typeof item & { record: HistoryRecord } => Boolean(item.record));
+  return insights.value.frequentRecords.flatMap((item) => {
+    const record = records.value.find((candidate) => candidate.id === item.history_id);
+    return record ? [{ count: item.count, record, title: record.title }] : [];
+  });
 });
+
+function numericTargetId(item: HistoryRecord): number {
+  return typeof item.targetId === "number" ? item.targetId : item.id;
+}
 
 function actionLabel(type: HistoryType) {
   const labels: Record<HistoryType, string> = {
@@ -448,7 +317,7 @@ async function removeRecord(item: HistoryRecord) {
       cancelButtonText: "取消",
       type: "warning",
     });
-    records.value = records.value.filter((record) => record.id !== item.id);
+    await store.remove(item.id);
     ElMessage.success("浏览记录已删除");
   } catch {
     // User cancelled.
@@ -462,7 +331,7 @@ async function clearHistory() {
       cancelButtonText: "保留记录",
       type: "warning",
     });
-    records.value = [];
+    await store.clear();
     ElMessage.success("浏览足迹已清空");
   } catch {
     // User cancelled.
