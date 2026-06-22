@@ -19,7 +19,7 @@
 ## 二、项目目录结构
 
 ```
-my-src/
+fyz-src/
 ├── backend/                          # FastAPI 后端
 │   ├── app/
 │   │   ├── __init__.py
@@ -347,13 +347,13 @@ JWT_EXPIRE_MINUTES=120
 
 ```bash
 # 后端
-cd my-src/backend
+cd fyz-src/backend
 conda activate jiebang
 pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # 前端
-cd my-src/frontend
+cd fyz-src/frontend
 npm install
 npm run dev
 ```

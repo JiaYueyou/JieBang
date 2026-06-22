@@ -59,7 +59,7 @@ MySQL           Neo4j            Redis/Celery       文件存储
 ### 2.1 推荐后端目录
 
 ```text
-my-src/backend/app/
+fyz-src/backend/app/
 ├── api/v1/                 # 路由，只负责协议转换
 ├── core/                   # 配置、数据库、鉴权、异常、日志、Celery
 ├── models/                 # SQLAlchemy 模型

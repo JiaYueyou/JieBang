@@ -10,18 +10,23 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ```bash
 # Backend
-cd my-src/backend
+cd fyz-src/backend
 conda activate jiebang                                     # Python 3.10 env
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-pytest test/ -v                                            # All 41 tests (34 SQLite + 7 Neo4j)
-pytest test/test_auth.py -v                                # Single test file
+pytest test/ -v                                            # Full backend suite
+pytest test/api/test_auth.py -v                            # Single test file
 pytest test/ -v --html=report.html                         # HTML report
 
 # Frontend
-cd my-src/frontend
+cd fyz-src/frontend
 npm run dev                                                # Vite dev server (port 5173)
 npm run build                                              # Type-check + build
 npx vue-tsc --noEmit                                       # Type-check only
+
+# Candidate frontend
+cd jtt-src/frontend
+npm run dev
+npm run build                                              # Type-check + build
 
 # Data analysis pipeline (requires DEEPSEEK_API_KEY in .env)
 cd data_analysis
@@ -37,14 +42,14 @@ python scripts/04_build_reference.py                       # Step 4: reference d
 docs/                    # Competition requirements, dev plan, dev spec
 data/                    # Crawled job data: jd_crawl_ifly.json (iflytek 50), jd_crawl_zl.json (zhaopin 50)
 data_analysis/           # Skill extraction pipeline (4-step), uses DeepSeek API
-my-src/
+fyz-src/
 ├── backend/             # FastAPI (port 8000), Python 3.10
 │   ├── app/
-│   │   ├── main.py      # App entry, lifespan (create tables + seed admin + init Neo4j)
+│   │   ├── main.py      # App entry and lifespan
 │   │   ├── core/        # config, security (JWT+bcrypt), database (MySQL+SQLAlchemy async), neo4j
-│   │   ├── models/      # SQLAlchemy ORM (currently: user.py)
+│   │   ├── models/      # SQLAlchemy business and audit models
 │   │   ├── schemas/     # Pydantic: ApiResponse(code,message,data,meta), auth, PageMeta
-│   │   └── api/v1/      # auth (login/register), placeholder (6 module stubs with auth guard)
+│   │   └── api/v1/      # auth, jobs, skills, graph, imports, and module routes
 │   └── test/            # pytest + SQLite in-memory + pytest-asyncio
 ├── frontend/            # Vue 3 + TS + Vite (port 5173), Element Plus, Plus Jakarta Sans font
 │   └── src/
@@ -55,6 +60,8 @@ my-src/
 │       └── stores/      # Pinia: user store (token, username, login, logout, restore)
 ├── FULLSTACK_PLAN.md    # 11-module plan: 5 phases, MySQL schema, Neo4j extensions
 └── GRAPH_ARCHITECTURE.md # 5-layer skill forest model, data pipeline, API design
+jtt-src/
+└── frontend/            # Candidate-facing Vue 3 app with MSW-backed development data
 ```
 
 ## Key Design Decisions
@@ -81,6 +88,14 @@ my-src/
 | `docs/requirements.md` | Competition requirements, 4 core modules, scoring criteria |
 | `docs/dev-plan.md` | 5-person team, 12-week timeline, AI-assisted dev guide |
 | `docs/dev-spec.md` | API conventions, DB design, code standards, Git workflow |
-| `my-src/GRAPH_ARCHITECTURE.md` | Neo4j 5-layer forest model, Agent pipeline, 3 engine APIs |
-| `my-src/FULLSTACK_PLAN.md` | 11-module plan with MySQL schemas, 5 phases, dependencies |
-| `my-src/DEVELOPMENT_PLAN.md` | Original MVP dev plan (login, layout, placeholder pages) |
+| `fyz-src/GRAPH_ARCHITECTURE.md` | Neo4j 5-layer forest model, Agent pipeline, 3 engine APIs |
+| `fyz-src/FULLSTACK_PLAN.md` | 11-module plan with MySQL schemas, 5 phases, dependencies |
+| `fyz-src/DEVELOPMENT_PLAN.md` | Original MVP dev plan (login, layout, placeholder pages) |
+
+## Contributor Workspaces
+
+- `fyz-src/backend`: shared FastAPI service and data/graph APIs.
+- `fyz-src/frontend`: management and decision-support frontend.
+- `jtt-src/frontend`: candidate-facing Vue 3 frontend. Run its commands from
+  that directory; do not commit its `node_modules`, `dist`, `.npm-cache`, or
+  local tool configuration.

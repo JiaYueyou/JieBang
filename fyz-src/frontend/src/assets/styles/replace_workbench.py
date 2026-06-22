@@ -1,4 +1,9 @@
-with open(r'E:\Project\JieBang\my-src\frontend\src\assets\styles\global.css','r',encoding='utf-8') as f:
+from pathlib import Path
+
+
+stylesheet = Path(__file__).with_name("global.css")
+
+with stylesheet.open('r', encoding='utf-8') as f:
     lines = f.readlines()
 cut = 0
 for i, line in enumerate(lines):
@@ -77,6 +82,6 @@ new = '''/* DASHBOARD (Bento) */
 .db-drawer-header .score-ring::before{inset:4px;}
 '''
 result = ''.join(lines[:cut]) + new
-with open(r'E:\Project\JieBang\my-src\frontend\src\assets\styles\global.css','w',encoding='utf-8') as f:
+with stylesheet.open('w', encoding='utf-8') as f:
     f.write(result)
 print('done, replaced from line', cut+1)
