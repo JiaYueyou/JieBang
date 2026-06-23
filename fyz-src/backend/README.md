@@ -23,16 +23,18 @@ pip install -r requirements-dev.txt
 alembic upgrade head
 ```
 
-### 已存在当前 `user` 表的开发数据库
+### 已存在旧 `user` 表的开发数据库
 
 先人工确认表结构与
 `alembic/versions/20260619_0001_user_baseline.py` 一致，再标记版本：
 
 ```powershell
-alembic stamp head
+alembic stamp 20260619_0001
+alembic upgrade head
 ```
 
-`stamp` 只写入 Alembic 版本号，不创建、删除或修改业务表。
+`stamp` 只写入 Alembic 版本号，不创建、删除或修改业务表。禁止直接执行
+`alembic stamp head`，否则会跳过岗位、技能流水线和图谱审计表的迁移。
 
 ### 常用命令
 
