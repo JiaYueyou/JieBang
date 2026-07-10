@@ -1,5 +1,8 @@
 # 基础框架开发方案
 
+> 历史基线文档：仅记录早期项目骨架，不代表当前接口、目录或完成状态。请以根
+> `README.md`、`docs/api-reference.md` 与后端运行说明为准。
+
 > **项目**: IT 岗位人才洞察与决策辅助平台  
 > **技术栈**: 前端 Vue 3 + TypeScript + Vite | 后端 FastAPI (Python 3.10+) | 数据库 MySQL 8.0  
 > **阶段**: 基础框架搭建（登录 + 首页 + 模块页面骨架 + 路由跳转）
@@ -33,7 +36,7 @@ fyz-src/
 │   │   │       ├── changes.py       # 能力更新（占位）
 │   │   │       ├── graph.py         # 图谱（占位）
 │   │   │       ├── matching.py      # 匹配诊断（占位）
-│   │   │       ├── analysis.py      # 趋势分析（占位）
+│   │   │       ├── analysis.py      # 趋势分析（当时占位，现已实现）
 │   │   │       └── admin.py         # 管理（占位）
 │   │   ├── core/
 │   │   │   ├── __init__.py

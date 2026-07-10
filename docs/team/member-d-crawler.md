@@ -12,7 +12,7 @@
 - `data/` 已有讯飞、智联等岗位 JSON。
 - 后端 ImportService 只允许三份固定文件，使用 `job-v1` 语义导入。
 - 已有标题标准化、内容指纹去重、来源记录和技能抽取。
-- `data_analysis` 已有四步清洗与参考数据构建流水线。
+- `data_analysis` 保留技能词典与分类参考；共享数据导入统一由后端脚本完成。
 - 尚无统一爬虫工程模板和持续增量调度。
 
 ## 3. 标准数据协议
@@ -84,20 +84,17 @@
 
 ## 7. 验证
 
-```powershell
-cd data_analysis
-python scripts\01_merge_clean.py
-python scripts\02_normalize_titles.py
-python scripts\03_extract_skills.py
-python scripts\04_build_reference.py
-```
-
-涉及后端导入时：
+使用完整团队数据快照验证导入与图谱重建：
 
 ```powershell
 cd fyz-src\backend
+python scripts\run_database_import.py --replace
 python -m pytest test\services\test_import_service.py -q
 ```
+
+`data_analysis/` 当前仅提供词典与可选模型配置，不维护独立导入脚本。采集数据
+进入团队基线前，应通过后端 `ImportService` 或完整 MySQL 快照流程记录来源、
+验证状态和审计信息。
 
 ## 8. Git 建议
 

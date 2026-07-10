@@ -1,0 +1,27 @@
+{
+  "format_version": 1,
+  "generated_at": "2026-07-10T08:28:56.486403+00:00",
+  "source_database": "jie_bang",
+  "alembic_revision": "20260710_0005",
+  "table_counts": {
+    "agent_run": 3,
+    "alembic_version": 1,
+    "analysis_insight_decision": 0,
+    "async_task": 3,
+    "graph_enrichment_candidate": 100,
+    "graph_snapshot": 8,
+    "graph_sync_batch": 8,
+    "job_posting": 2,
+    "job_posting_skill": 15,
+    "job_posting_version": 4,
+    "job_skill_fact": 1143,
+    "raw_job_record": 190,
+    "skill": 107,
+    "source_document": 190,
+    "standard_job": 130,
+    "standard_job_source": 191,
+    "user": 1
+  },
+  "total_rows": 2096,
+  "sha256": "c0d0132544e659a4de95519b6d648d0be8e28871af5a915e48f8649ef83ff7ec"
+}

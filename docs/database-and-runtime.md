@@ -72,7 +72,8 @@ base
 → 20260619_0001  user 基线
 → 20260620_0002  岗位、技能和版本
 → 20260620_0003  标准技能与抽取流水线
-→ 20260620_0004  标准岗位与图谱同步审计（head）
+→ 20260620_0004  标准岗位与图谱同步审计
+→ 20260710_0005  岗位洞察决策审计（head）
 ```
 
 ### 已存在旧 `user` 表
@@ -84,7 +85,7 @@ alembic stamp 20260619_0001
 alembic upgrade head
 ```
 
-不要执行 `alembic stamp head`。它只写版本号，不执行 0002–0004 的建表操作，
+不要执行 `alembic stamp head`。它只写版本号，不执行后续建表操作，
 会造成“版本显示最新但业务表缺失”。
 
 ### 常用命令
@@ -116,6 +117,31 @@ alembic upgrade head
 6. 运行后端测试并在 PR 中说明数据兼容性。
 
 禁止删除已进入共享主线的 migration 后重新生成；应增加新的修正 migration。
+
+### 导入团队完整数据库快照
+
+团队本地环境统一使用 `fyz-src/backend/scripts/` 的四步迁移包。它先创建或升级
+MySQL 表，再导入全部表数据，最后从 MySQL 事实库重建 Neo4j；不要再使用多个
+离线脚本分别导入同一批 JD、技能或图谱数据。
+
+```powershell
+cd fyz-src\backend
+python scripts\01_prepare_mysql_schema.py
+python scripts\02_import_mysql_snapshot.py --replace
+python scripts\03_rebuild_neo4j.py
+python scripts\04_verify_database_import.py
+```
+
+也可以一键运行：
+
+```powershell
+python scripts\run_database_import.py --replace
+```
+
+第二步会覆盖目标 MySQL 的现有业务数据。来源方更新数据库内容后，运行
+`python scripts\export_mysql_snapshot.py` 来刷新 `mysql_snapshot.sql` 与其
+SHA-256 manifest。完整安全边界、校验项和故障处理见
+[数据库迁移脚本说明](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)。
 
 ## 4. 初始管理员
 
@@ -200,21 +226,11 @@ jd_crawl2.json
 
 先导入 MySQL，再同步 Neo4j。不要把离线分析输出直接写入 Neo4j。
 
-## 8. 独立数据分析流水线
+## 8. 离线分析配置
 
-```powershell
-cd data_analysis
-Copy-Item .env.example .env
-python -m pip install -r requirements.txt
-python scripts\01_merge_clean.py
-python scripts\02_normalize_titles.py
-python scripts\03_extract_skills.py
-python scripts\04_build_reference.py
-```
-
-输出位于 `data_analysis/outputs/`，包括合并数据、岗位映射、技能词典、
-岗位技能矩阵和参考数据集。输出是分析产物，不自动成为数据库事实；
-进入主系统前必须经过字段校验、来源记录和导入流程。
+`data_analysis/` 保留技能词典、分类和可选 DeepSeek 配置，不含可执行的数据
+导入脚本。所有可共享的岗位与技能数据必须通过上述 MySQL 快照流程进入系统，
+避免离线输出绕过来源记录、验证状态和图谱审计。
 
 ## 9. 完整启动顺序
 

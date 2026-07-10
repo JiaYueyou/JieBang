@@ -47,19 +47,6 @@ describe("unified mock data provider", () => {
     );
   });
 
-  it("propagates a job edit to dashboard aggregates and favorite details", async () => {
-    const jobs = await mockDataProvider.jobs.list();
-    const edited = { ...jobs.find((job) => job.id === 4)!, title: "企业级 Agent 工程师" };
-    await mockDataProvider.jobs.update(edited);
-
-    const [overview, favorites] = await Promise.all([
-      mockDataProvider.dashboard.getOverview(),
-      mockDataProvider.favorites.list(),
-    ]);
-    expect(overview.hotJobs.find((job) => job.job_id === 4)?.title).toBe(edited.title);
-    expect(favorites.find((item) => item.target_type === "job" && item.target_id === 4)?.title).toBe(edited.title);
-  });
-
   it("keeps favorites unique and persists batch removal and notes", async () => {
     await mockDataProvider.favorites.toggle("job", 1);
     let favorites = await mockDataProvider.favorites.list();

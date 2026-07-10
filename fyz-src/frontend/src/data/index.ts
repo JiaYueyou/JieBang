@@ -9,15 +9,18 @@ export const providerMode =
       ? "hybrid"
       : "mock";
 
+// 岗位 CRUD 和智能 JD Agent 不再使用任何本地 Mock 数据。
+const mockBackedDataProvider: DataProvider = {
+  ...mockDataProvider,
+  jobs: httpDataProvider.jobs,
+  trends: httpDataProvider.trends,
+};
+
 const hybridDataProvider: DataProvider = {
   ...mockDataProvider,
-  jobs: {
-    ...httpDataProvider.jobs,
-    // 第一阶段联调：CRUD 使用真实 MySQL，Agent 与洞察仍使用统一 Mock。
-    generateJD: mockDataProvider.jobs.generateJD,
-    getInsights: mockDataProvider.jobs.getInsights,
-  },
+  jobs: httpDataProvider.jobs,
   graph: httpDataProvider.graph,
+  trends: httpDataProvider.trends,
 };
 
 export const dataProvider: DataProvider =
@@ -25,4 +28,4 @@ export const dataProvider: DataProvider =
     ? httpDataProvider
     : providerMode === "hybrid"
       ? hybridDataProvider
-      : mockDataProvider;
+      : mockBackedDataProvider;

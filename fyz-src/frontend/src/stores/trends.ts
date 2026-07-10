@@ -1,10 +1,32 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { dataProvider } from "@/data";
-import type { TrendOverview } from "@/domain/types";
+import type { TrendOverview, TrendQuery } from "@/domain/types";
 
-export const useTrendStore=defineStore("trends",()=>{
-  const data=ref<TrendOverview|null>(null),loading=ref(false),loaded=ref(false),error=ref("");
-  async function load(force=false){if(loaded.value&&!force)return;loading.value=true;error.value="";try{data.value=await dataProvider.trends.getOverview();loaded.value=true;}catch(e){error.value=e instanceof Error?e.message:"加载失败";}finally{loading.value=false;}}
-  return {data,loading,loaded,error,load,refresh:()=>load(true)};
+export const useTrendStore = defineStore("trends", () => {
+  const data = ref<TrendOverview | null>(null);
+  const loading = ref(false);
+  const error = ref("");
+  const lastQuery = ref<TrendQuery>({ months: 12 });
+
+  async function load(query: TrendQuery = lastQuery.value) {
+    loading.value = true;
+    error.value = "";
+    lastQuery.value = { ...query };
+    try {
+      data.value = await dataProvider.trends.getOverview(query);
+    } catch (exception) {
+      error.value = exception instanceof Error ? exception.message : "加载失败";
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return {
+    data,
+    loading,
+    error,
+    load,
+    refresh: () => load(lastQuery.value),
+  };
 });

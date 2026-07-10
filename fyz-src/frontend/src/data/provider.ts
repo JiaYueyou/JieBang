@@ -1,16 +1,17 @@
 import type {
   AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
-  HistoryRecord, JobSummary, TalentSummary, TrendOverview,
+  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
 } from "@/domain/types";
 
 export interface DataProvider {
   dashboard: { getOverview(): Promise<DashboardOverview> };
   jobs: {
     list(): Promise<JobSummary[]>;
-    getInsights(): Promise<{ emergingJobs: EmergingJob[]; capabilityChanges: CapabilityChange[] }>;
-    generateJD(input: Record<string, string>): Promise<JobSummary>;
-    create(job: JobSummary): Promise<JobSummary>;
+    getInsights(skill?: string): Promise<{ emergingJobs: EmergingJob[]; capabilityChanges: CapabilityChange[]; dataQuality: AnalysisDataQuality }>;
+    decideInsight(id: number, decision: "confirmed" | "ignored" | "planned", note?: string): Promise<void>;
+    generateJD(input: GenerateJDRequest): Promise<GeneratedJDDraft>;
+    create(job: JobCreatePayload): Promise<JobSummary>;
     update(job: JobSummary): Promise<JobSummary>;
     remove(id: number): Promise<void>;
     updateStatus(id: number, status: JobSummary["status"]): Promise<JobSummary>;
@@ -24,7 +25,7 @@ export interface DataProvider {
     search(query: string, type?: string): Promise<GraphSubgraph>;
     path(fromId: string, toId: string): Promise<GraphSubgraph>;
   };
-  trends: { getOverview(): Promise<TrendOverview> };
+  trends: { getOverview(query: TrendQuery): Promise<TrendOverview> };
   favorites: {
     list(): Promise<FavoriteRecord[]>;
     toggle(type: FavoriteTargetType, targetId: number, title?: string): Promise<boolean>;

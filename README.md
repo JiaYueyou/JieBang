@@ -14,15 +14,17 @@
 - FastAPI 认证、岗位 CRUD、岗位版本、技能抽取和数据导入接口；
 - MySQL Alembic 迁移链与初始管理员 bootstrap；
 - MySQL 事实数据到 Neo4j 能力图谱的全量/增量同步；
+- 可编辑草稿的 JD 生成 Agent，以及岗位洞察和趋势分析接口；
+- 团队 MySQL 全量快照导入与 Neo4j 重建脚本；
 - FYZ 管理与决策端，以及 JTT 求职者端两套 Vue 3 前端；
 - DeepSeek 可选技能补全和 L4/L5 图谱候选生成；
 - 后端测试、两套前端构建和仓库安全 CI。
 
 当前仍需继续开发：
 
-- `changes`、`matching`、`analysis`、`admin` 后端路由仍是占位实现；
+- `changes`、`matching`、`admin` 后端路由仍是占位实现；
 - JTT 简历、匹配、收藏、学习路径等页面需要继续对接真实后端；
-- JD 生成、简历解析、匹配解释、转岗规划 Agent 尚未形成完整闭环；
+- 简历解析、匹配解释、转岗规划 Agent 尚未形成完整闭环；
 - 爬虫模板、持续增量数据、图谱高级分析和比赛级评测仍需完善。
 
 ## 2. 仓库目录
@@ -38,7 +40,7 @@ JieBang/
 │   ├── frontend/            # JTT 求职者端 Vue 3
 │   └── docs/                # JTT 原始需求提取材料
 ├── data/                    # 允许后端导入的原始岗位 JSON 数据
-├── data_analysis/           # 独立清洗、标准化和技能抽取流水线
+├── data_analysis/           # 离线词典与可选模型配置，不含独立导入流水线
 ├── docs/
 │   ├── team/                # 成员 A-F 独立开发指南
 │   ├── README.md            # 文档中心
@@ -137,9 +139,6 @@ conda activate jiebang
 
 cd fyz-src\backend
 python -m pip install -r requirements-dev.txt
-
-cd ..\..\data_analysis
-python -m pip install -r requirements.txt
 ```
 
 ### 5.2 前端
@@ -156,10 +155,9 @@ npm.cmd ci --cache .npm-cache
 
 ```powershell
 Copy-Item fyz-src\backend\.env.example fyz-src\backend\.env
-Copy-Item data_analysis\.env.example data_analysis\.env
 ```
 
-编辑本地 `.env`，至少配置 MySQL、JWT 和 Neo4j。DeepSeek 是可选增强项，
+编辑后端本地 `.env`，至少配置 MySQL、JWT 和 Neo4j。DeepSeek 是可选增强项，
 未配置时规则抽取和 L1-L3 图谱仍可工作。真实密钥只能写入 `.env`。
 
 ## 6. 推荐启动顺序
@@ -181,7 +179,13 @@ cd fyz-src\backend
 alembic current
 alembic upgrade head
 alembic current
+python scripts\run_database_import.py --replace
 ```
+
+该命令会校验并导入仓库中的完整 MySQL 快照，再从 MySQL 事实库重建
+Neo4j `namespace=jiebang`。它会覆盖目标数据库已有业务数据；仅在确认
+`fyz-src/backend/.env` 指向目标本地数据库后执行。分步命令和快照刷新方式见
+[数据库、数据导入与运行指南](docs/database-and-runtime.md)。
 
 如果本地数据库已经存在旧表，不要猜测版本，也不要直接执行
 `alembic stamp head`。请先阅读
@@ -249,15 +253,8 @@ Vite 默认使用 5173；同时启动两套前端时，后启动的实例会自�
 MySQL 保存事实与审计记录，Neo4j 仅保存可重建的 `namespace=jiebang` 查询模型。
 完整 PowerShell 请求示例见 [API 参考](docs/api-reference.md)。
 
-独立离线分析流水线：
-
-```powershell
-cd data_analysis
-python scripts\01_merge_clean.py
-python scripts\02_normalize_titles.py
-python scripts\03_extract_skills.py
-python scripts\04_build_reference.py
-```
+`data_analysis/` 仅保留离线词典和模型配置；仓库不再维护独立的离线导入脚本，
+避免其输出与 MySQL 事实库产生分歧。
 
 ## 8. 测试与提交前验证
 
@@ -300,6 +297,7 @@ npm.cmd run build
 | [需求文档](docs/requirements.md) | 功能范围、优先级与验收指标 |
 | [开发规范](docs/dev-spec.md) | API、数据库、代码和协作规范 |
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
+| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL 快照导入与 Neo4j 重建 |
 | [API 参考](docs/api-reference.md) | 当前真实接口、请求示例和占位状态 |
 | [统一文档规范](docs/documentation-standard.md) | 需求、接口、迁移和 Agent 文档格式 |
 | [Git 协作指南](docs/git-workflow.md) | 分支、提交、PR、冲突和事故恢复 |

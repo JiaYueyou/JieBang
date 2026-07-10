@@ -15,13 +15,14 @@ from app.api.v1.jobs import router as jobs_router
 from app.api.v1.skills import router as skills_router
 from app.api.v1.data_imports import router as data_imports_router
 from app.api.v1.graph import router as graph_router
+from app.api.v1.agents import router as agents_router
+from app.api.v1.analysis import router as analysis_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
 # --- 占位路由 ---
 changes_router = make_placeholder_router("changes", "能力更新", "既有岗位能力动态更新")
 matching_router = make_placeholder_router("matching", "匹配诊断", "人岗匹配度诊断")
-analysis_router = make_placeholder_router("analysis", "趋势分析", "动态演化趋势分析")
 admin_router = make_placeholder_router("admin", "系统管理", "系统管理")
 
 
@@ -59,6 +60,7 @@ app.include_router(skills_router, prefix="/api/v1")
 app.include_router(data_imports_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
 app.include_router(graph_router, prefix="/api/v1")
+app.include_router(agents_router, prefix="/api/v1")
 app.include_router(matching_router, prefix="/api/v1")
 app.include_router(analysis_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")

@@ -20,10 +20,12 @@ from app.models.graph import (
     StandardJob,
     StandardJobSource,
 )
+from app.models.analysis import AnalysisInsightDecision
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
     "Skill", "SourceDocument", "RawJobRecord", "JobSkillFact",
     "AgentRun", "AsyncTask", "StandardJob", "StandardJobSource",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
+    "AnalysisInsightDecision",
 ]
