@@ -77,15 +77,15 @@
                   <el-tag size="small" type="info">{{ generated.level }}</el-tag>
                   <el-tag size="small">{{ generated.department }}</el-tag>
                   <span class="jd-salary">{{ generated.salary_range }}</span>
-                  <FavoriteButton type="job" :target-id="generated.id" :title="generated.title" compact />
                 </div>
+                <el-alert v-if="generationWarning" :title="generationWarning" type="warning" :closable="false" show-icon />
                 <div class="jd-section"><h4>工作职责</h4><ul><li v-for="(r,i) in generated.responsibilities" :key="i">{{ r }}</li></ul></div>
                 <div class="jd-section"><h4>任职要求</h4><ul><li v-for="(r,i) in generated.requirements" :key="i">{{ r }}</li></ul></div>
                 <div class="jd-section"><h4>加分技能</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><el-tag v-for="s in generated.bonus_skills" :key="s" size="small" type="success">{{ s }}</el-tag></div></div>
               </div>
               <div class="jd-preview-actions">
                 <el-button @click="copyJD"><el-icon><CopyDocument /></el-icon> 复制</el-button>
-                <el-button @click="openDetail(generated)"><el-icon><View /></el-icon> 查看详情</el-button>
+                <el-button @click="openDetail(generated, true)"><el-icon><Edit /></el-icon> 编辑草稿</el-button>
                 <el-button type="primary" @click="publishFromPreview"><el-icon><Check /></el-icon> 发布岗位</el-button>
               </div>
             </div>
@@ -147,6 +147,16 @@
         </div>
       </div>
 
+      <DataState :loading="insightLoading" :error="insightError" @retry="store.loadInsights(skillPreference)" />
+      <el-alert
+        v-if="insightQuality?.insufficient_data"
+        class="insight-quality-alert"
+        type="warning"
+        :closable="false"
+        show-icon
+        :title="insightQuality.notes.join(' ') || '当前数据量不足，洞察结果仅供参考。'"
+      />
+
       <div class="jm-grid" style="margin-top:16px;">
         <div class="dash-card">
           <div class="dash-card-header"><span class="dash-card-title">新兴岗位发现</span><span class="dash-card-badge">AI 驱动</span></div>
@@ -157,15 +167,18 @@
                   <div class="insight-dot"></div>
                   <span class="insight-name">{{ job.name }}</span>
                   <el-tag size="small" :type="job.confidence > 90 ? 'success' : 'warning'">{{ job.confidence }}%</el-tag>
-                  <FavoriteButton type="job" :target-id="job.id" :title="job.name" compact />
+                  <el-tag v-if="job.decision" size="small" type="success">
+                    {{ job.decision === 'confirmed' ? '已确认' : job.decision === 'planned' ? '已纳入计划' : '已忽略' }}
+                  </el-tag>
                 </div>
                 <div class="insight-skills"><el-tag v-for="s in job.core_skills" :key="s" size="small" effect="plain">{{ s }}</el-tag></div>
                 <div class="insight-desc">{{ job.description }}</div>
                 <div class="insight-actions">
-                  <el-button text size="small" type="primary">确认为新岗位</el-button>
-                  <el-button text size="small">加入招聘计划</el-button>
+                  <el-button text size="small" type="primary" :disabled="job.decision === 'confirmed'" @click="confirmEmergingJob(job)">确认为新岗位</el-button>
+                  <el-button text size="small" @click="prepareHiringPlan(job)">加入招聘计划</el-button>
                 </div>
               </div>
+              <el-empty v-if="!insightLoading && emergingJobs.length === 0" description="暂无满足来源阈值的新兴岗位" />
             </div>
             <button v-if="emergingJobs.length > 3" class="expand-btn" @click="emergingExpanded = !emergingExpanded">
               {{ emergingExpanded ? '收起' : `展开全部 (${emergingJobs.length} 个)` }}
@@ -181,7 +194,6 @@
               <div class="insight-card" v-for="(ch,i) in capabilityChanges" :key="i">
                 <div class="insight-card-top">
                   <span class="insight-name">{{ ch.job }}</span><span class="insight-period">{{ ch.period }}</span>
-                  <FavoriteButton type="job" :target-id="ch.job_id" :title="ch.job" compact />
                 </div>
                 <div class="change-tags">
                   <template v-for="s in ch.added" :key="'add_'+s"><el-tag size="small" type="success" effect="dark">+ {{ s }}</el-tag></template>
@@ -190,10 +202,11 @@
                 </div>
                 <div class="change-stats">新增 {{ ch.added.length }} 项 · 修改 {{ ch.modified.length }} 项 · 淘汰 {{ ch.removed.length }} 项</div>
                 <div class="insight-actions">
-                  <el-button text size="small" type="primary">查看趋势图</el-button>
-                  <el-button text size="small">更新岗位 JD</el-button>
+                  <el-button text size="small" type="primary" @click="viewChangeTrend(ch)">查看趋势图</el-button>
+                  <el-button text size="small" @click="prepareJDUpdate(ch)">更新岗位 JD</el-button>
                 </div>
               </div>
+              <el-empty v-if="!insightLoading && capabilityChanges.length === 0" description="当前时间窗口暂无可确认的能力变化" />
             </div>
           </div>
         </div>
@@ -292,10 +305,11 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
+import { useRouter } from "vue-router";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import { useJobStore } from "@/stores/jobs";
 import DataState from "@/components/common/DataState.vue";
-import type { JobSummary } from "@/domain/types";
+import type { CapabilityChange, EmergingJob, GeneratedJDDraft, JobSummary } from "@/domain/types";
 
 const tab = ref<"publish" | "insight">("publish");
 
@@ -303,16 +317,35 @@ const tab = ref<"publish" | "insight">("publish");
 const jdMode = ref<"req" | "profile">("req");
 const generating = ref(false);
 const generated = ref<JobSummary | null>(null);
+const generationWarning = ref("");
 const jdForm = reactive({ title: "", level: "", department: "", skillsInput: "" });
 const store = useJobStore();
-const { jobs: publishedJobs, emergingJobs, capabilityChanges, loading, error } = storeToRefs(store);
-onMounted(() => store.load());
+const router = useRouter();
+const {
+  jobs: publishedJobs,
+  emergingJobs,
+  capabilityChanges,
+  insightQuality,
+  insightLoading,
+  insightError,
+  loading,
+  error,
+} = storeToRefs(store);
+onMounted(() => Promise.all([store.load(), store.loadInsights()]));
 
 async function generateJD() {
   if (!jdForm.title) { ElMessage.warning("请先输入岗位名称"); return; }
   generating.value = true;
   try {
-    generated.value = await store.generateJD({ ...jdForm });
+    const draft = await store.generateJD({
+      mode: jdMode.value === "req" ? "requirements" : "profile",
+      title: jdForm.title,
+      level: jdForm.level || undefined,
+      department: jdForm.department || undefined,
+      skills_input: jdForm.skillsInput,
+    });
+    generated.value = toPreviewJob(draft);
+    generationWarning.value = draft.warnings.join(" ");
     ElMessage.success("JD 生成完成");
   } catch {
     ElMessage.error("JD 生成失败，请稍后重试");
@@ -332,9 +365,10 @@ function copyJD() {
 
 async function publishFromPreview() {
   if (!generated.value) return;
-  await store.create(generated.value);
+  await store.create(toPublishPayload(generated.value));
   ElMessage.success("岗位发布成功");
   generated.value = null;
+  generationWarning.value = "";
   jdForm.title = "";
   jdForm.skillsInput = "";
 }
@@ -354,17 +388,62 @@ const bonusSkillsStr = computed({
   set: (val: string) => { if (detailJob.value) detailJob.value.bonus_skills = val.split(",").map((s:string) => s.trim()).filter(Boolean); },
 });
 
-function openDetail(job: JobSummary) {
+function openDetail(job: JobSummary, editing = false) {
   detailJob.value = JSON.parse(JSON.stringify(job));
-  isEditing.value = false;
+  isEditing.value = editing;
   detailVisible.value = true;
 }
 
 async function saveDetail() {
   if (!detailJob.value) return;
+  if (detailJob.value.id === 0) {
+    generated.value = JSON.parse(JSON.stringify(detailJob.value));
+    detailVisible.value = false;
+    ElMessage.success("JD 草稿已更新，确认后即可发布");
+    return;
+  }
   await store.update(detailJob.value);
   ElMessage.success("岗位信息已更新");
   detailVisible.value = false;
+}
+
+function toPreviewJob(draft: GeneratedJDDraft): JobSummary {
+  return {
+    id: 0,
+    title: draft.title,
+    department: draft.department,
+    headcount: 1,
+    status: "draft",
+    created_at: "未发布",
+    level: draft.level,
+    salary_range: "待管理员补充",
+    responsibilities: draft.responsibilities,
+    requirements: draft.requirements,
+    skills: draft.skills,
+    bonus_skills: draft.bonus_skills,
+    jd_text: draft.jd_text,
+  };
+}
+
+function toPublishPayload(job: JobSummary) {
+  const jdText = [
+    `岗位名称：${job.title}`,
+    `所属部门：${job.department}`,
+    `岗位职责：${job.responsibilities.join("；")}`,
+    `任职要求：${job.requirements.join("；")}`,
+  ].join("\n");
+  return {
+    title: job.title,
+    level: job.level,
+    department: job.department,
+    headcount: job.headcount || 1,
+    responsibilities: job.responsibilities.filter(Boolean),
+    requirements: job.requirements.filter(Boolean),
+    skills: job.skills || [],
+    bonus_skills: job.bonus_skills,
+    jd_text: jdText,
+    status: "open" as const,
+  };
 }
 
 async function deleteDetail() {
@@ -377,6 +456,46 @@ async function deleteDetail() {
 // ── Tab B ──
 const skillPreference = ref("");
 const emergingExpanded = ref(false);
-function searchInsight() { ElMessage.success(skillPreference.value ? `正在搜索与"${skillPreference.value}"相关的新岗位...` : "正在搜索全部新岗位..."); }
+async function searchInsight() {
+  await store.loadInsights(skillPreference.value.trim());
+}
+
+async function confirmEmergingJob(job: EmergingJob) {
+  await store.decideInsight(job.id, "confirmed", "由岗位洞察页面确认");
+  ElMessage.success(`已确认“${job.name}”为新兴岗位`);
+}
+
+async function prepareHiringPlan(job: EmergingJob) {
+  await store.decideInsight(job.id, "planned", "已转入智能 JD 招聘计划");
+  tab.value = "publish";
+  jdMode.value = "req";
+  jdForm.title = job.name;
+  jdForm.level = "mid";
+  jdForm.skillsInput = job.core_skills.join(", ");
+  ElMessage.success("已填入岗位发布表单，请补充部门后生成 JD");
+}
+
+function prepareJDUpdate(change: CapabilityChange) {
+  tab.value = "publish";
+  jdMode.value = "req";
+  jdForm.title = change.job;
+  jdForm.skillsInput = [
+    ...change.added.map((skill) => `新增：${skill}`),
+    ...change.modified.map((skill) => `强化：${skill}`),
+    ...change.removed.map((skill) => `待移除：${skill}`),
+  ].join(", ");
+  ElMessage.success("能力变化已填入 JD Agent，请审核后生成更新草稿");
+}
+
+function viewChangeTrend(change: CapabilityChange) {
+  router.push({ path: "/trends", query: { keyword: change.job } });
+}
 
 </script>
+
+<style scoped>
+.insight-quality-alert {
+  margin-top: 12px;
+  border-radius: 12px;
+}
+</style>

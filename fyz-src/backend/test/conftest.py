@@ -9,6 +9,8 @@ os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
 os.environ.setdefault("INITIAL_ADMIN_ENABLED", "true")
 os.environ.setdefault("INITIAL_ADMIN_PASSWORD", "test-only-admin-password")
+# 测试必须不调用外部模型服务，也不能消耗开发者本地 .env 中的真实额度。
+os.environ["DEEPSEEK_API_KEY"] = ""
 
 import pytest
 from httpx import ASGITransport, AsyncClient

@@ -15,7 +15,8 @@
 
 - 已有认证、岗位 CRUD、版本、技能和图谱后端接口。
 - 已有 Dashboard、JobManagement、GraphView、Trends、Admin 等页面。
-- `changes`、`analysis`、`admin` 后端仍是占位路由。
+- `changes`、`admin` 后端仍是占位路由；`analysis` 已提供趋势概览、岗位洞察和决策保存接口。
+- JD 生成 Agent 已提供任务创建、运行审计与可编辑草稿流程。
 - FYZ 前端已有 Vitest 测试和 HTTP 数据 Provider。
 
 ## 3. 上下游接口

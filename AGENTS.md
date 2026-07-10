@@ -28,12 +28,10 @@ cd jtt-src/frontend
 npm run dev
 npm run build                                              # Type-check + build
 
-# Data analysis pipeline (requires DEEPSEEK_API_KEY in .env)
-cd data_analysis
-python scripts/01_merge_clean.py                           # Step 1: merge data sources
-python scripts/02_normalize_titles.py                      # Step 2: job title standardization
-python scripts/03_extract_skills.py                        # Step 3: skill extraction
-python scripts/04_build_reference.py                       # Step 4: reference dataset
+# Complete database transfer and extraction evaluation
+cd fyz-src/backend
+python scripts/run_database_import.py --replace            # MySQL snapshot -> rebuild Neo4j
+python scripts/evaluate_skill_extraction.py --limit 100    # Evaluation only
 ```
 
 ## Architecture
@@ -41,7 +39,7 @@ python scripts/04_build_reference.py                       # Step 4: reference d
 ```
 docs/                    # Competition requirements, dev plan, dev spec
 data/                    # Crawled job data: jd_crawl_ifly.json (iflytek 50), jd_crawl_zl.json (zhaopin 50)
-data_analysis/           # Skill extraction pipeline (4-step), uses DeepSeek API
+data_analysis/           # Offline dictionaries/config; no independent import pipeline
 fyz-src/
 ├── backend/             # FastAPI (port 8000), Python 3.10
 │   ├── app/
@@ -49,11 +47,11 @@ fyz-src/
 │   │   ├── core/        # config, security (JWT+bcrypt), database (MySQL+SQLAlchemy async), neo4j
 │   │   ├── models/      # SQLAlchemy business and audit models
 │   │   ├── schemas/     # Pydantic: ApiResponse(code,message,data,meta), auth, PageMeta
-│   │   └── api/v1/      # auth, jobs, skills, graph, imports, and module routes
+│   │   └── api/v1/      # auth, jobs, skills, graph, imports, agents, analysis and module routes
 │   └── test/            # pytest + SQLite in-memory + pytest-asyncio
 ├── frontend/            # Vue 3 + TS + Vite (port 5173), Element Plus, Plus Jakarta Sans font
 │   └── src/
-│       ├── views/       # Login, Register, Dashboard, 7 placeholder pages
+│       ├── views/       # Login, Register, Dashboard, JobManagement, Trends and other views
 │       ├── components/layout/  # AppLayout (sidebar + topbar + content)
 │       ├── api/         # axios wrapper (request.ts) + auth.ts
 │       ├── router/      # Vue Router with auth guard (noAuth meta flag)
@@ -67,11 +65,12 @@ jtt-src/
 ## Key Design Decisions
 
 - **Testing**: All backend tests use `TESTING=true` env var to switch to `sqlite+aiosqlite:///:memory:` (no MySQL needed). Test DB reset before each test via `_setup_db` fixture. Defined in `pytest.ini` with `asyncio_mode=auto`.
-- **Auth**: JWT via `python-jose`, bcrypt hashing directly (NOT passlib — incompatible with `bcrypt>=4.0`). Placeholder routes use `dependencies=[Depends(get_current_user)]` on the router. `noAuth` meta flag on frontend routes skips the guard.
+- **Auth**: JWT via `python-jose`, bcrypt hashing directly (NOT passlib — incompatible with `bcrypt>=4.0`). `noAuth` meta flag on frontend routes skips the guard.
 - **API response format**: All endpoints return `{"code": 200, "message": "success", "data": {...}, "meta": null}`. Error codes: 40001 (auth fail), 40002 (duplicate), 40100 (bad token).
 - **Neo4j**: Singleton driver in `core/neo4j.py` via `graphdatabasedriver`. Connection tested by `test_neo4j.py` (7 tests, skip gracefully if Neo4j unavailable). `.env` must have correct `NEO4J_PASSWORD`.
 - **Conda env**: Located at `E:\Computer_tools\Anaconda\dld\envs\jiebang`. All Python commands must use this env.
 - **No passlib**: Direct `bcrypt.hashpw()` / `bcrypt.checkpw()` due to passlib incompatibility with newer bcrypt.
+- **Data transfer**: MySQL is the source of truth. `scripts/01`–`04` import a checked-in MySQL snapshot and then rebuild only Neo4j `namespace=jiebang`; see `fyz-src/backend/scripts/DATABASE_TRANSFER.md`.
 
 ## Frontend Design System
 
@@ -91,6 +90,7 @@ jtt-src/
 | `fyz-src/GRAPH_ARCHITECTURE.md` | Neo4j 5-layer forest model, Agent pipeline, 3 engine APIs |
 | `fyz-src/FULLSTACK_PLAN.md` | 11-module plan with MySQL schemas, 5 phases, dependencies |
 | `fyz-src/DEVELOPMENT_PLAN.md` | Original MVP dev plan (login, layout, placeholder pages) |
+| `fyz-src/backend/scripts/DATABASE_TRANSFER.md` | Shared MySQL snapshot import and Neo4j rebuild workflow |
 
 ## Contributor Workspaces
 

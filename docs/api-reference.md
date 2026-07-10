@@ -157,7 +157,55 @@ $sync = Invoke-RestMethod `
 
 日常更新使用 `incremental`；需要从 MySQL 事实重建时使用 `full`。
 
-## 8. 当前占位接口
+## 8. JD 生成 Agent
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/agents/jd-generations` | 创建异步 JD 草稿生成任务 |
+| GET | `/agents/runs/{agent_run_id}` | 查看 Agent 运行审计记录 |
+
+请求示例：
+
+```powershell
+$task = Invoke-RestMethod `
+  -Method Post `
+  -Uri "$base/agents/jd-generations" `
+  -Headers $headers `
+  -ContentType "application/json" `
+  -Body (@{
+    mode = "requirements"
+    title = "Java 后端工程师"
+    level = "高级"
+    department = "研发中心"
+    skills_input = "Java, Spring Boot, MySQL"
+  } | ConvertTo-Json)
+```
+
+生成结果通过通用 `/tasks/{task_id}` 查询。结果是可编辑草稿，前端确认后再调用
+`POST /jobs` 发布；模型调用失败时服务会返回可编辑模板草稿。
+
+## 9. 岗位洞察与趋势分析
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/analysis/` | 模块状态入口 |
+| GET | `/analysis/overview` | 趋势概览；支持 `months`、`keyword`、`city` 筛选 |
+| GET | `/analysis/job-insights` | 新兴岗位与能力变化；支持 `skill`、`limit` 筛选 |
+| PUT | `/analysis/emerging-jobs/{standard_job_id}/decision` | 保存用户洞察决策 |
+
+洞察决策请求：
+
+```json
+{
+  "decision": "planned",
+  "note": "纳入下季度招聘计划"
+}
+```
+
+决策值为 `confirmed`、`planned` 或 `ignored`，并按当前登录用户隔离。趋势结果包含
+数据覆盖范围和质量提示，前端不应将数据不足视为零需求。
+
+## 10. 当前占位接口
 
 以下模块已经注册并受认证保护，但目前只返回占位信息：
 
@@ -165,7 +213,6 @@ $sync = Invoke-RestMethod `
 | --- | --- |
 | `/changes` | 既有岗位能力动态更新 |
 | `/matching` | 人岗匹配度诊断 |
-| `/analysis` | 趋势分析 |
 | `/admin` | 系统管理 |
 
 在实现真实逻辑前，不得将这些模块标记为“后端已完成”。新增接口时必须同步：

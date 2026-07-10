@@ -16,8 +16,9 @@
 ## 环境与运行
 
 - [数据库、数据导入与运行指南](database-and-runtime.md)
+- [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)
 - [后端专项说明](../fyz-src/backend/README.md)
-- [数据分析流水线](../data_analysis/README.md)
+- [离线数据分析配置](../data_analysis/README.md)
 
 ## 接口
 

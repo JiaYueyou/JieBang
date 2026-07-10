@@ -72,7 +72,8 @@ base
 → 20260619_0001  user 基线
 → 20260620_0002  岗位、技能和版本
 → 20260620_0003  标准技能与抽取流水线
-→ 20260620_0004  标准岗位与图谱同步审计（head）
+→ 20260620_0004  标准岗位与图谱同步审计
+→ 20260710_0005  岗位洞察决策审计（head）
 ```
 
 ### 已存在旧 `user` 表
@@ -84,7 +85,7 @@ alembic stamp 20260619_0001
 alembic upgrade head
 ```
 
-不要执行 `alembic stamp head`。它只写版本号，不执行 0002–0004 的建表操作，
+不要执行 `alembic stamp head`。它只写版本号，不执行后续建表操作，
 会造成“版本显示最新但业务表缺失”。
 
 ### 常用命令
@@ -117,45 +118,30 @@ alembic upgrade head
 
 禁止删除已进入共享主线的 migration 后重新生成；应增加新的修正 migration。
 
-### 导入统一的本地初始化数据
+### 导入团队完整数据库快照
 
-每位成员先将本地数据库升级到当前 migration head，再运行初始化脚本：
+团队本地环境统一使用 `fyz-src/backend/scripts/` 的四步迁移包。它先创建或升级
+MySQL 表，再导入全部表数据，最后从 MySQL 事实库重建 Neo4j；不要再使用多个
+离线脚本分别导入同一批 JD、技能或图谱数据。
 
 ```powershell
 cd fyz-src\backend
-alembic upgrade head
-python scripts\init_data.py
+python scripts\01_prepare_mysql_schema.py
+python scripts\02_import_mysql_snapshot.py --replace
+python scripts\03_rebuild_neo4j.py
+python scripts\04_verify_database_import.py
 ```
 
-脚本会按固定顺序完成以下操作：
-
-1. 校验数据库 `alembic_version` 与当前代码的 Alembic head 完全一致；
-2. 按 `canonical_key` 幂等写入公共技能字典和别名；
-3. 按内容指纹幂等导入 `data/` 下三份白名单 JD，并使用固定规则抽取保证结果可复现；
-4. 从现有岗位数据聚合标准岗位。
-
-重复执行不会重复创建技能、原始 JD 或标准岗位来源。它不会删除成员自己的业务数据，
-也不会默认连接 Neo4j。可用选项：
+也可以一键运行：
 
 ```powershell
-# 只导入指定公共数据文件
-python scripts\init_data.py --files jd_crawl_ifly.json jd_crawl_zl.json
-
-# 只补齐公共技能字典并聚合数据库中已有岗位
-python scripts\init_data.py --skip-jobs
-
-# 显式允许 DeepSeek 辅助导入；该结果可能随模型版本变化，不作为团队基线
-python scripts\init_data.py --use-deepseek
-
-# 初始化 MySQL 后全量重建 JieBang 图谱命名空间
-python scripts\init_data.py --sync-neo4j
-
-# 有有效 DeepSeek 配置时，同时生成带证据约束的 L4/L5 候选
-python scripts\init_data.py --sync-neo4j --enrich-top-skills
+python scripts\run_database_import.py --replace
 ```
 
-若 `.env` 中启用 `INITIAL_ADMIN_ENABLED=true`，脚本也会创建不存在的初始管理员；
-已有同名账号时不会覆盖密码。团队不得在脚本、文档或 Git 中保存统一明文密码。
+第二步会覆盖目标 MySQL 的现有业务数据。来源方更新数据库内容后，运行
+`python scripts\export_mysql_snapshot.py` 来刷新 `mysql_snapshot.sql` 与其
+SHA-256 manifest。完整安全边界、校验项和故障处理见
+[数据库迁移脚本说明](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)。
 
 ## 4. 初始管理员
 
@@ -240,21 +226,11 @@ jd_crawl2.json
 
 先导入 MySQL，再同步 Neo4j。不要把离线分析输出直接写入 Neo4j。
 
-## 8. 独立数据分析流水线
+## 8. 离线分析配置
 
-```powershell
-cd data_analysis
-Copy-Item .env.example .env
-python -m pip install -r requirements.txt
-python scripts\01_merge_clean.py
-python scripts\02_normalize_titles.py
-python scripts\03_extract_skills.py
-python scripts\04_build_reference.py
-```
-
-输出位于 `data_analysis/outputs/`，包括合并数据、岗位映射、技能词典、
-岗位技能矩阵和参考数据集。输出是分析产物，不自动成为数据库事实；
-进入主系统前必须经过字段校验、来源记录和导入流程。
+`data_analysis/` 保留技能词典、分类和可选 DeepSeek 配置，不含可执行的数据
+导入脚本。所有可共享的岗位与技能数据必须通过上述 MySQL 快照流程进入系统，
+避免离线输出绕过来源记录、验证状态和图谱审计。
 
 ## 9. 完整启动顺序
 

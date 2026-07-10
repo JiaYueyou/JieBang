@@ -56,6 +56,19 @@ $env:DATABASE_URL="mysql+aiomysql://user:password@localhost:3306/jie_bang"
 alembic upgrade head
 ```
 
+## 完整数据库迁移包
+
+需要把一台开发机的全部 MySQL 数据迁移到另一台机器，并从事实库重建
+Neo4j 时，使用 [scripts/DATABASE_TRANSFER.md](scripts/DATABASE_TRANSFER.md)
+中的编号脚本。接收方既可以依次执行 `01` 到 `04`，也可以运行：
+
+```powershell
+python scripts/run_database_import.py --replace
+```
+
+该流程会覆盖目标 MySQL 的现有业务数据；执行前必须确认目标 `.env`。
+Neo4j 只重建 `namespace=jiebang`，不会复制或删除其他命名空间。
+
 ## 初始管理员
 
 迁移完成后，应用启动会执行显式管理员 bootstrap，但不会创建表。

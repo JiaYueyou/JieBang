@@ -23,10 +23,19 @@
             <el-option label="上海" value="上海" /><el-option label="深圳" value="深圳" />
             <el-option label="杭州" value="杭州" /><el-option label="成都" value="成都" />
           </el-select>
-          <span class="tr-hint">* 数据为模拟演示，后续接入 Neo4j 实时数据</span>
+          <span class="tr-hint">{{ coverageText }}</span>
         </div>
       </div>
     </div>
+
+    <el-alert
+      v-if="dataQuality?.insufficient_data"
+      class="tr-quality-alert anim-fade-up anim-delay-1"
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="dataQuality.notes.join(' ') || '当前统计窗口数据不足。'"
+    />
 
     <!-- Chart grid -->
     <div class="tr-chart-grid anim-fade-up anim-delay-2">
@@ -79,7 +88,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import VChart from "vue-echarts";
 import { use } from "echarts/core";
@@ -95,13 +105,38 @@ const PALETTE = ["#4f6ef6","#34b37e","#f59e4b","#7c6ff7","#5b9df5","#e85d5d"];
 const timeRange = ref("12");
 const jobFilter = ref("");
 const cityFilter = ref("");
+const route = useRoute();
 
 const store = useTrendStore();
 const { data, loading, error } = storeToRefs(store);
 const months = computed(() => data.value?.months ?? []);
 const stats = computed(() => data.value?.stats ?? { totalJobs:"0",newSkills:0,avgSalary:"0",activeCities:0 });
 const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
-onMounted(() => store.load());
+const dataQuality = computed(() => data.value?.dataQuality ?? null);
+const coverageText = computed(() => {
+  const quality = dataQuality.value;
+  if (!quality?.coverage_start || !quality?.coverage_end) return "暂无可统计的岗位时间范围";
+  return `覆盖 ${quality.coverage_start.slice(0, 10)} 至 ${quality.coverage_end.slice(0, 10)} · ${quality.total_records} 条岗位`;
+});
+
+function loadTrends() {
+  return store.load({
+    months: Number(timeRange.value),
+    keyword: jobFilter.value.trim() || undefined,
+    city: cityFilter.value || undefined,
+  });
+}
+
+let filterTimer: number | undefined;
+watch([timeRange, jobFilter, cityFilter], () => {
+  window.clearTimeout(filterTimer);
+  filterTimer = window.setTimeout(loadTrends, 350);
+});
+
+onMounted(() => {
+  if (typeof route.query.keyword === "string") jobFilter.value = route.query.keyword;
+  loadTrends();
+});
 
 // ── Job demand option ──
 const jobDemandOption = computed(() => ({
@@ -161,3 +196,10 @@ function sparkOption(row: any) {
 }
 
 </script>
+
+<style scoped>
+.tr-quality-alert {
+  margin: -4px 0 16px;
+  border-radius: 12px;
+}
+</style>

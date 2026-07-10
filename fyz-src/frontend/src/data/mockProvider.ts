@@ -58,7 +58,7 @@ function favoriteFromEntity(type: FavoriteTargetType, targetId: number, title?: 
   };
 }
 
-export const mockDataProvider: DataProvider = {
+export const mockDataProvider: Omit<DataProvider, "jobs" | "trends"> = {
   dashboard: {
     async getOverview() {
       const data = db();
@@ -73,28 +73,8 @@ export const mockDataProvider: DataProvider = {
         kanban: openJobs.slice(0, 3).map((job, index) => ({ job_id: job.id, title: job.title, total: [28,14,8][index] || 8, stages: [{ name:"筛选",count:[12,10,5][index]||5},{name:"面试",count:[3,1,0][index]||0},{name:"发放",count:index===0?1:0},{name:"入职",count:0}] })),
         highMatches: [...data.talents].sort((a,b)=>b.score-a.score).slice(0,6),
         hotJobs: data.jobs.slice(0,6).map((job,index)=>({job_id:job.id,title:job.title,demand:[243,156,187,132,108,165][index],city:job.location||"全国",trend:[-5,23,8,18,15,-3][index],spark:[[260,255,250,248,245,243],[30,45,62,85,110,156],[140,148,155,165,175,187],[40,55,68,85,108,132],[35,48,60,75,92,108],[170,172,168,166,164,165]][index]})),
-        emergingSkills: data.trends.emergingSkills.slice(0,4).map((skill)=>({id:skill.id,name:skill.skill,combo:skill.category,growth:skill.growth,confidence:Math.max(76,97-skill.id*3)})),
+        emergingSkills: [],
       });
-    },
-  },
-  jobs: {
-    async list() { return delay(db().jobs); },
-    async getInsights() { const data=db(); return delay({emergingJobs:data.emergingJobs,capabilityChanges:data.capabilityChanges}); },
-    async generateJD(input) {
-      const data=db(); const id=Math.max(...data.jobs.map((job)=>job.id))+1;
-      return delay({id,title:input.title,department:input.department||"研发中心",headcount:1,status:"open",created_at:new Date().toISOString().slice(0,10),level:({junior:"初级",mid:"中级",senior:"高级",expert:"专家"} as Record<string,string>)[input.level]||"中级",salary_range:"20K - 35K · 14薪",responsibilities:["负责核心业务系统的架构设计与技术选型","主导关键模块的编码实现与代码审查","参与技术难点的攻关与性能优化"],requirements:[`精通 ${input.skillsInput||"相关技术栈"}`,"具备良好的系统设计能力和问题分析能力"],bonus_skills:["Docker/K8s","大模型应用开发","CI/CD"]});
-    },
-    async create(job) { const data=db(); data.jobs.unshift(job); persist(data); return delay(job); },
-    async update(job) { const data=db(); const index=data.jobs.findIndex((item)=>item.id===job.id); if(index>=0)data.jobs[index]=job; syncJobFavorite(data,job); persist(data); return delay(job); },
-    async remove(id) { const data=db(); data.jobs=data.jobs.filter((job)=>job.id!==id); persist(data); },
-    async updateStatus(id,status) {
-      const data=db();
-      const job=data.jobs.find((item)=>item.id===id);
-      if(!job) throw new Error("岗位不存在");
-      job.status=status;
-      syncJobFavorite(data,job);
-      persist(data);
-      return delay(job);
     },
   },
   talents: { async list(){return delay(db().talents);}, async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);} },
@@ -140,7 +120,6 @@ export const mockDataProvider: DataProvider = {
       return delay({nodes:graph.nodes.filter(node=>ids.has(node.id)),edges:graph.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target))});
     },
   },
-  trends: { async getOverview(){return delay(db().trends);} },
   favorites: {
     async list(){return delay(db().favorites);},
     async toggle(type,targetId,title){const data=db(); const index=data.favorites.findIndex((item)=>item.target_type===type&&item.target_id===targetId); if(index>=0){data.favorites.splice(index,1);persist(data);return false;} const favorite=favoriteFromEntity(type,targetId,title);if(!favorite)return false;data.favorites.unshift(favorite);persist(data);return true;},

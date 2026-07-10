@@ -21,8 +21,48 @@ export interface JobSummary {
   experience?: string;
   education?: string;
   skills?: string[];
+  jd_text?: string;
   match?: number;
   urgent?: boolean;
+}
+
+export type JDGenerationMode = "requirements" | "profile";
+
+export interface GenerateJDRequest {
+  mode: JDGenerationMode;
+  title: string;
+  level?: string;
+  department?: string;
+  skills_input: string;
+}
+
+export interface GeneratedJDDraft {
+  title: string;
+  standardized_title?: string | null;
+  level: string;
+  department: string;
+  responsibilities: string[];
+  requirements: string[];
+  skills: string[];
+  bonus_skills: string[];
+  jd_text: string;
+  assumptions: string[];
+  warnings: string[];
+  generation_mode: "llm" | "template";
+}
+
+export interface JobCreatePayload {
+  title: string;
+  standardized_title?: string | null;
+  level: string;
+  department: string;
+  headcount: number;
+  responsibilities: string[];
+  requirements: string[];
+  skills: string[];
+  bonus_skills: string[];
+  jd_text: string;
+  status: JobStatus;
 }
 
 export type JobDetail = JobSummary;
@@ -33,6 +73,9 @@ export interface EmergingJob {
   core_skills: string[];
   description: string;
   confidence: number;
+  source_count?: number;
+  first_seen_at?: string;
+  decision?: "confirmed" | "ignored" | "planned" | null;
 }
 
 export interface CapabilityChange {
@@ -152,8 +195,27 @@ export interface TrendSeries {
 
 export interface HeatmapPoint {
   x: number;
-  y: string;
+  y: number;
   value: number;
+}
+
+export interface AnalysisDataQuality {
+  total_records: number;
+  valid_time_records: number;
+  fallback_time_records: number;
+  valid_salary_records: number;
+  verified_skill_facts: number;
+  observed_months: number;
+  coverage_start: string | null;
+  coverage_end: string | null;
+  insufficient_data: boolean;
+  notes: string[];
+}
+
+export interface TrendQuery {
+  months: number;
+  keyword?: string;
+  city?: string;
 }
 
 export interface TrendOverview {
@@ -165,6 +227,7 @@ export interface TrendOverview {
   heatmap: HeatmapPoint[];
   locations: Array<{ city: string; value: number }>;
   emergingSkills: Array<{ id: EntityId; skill: string; category: string; growth: number; stage: string; sparkline: number[] }>;
+  dataQuality: AnalysisDataQuality;
 }
 
 export interface FavoriteRecord {
@@ -262,6 +325,5 @@ export interface MockDatabase {
   favorites: FavoriteRecord[];
   history: HistoryRecord[];
   graph: GraphSubgraph;
-  trends: TrendOverview;
   admin: AdminOverview;
 }
