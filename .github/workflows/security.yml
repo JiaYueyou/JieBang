@@ -6,13 +6,16 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   repository-security:
     name: repository-security
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -20,6 +23,7 @@ jobs:
         shell: bash
         run: |
           forbidden="$(git ls-files | grep -E '(^|/)(node_modules|dist|build|coverage|__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|\.idea|\.vscode|\.claude|\.claudian|\.codex|\.obsidian|\.playwright-mcp|\.npm-cache|\.pnpm-store)(/|$)|(^|/)\.env($|\.)|(^|/)\.mcp\.json$|\.py[co]$' | grep -Ev '\.env\.(example|sample|template)$' || true)"
+
           if [ -n "$forbidden" ]; then
             echo "Forbidden tracked files:"
             echo "$forbidden"
