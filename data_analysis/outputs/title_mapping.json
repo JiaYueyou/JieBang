@@ -1,0 +1,1170 @@
+{
+  "高级系统架构师": {
+    "standardized": "系统架构师",
+    "canonical_key": "系统架构师",
+    "level": "senior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级软件开发工程师": {
+    "standardized": "软件开发工程师",
+    "canonical_key": "软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级研究算法工程师": {
+    "standardized": "研究算法工程师",
+    "canonical_key": "研究算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级软件开发工程师": {
+    "standardized": "软件开发工程师",
+    "canonical_key": "软件开发工程师",
+    "level": "senior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级研究算法工程师": {
+    "standardized": "研究算法工程师",
+    "canonical_key": "研究算法工程师",
+    "level": "senior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级系统架构师-大数据-JAVA": {
+    "standardized": "系统架构师-大数据-Java",
+    "canonical_key": "系统架构师大数据java",
+    "level": "senior",
+    "stack": "data",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级系统测试工程师": {
+    "standardized": "系统测试工程师",
+    "canonical_key": "系统测试工程师",
+    "level": "senior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级用户研究工程师": {
+    "standardized": "用户研究工程师",
+    "canonical_key": "用户研究工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级用户研究工程师": {
+    "standardized": "用户研究工程师",
+    "canonical_key": "用户研究工程师",
+    "level": "senior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级研究算法-多模态交互研究员": {
+    "standardized": "研究算法-多模态交互研究员",
+    "canonical_key": "研究算法多模态交互研究员",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级Agent开发工程师": {
+    "standardized": "AI研究院-Agent开发工程师",
+    "canonical_key": "ai研究院agent开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-AI算法测试工程师": {
+    "standardized": "AI研究院-AI算法测试工程师",
+    "canonical_key": "ai研究院ai算法测试工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级研究算法工程师": {
+    "standardized": "AI研究院-研究算法工程师",
+    "canonical_key": "ai研究院研究算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-数据挖掘工程师": {
+    "standardized": "AI研究院-数据挖掘工程师",
+    "canonical_key": "ai研究院数据挖掘工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级prompt工程师": {
+    "standardized": "AI研究院-prompt工程师",
+    "canonical_key": "ai研究院prompt工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级AI研发工程师": {
+    "standardized": "AI研究院-AI开发工程师",
+    "canonical_key": "ai研究院ai开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-算法研究员-语音交互NLP": {
+    "standardized": "AI研究院-算法研究员-语音交互NLP",
+    "canonical_key": "ai研究院算法研究员语音交互nlp",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级研究算法工程师-评测方向": {
+    "standardized": "AI研究院-研究算法工程师-评测方向",
+    "canonical_key": "ai研究院研究算法工程师评测方向",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-算法研究员-数字水印": {
+    "standardized": "AI研究院-算法研究员-数字水印",
+    "canonical_key": "ai研究院算法研究员数字水印",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI研究院-中级研究算法工程师-AI安全攻防方向（内容安全和越狱攻击）": {
+    "standardized": "AI研究院-研究算法工程师-AI安全攻防方向",
+    "canonical_key": "ai研究院研究算法工程师ai安全攻防方向",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级软件开发工程师-JAVA-服务端": {
+    "standardized": "软件开发工程师-Java-服务端",
+    "canonical_key": "软件开发工程师java服务端",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级售前咨询经理": {
+    "standardized": "售前咨询经理",
+    "canonical_key": "售前咨询经理",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级交付项目经理": {
+    "standardized": "交付项目经理",
+    "canonical_key": "交付项目经理",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级高教讲师": {
+    "standardized": "高教讲师",
+    "canonical_key": "高教讲师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "AI Agent工程师": {
+    "standardized": "AIAgent工程师",
+    "canonical_key": "aiagent工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级高教讲师-智能物联网讲师": {
+    "standardized": "高教讲师-智能物联网讲师",
+    "canonical_key": "高教讲师智能物联网讲师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级高教讲师-大数据讲师": {
+    "standardized": "高教讲师-大数据讲师",
+    "canonical_key": "高教讲师大数据讲师",
+    "level": "middle",
+    "stack": "data",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级高教讲师-人工智能讲师": {
+    "standardized": "高教讲师-人工智能讲师",
+    "canonical_key": "高教讲师人工智能讲师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级系统测试工程师": {
+    "standardized": "系统测试工程师",
+    "canonical_key": "系统测试工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级大数据工程师": {
+    "standardized": "大数据工程师",
+    "canonical_key": "大数据工程师",
+    "level": "senior",
+    "stack": "data",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "高级运维工程师": {
+    "standardized": "运维工程师",
+    "canonical_key": "运维工程师",
+    "level": "senior",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级软件开发工程师-JAVA": {
+    "standardized": "软件开发工程师-Java",
+    "canonical_key": "软件开发工程师java",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "java开发工程师": {
+    "standardized": "Java开发工程师",
+    "canonical_key": "java开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "中级高教讲师-JAVA讲师": {
+    "standardized": "高教讲师-Java讲师",
+    "canonical_key": "高教讲师java讲师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞"
+  },
+  "C/C++/Java/JS/Python软开（接受应届）": {
+    "standardized": "C/C++/Java/JS/Python软开",
+    "canonical_key": "ccjavajspython软开",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "Python开发工程师（实习生）": {
+    "standardized": "Python开发工程师",
+    "canonical_key": "python开发工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "四川蜀通信息科技有限公司"
+  },
+  "软件开发工程师-Java/Python（2027届）": {
+    "standardized": "软件开发工程师-Java/Python",
+    "canonical_key": "软件开发工程师javapython",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "浙江保融科技股份有限公司"
+  },
+  "软件开发实习生（java/python)": {
+    "standardized": "软件开发",
+    "canonical_key": "软件开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京苏芯科技有限公司"
+  },
+  "软件开发工程师（Java/Python方向）——2026应届生": {
+    "standardized": "软件开发工程师——2026",
+    "canonical_key": "软件开发工程师2026",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "灵犀探索卫星数据(海南)有限公司"
+  },
+  "Python 后端开发实习生（GIS 数据处理方向）": {
+    "standardized": "Python后端开发",
+    "canonical_key": "python后端开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "广州市交通规划研究院有限公司"
+  },
+  "主管python维护": {
+    "standardized": "主管Python维护",
+    "canonical_key": "主管python维护",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "厦门富企来网络科技有限公司"
+  },
+  "对日python开发": {
+    "standardized": "对日Python开发",
+    "canonical_key": "对日python开发",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "杭州优灿科技有限公司"
+  },
+  "python工程师": {
+    "standardized": "Python工程师",
+    "canonical_key": "python工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "软通动力信息技术(集团)股份有限公司"
+  },
+  "Python开发实习生（电力市场与AI方向）": {
+    "standardized": "Python开发",
+    "canonical_key": "python开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "某融资租赁公司"
+  },
+  "java开发助理": {
+    "standardized": "Java开发",
+    "canonical_key": "java开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "河南容鑫信息科技发展有限公司"
+  },
+  "Java开发工程师": {
+    "standardized": "Java开发工程师",
+    "canonical_key": "java开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "陕西中科梓逸信息技术有限公司"
+  },
+  "初级java开发工程师": {
+    "standardized": "Java开发工程师",
+    "canonical_key": "java开发工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "陕西添创鸿宇信息科技有限责任公司"
+  },
+  "java软件测试助理": {
+    "standardized": "Java软件测试",
+    "canonical_key": "java软件测试",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南昌玢耀信息技术有限公司"
+  },
+  "对日JAVA软件开发(初中级)": {
+    "standardized": "对日Java软件开发",
+    "canonical_key": "对日java软件开发",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "上海达巴辛软件有限公司"
+  },
+  "Java后端开发工程师": {
+    "standardized": "Java后端开发工程师",
+    "canonical_key": "java后端开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "银川方达软件科技有限公司"
+  },
+  "后/前端开发、测试【24/25/无经验也可投】接受java、c＋＋、js不限语言": {
+    "standardized": "后/前端开发、测试接受Java、C++、js不限语言",
+    "canonical_key": "后前端开发测试接受javacjs不限语言",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "c++软件研发工程师": {
+    "standardized": "c++软件开发工程师",
+    "canonical_key": "c软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "西安迅华信息科技有限公司"
+  },
+  "python c++编程老师": {
+    "standardized": "Pythonc++编程老师",
+    "canonical_key": "pythonc编程老师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "弘朋教育科技(桐庐)有限责任公司"
+  },
+  "C++/Qt上位机开发工程师": {
+    "standardized": "C++/Qt上位机开发工程师",
+    "canonical_key": "cqt上位机开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "长春市芯捷科技有限公司"
+  },
+  "c/C++实习生": {
+    "standardized": "c/C++",
+    "canonical_key": "cc",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "深圳市同强信息技术有限责任公司"
+  },
+  "C++开发—杭州飞步科技股份有限公司": {
+    "standardized": "C++开发",
+    "canonical_key": "c开发",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "智联猎头"
+  },
+  "C/C++软件开发工程师(AI+)(RD44)": {
+    "standardized": "C/C++软件开发工程师",
+    "canonical_key": "cc软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "浙江宇视科技有限公司"
+  },
+  "C/C++/ArkTS开发": {
+    "standardized": "C/C++/ArkTS开发",
+    "canonical_key": "ccarkts开发",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "软通动力信息技术(集团)股份有限公司"
+  },
+  "海康微影-c++开发工程师（实习生）-杭州": {
+    "standardized": "海康微影-c++开发工程师",
+    "canonical_key": "海康微影c开发工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "杭州海康威视数字技术股份有限公司"
+  },
+  "AI应用开发（应届生）": {
+    "standardized": "AI应用开发",
+    "canonical_key": "ai应用开发",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "一橙网络"
+  },
+  "电商AI标注 无销售纯文职 双休不加班": {
+    "standardized": "电商AI标注无销售纯文职不加班",
+    "canonical_key": "电商ai标注无销售纯文职不加班",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "上海仁联企业服务(集团)有限公司"
+  },
+  "AI漫剧制作工程师": {
+    "standardized": "AI漫剧制作工程师",
+    "canonical_key": "ai漫剧制作工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "云南阿宇网络科技有限公司"
+  },
+  "AI编程实习生": {
+    "standardized": "AI编程",
+    "canonical_key": "ai编程",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "福州兜乐网络科技有限公司"
+  },
+  "AI智能自动化工程师[ OPenclaw]": {
+    "standardized": "AI智能自动化工程师[OPenclaw]",
+    "canonical_key": "ai智能自动化工程师openclaw",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "河南牛人设计网络科技有限公司"
+  },
+  "AI电商新媒体助理（可接受小白+实习生）": {
+    "standardized": "AI电商新媒体",
+    "canonical_key": "ai电商新媒体",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "佛山泰榕电子商务有限公司"
+  },
+  "AI商务实习生（互联网）": {
+    "standardized": "AI商务",
+    "canonical_key": "ai商务",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "四川杰诚智享科技有限公司"
+  },
+  "AI GEO广告销售｜高提成+精准客资+可新手": {
+    "standardized": "AIGEO广告销售｜高提成+精准客资+可新手",
+    "canonical_key": "aigeo广告销售高提成精准客资可新手",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "重庆市玖粤创蜀网络科技有限公司"
+  },
+  "AI智能眼镜8k五险一金": {
+    "standardized": "AI智能眼镜8k",
+    "canonical_key": "ai智能眼镜8k",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "南昌尔汝交网络科技有限公司"
+  },
+  "TOB端AI销售-高提成-轻松过万-五险一金": {
+    "standardized": "TOB端AI销售-高提成-轻松过万",
+    "canonical_key": "tob端ai销售高提成轻松过万",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "探迹科技"
+  },
+  "算法工程师": {
+    "standardized": "算法工程师",
+    "canonical_key": "算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "AI算法实习生": {
+    "standardized": "AI算法",
+    "canonical_key": "ai算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "四川星峰景晨科技有限公司"
+  },
+  "AI算法工程师实习生内培无费用": {
+    "standardized": "AI算法工程师内培无费用",
+    "canonical_key": "ai算法工程师内培无费用",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "广州腕丰科技有限公司"
+  },
+  "图像算法实习生": {
+    "standardized": "图像算法",
+    "canonical_key": "图像算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "北京安晨信息技术有限公司郑州分公司"
+  },
+  "医学图像算法实习生（张家港）": {
+    "standardized": "医学图像算法",
+    "canonical_key": "医学图像算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "杭州可帮基因科技有限公司"
+  },
+  "算法实习生": {
+    "standardized": "算法",
+    "canonical_key": "算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "深圳瑞捷技术股份有限公司"
+  },
+  "JAVA/C/C++/Python/算法/测试工程师-六险一金+年终奖": {
+    "standardized": "Java/C/C++/Python/算法/测试工程师-六险一金+年终奖",
+    "canonical_key": "javaccpython算法测试工程师六险一金年终奖",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科锐尔人力资源服务(苏州)有限公司"
+  },
+  "算法实习生 -合肥": {
+    "standardized": "算法",
+    "canonical_key": "算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科大讯飞股份有限公司"
+  },
+  "AIGC算法运营": {
+    "standardized": "AIGC算法运营",
+    "canonical_key": "aigc算法运营",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "河南纳禧客实业有限公司"
+  },
+  "算法软件工程师（2026年应届生）": {
+    "standardized": "算法软件工程师",
+    "canonical_key": "算法软件工程师",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "深圳麦思美汽车电子股份有限公司"
+  },
+  "python后端开发工程师": {
+    "standardized": "Python后端开发工程师",
+    "canonical_key": "python后端开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "Python开发助理": {
+    "standardized": "Python开发",
+    "canonical_key": "python开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "江西一方信息技术有限公司"
+  },
+  "Python实习生": {
+    "standardized": "Python",
+    "canonical_key": "python",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "洛阳蜂鸟电子科技有限公司"
+  },
+  "Python开发实习生": {
+    "standardized": "Python开发",
+    "canonical_key": "python开发",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京捷帝科技有限公司"
+  },
+  "python开发": {
+    "standardized": "Python开发",
+    "canonical_key": "python开发",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "北京中科航天人才服务有限公司"
+  },
+  "主管PYthon软件": {
+    "standardized": "主管Python软件",
+    "canonical_key": "主管python软件",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "麦乐萌(无锡)生物科技有限公司"
+  },
+  "Python工程师": {
+    "standardized": "Python工程师",
+    "canonical_key": "python工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "赋能科技(吉林)有限公司"
+  },
+  "python开发工程师": {
+    "standardized": "Python开发工程师",
+    "canonical_key": "python开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京畅淼科技有限责任公司"
+  },
+  "Python工程师（初级/中级）": {
+    "standardized": "Python工程师",
+    "canonical_key": "python工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "广州睿思管理咨询有限公司"
+  },
+  "Python程序员": {
+    "standardized": "Python程序员",
+    "canonical_key": "python程序员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "杭州弈无忧科技有限公司"
+  },
+  "物联网平台研发工程师": {
+    "standardized": "物联网平台开发工程师",
+    "canonical_key": "物联网平台开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "苏源智慧物联(江苏)有限公司"
+  },
+  "物联网硬件助理工程师": {
+    "standardized": "物联网硬件工程师",
+    "canonical_key": "物联网硬件工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南昌玢耀信息技术有限公司"
+  },
+  "物联网运维工程师/助理+年底双薪": {
+    "standardized": "物联网运维工程师/+年底双薪",
+    "canonical_key": "物联网运维工程师年底双薪",
+    "level": "junior",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "河南叠帆商贸有限公司"
+  },
+  "物联网系统工程师实习生": {
+    "standardized": "物联网系统工程师",
+    "canonical_key": "物联网系统工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "四川创一智慧科技有限公司"
+  },
+  "物联网实习": {
+    "standardized": "物联网实习",
+    "canonical_key": "物联网实习",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "内蒙古鼎盛风华咨询服务有限公司"
+  },
+  "物联网技术助理/五险双休（接受实习生）": {
+    "standardized": "物联网技术/五险",
+    "canonical_key": "物联网技术五险",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "长春市天启未来文化传媒有限公司"
+  },
+  "物联网设备安装技术员": {
+    "standardized": "物联网设备安装技术员",
+    "canonical_key": "物联网设备安装技术员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "重庆蓝思晨科技有限公司"
+  },
+  "急招司机": {
+    "standardized": "急招司机",
+    "canonical_key": "急招司机",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "青岛快易达物联网科技有限公司"
+  },
+  "网络维护专员（智能农业与物联网方向）": {
+    "standardized": "网络维护专员",
+    "canonical_key": "网络维护专员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "陕西果顶鲜农业发展有限责任公司"
+  },
+  "物联网实施实习生": {
+    "standardized": "物联网实施",
+    "canonical_key": "物联网实施",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "天津争渡信息科技有限公司"
+  },
+  "物联网售后技术专员": {
+    "standardized": "物联网售后技术专员",
+    "canonical_key": "物联网售后技术专员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "四川创一智慧科技有限公司"
+  },
+  "双休-物联网工程实习生": {
+    "standardized": "物联网工程",
+    "canonical_key": "物联网工程",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "武汉玮丽软件技术有限公司"
+  },
+  "物联网工程师": {
+    "standardized": "物联网工程师",
+    "canonical_key": "物联网工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "北京科百宏业科技有限公司"
+  },
+  "招聘c证b证驾驶员": {
+    "standardized": "招聘c证b证驾驶员",
+    "canonical_key": "招聘c证b证驾驶员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "东营市河口区泓皓物联网有限公司"
+  },
+  "上市公司招聘To B业务销售 底薪高 不地推不电销 毕业可转正": {
+    "standardized": "上市公司招聘ToB业务销售底薪高不地推不电销毕业可转正",
+    "canonical_key": "上市公司招聘tob业务销售底薪高不地推不电销毕业可转正",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "云梯新世纪(天津)物联网科技有限公司"
+  },
+  "仓库管理员": {
+    "standardized": "仓库管理员",
+    "canonical_key": "仓库管理员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京奕路顺供应链管理有限公司"
+  },
+  "冷鲜肉 司机": {
+    "standardized": "冷鲜肉司机",
+    "canonical_key": "冷鲜肉司机",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "山东速能物联网有限公司"
+  },
+  "中信银行信用卡客服保底高薪资待遇好": {
+    "standardized": "中信银行信用卡客服保底资待遇好",
+    "canonical_key": "中信银行信用卡客服保底资待遇好",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "安徽永创物联网科技有限公司"
+  },
+  "物联网项目助理": {
+    "standardized": "物联网项目",
+    "canonical_key": "物联网项目",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "深圳市讯悠智联科技有限公司"
+  },
+  "电源模块维修员": {
+    "standardized": "电源模块维修员",
+    "canonical_key": "电源模块维修员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京纳肯物联网科技有限公司"
+  },
+  "新能源面包车司机保底8000缴纳社保": {
+    "standardized": "新能源面包车司机保底8000缴纳社保",
+    "canonical_key": "新能源面包车司机保底8000缴纳社保",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "杭州想通物联网发展有限公司"
+  },
+  "司机": {
+    "standardized": "司机",
+    "canonical_key": "司机",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "青岛快易达物联网科技有限公司"
+  },
+  "物联网应用技术专业骨干教师": {
+    "standardized": "物联网应用技术专业骨干教师",
+    "canonical_key": "物联网应用技术专业骨干教师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "厦门兴才职业技术学院"
+  },
+  "物联网技术支持": {
+    "standardized": "物联网技术支持",
+    "canonical_key": "物联网技术支持",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "沈阳嘉裕恒信息咨询有限公司"
+  },
+  "客服/文员": {
+    "standardized": "客服/文员",
+    "canonical_key": "客服文员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "南京奕路顺供应链管理有限公司"
+  },
+  "客服专员": {
+    "standardized": "客服专员",
+    "canonical_key": "客服专员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "福州意诚源物联网科技有限公司"
+  },
+  "项目助理（物联网）": {
+    "standardized": "项目",
+    "canonical_key": "项目",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "上海至胜智能科技股份有限公司"
+  },
+  "物联网开发工程师": {
+    "standardized": "物联网开发工程师",
+    "canonical_key": "物联网开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "金凯(青海)教育咨询有限公司"
+  },
+  "软件测试助理": {
+    "standardized": "软件测试",
+    "canonical_key": "软件测试",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "深圳市聚留科技有限公司"
+  },
+  "初级软件测试工程师": {
+    "standardized": "软件测试工程师",
+    "canonical_key": "软件测试工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "西安云水时代信息科技有限公司"
+  },
+  "软件测试日结": {
+    "standardized": "软件测试日结",
+    "canonical_key": "软件测试日结",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "湛江市麻章区逸宏网络科技室(个体工商户)"
+  },
+  "应用软件测试实习": {
+    "standardized": "应用软件测试实习",
+    "canonical_key": "应用软件测试实习",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "ABB"
+  },
+  "手机软件测试": {
+    "standardized": "手机软件测试",
+    "canonical_key": "手机软件测试",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "山西宏图腾商贸有限公司"
+  },
+  "软件测试员": {
+    "standardized": "软件测试员",
+    "canonical_key": "软件测试员",
+    "level": "middle",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "江西蔚视界科技有限公司"
+  },
+  "软件测试助教实习生": {
+    "standardized": "软件测试助教",
+    "canonical_key": "软件测试助教",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "成都海德在线教育科技有限公司"
+  },
+  "软件测试工程师实习生": {
+    "standardized": "软件测试工程师",
+    "canonical_key": "软件测试工程师",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "琼海云联讯科技有限公司"
+  },
+  "JAVA/C/C++/Python/前端/测试（接受应届 经验不限 福利待遇好）": {
+    "standardized": "Java/C/C++/Python/前端/测试",
+    "canonical_key": "javaccpython前端测试",
+    "level": "junior",
+    "stack": "backend",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "8K-12K网络运维助理｜可食宿 + 带薪培养 + 双休五险一金": {
+    "standardized": "8K-12K网络运维｜可食宿+带薪培养+",
+    "canonical_key": "8k12k网络运维可食宿带薪培养",
+    "level": "junior",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "康旭佳科技(武汉)有限公司"
+  },
+  "风电运维": {
+    "standardized": "风电运维",
+    "canonical_key": "风电运维",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "山西风尚新能源技术服务有限公司"
+  },
+  "网络运维实习生双休": {
+    "standardized": "网络运维",
+    "canonical_key": "网络运维",
+    "level": "junior",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "长春市知行博远文化传媒有限公司"
+  },
+  "设备运维工程师": {
+    "standardized": "设备运维工程师",
+    "canonical_key": "设备运维工程师",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "山东仁盛电力科技有限公司"
+  },
+  "风电运维工程师＋六险一金＋接受小白": {
+    "standardized": "风电运维工程师＋六险一金＋接受小白",
+    "canonical_key": "风电运维工程师六险一金接受小白",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "上海仁联企业服务(集团)有限公司"
+  },
+  "Java/C/C++/JS/python/测试/运维开发/数据（接受25届无经验、考研断档等）": {
+    "standardized": "Java/C/C++/JS/Python/测试/运维开发/数据",
+    "canonical_key": "javaccjspython测试运维开发数据",
+    "level": "middle",
+    "stack": "data",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "设备运维工程师--郑州": {
+    "standardized": "设备运维工程师--郑州",
+    "canonical_key": "设备运维工程师郑州",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "富士康科技集团郑州科技园"
+  },
+  "风电运维工程师六险一金": {
+    "standardized": "风电运维工程师六险一金",
+    "canonical_key": "风电运维工程师六险一金",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "青岛瑞柏新能源技术有限公司"
+  },
+  "网络运维工程师": {
+    "standardized": "网络运维工程师",
+    "canonical_key": "网络运维工程师",
+    "level": "middle",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "连云港宸忠翔信息科技有限公司"
+  },
+  "IT运维助理工程师": {
+    "standardized": "IT运维工程师",
+    "canonical_key": "it运维工程师",
+    "level": "junior",
+    "stack": "devops",
+    "confidence": 0.95,
+    "sample_company": "陕西中科梓逸信息技术有限公司"
+  },
+  "AI算法工程师((14薪,六险一金,接受考公考研失败/25届)": {
+    "standardized": "AI算法工程师(",
+    "canonical_key": "ai算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "外企德科数字技术有限公司"
+  },
+  "算法工程师（六险一金 导师带教）": {
+    "standardized": "算法工程师",
+    "canonical_key": "算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "科锐尔人力资源服务(苏州)有限公司"
+  },
+  "算法实习生(J10554)": {
+    "standardized": "算法",
+    "canonical_key": "算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "望海康信(北京)科技股份公司"
+  },
+  "算法测试工程师（车企项目，包食宿）": {
+    "standardized": "算法测试工程师",
+    "canonical_key": "算法测试工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "北京外企人力资源服务河南有限公司"
+  },
+  "2026年神经网络建模算法的毕业硕士生实习岗位": {
+    "standardized": "2026年神经网络建模算法的毕业硕士生实习岗位",
+    "canonical_key": "2026年神经网络建模算法的毕业硕士生实习岗位",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "诗丹德联征(上海)生物科技发展有限公司"
+  },
+  "算法开发工程师": {
+    "standardized": "算法开发工程师",
+    "canonical_key": "算法开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "北京中科航天人才服务有限公司"
+  },
+  "AI算法安全研究员": {
+    "standardized": "AI算法安全研究员",
+    "canonical_key": "ai算法安全研究员",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "北京唯快科技有限公司"
+  },
+  "环路控制算法实习生": {
+    "standardized": "环路控制算法",
+    "canonical_key": "环路控制算法",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "ABB"
+  },
+  "工艺算法工程师（2026届毕业生）": {
+    "standardized": "工艺算法工程师",
+    "canonical_key": "工艺算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "江苏北人"
+  },
+  "软件开发/测试/算法 java、c/c++、python、js（可接24/25应届无经验）": {
+    "standardized": "软件开发/测试/算法Java、c/c++、Python、js",
+    "canonical_key": "软件开发测试算法javaccpythonjs",
+    "level": "junior",
+    "stack": "ai",
+    "confidence": 0.95,
+    "sample_company": "智联猎头"
+  }
+}

@@ -1,0 +1,9097 @@
+[
+  {
+    "job_title": "Java开发工程师",
+    "canonical_key": "java开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 7,
+    "sources": [
+      "iflytek",
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.71,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 0.57,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.57,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 0.57,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 0.43,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 0.43,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 0.43,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 0.29,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 0.29,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek",
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CSS",
+        "category": "programming_language",
+        "frequency": 0.29,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "HTML",
+        "category": "programming_language",
+        "frequency": 0.29,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Kafka",
+        "category": "domain_knowledge",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Maven",
+        "category": "tool",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "RabbitMQ",
+        "category": "domain_knowledge",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Nginx",
+        "category": "tool",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Node.js",
+        "category": "framework",
+        "frequency": 0.14,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring Cloud",
+        "category": "framework",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Hibernate",
+        "category": "framework",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SpringMVC",
+        "category": "framework",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Kubernetes",
+        "category": "tool",
+        "frequency": 0.14,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "微服务",
+        "category": "cloud",
+        "frequency": 0.14,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "college",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": {
+        "min": 5000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "算法",
+    "canonical_key": "算法",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 5,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.8,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 0.6,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 0.6,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 0.4,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 0.4,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.4,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.4,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 0.4,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NLP",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Scikit-learn",
+        "category": "framework",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MATLAB",
+        "category": "programming_language",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "数据科学",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LLM",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "RAG",
+        "category": "ai_ml",
+        "frequency": 0.2,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 150,
+        "max": 200
+      }
+    }
+  },
+  {
+    "job_title": "Python开发",
+    "canonical_key": "python开发",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 4,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "强化学习",
+        "category": "ai_ml",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LangChain",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PostgreSQL",
+        "category": "database",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LangChain",
+        "category": "framework",
+        "frequency": 0.25,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 150,
+        "max": 160
+      }
+    }
+  },
+  {
+    "job_title": "Python工程师",
+    "canonical_key": "python工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 3,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Kubernetes",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NLP",
+        "category": "ai_ml",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.33,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CSS",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "HTML",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "FastAPI",
+        "category": "framework",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "达梦",
+        "category": "database",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PHP",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 1,
+        "max": 1
+      },
+      "salary": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  {
+    "job_title": "Python后端开发工程师",
+    "canonical_key": "python后端开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 3,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 0.67,
+        "avg_confidence": 0.94,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网工程师",
+    "canonical_key": "物联网工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 3,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 0.67,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "IoT",
+        "category": "domain_knowledge",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Node.js",
+        "category": "framework",
+        "frequency": 0.33,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "腾讯云",
+        "category": "cloud",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "阿里云",
+        "category": "cloud",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 0.33,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件开发工程师",
+    "canonical_key": "软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "CI/CD",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Elasticsearch",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Kafka",
+        "category": "domain_knowledge",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Nginx",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PostgreSQL",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Cloud",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SpringMVC",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Tomcat",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "微服务",
+        "category": "cloud",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "项目管理",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "研究算法工程师",
+    "canonical_key": "研究算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 2,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MATLAB",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MATLAB",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "master",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "系统测试工程师",
+    "canonical_key": "系统测试工程师",
+    "level": "senior",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "用户研究工程师",
+    "canonical_key": "用户研究工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "Python开发工程师",
+    "canonical_key": "python开发工程师",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "FastAPI",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PostgreSQL",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 180,
+        "max": 200
+      }
+    }
+  },
+  {
+    "job_title": "c++软件开发工程师",
+    "canonical_key": "c软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Eclipse",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": {
+        "min": 2027,
+        "max": 2027
+      },
+      "salary": {
+        "min": 7000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "算法工程师",
+    "canonical_key": "算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "数据挖掘",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  {
+    "job_title": "AI算法",
+    "canonical_key": "ai算法",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "RAG",
+        "category": "ai_ml",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LangChain",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 5000,
+        "max": 8000
+      }
+    }
+  },
+  {
+    "job_title": "软件测试",
+    "canonical_key": "软件测试",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件测试工程师",
+    "canonical_key": "软件测试工程师",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 2,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Postman",
+        "category": "tool",
+        "frequency": 0.5,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "系统架构师",
+    "canonical_key": "系统架构师",
+    "level": "senior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "团队管理",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Cloud",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "系统架构师-大数据-Java",
+    "canonical_key": "系统架构师大数据java",
+    "level": "senior",
+    "stack": "data",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "云原生",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "微服务",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 8,
+        "max": 8
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "研究算法-多模态交互研究员",
+    "canonical_key": "研究算法多模态交互研究员",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "master",
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-Agent开发工程师",
+    "canonical_key": "ai研究院agent开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "RESTful API",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "LangChain",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "RAG",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "master",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-AI算法测试工程师",
+    "canonical_key": "ai研究院ai算法测试工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-研究算法工程师",
+    "canonical_key": "ai研究院研究算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "master",
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-数据挖掘工程师",
+    "canonical_key": "ai研究院数据挖掘工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "NLP",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-prompt工程师",
+    "canonical_key": "ai研究院prompt工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "语音识别",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Shell",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-AI开发工程师",
+    "canonical_key": "ai研究院ai开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-算法研究员-语音交互NLP",
+    "canonical_key": "ai研究院算法研究员语音交互nlp",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "NLP",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "强化学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "知识图谱",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "master",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-研究算法工程师-评测方向",
+    "canonical_key": "ai研究院研究算法工程师评测方向",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "强化学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "LLM",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "master",
+      "experience": {
+        "min": 2,
+        "max": 2
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-算法研究员-数字水印",
+    "canonical_key": "ai研究院算法研究员数字水印",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI研究院-研究算法工程师-AI安全攻防方向",
+    "canonical_key": "ai研究院研究算法工程师ai安全攻防方向",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "CV",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "NLP",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "master",
+      "experience": {
+        "min": 2,
+        "max": 2
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件开发工程师-Java-服务端",
+    "canonical_key": "软件开发工程师java服务端",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Shell",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "售前咨询经理",
+    "canonical_key": "售前咨询经理",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "交付项目经理",
+    "canonical_key": "交付项目经理",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "高教讲师",
+    "canonical_key": "高教讲师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spark",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hadoop",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hive",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "ZooKeeper",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Kubernetes",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AIAgent工程师",
+    "canonical_key": "aiagent工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "RAG",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "LLM",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": {
+        "min": 2,
+        "max": 2
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "高教讲师-智能物联网讲师",
+    "canonical_key": "高教讲师智能物联网讲师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "高教讲师-大数据讲师",
+    "canonical_key": "高教讲师大数据讲师",
+    "level": "middle",
+    "stack": "data",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spark",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hadoop",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hive",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "ZooKeeper",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "高教讲师-人工智能讲师",
+    "canonical_key": "高教讲师人工智能讲师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "大数据工程师",
+    "canonical_key": "大数据工程师",
+    "level": "senior",
+    "stack": "data",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hadoop",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Apache",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "HBase",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hive",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Keras",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Scikit-learn",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Shell",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spark",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Cloud",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "ZooKeeper",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "运维工程师",
+    "canonical_key": "运维工程师",
+    "level": "senior",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Elasticsearch",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Kubernetes",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Nginx",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Prometheus",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Shell",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Zabbix",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 3,
+        "max": 3
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件开发工程师-Java",
+    "canonical_key": "软件开发工程师java",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Hibernate",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SpringMVC",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Tomcat",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "jQuery",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "高教讲师-Java讲师",
+    "canonical_key": "高教讲师java讲师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "iflytek"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "CSS",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "HTML",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "SpringMVC",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "ZooKeeper",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Angular",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Docker",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "React",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Spring Cloud",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      },
+      {
+        "name": "Vue",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "iflytek"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 5,
+        "max": 5
+      },
+      "salary": null
+    }
+  },
+  {
+    "job_title": "C/C++/Java/JS/Python软开",
+    "canonical_key": "ccjavajspython软开",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "华为云",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 5
+      }
+    }
+  },
+  {
+    "job_title": "软件开发工程师-Java/Python",
+    "canonical_key": "软件开发工程师javapython",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 180,
+        "max": 300
+      }
+    }
+  },
+  {
+    "job_title": "软件开发",
+    "canonical_key": "软件开发",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CI/CD",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CSS",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "HTML",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Jenkins",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "React",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "项目管理",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Kubernetes",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 5000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "软件开发工程师——2026",
+    "canonical_key": "软件开发工程师2026",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 2026,
+        "max": 2026
+      },
+      "salary": {
+        "min": 4000,
+        "max": 6000
+      }
+    }
+  },
+  {
+    "job_title": "Python后端开发",
+    "canonical_key": "python后端开发",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "FastAPI",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PostgreSQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 85,
+        "max": 100
+      }
+    }
+  },
+  {
+    "job_title": "主管Python维护",
+    "canonical_key": "主管python维护",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PostgreSQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Tornado",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "high_school",
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 2
+      }
+    }
+  },
+  {
+    "job_title": "对日Python开发",
+    "canonical_key": "对日python开发",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Tornado",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 5
+      }
+    }
+  },
+  {
+    "job_title": "Java开发",
+    "canonical_key": "java开发",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 6000,
+        "max": 8000
+      }
+    }
+  },
+  {
+    "job_title": "Java软件测试",
+    "canonical_key": "java软件测试",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JIRA",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Postman",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 4000,
+        "max": 8000
+      }
+    }
+  },
+  {
+    "job_title": "对日Java软件开发",
+    "canonical_key": "对日java软件开发",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "项目管理",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": {
+        "min": 1,
+        "max": 3
+      },
+      "salary": {
+        "min": 6000,
+        "max": 12000
+      }
+    }
+  },
+  {
+    "job_title": "Java后端开发工程师",
+    "canonical_key": "java后端开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SpringMVC",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 6000,
+        "max": 12000
+      }
+    }
+  },
+  {
+    "job_title": "后/前端开发、测试接受Java、C++、js不限语言",
+    "canonical_key": "后前端开发测试接受javacjs不限语言",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Maven",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "React",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Vue",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 5
+      }
+    }
+  },
+  {
+    "job_title": "Pythonc++编程老师",
+    "canonical_key": "pythonc编程老师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 4000,
+        "max": 8000
+      }
+    }
+  },
+  {
+    "job_title": "C++/Qt上位机开发工程师",
+    "canonical_key": "cqt上位机开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 4000,
+        "max": 8000
+      }
+    }
+  },
+  {
+    "job_title": "c/C++",
+    "canonical_key": "cc",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQLite",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 150,
+        "max": 200
+      }
+    }
+  },
+  {
+    "job_title": "C++开发",
+    "canonical_key": "c开发",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "自动驾驶",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 2017,
+        "max": 2017
+      },
+      "salary": {
+        "min": 9000,
+        "max": 11000
+      }
+    }
+  },
+  {
+    "job_title": "C/C++软件开发工程师",
+    "canonical_key": "cc软件开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 1,
+        "max": 1
+      },
+      "salary": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  {
+    "job_title": "C/C++/ArkTS开发",
+    "canonical_key": "ccarkts开发",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 8000,
+        "max": 11000
+      }
+    }
+  },
+  {
+    "job_title": "海康微影-c++开发工程师",
+    "canonical_key": "海康微影c开发工程师",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 3000,
+        "max": 5000
+      }
+    }
+  },
+  {
+    "job_title": "AI应用开发",
+    "canonical_key": "ai应用开发",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LLM",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LangChain",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "LangGraph",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Milvus",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "RAG",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 3000,
+        "max": 6000
+      }
+    }
+  },
+  {
+    "job_title": "电商AI标注无销售纯文职不加班",
+    "canonical_key": "电商ai标注无销售纯文职不加班",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 5000,
+        "max": 9000
+      }
+    }
+  },
+  {
+    "job_title": "AI漫剧制作工程师",
+    "canonical_key": "ai漫剧制作工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 6000,
+        "max": 12000
+      }
+    }
+  },
+  {
+    "job_title": "AI编程",
+    "canonical_key": "ai编程",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Node.js",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CI/CD",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 4000,
+        "max": 5000
+      }
+    }
+  },
+  {
+    "job_title": "AI智能自动化工程师[OPenclaw]",
+    "canonical_key": "ai智能自动化工程师openclaw",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": {
+        "min": 7000,
+        "max": 11000
+      }
+    }
+  },
+  {
+    "job_title": "AI电商新媒体",
+    "canonical_key": "ai电商新媒体",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "secondary",
+      "experience": null,
+      "salary": {
+        "min": 5000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "AI商务",
+    "canonical_key": "ai商务",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": {
+        "min": 17,
+        "max": 17
+      },
+      "salary": {
+        "min": 7000,
+        "max": 9000
+      }
+    }
+  },
+  {
+    "job_title": "AIGEO广告销售｜高提成+精准客资+可新手",
+    "canonical_key": "aigeo广告销售高提成精准客资可新手",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 8000,
+        "max": 15000
+      }
+    }
+  },
+  {
+    "job_title": "AI智能眼镜8k",
+    "canonical_key": "ai智能眼镜8k",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 8000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "TOB端AI销售-高提成-轻松过万",
+    "canonical_key": "tob端ai销售高提成轻松过万",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "college",
+      "experience": null,
+      "salary": {
+        "min": 5000,
+        "max": 10000
+      }
+    }
+  },
+  {
+    "job_title": "AI算法工程师内培无费用",
+    "canonical_key": "ai算法工程师内培无费用",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": {
+        "min": 7000,
+        "max": 14000
+      }
+    }
+  },
+  {
+    "job_title": "图像算法",
+    "canonical_key": "图像算法",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "计算机视觉",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "语音识别",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 150,
+        "max": 200
+      }
+    }
+  },
+  {
+    "job_title": "医学图像算法",
+    "canonical_key": "医学图像算法",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MATLAB",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "R",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Shell",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 150,
+        "max": 200
+      }
+    }
+  },
+  {
+    "job_title": "Java/C/C++/Python/算法/测试工程师-六险一金+年终奖",
+    "canonical_key": "javaccpython算法测试工程师六险一金年终奖",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Django",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Flask",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "CI/CD",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "DevOps",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "FastAPI",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Scikit-learn",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Tornado",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "云原生",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "数据科学",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 2,
+        "max": 3
+      },
+      "salary": {
+        "min": 2,
+        "max": 3
+      }
+    }
+  },
+  {
+    "job_title": "AIGC算法运营",
+    "canonical_key": "aigc算法运营",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "数据挖掘",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": null,
+      "salary": {
+        "min": 6000,
+        "max": 9000
+      }
+    }
+  },
+  {
+    "job_title": "算法软件工程师",
+    "canonical_key": "算法软件工程师",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": "bachelor",
+      "experience": {
+        "min": 2026,
+        "max": 2026
+      },
+      "salary": {
+        "min": 8000,
+        "max": 13000
+      }
+    }
+  },
+  {
+    "job_title": "Python",
+    "canonical_key": "python",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "主管Python软件",
+    "canonical_key": "主管python软件",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "Python程序员",
+    "canonical_key": "python程序员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Git",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "需求分析",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网平台开发工程师",
+    "canonical_key": "物联网平台开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MyBatis",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "IoT",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Spring Boot",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网硬件工程师",
+    "canonical_key": "物联网硬件工程师",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网运维工程师/+年底双薪",
+    "canonical_key": "物联网运维工程师年底双薪",
+    "level": "junior",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网系统工程师",
+    "canonical_key": "物联网系统工程师",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网实习",
+    "canonical_key": "物联网实习",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "网络安全",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网技术/五险",
+    "canonical_key": "物联网技术五险",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网设备安装技术员",
+    "canonical_key": "物联网设备安装技术员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "急招司机",
+    "canonical_key": "急招司机",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "网络维护专员",
+    "canonical_key": "网络维护专员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "网络安全",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Zabbix",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网实施",
+    "canonical_key": "物联网实施",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网售后技术专员",
+    "canonical_key": "物联网售后技术专员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网工程",
+    "canonical_key": "物联网工程",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "技术文档",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "招聘c证b证驾驶员",
+    "canonical_key": "招聘c证b证驾驶员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "上市公司招聘ToB业务销售底薪高不地推不电销毕业可转正",
+    "canonical_key": "上市公司招聘tob业务销售底薪高不地推不电销毕业可转正",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "仓库管理员",
+    "canonical_key": "仓库管理员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "冷鲜肉司机",
+    "canonical_key": "冷鲜肉司机",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "中信银行信用卡客服保底资待遇好",
+    "canonical_key": "中信银行信用卡客服保底资待遇好",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网项目",
+    "canonical_key": "物联网项目",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "项目管理",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "电源模块维修员",
+    "canonical_key": "电源模块维修员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "新能源面包车司机保底8000缴纳社保",
+    "canonical_key": "新能源面包车司机保底8000缴纳社保",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "司机",
+    "canonical_key": "司机",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网应用技术专业骨干教师",
+    "canonical_key": "物联网应用技术专业骨干教师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "嵌入式",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网技术支持",
+    "canonical_key": "物联网技术支持",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "IoT",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "客服/文员",
+    "canonical_key": "客服文员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "客服专员",
+    "canonical_key": "客服专员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "项目",
+    "canonical_key": "项目",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "物联网开发工程师",
+    "canonical_key": "物联网开发工程师",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "物联网",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件测试日结",
+    "canonical_key": "软件测试日结",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "应用软件测试实习",
+    "canonical_key": "应用软件测试实习",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "R",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "手机软件测试",
+    "canonical_key": "手机软件测试",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件测试员",
+    "canonical_key": "软件测试员",
+    "level": "middle",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件测试助教",
+    "canonical_key": "软件测试助教",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MongoDB",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "MySQL",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Oracle",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Redis",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "SQL Server",
+        "category": "database",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Postman",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "Java/C/C++/Python/前端/测试",
+    "canonical_key": "javaccpython前端测试",
+    "level": "junior",
+    "stack": "backend",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Go",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "8K-12K网络运维｜可食宿+带薪培养+",
+    "canonical_key": "8k12k网络运维可食宿带薪培养",
+    "level": "junior",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "风电运维",
+    "canonical_key": "风电运维",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "项目管理",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": {
+        "min": 1,
+        "max": 2
+      }
+    }
+  },
+  {
+    "job_title": "网络运维",
+    "canonical_key": "网络运维",
+    "level": "junior",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "设备运维工程师",
+    "canonical_key": "设备运维工程师",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "风电运维工程师＋六险一金＋接受小白",
+    "canonical_key": "风电运维工程师六险一金接受小白",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "Java/C/C++/JS/Python/测试/运维开发/数据",
+    "canonical_key": "javaccjspython测试运维开发数据",
+    "level": "middle",
+    "stack": "data",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "华为云",
+        "category": "cloud",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大数据",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "设备运维工程师--郑州",
+    "canonical_key": "设备运维工程师郑州",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "风电运维工程师六险一金",
+    "canonical_key": "风电运维工程师六险一金",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "网络运维工程师",
+    "canonical_key": "网络运维工程师",
+    "level": "middle",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "网络安全",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "IT运维工程师",
+    "canonical_key": "it运维工程师",
+    "level": "junior",
+    "stack": "devops",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "沟通能力",
+        "category": "soft_skill",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI算法工程师(",
+    "canonical_key": "ai算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Linux",
+        "category": "tool",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "自然语言处理",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "算法测试工程师",
+    "canonical_key": "算法测试工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "2026年神经网络建模算法的毕业硕士生实习岗位",
+    "canonical_key": "2026年神经网络建模算法的毕业硕士生实习岗位",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "神经网络",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "NumPy",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Pandas",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "强化学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "知识图谱",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": {
+        "min": 2026,
+        "max": 2026
+      }
+    }
+  },
+  {
+    "job_title": "算法开发工程师",
+    "canonical_key": "算法开发工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "AI算法安全研究员",
+    "canonical_key": "ai算法安全研究员",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "PyTorch",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "联邦学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "TensorFlow",
+        "category": "framework",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "环路控制算法",
+    "canonical_key": "环路控制算法",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "R",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "工艺算法工程师",
+    "canonical_key": "工艺算法工程师",
+    "level": "middle",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": null,
+      "salary": null
+    }
+  },
+  {
+    "job_title": "软件开发/测试/算法Java、c/c++、Python、js",
+    "canonical_key": "软件开发测试算法javaccpythonjs",
+    "level": "junior",
+    "stack": "ai",
+    "total_records": 1,
+    "sources": [
+      "zhilian"
+    ],
+    "core_skills": [
+      {
+        "name": "C++",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Java",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "Python",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "category": "programming_language",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "大模型",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.92,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "机器学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "深度学习",
+        "category": "ai_ml",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      },
+      {
+        "name": "自动驾驶",
+        "category": "domain_knowledge",
+        "frequency": 1.0,
+        "avg_confidence": 0.96,
+        "sources": [
+          "zhilian"
+        ]
+      }
+    ],
+    "bonus_skills": [],
+    "sample_requirements": {
+      "education": null,
+      "experience": {
+        "min": 24,
+        "max": 25
+      },
+      "salary": null
+    }
+  }
+]
