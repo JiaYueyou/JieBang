@@ -117,6 +117,46 @@ alembic upgrade head
 
 禁止删除已进入共享主线的 migration 后重新生成；应增加新的修正 migration。
 
+### 导入统一的本地初始化数据
+
+每位成员先将本地数据库升级到当前 migration head，再运行初始化脚本：
+
+```powershell
+cd fyz-src\backend
+alembic upgrade head
+python scripts\init_data.py
+```
+
+脚本会按固定顺序完成以下操作：
+
+1. 校验数据库 `alembic_version` 与当前代码的 Alembic head 完全一致；
+2. 按 `canonical_key` 幂等写入公共技能字典和别名；
+3. 按内容指纹幂等导入 `data/` 下三份白名单 JD，并使用固定规则抽取保证结果可复现；
+4. 从现有岗位数据聚合标准岗位。
+
+重复执行不会重复创建技能、原始 JD 或标准岗位来源。它不会删除成员自己的业务数据，
+也不会默认连接 Neo4j。可用选项：
+
+```powershell
+# 只导入指定公共数据文件
+python scripts\init_data.py --files jd_crawl_ifly.json jd_crawl_zl.json
+
+# 只补齐公共技能字典并聚合数据库中已有岗位
+python scripts\init_data.py --skip-jobs
+
+# 显式允许 DeepSeek 辅助导入；该结果可能随模型版本变化，不作为团队基线
+python scripts\init_data.py --use-deepseek
+
+# 初始化 MySQL 后全量重建 JieBang 图谱命名空间
+python scripts\init_data.py --sync-neo4j
+
+# 有有效 DeepSeek 配置时，同时生成带证据约束的 L4/L5 候选
+python scripts\init_data.py --sync-neo4j --enrich-top-skills
+```
+
+若 `.env` 中启用 `INITIAL_ADMIN_ENABLED=true`，脚本也会创建不存在的初始管理员；
+已有同名账号时不会覆盖密码。团队不得在脚本、文档或 Git 中保存统一明文密码。
+
 ## 4. 初始管理员
 
 默认关闭自动管理员创建。首次本地初始化可临时配置：

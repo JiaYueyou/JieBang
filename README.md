@@ -181,7 +181,13 @@ cd fyz-src\backend
 alembic current
 alembic upgrade head
 alembic current
+python scripts\init_data.py
 ```
+
+`init_data.py` 会校验当前 Alembic head，使用固定规则幂等写入公共技能字典、
+三份公共 JD 和标准岗位；重复执行不会重复导入。需要选择文件、显式启用
+DeepSeek 或同步 Neo4j 时，参见
+[数据库、数据导入与运行指南](docs/database-and-runtime.md)。
 
 如果本地数据库已经存在旧表，不要猜测版本，也不要直接执行
 `alembic stamp head`。请先阅读
