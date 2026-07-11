@@ -184,7 +184,31 @@ $task = Invoke-RestMethod `
 生成结果通过通用 `/tasks/{task_id}` 查询。结果是可编辑草稿，前端确认后再调用
 `POST /jobs` 发布；模型调用失败时服务会返回可编辑模板草稿。
 
-## 9. 岗位洞察与趋势分析
+## 9. 简历文本与转岗规划
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/career/resume-extractions` | 上传 TXT、Markdown、PDF 或 DOCX 并提取文本 |
+| POST | `/career/analyses` | 基于技能/简历文本、岗位与企业信息生成转岗推荐 |
+
+`/career/resume-extractions` 使用 multipart 字段 `file`，文件最大 20MB。扫描版 PDF 不做 OCR，文本不足时会返回警告。
+
+转岗分析请求：
+
+```json
+{
+  "skill_text": "Python, FastAPI, MySQL",
+  "resume_text": "可选：由文件解析接口返回的文本",
+  "enterprise_tech": "可选：Kubernetes, Redis",
+  "internal_jobs": ["平台工程师"],
+  "target_job_ids": [],
+  "time_budget_weeks": 12
+}
+```
+
+响应包含 `resume_profile`、`recommendations`、`agent_run_id` 和 `warnings`。岗位 ID、当前匹配度、补课后匹配度和推荐分由后端确定性计算；Agent 仅生成学习步骤、周期、项目建议和解释。DeepSeek 不可用时返回模板路径，运行记录状态为 `degraded`。
+
+## 10. 岗位洞察与趋势分析
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -205,7 +229,7 @@ $task = Invoke-RestMethod `
 决策值为 `confirmed`、`planned` 或 `ignored`，并按当前登录用户隔离。趋势结果包含
 数据覆盖范围和质量提示，前端不应将数据不足视为零需求。
 
-## 10. 当前占位接口
+## 11. 当前占位接口
 
 以下模块已经注册并受认证保护，但目前只返回占位信息：
 

@@ -46,6 +46,8 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 DATA_DIR=../../data
 ```
 
+职业规划文件解析依赖已经写入 `fyz-src/backend/requirements.txt`：`pypdf` 用于 PDF，`python-docx` 用于 DOCX。安装后使用 `python -m pip install -r requirements.txt`；扫描件 PDF 仍需要外部 OCR，当前服务只提取其中已有的文本层。
+
 ## 3. MySQL 初始化
 
 ```sql
@@ -176,6 +178,10 @@ python diagnose_neo4j.py
 
 未配置 DeepSeek 时 L1-L3 仍正常同步。L4/L5 必须保留来源证据和置信度；
 不满足至少两个独立来源且置信度低于 `0.75` 的内容只能作为候选。
+
+## 5.1 简历文本与职业规划
+
+`POST /api/v1/career/resume-extractions` 将上传文件转换为文本，`POST /api/v1/career/analyses` 使用技能文本、可选简历文本、企业技术栈和内部岗位生成转岗建议。简历原文不会写入 `AgentRun.input_summary` 或日志；分析结果、模型版本和降级状态保留在 `AgentRun` 中。岗位匹配分数由后端规则计算，模型只能补充学习路径与解释。
 
 ## 6. Redis 与 Celery
 

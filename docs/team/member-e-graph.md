@@ -13,7 +13,8 @@ DeepSeek 辅助 L4/L5 候选生成和证据门槛。
 - GraphService 支持 `full/incremental` 同步。
 - Neo4j 使用 `namespace=jiebang`，存在 panorama、expand、search、path、tree。
 - FYZ GraphView 已走真实 HTTP Provider。
-- 已有 DeepSeek L4/L5 结构化输出与双来源、`0.75` 置信度约束。
+- 已有独立 `SkillGraphCompletionAgent`；输入包含 L1 岗位方向、L2 技能领域、L3 技术栈和来源文本。
+- L4/L5 必须引用本次输入中存在的 source ID、覆盖至少两个不同来源平台且置信度不低于 `0.75`。
 
 ## 3. 五级模型
 
@@ -46,7 +47,7 @@ L1 Job
 ### 第 3 周：L4/L5
 
 - 对 Top 技能生成 TechPoint/KnowledgePoint 候选。
-- 校验证据 ID、来源独立性、置信度和前置关系。
+- 校验证据 ID、来源独立性、置信度和前置关系；只将过滤后的合格节点写入候选。
 - 提供候选审核/拒绝/重跑的数据接口。
 
 ### 第 4 周：查询与联调
