@@ -167,3 +167,16 @@ GET  /api/v1/graph/jobs/{standard_job_id}/tree
 未配置 DeepSeek 时，L1-L3 正常同步；Top 20 技能保存为带来源证据的
 `unverified` 补全候选。配置模型后，只有至少两个独立来源且置信度不低于
 `0.75` 的 L4/L5 声明会进入正式图谱。
+
+## 独立 Agent 与职业规划
+
+可执行 Agent 位于仓库根目录 `agent-development/src/jiebang_agents/`，后端通过 `app.core.agent_runtime` 加载；可用 `JIEBANG_AGENT_PATH` 指向独立部署目录。该包包含 JD Generation、技能补全、L4/L5 图谱补全和职业规划 Agent，后端仅负责 API、持久化、任务编排和审计。
+
+职业规划接口：
+
+```text
+POST /api/v1/career/resume-extractions
+POST /api/v1/career/analyses
+```
+
+文件解析支持 TXT、Markdown、PDF 与 DOCX，大小上限 20MB。岗位匹配与排序由后端确定性规则计算；Agent 不会覆盖分数或岗位 ID。未配置 DeepSeek 时仍会返回模板化学习路径，并记录 `AgentRun.status=degraded`。

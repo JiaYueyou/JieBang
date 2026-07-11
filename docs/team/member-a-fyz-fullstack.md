@@ -17,6 +17,7 @@
 - 已有 Dashboard、JobManagement、GraphView、Trends、Admin 等页面。
 - `changes`、`admin` 后端仍是占位路由；`analysis` 已提供趋势概览、岗位洞察和决策保存接口。
 - JD 生成 Agent 已提供任务创建、运行审计与可编辑草稿流程。
+- FYZ 转岗指南已接入真实职业规划接口，支持文件文本提取、企业技术栈和内部岗位补充。
 - FYZ 前端已有 Vitest 测试和 HTTP 数据 Provider。
 
 ## 3. 上下游接口
@@ -24,6 +25,7 @@
 - 上游：成员 D 提供标准化数据，成员 E 提供图谱查询，成员 C 提供可解释分析。
 - 下游：管理人员通过 FYZ 页面审核岗位、技能事实、图谱候选和系统任务。
 - 与成员 F 共同维护 Pydantic Schema、OpenAPI、前端 TS 类型和 CI。
+- 转岗页推荐卡只展示后端确定性分数，学习路径与解释来自成员 C 的结构化 Agent 输出。
 
 公共接口改动必须先写 Schema 和示例，再同时更新前后端，不允许页面私自猜字段。
 

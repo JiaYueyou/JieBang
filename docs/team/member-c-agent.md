@@ -16,7 +16,8 @@
 
 - 后端已有 DeepSeek Provider、技能抽取和图谱 L4/L5 补全调用。
 - DeepSeek 未配置时已有规则降级。
-- 当前尚无统一 Agent 运行记录、Prompt 版本库、Memory 边界和四类业务 Agent API。
+- 已有 `AgentRun` 审计、独立 `agent-development` 运行包、版本化 Prompt、Pydantic 结构化输出与 Provider Mock 测试。
+- JD Generation、技能补全、L4/L5 图谱补全和职业规划已具备首版接口；匹配解释的独立报告接口仍待完成。
 - MySQL 已具备来源、技能事实和 enrichment candidate 等可复用数据。
 
 ## 3. 设计边界
@@ -25,6 +26,7 @@
 - MySQL 是事实来源；模型输出默认是建议或候选。
 - 所有 Agent 返回 Pydantic 结构化结果，禁止调用方解析自由文本。
 - 每个结论携带 `evidence_ids`、`confidence`、`model` 和 `prompt_version`。
+- 职业规划中的岗位 ID、匹配分数和排序由后端规则计算，Agent 只补充画像、学习路径、项目建议和解释。
 - Memory 只保存必要用户偏好和任务摘要，不保存原始简历全文到无边界长期记忆。
 
 ## 4. 4 周 MVP
@@ -52,6 +54,8 @@
 - 输入当前能力、目标岗位和时间约束。
 - 输出分阶段学习目标、前置关系、项目建议和验证方式。
 - 完成四类 Agent API 契约、测试样例和演示数据。
+
+已完成首版：`POST /career/resume-extractions` 支持文本层解析，`POST /career/analyses` 支持技能/简历文本、企业技术栈与内部岗位输入；模型不可用时返回模板学习路径。
 
 ## 5. 后 8 周优化
 

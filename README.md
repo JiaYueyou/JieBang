@@ -14,17 +14,18 @@
 - FastAPI 认证、岗位 CRUD、岗位版本、技能抽取和数据导入接口；
 - MySQL Alembic 迁移链与初始管理员 bootstrap；
 - MySQL 事实数据到 Neo4j 能力图谱的全量/增量同步；
-- 可编辑草稿的 JD 生成 Agent，以及岗位洞察和趋势分析接口；
+- 独立 `agent-development` 包：JD 草稿、技能补全、L4/L5 图谱补全与职业规划 Agent；
+- 可编辑草稿的 JD 生成 Agent、L4/L5 证据门槛，以及简历文本解析和转岗学习规划接口；
 - 团队 MySQL 全量快照导入与 Neo4j 重建脚本；
 - FYZ 管理与决策端，以及 JTT 求职者端两套 Vue 3 前端；
-- DeepSeek 可选技能补全和 L4/L5 图谱候选生成；
+- DeepSeek 可选增强；模型不可用时 JD 与职业规划仍返回可编辑/可执行模板结果；
 - 后端测试、两套前端构建和仓库安全 CI。
 
 当前仍需继续开发：
 
 - `changes`、`matching`、`admin` 后端路由仍是占位实现；
 - JTT 简历、匹配、收藏、学习路径等页面需要继续对接真实后端；
-- 简历解析、匹配解释、转岗规划 Agent 尚未形成完整闭环；
+- 完整的简历持久化、匹配记录、JTT 联调和学习路径进度仍需继续开发；
 - 爬虫模板、持续增量数据、图谱高级分析和比赛级评测仍需完善。
 
 ## 2. 仓库目录
@@ -41,6 +42,7 @@ JieBang/
 │   └── docs/                # JTT 原始需求提取材料
 ├── data/                    # 允许后端导入的原始岗位 JSON 数据
 ├── data_analysis/           # 离线词典与可选模型配置，不含独立导入流水线
+├── agent-development/       # 独立 Agent 包、接口契约、Prompt、测试与开发计划
 ├── docs/
 │   ├── team/                # 成员 A-F 独立开发指南
 │   ├── README.md            # 文档中心
@@ -299,6 +301,7 @@ npm.cmd run build
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
 | [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL 快照导入与 Neo4j 重建 |
 | [API 参考](docs/api-reference.md) | 当前真实接口、请求示例和占位状态 |
+| [Agent 开发工作区](agent-development/README.md) | 独立 Agent 包、契约、Prompt 与测试入口 |
 | [统一文档规范](docs/documentation-standard.md) | 需求、接口、迁移和 Agent 文档格式 |
 | [Git 协作指南](docs/git-workflow.md) | 分支、提交、PR、冲突和事故恢复 |
 | [仓库安全说明](docs/repository-security.md) | 密钥、缓存和历史安全规则 |

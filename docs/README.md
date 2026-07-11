@@ -45,6 +45,9 @@
 
 - [全栈实施计划](../fyz-src/FULLSTACK_PLAN.md)
 - [五级能力图谱架构](../fyz-src/GRAPH_ARCHITECTURE.md)
+- [Agent 开发工作区](../agent-development/README.md)：独立运行包、接口契约、Prompt 与测试。
+- [L4/L5 补全方案](../agent-development/SKILL_L45_COMPLETION_PLAN.md)
+- [职业规划 Agent 方案](../agent-development/CAREER_PLANNING_AGENT_PLAN.md)
 - [前端设计说明](../fyz-src/FRONTEND_DESIGN.md)
 - [原开发计划](dev-plan.md)：历史参考，实际目录和分工以当前 README 为准。
 
