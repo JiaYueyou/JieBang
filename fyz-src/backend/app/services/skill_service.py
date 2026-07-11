@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 import uuid
 from datetime import datetime
@@ -11,6 +10,7 @@ from math import ceil
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
+from app.core.agent_runtime import SkillExtractionAgent
 from app.core.exceptions import ResourceNotFoundError
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
 from app.models import AgentRun, JobSkillFact
@@ -20,7 +20,6 @@ from app.schemas.common import PageMeta
 from app.schemas.skill import (
     ExtractedSkill,
     JobExtractionResult,
-    LLMDiscoveredSkills,
     SkillExtractionOutput,
     SkillFactResponse,
     SkillSummary,
@@ -42,6 +41,9 @@ class SkillService:
         self.jobs = JobRepository(db)
         self.extractor = RuleSkillExtractor()
         self.llm = llm_provider or DeepSeekProvider()
+        self.enrichment_agent = SkillExtractionAgent(
+            self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS
+        )
 
     async def list_skills(self, *, page: int, page_size: int, keyword: str | None, category: str | None):
         rows, total = await self.skills.list_skills(
@@ -127,29 +129,17 @@ class SkillService:
             agent_type="skill_extraction",
             provider=self.llm.provider_name,
             model=self.llm.model_name,
-            prompt_version="skill-extract-v1",
+            prompt_version=self.enrichment_agent.prompt_version,
             input_summary=normalize_text(jd_text)[:500],
             status="running",
             retry_count=0,
             created_by=user_id,
         )
         await self.skills.add_agent_run(run)
-        known = ", ".join(item.name for item in result.skills)
-        prompt = (
-            "从以下 JD 中仅补充标准词典未识别的明确技术技能。"
-            f"已识别技能：{known or '无'}。输出 JSON。JD："
-            f"{normalize_text(jd_text + ' ' + responsibilities + ' ' + requirements)[:8000]}"
-        )
         try:
-            enriched = await self.llm.generate_structured(
-                system_prompt=(
-                    "你是招聘技能抽取器。只输出明确出现且可验证的技术技能，"
-                    "不要推测。kind 仅为 required 或 preferred。"
-                ),
-                user_prompt=prompt,
-                response_schema=LLMDiscoveredSkills,
-                timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS,
-                metadata={"agent_run_id": run_id},
+            enriched = await self.enrichment_agent.enrich(
+                text=jd_text + " " + responsibilities + " " + requirements,
+                known_skills=[item.name for item in result.skills],
             )
             known_keys = {canonical_key(item.name) for item in result.skills}
             additions = [

@@ -145,10 +145,12 @@ export interface CareerRecommendation {
   currentMatch: number;
   afterMatch: number;
   existing: string[];
+  gaps?: string[];
   learningPlan: LearningStep[];
   suggestedProject: string;
   totalTime: string;
   internal: boolean;
+  explanation?: string;
 }
 
 export interface GraphNode {

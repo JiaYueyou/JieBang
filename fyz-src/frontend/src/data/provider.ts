@@ -17,7 +17,13 @@ export interface DataProvider {
     updateStatus(id: number, status: JobSummary["status"]): Promise<JobSummary>;
   };
   talents: { list(): Promise<TalentSummary[]>; get(resumeId: number): Promise<TalentSummary | null> };
-  career: { analyze(input: { skillText: string; enterpriseJobs: string[] }): Promise<CareerRecommendation[]> };
+  career: { analyze(input: {
+    skillText: string;
+    enterpriseTech: string;
+    enterpriseJobs: string[];
+    resumeFiles?: File[];
+    enterpriseFiles?: File[];
+  }): Promise<CareerRecommendation[]> };
   graph: {
     getPanorama(query?: GraphQuery): Promise<GraphSubgraph>;
     getNode(nodeId: string): Promise<GraphSubgraph>;

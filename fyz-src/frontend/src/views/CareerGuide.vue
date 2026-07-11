@@ -22,7 +22,7 @@
             <el-upload
               v-model:file-list="uploadFiles"
               :auto-upload="false"
-              accept=".pdf,.doc,.docx,.md"
+              accept=".pdf,.docx,.md,.txt"
               :limit="3"
               drag
               class="cg-upload"
@@ -61,7 +61,7 @@
                 <el-upload
                   v-model:file-list="entUploadFiles"
                   :auto-upload="false"
-                  accept=".pdf,.doc,.docx,.md,.txt"
+                  accept=".pdf,.docx,.md,.txt"
                   :limit="2"
                   drag
                   class="cg-upload"
@@ -78,7 +78,7 @@
         <div class="cg-action-bar">
           <div class="cg-action-copy">
             <span class="cg-action-kicker">分析前检查</span>
-            <span>员工技能为必填；简历、企业技术栈和内部需求岗位均为可选补充。</span>
+            <span>员工技能或简历至少提供一项；企业技术栈和内部需求岗位为可选补充。</span>
           </div>
           <button class="cg-analyze-btn" @click="startAnalyze">
             <el-icon><Search /></el-icon>
@@ -217,9 +217,12 @@ function getDifficultyLabel(difficulty: string) {
 
 async function startAnalyze() {
   hasSearched.value = true;
-  await store.analyze(
-    skillInput.value,
-    enterpriseJobs.value.split(",").map((item) => item.trim()).filter(Boolean),
-  );
+  await store.analyze({
+    skillText: skillInput.value,
+    enterpriseTech: enterpriseTech.value,
+    enterpriseJobs: enterpriseJobs.value.split(",").map((item) => item.trim()).filter(Boolean),
+    resumeFiles: uploadFiles.value.flatMap((item) => item.raw ? [item.raw] : []),
+    enterpriseFiles: entUploadFiles.value.flatMap((item) => item.raw ? [item.raw] : []),
+  });
 }
 </script>

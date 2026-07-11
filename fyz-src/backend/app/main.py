@@ -17,6 +17,7 @@ from app.api.v1.data_imports import router as data_imports_router
 from app.api.v1.graph import router as graph_router
 from app.api.v1.agents import router as agents_router
 from app.api.v1.analysis import router as analysis_router
+from app.api.v1.career import router as career_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
@@ -63,6 +64,7 @@ app.include_router(graph_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
 app.include_router(matching_router, prefix="/api/v1")
 app.include_router(analysis_router, prefix="/api/v1")
+app.include_router(career_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 
 
