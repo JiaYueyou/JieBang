@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 import uuid
 from collections import defaultdict
@@ -13,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
+from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import ResourceNotFoundError
 from app.domain.job_standardizer import CATEGORY_STACK, infer_job_stack, standardize_job_title
 from app.models import (
@@ -53,6 +53,9 @@ class GraphService:
         self.audit = GraphAuditRepository(db)
         self.graph = graph_repository or Neo4jGraphRepository()
         self.llm = llm_provider or DeepSeekProvider()
+        self.enrichment_agent = SkillGraphCompletionAgent(
+            self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS
+        )
 
     async def aggregate_standard_jobs(self) -> int:
         raw_jobs = list((await self.db.execute(select(RawJobRecord))).scalars())
@@ -221,9 +224,33 @@ class GraphService:
                 verification_status="unverified",
             )
             provider_enabled = bool(getattr(self.llm, "enabled", True))
-            if provider_enabled and len(source_ids) >= 2:
+            independent_sources = {str(row.source) for row in evidence_rows}
+            if provider_enabled and len(source_ids) >= 2 and len(independent_sources) >= 2:
                 await self._enrich_candidate(candidate, skill, evidence_rows, user_id)
             await self.audit.add_candidate(candidate)
+
+    async def _job_directions_for_skill(self, skill_id: int) -> list[str]:
+        raw_names = (await self.db.execute(
+            select(StandardJob.name)
+            .join(StandardJobSource, StandardJobSource.standard_job_id == StandardJob.id)
+            .join(JobSkillFact, JobSkillFact.raw_job_record_id == StandardJobSource.source_id)
+            .where(
+                StandardJobSource.source_type == "raw",
+                JobSkillFact.skill_id == skill_id,
+                JobSkillFact.verification_status == "verified",
+            )
+        )).scalars()
+        internal_names = (await self.db.execute(
+            select(StandardJob.name)
+            .join(StandardJobSource, StandardJobSource.standard_job_id == StandardJob.id)
+            .join(JobSkillFact, JobSkillFact.job_id == StandardJobSource.source_id)
+            .where(
+                StandardJobSource.source_type == "internal",
+                JobSkillFact.skill_id == skill_id,
+                JobSkillFact.verification_status == "verified",
+            )
+        )).scalars()
+        return list(dict.fromkeys([*raw_names, *internal_names]))[:20]
 
     async def _enrich_candidate(self, candidate, skill, evidence_rows, user_id) -> None:
         run_id = str(uuid.uuid4())
@@ -233,7 +260,7 @@ class GraphService:
             agent_type="graph_enrichment",
             provider=self.llm.provider_name,
             model=self.llm.model_name,
-            prompt_version="graph-enrichment-v1",
+            prompt_version=self.enrichment_agent.prompt_version,
             input_summary=f"{skill.name}: {len(evidence_rows)} evidence rows",
             status="running",
             retry_count=0,
@@ -242,32 +269,24 @@ class GraphService:
         self.db.add(run)
         await self.db.flush()
         evidence = [
-            {"source_id": row.id, "source": row.source, "text": row.evidence_text}
+            {
+                "source_id": row.id,
+                "source": str(row.source)[:100],
+                "text": str(row.evidence_text)[:2000],
+            }
             for row in evidence_rows
         ]
         try:
-            output = await self.llm.generate_structured(
-                system_prompt=(
-                    "你是技术能力图谱构建器。只能依据提供的来源证据生成技术细节点和"
-                    "知识点。每项声明必须引用至少两个不同 source_id，不得推测。"
-                ),
-                user_prompt=json.dumps(
-                    {"skill": skill.name, "evidence": evidence},
-                    ensure_ascii=False,
-                ),
-                response_schema=GraphEnrichmentOutput,
-                timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS,
-                metadata={"agent_run_id": run_id},
+            output = await self.enrichment_agent.enrich(
+                skill_name=skill.name,
+                evidence=evidence,
+                skill_area=skill.category.replace("_", " ").title(),
+                job_directions=await self._job_directions_for_skill(skill.id),
             )
-            allowed = set(candidate.evidence_source_ids)
-            valid_points = [
-                point for point in output.tech_points
-                if point.confidence >= 0.75
-                and len(set(point.source_ids) & allowed) >= 2
-            ]
-            candidate.candidate_data = output.model_dump(mode="json")
-            candidate.confidence = min((point.confidence for point in valid_points), default=0)
-            candidate.verification_status = "verified" if valid_points else "unverified"
+            filtered, confidence = self._filter_verified_completion(output, evidence)
+            candidate.candidate_data = filtered.model_dump(mode="json")
+            candidate.confidence = confidence
+            candidate.verification_status = "verified" if filtered.tech_points else "unverified"
             candidate.agent_run_id = run_id
             run.status = "succeeded"
             run.structured_output = output.model_dump(mode="json")
@@ -279,6 +298,36 @@ class GraphService:
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
             run.finished_at = datetime.utcnow()
+
+    @staticmethod
+    def _filter_verified_completion(
+        output: GraphEnrichmentOutput, evidence: list[dict]
+    ) -> tuple[GraphEnrichmentOutput, float]:
+        source_by_id = {int(item["source_id"]): str(item["source"]) for item in evidence}
+
+        def valid_references(source_ids: list[int]) -> bool:
+            unique_ids = set(source_ids)
+            return (
+                len(unique_ids) >= 2
+                and unique_ids.issubset(source_by_id)
+                and len({source_by_id[source_id] for source_id in unique_ids}) >= 2
+            )
+
+        accepted_points = []
+        accepted_confidences: list[float] = []
+        for point in output.tech_points:
+            if point.confidence < 0.75 or not valid_references(point.source_ids):
+                continue
+            accepted_knowledge = [
+                item
+                for item in point.knowledge_points
+                if item.confidence >= 0.75 and valid_references(item.source_ids)
+            ]
+            accepted_points.append(point.model_copy(update={"knowledge_points": accepted_knowledge}))
+            accepted_confidences.append(point.confidence)
+            accepted_confidences.extend(item.confidence for item in accepted_knowledge)
+        filtered = output.model_copy(update={"tech_points": accepted_points})
+        return filtered, min(accepted_confidences, default=0)
 
     async def _build_payload(self, snapshot: GraphSnapshot) -> tuple[dict, dict, int]:
         standard_jobs = list((await self.db.execute(select(StandardJob))).scalars())

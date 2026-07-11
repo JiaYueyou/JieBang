@@ -22,6 +22,24 @@ interface JDGenerationCreated {
   agent_run_id: string;
 }
 
+interface ResumeExtractionResponse {
+  filename: string;
+  text: string;
+  character_count: number;
+  warnings: string[];
+}
+
+interface CareerAnalysisResponse {
+  recommendations: Array<{
+    rank: number; job_id: number; job: string; recommend_score: number;
+    current_match: number; after_match: number; existing: string[]; gaps: string[];
+    learning_plan: Array<{ skill: string; time: string; difficulty: "easy" | "medium" | "hard"; resources: string[] }>;
+    suggested_project: string; total_time: string; internal: boolean; explanation: string;
+  }>;
+  agent_run_id: string;
+  warnings: string[];
+}
+
 interface AnalysisOverviewResponse {
   stats: { total_jobs: number; new_skills: number; average_salary_k: number | null; active_cities: number };
   months: string[];
@@ -113,7 +131,43 @@ export const httpDataProvider: DataProvider = {
     updateStatus: (id,status) => put(`/jobs/${id}/status`,{status}),
   },
   talents: { list:()=>get("/talents"), get:(id)=>get(`/talents/${id}`) },
-  career: { analyze:(input)=>post("/career/analyses",{skill_text:input.skillText,internal_jobs:input.enterpriseJobs}) },
+  career: {
+    analyze: async (input) => {
+      async function extractFiles(files: File[] = []) {
+        const texts: string[] = [];
+        for (const file of files) {
+          const form = new FormData();
+          form.append("file", file);
+          const response = await request.post<ApiResponse<ResumeExtractionResponse>>("/career/resume-extractions", form);
+          if (response.data.data?.text) texts.push(response.data.data.text);
+        }
+        return texts.join("\n");
+      }
+      const resumeText = await extractFiles(input.resumeFiles);
+      const enterpriseFileText = await extractFiles(input.enterpriseFiles);
+      const raw = await post<CareerAnalysisResponse>("/career/analyses", {
+        skill_text: input.skillText,
+        resume_text: resumeText,
+        enterprise_tech: [input.enterpriseTech, enterpriseFileText].filter(Boolean).join("\n"),
+        internal_jobs: input.enterpriseJobs,
+      });
+      return raw.recommendations.map((item) => ({
+        rank: item.rank,
+        job_id: item.job_id,
+        job: item.job,
+        recommendScore: item.recommend_score,
+        currentMatch: item.current_match,
+        afterMatch: item.after_match,
+        existing: item.existing,
+        gaps: item.gaps,
+        learningPlan: item.learning_plan,
+        suggestedProject: item.suggested_project,
+        totalTime: item.total_time,
+        internal: item.internal,
+        explanation: item.explanation,
+      }));
+    },
+  },
   graph: {
     getPanorama:(query)=>get("/graph/panorama",query?{
       stack:query.stack,level:query.level,node_type:query.nodeType,

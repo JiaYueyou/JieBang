@@ -5,6 +5,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from app.core.agent_runtime import LLMDiscoveredSkill, LLMDiscoveredSkills
+
 
 class SkillKind(str, Enum):
     required = "required"
@@ -62,18 +64,6 @@ class JobExtractionResult(BaseModel):
     facts: list[SkillFactResponse]
     llm_enrichment: bool
     agent_run_id: str | None = None
-
-
-class LLMDiscoveredSkill(BaseModel):
-    name: str
-    category: str
-    kind: SkillKind
-    confidence: float = Field(ge=0, le=1)
-    evidence: str
-
-
-class LLMDiscoveredSkills(BaseModel):
-    skills: list[LLMDiscoveredSkill] = Field(default_factory=list)
 
 
 class DataImportRequest(BaseModel):

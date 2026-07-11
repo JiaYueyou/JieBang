@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.core.agent_runtime import GraphEnrichmentOutput, KnowledgePointOutput, TechPointOutput
 GraphNodeType = Literal[
     "Job", "SkillArea", "TechStack", "TechPoint",
     "KnowledgePoint", "SourceDocument", "GraphSnapshot",
@@ -64,25 +65,3 @@ class GraphSnapshotResponse(BaseModel):
     metadata: dict
     created_at: datetime
     completed_at: datetime | None
-
-
-class KnowledgePointOutput(BaseModel):
-    name: str
-    description: str
-    difficulty: Literal["easy", "medium", "hard"]
-    confidence: float = Field(ge=0, le=1)
-    source_ids: list[int] = Field(min_length=2)
-    prerequisites: list[str] = Field(default_factory=list)
-
-
-class TechPointOutput(BaseModel):
-    name: str
-    detail: str
-    confidence: float = Field(ge=0, le=1)
-    source_ids: list[int] = Field(min_length=2)
-    knowledge_points: list[KnowledgePointOutput] = Field(default_factory=list)
-
-
-class GraphEnrichmentOutput(BaseModel):
-    skill_name: str
-    tech_points: list[TechPointOutput] = Field(default_factory=list)
