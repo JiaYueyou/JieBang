@@ -35,23 +35,20 @@ export interface JobPosition {
   updatedAt: string
 }
 
-// ========== 图谱相关（五级结构） ==========
-export type GraphNodeType = 'root' | 'position' | 'domain_branch' | 'skillset_branch' | 'module' | 'knowledge'
-
-export type GraphRelation = 'derives' | 'applies_to' | 'composes' | 'contains' | 'includes' | 'cross_ref'
-
+// ========== 图谱相关 ==========
 export interface GraphNode {
   id: string
   label: string
-  type: GraphNodeType
-  layer: 1 | 2 | 3 | 4 | 5
-  rootId?: string // 所属根技术 ID，用于快速过滤
+  type: 'position' | 'technology' | 'skill'
+  layer: 1 | 2 | 3
+  x?: number
+  y?: number
 }
 
 export interface GraphEdge {
   source: string
   target: string
-  relation: GraphRelation
+  relation: 'requires' | 'related_to' | 'belongs_to'
   weight: number
 }
 

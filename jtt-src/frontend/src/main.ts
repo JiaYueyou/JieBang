@@ -17,9 +17,9 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-// MSW 仅在未配置 VITE_API_BASE_URL 时启用（连真实后端时跳过 mock）
+// MSW will be conditionally started in dev
 async function startMock() {
-  if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+  if (import.meta.env.DEV) {
     const { worker } = await import('./mock/browser')
     return worker.start({ onUnhandledRequest: 'bypass' })
   }
