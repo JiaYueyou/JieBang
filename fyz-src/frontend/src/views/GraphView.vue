@@ -508,25 +508,25 @@ function isNodeHighlighted(node: GraphNode) {
   justify-content: space-between;
   gap: 12px;
   padding: 18px 20px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  background: #111827;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-elevated);
 }
 
 .graph-canvas-label {
-  color: rgba(255,255,255,.48);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .graph-canvas-head h3 {
   margin-top: 2px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .graph-mini-legend {
   display: flex;
   gap: 12px;
-  color: rgba(255,255,255,.60);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -539,7 +539,7 @@ function isNodeHighlighted(node: GraphNode) {
 .graph-mini-legend i {
   width: 22px;
   height: 0;
-  border-top: 2px solid rgba(255,255,255,.45);
+  border-top: 2px solid var(--color-border);
 }
 
 .graph-mini-legend i.dashed {
@@ -548,8 +548,8 @@ function isNodeHighlighted(node: GraphNode) {
 
 .graph-canvas {
   background:
-    radial-gradient(circle at 50% 20%, rgba(79,110,246,.18), transparent 34%),
-    linear-gradient(180deg, #111827, #0b1020);
+    radial-gradient(circle at 50% 20%, rgba(79,110,246,.08), transparent 34%),
+    var(--color-bg-base);
 }
 
 .graph-canvas svg {
@@ -559,24 +559,24 @@ function isNodeHighlighted(node: GraphNode) {
 }
 
 .graph-svg-grid path {
-  stroke: rgba(255,255,255,.045);
+  stroke: rgba(0,0,0,.04);
   stroke-width: 1;
 }
 
 .graph-edge {
-  stroke: rgba(174,190,255,.30);
-  stroke-width: 2.5;
+  stroke: rgba(79,110,246,.25);
+  stroke-width: 2;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .graph-edge.weak {
   stroke-dasharray: 8 8;
-  stroke: rgba(52,179,126,.36);
+  stroke: rgba(52,179,126,.30);
 }
 
 .graph-edge.active {
-  stroke: #dbe4ff;
-  stroke-width: 4;
+  stroke: var(--color-brand);
+  stroke-width: 3;
 }
 
 @keyframes nodeFloat {
@@ -587,44 +587,39 @@ function isNodeHighlighted(node: GraphNode) {
 .graph-node {
   cursor: pointer;
   transition: opacity var(--duration-fast) var(--ease-out);
-  animation: nodeFloat 4s ease-in-out infinite;
 }
-.graph-node:nth-child(3n)   { animation-delay: 0s; }
-.graph-node:nth-child(3n+1) { animation-delay: 1.3s; }
-.graph-node:nth-child(3n+2) { animation-delay: 2.7s; }
-.graph-node:hover { animation-play-state: paused; }
 
 .graph-node.dimmed {
   opacity: .38;
 }
 
 .graph-node circle:first-child {
-  stroke: rgba(255,255,255,.78);
+  stroke: #fff;
   stroke-width: 2;
 }
 
 .graph-node-ring {
   fill: transparent;
-  stroke: rgba(255,255,255,.12);
+  stroke: rgba(0,0,0,.06);
   stroke-width: 1;
 }
 
 .graph-node.active .graph-node-ring {
-  stroke: #fff;
+  stroke: var(--color-brand);
   stroke-width: 2;
 }
 
 .graph-node text {
-  fill: rgba(255,255,255,.82);
+  fill: var(--text-primary);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   paint-order: stroke;
-  stroke: rgba(11,16,32,.80);
+  stroke: rgba(255,255,255,.90);
   stroke-width: 4px;
 }
 
 .graph-node-layer {
-  fill: #fff !important;
+  fill: var(--text-secondary) !important;
   font-size: 14px !important;
   font-family: var(--font-mono);
   stroke: transparent !important;

@@ -116,6 +116,7 @@
             <span class="db-hot-col chart">趋势</span>
             <span class="db-hot-col num">在招</span>
             <span class="db-hot-col trend">变化</span>
+            <span class="db-hot-col action"></span>
           </div>
           <div class="db-hot-row" v-for="(job, i) in hotJobs.slice(0, 6)" :key="i">
             <span class="db-hot-col rank" :class="{ top: i < 3 }">{{ i + 1 }}</span>
