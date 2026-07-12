@@ -96,29 +96,8 @@ export const handlers = [
     return HttpResponse.json({ code: 200, message: 'ok', data: pos })
   }),
 
-  http.get(`${BASE}/positions/graph`, ({ request }) => {
-    const url = new URL(request.url)
-    const rootTech = url.searchParams.get('rootTech')
-    if (rootTech) {
-      const reachable = new Set<string>([rootTech])
-      let changed = true
-      while (changed) {
-        changed = false
-        for (const e of mockGraphEdges) {
-          if (reachable.has(e.source) && !reachable.has(e.target)) { reachable.add(e.target); changed = true }
-          if (reachable.has(e.target) && !reachable.has(e.source)) { reachable.add(e.source); changed = true }
-        }
-      }
-      return HttpResponse.json({
-        code: 200, message: 'ok',
-        data: {
-          nodes: mockGraphNodes.filter((n) => reachable.has(n.id)),
-          edges: mockGraphEdges.filter((e) => reachable.has(e.source) && reachable.has(e.target)),
-        },
-      })
-    }
-    return HttpResponse.json({ code: 200, message: 'ok', data: { nodes: mockGraphNodes, edges: mockGraphEdges } })
-  }),
+  http.get(`${BASE}/positions/graph`, () =>
+    HttpResponse.json({ code: 200, message: 'ok', data: { nodes: mockGraphNodes, edges: mockGraphEdges } })),
 
   // Resume
   http.get(`${BASE}/resumes`, async () => {
@@ -262,124 +241,8 @@ export const handlers = [
   }),
 
   // Learning Paths
-  http.get(`${BASE}/learning/paths`, async () => {
+  http.get(`${BASE}/learning-paths`, async () => {
     await delay(300)
     return HttpResponse.json({ code: 200, message: 'ok', data: mockLearningPaths })
-  }),
-
-  http.post(`${BASE}/learning/paths`, async ({ request }) => {
-    await delay(300)
-    const body = await request.json() as any
-    const newPath = { id: `lp-${Date.now()}`, steps: [], totalDuration: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...body }
-    return HttpResponse.json({ code: 200, message: 'ok', data: newPath })
-  }),
-
-  http.put(`${BASE}/learning/paths/:id`, async ({ params, request }) => {
-    const body = await request.json() as any
-    return HttpResponse.json({ code: 200, message: 'ok', data: { ...body, id: params.id, updatedAt: new Date().toISOString() } })
-  }),
-
-  http.delete(`${BASE}/learning/paths/:id`, () =>
-    HttpResponse.json({ code: 200, message: 'ok', data: null })),
-
-  // AI 学习助手
-  http.post(`${BASE}/learning/assistant/chat`, async ({ request }) => {
-    await delay(1200)
-    const body = await request.json() as any
-    const msg = body.message || ''
-    // 模拟 AI 回复
-    let reply = ''
-    if (msg.includes('Java') || msg.includes('java')) {
-      reply = `## Java 开发学习建议\n\n要成为一名合格的 Java 开发工程师，建议按以下路径学习：\n\n1. **Java 基础**（2-3周）：掌握面向对象编程、集合框架、IO流\n2. **数据库**（2周）：MySQL 增删改查、索引优化、事务管理\n3. **主流框架**（3-4周）：Spring Boot、MyBatis、Spring Cloud 微服务\n4. **中间件**（2周）：Redis 缓存、Kafka/RabbitMQ 消息队列\n5. **项目实战**（3-4周）：搭建一个完整的电商/企业应用后台\n\n> 建议配合实际项目练习，只看不练效果很差。`
-    } else if (msg.includes('Agent') || msg.includes('agent') || msg.includes('智能体')) {
-      reply = `## 什么是 AI Agent（智能体）？\n\n**Agent** 是一种能够自主感知环境、做出决策并执行行动的 AI 系统。\n\n与传统程序的区别：\n- 传统程序：按固定规则执行\n- Agent：自主推理 + 调用工具 + 记忆上下文\n\n**核心组成**：\n1. **LLM 大脑**：负责任务理解和规划\n2. **工具调用**：调用 API、数据库、代码执行等\n3. **记忆系统**：短期记忆（上下文）+ 长期记忆（向量库）\n\n**主流框架**：LangChain、AutoGPT、CrewAI\n\n想深入学习 Agent 开发，可以从 LangChain 入手。`
-    } else if (msg.includes('学习') || msg.includes('转行') || msg.includes('怎么学')) {
-      reply = `## 个性化学习建议\n\n根据你的目标岗位和当前简历，建议优先补齐以下技能：\n\n1. **微服务架构** — 这是你当前最大的短板，建议先学 Spring Cloud\n2. **缓存技术** — Redis 是面试高频考点\n3. **容器化** — Docker + K8s 是现代开发的标配\n\n预估学习周期：6-8 周\n\n需要我生成详细的学习路径吗？`
-    } else {
-      reply = `感谢你的提问！关于「${msg.slice(0, 20)}」这个问题：\n\n根据知识图谱中的信息，这个问题涉及到的技能领域包括多个方面。建议你：\n\n1. 明确你的目标岗位方向\n2. 查看该岗位的技能要求\n3. 对照自己的技能差距，制定学习计划\n\n你可以问我更具体的问题，比如：\n- "如何学习 Spring Boot？"\n- "转行 Java 开发需要学什么？"\n- "推荐 Docker 学习资源"`
-    }
-
-    // 模拟关联概念
-    const relatedConcepts = [
-      { name: 'Java', nodeId: 'root-java', relation: '核心技术' },
-      { name: 'Spring Boot', nodeId: 'kp-springboot', relation: '核心框架' },
-      { name: '微服务架构', nodeId: 'mod-microservice', relation: '相关技能' },
-    ]
-
-    const suggestedResources = [
-      { id: 'res-1', title: 'Spring Boot 实战课程', type: 'course', url: '', platform: '慕课网' },
-      { id: 'res-2', title: 'Java 核心编程', type: 'book', url: '', platform: '京东' },
-    ]
-
-    const followUpQuestions = ['学习周期大概多久？', '有哪些推荐的学习资源？', '这个技术的前景如何？']
-
-    return HttpResponse.json({
-      code: 200, message: 'ok',
-      data: { reply, relatedConcepts, suggestedResources, followUpQuestions },
-    })
-  }),
-
-  http.post(`${BASE}/learning/assistant/generate-path`, async ({ request }) => {
-    await delay(2000)
-    const body = await request.json() as any
-    const path = {
-      id: `lp-ai-${Date.now()}`,
-      name: `${body.positionId === 'np-1' ? 'AI智能体开发' : 'Java工程师'}学习路径（AI生成）`,
-      positionId: body.positionId || 'ep-1',
-      positionName: 'Java开发工程师',
-      steps: [
-        { id: 'step-1', order: 1, title: 'Java 核心基础', description: '掌握面向对象、集合、并发编程', duration: '2-3周', resources: [
-          { id: 'r1', title: 'Java编程思想', type: 'book', url: '', platform: '京东' },
-          { id: 'r2', title: 'Java入门到精通', type: 'video', url: '', platform: 'B站' },
-        ], completed: false },
-        { id: 'step-2', order: 2, title: 'Spring Boot 框架', description: '学习依赖注入、自动配置、Web MVC', duration: '2-3周', resources: [
-          { id: 'r3', title: 'Spring Boot实战', type: 'course', url: '', platform: '慕课网' },
-        ], completed: false },
-        { id: 'step-3', order: 3, title: '数据库与中间件', description: 'MySQL优化、Redis缓存、消息队列', duration: '3-4周', resources: [
-          { id: 'r4', title: '高性能MySQL', type: 'book', url: '', platform: '当当' },
-          { id: 'r5', title: 'Redis实战', type: 'course', url: '', platform: 'Coursera' },
-        ], completed: false },
-        { id: 'step-4', order: 4, title: '微服务与分布式', description: 'Spring Cloud、Docker、K8s', duration: '3-4周', resources: [
-          { id: 'r6', title: '微服务架构设计', type: 'video', url: '', platform: 'YouTube' },
-        ], completed: false },
-        { id: 'step-5', order: 5, title: '项目实战', description: '完成一个电商后台项目，整合所有技能', duration: '3-4周', resources: [
-          { id: 'r7', title: '电商项目实战', type: 'project', url: '', platform: 'GitHub' },
-        ], completed: false },
-      ],
-      totalDuration: '13-18周',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    return HttpResponse.json({ code: 200, message: 'ok', data: path })
-  }),
-
-  http.post(`${BASE}/learning/assistant/recommend-resources`, async ({ request }) => {
-    await delay(800)
-    const body = await request.json() as any
-    const skills: Record<string, any[]> = {}
-    for (const skill of (body.skill_names || ['Java'])) {
-      skills[skill] = [
-        { id: `r-${Date.now()}-1`, title: `${skill} 实战课程`, type: 'course', url: '', platform: '慕课网' },
-        { id: `r-${Date.now()}-2`, title: `${skill} 权威指南`, type: 'book', url: '', platform: '京东' },
-        { id: `r-${Date.now()}-3`, title: `${skill} 项目实战`, type: 'project', url: '', platform: 'GitHub' },
-      ]
-    }
-    return HttpResponse.json({ code: 200, message: 'ok', data: { skills } })
-  }),
-
-  http.post(`${BASE}/learning/assistant/quiz`, async () => {
-    await delay(1000)
-    return HttpResponse.json({
-      code: 200, message: 'ok',
-      data: {
-        questions: [
-          { id: 'q-1', type: 'choice', question: '以下哪个不是 Java 的垃圾回收器？', options: ['G1', 'CMS', 'ZGC', 'Nginx'], correctAnswer: 3, explanation: 'Nginx 是 Web 服务器，不是 JVM 垃圾回收器' },
-          { id: 'q-2', type: 'choice', question: 'Spring Boot 的自动配置基于什么原理？', options: ['反射', '条件注解 @Conditional', 'AOP', '动态代理'], correctAnswer: 1, explanation: 'Spring Boot 通过 @Conditional 系列注解实现条件化自动配置' },
-          { id: 'q-3', type: 'choice', question: 'Redis 中用于实现分布式锁的命令是？', options: ['SET', 'GET', 'SETNX', 'INCR'], correctAnswer: 2, explanation: 'SETNX（SET if Not eXists）可以实现分布式锁' },
-          { id: 'q-4', type: 'choice', question: 'Docker 中构建镜像的文件是？', options: ['package.json', 'Dockerfile', 'docker-compose.yml', 'Makefile'], correctAnswer: 1, explanation: 'Dockerfile 是 Docker 镜像的构建描述文件' },
-          { id: 'q-5', type: 'choice', question: 'Kafka 中消息的基本单位是？', options: ['Topic', 'Partition', 'Message', 'Broker'], correctAnswer: 2, explanation: 'Message（消息）是 Kafka 中最基本的数据单元' },
-        ],
-      },
-    })
   }),
 ]
