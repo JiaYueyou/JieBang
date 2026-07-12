@@ -65,7 +65,7 @@
                 <div class="md-resume-name">{{ talent.resumeFile }}</div>
                 <div class="md-resume-size">上传于 {{ talent.uploadDate || '2026-06-15' }}</div>
               </div>
-              <el-button type="primary" size="small" style="margin-left:auto;">下载</el-button>
+              <el-button type="primary" size="small" style="margin-left:auto;" @click="downloadResume">下载</el-button>
             </div>
             <el-divider />
             <div class="md-resume-preview">
@@ -87,6 +87,27 @@
             </el-button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="dash-card" style="margin-top:16px;">
+      <div class="dash-card-header">
+        <span class="dash-card-title">匹配解释</span>
+        <el-button type="primary" :loading="explaining" :disabled="explaining" @click="generateExplanation">{{ explanation ? '重新生成' : '生成解释' }}</el-button>
+      </div>
+      <div class="dash-card-body">
+        <el-empty v-if="!explanation" description="基于已落库的匹配证据生成可审计解释" :image-size="72" />
+        <template v-else>
+          <el-alert :title="explanation.summary" type="info" :closable="false" show-icon />
+          <el-alert
+            v-for="warning in explanation.warnings" :key="warning" :title="warning"
+            type="warning" :closable="false" show-icon style="margin-top:10px;"
+          />
+          <div class="md-section"><h4>匹配优势</h4><p v-for="item in explanation.strengths" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
+          <div class="md-section"><h4>能力缺口</h4><p v-for="item in explanation.gaps" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
+          <div class="md-section" v-if="explanation.interview_suggestions.length"><h4>面试建议</h4><p v-for="item in explanation.interview_suggestions" :key="item">{{ item }}</p></div>
+          <el-tag size="small" type="info">{{ explanation.generation_mode === 'llm' ? '模型解释' : '确定性模板解释' }}</el-tag>
+        </template>
       </div>
     </div>
 
@@ -115,20 +136,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { ArrowLeft, CircleCheck, WarningFilled, Connection, Document, Upload, Warning } from "@element-plus/icons-vue";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import DataState from "@/components/common/DataState.vue";
 import { useTalentStore } from "@/stores/talents";
+import { dataProvider } from "@/data";
+import type { MatchExplanation } from "@/domain/types";
 
 const route = useRoute();
 const store = useTalentStore();
 const { talents, loading, error } = storeToRefs(store);
+const explanation = ref<MatchExplanation | null>(null);
+const explaining = ref(false);
 onMounted(() => store.load());
 const talent = computed(() => {
   const id = Number(route.params.resumeId);
   return talents.value.find((t) => t.resume_id === id) || null;
 });
+
+async function downloadResume() {
+  if (!talent.value?.resumeFile) return;
+  await dataProvider.talents.download(Number(talent.value.resume_id), talent.value.resumeFile);
+}
+
+async function generateExplanation() {
+  if (!talent.value) return;
+  explaining.value = true;
+  try {
+    explanation.value = await dataProvider.talents.explain(Number(talent.value.match_id));
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "匹配解释生成失败");
+  } finally { explaining.value = false; }
+}
 </script>

@@ -77,7 +77,13 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends"> = {
       });
     },
   },
-  talents: { async list(){return delay(db().talents);}, async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);} },
+  talents: {
+    async list(){return delay(db().talents);},
+    async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
+    async upload(){throw new Error("简历上传仅支持后端数据模式");},
+    async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async explain(){throw new Error("匹配解释仅支持后端数据模式");},
+  },
   career: {
     async analyze(input) {
       const internal=input.enterpriseJobs;
@@ -86,7 +92,10 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends"> = {
         {rank:2,job_id:8,job:"大数据开发工程师",recommendScore:87,currentMatch:55,afterMatch:87,existing:["Java","Python","SQL","MySQL"],learningPlan:[{skill:"Spark 核心开发",time:"3 周",difficulty:"medium",resources:["Spark权威指南"]}],suggestedProject:"将离线报表迁移为实时数据看板",totalTime:"6-10 周",internal:internal.some((job)=>job.includes("数据"))},
         {rank:3,job_id:9,job:"DevOps 工程师",recommendScore:82,currentMatch:48,afterMatch:84,existing:["Linux","Shell","Git","Docker基础"],learningPlan:[{skill:"Kubernetes 实战",time:"4 周",difficulty:"hard",resources:["K8s官方教程"]}],suggestedProject:"搭建自动化 CI/CD 流水线",totalTime:"5-7 周",internal:internal.some((job)=>job.includes("DevOps"))},
       ];
-      return delay(rows.sort((a,b)=>Number(b.internal)-Number(a.internal)||b.recommendScore-a.recommendScore),300);
+      return delay({
+        recommendations: rows.sort((a,b)=>Number(b.internal)-Number(a.internal)||b.recommendScore-a.recommendScore),
+        agentRunId: "mock-career-run", agentStatus: "succeeded" as const, warnings: [],
+      },300);
     },
   },
   graph: {

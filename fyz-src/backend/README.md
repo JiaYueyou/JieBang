@@ -46,6 +46,17 @@ alembic downgrade -1
 alembic revision --autogenerate -m "describe change"
 ```
 
+### ⚠ 数据库版本更新：`20260712_0006_matching`
+
+本版本新增私有简历、解析结果、简历技能、确定性人岗匹配和匹配证据表：`resume`、`resume_parse_result`、`resume_skill`、`match_record`、`match_evidence`。更新代码后必须执行：
+
+```powershell
+alembic upgrade head
+alembic current  # 应显示 20260712_0006 (head)
+```
+
+迁移完成后重启 Uvicorn，确认 `/api/v1/talents` 已注册。不要以 `alembic stamp head` 代替升级，否则会出现 API 已部署但匹配数据表缺失的问题。
+
 新增 ORM 模型后，必须在 `app/models/__init__.py` 导入，确保 Alembic
 自动生成迁移时可以读取完整 metadata。自动生成的 migration 必须经过人工检查。
 
@@ -120,6 +131,12 @@ celery -A app.core.celery_app.celery_app worker --loglevel=info --pool=solo
 自动化测试通过 `CELERY_TASK_ALWAYS_EAGER=true` 在进程内执行任务，不需要
 启动 Redis。未配置 `DEEPSEEK_API_KEY` 时，Pipeline 只运行规则抽取并返回
 `llm_enrichment=false`；DeepSeek 超时不会回滚已经确认的规则结果。
+
+Career Planning 与 Match Explanation 也使用相同的 `AsyncTask` 队列。
+本地 eager 模式会在创建请求中直接执行，前端为 Agent 创建请求设置 60 秒独立超时；
+联调真实异步行为时设置 `CELERY_TASK_ALWAYS_EAGER=false`，并同时启动 Redis、
+Celery Worker 和 FastAPI。前端随后轮询 `/api/v1/tasks/{task_id}`，不会受普通
+15 秒 HTTP 超时影响。
 
 主要接口：
 

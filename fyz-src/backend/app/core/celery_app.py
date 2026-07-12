@@ -12,7 +12,10 @@ celery_app = Celery(
     "jiebang",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
-    include=["app.tasks.skill_import", "app.tasks.graph_sync", "app.tasks.jd_generation"],
+    include=[
+        "app.tasks.skill_import", "app.tasks.graph_sync", "app.tasks.jd_generation",
+        "app.tasks.ai_agents",
+    ],
 )
 celery_app.conf.update(
     task_always_eager=CELERY_TASK_ALWAYS_EAGER,

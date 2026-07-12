@@ -153,6 +153,35 @@ export interface CareerRecommendation {
   explanation?: string;
 }
 
+export interface CareerAnalysisResult {
+  recommendations: CareerRecommendation[];
+  agentRunId: string;
+  agentStatus: "succeeded" | "degraded";
+  warnings: string[];
+}
+
+export interface ResumeUploadPayload {
+  file: File;
+  name?: string;
+  currentPosition?: string;
+  experience?: string;
+  education?: string;
+  department?: string;
+}
+
+export interface MatchExplanation {
+  match_id: EntityId;
+  score: number;
+  summary: string;
+  strengths: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
+  gaps: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
+  risks: string[];
+  interview_suggestions: string[];
+  generation_mode: "llm" | "template";
+  warnings: string[];
+  agent_run_id: string;
+}
+
 export interface GraphNode {
   id: string;
   name: string;

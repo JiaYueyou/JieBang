@@ -76,7 +76,20 @@ base
 → 20260620_0003  标准技能与抽取流水线
 → 20260620_0004  标准岗位与图谱同步审计
 → 20260710_0005  岗位洞察决策审计（head）
+→ 20260712_0006  私有简历、匹配快照与解释证据（当前 head）
 ```
+
+### ⚠ `20260712_0006_matching` 数据库版本更新
+
+该迁移创建 `resume`、`resume_parse_result`、`resume_skill`、`match_record` 和 `match_evidence`，供 FYZ 人才匹配与 Match Explanation 使用。拉取包含该 revision 的代码后，先执行：
+
+```powershell
+cd fyz-src\backend
+alembic upgrade head
+alembic current
+```
+
+确认当前版本为 `20260712_0006 (head)` 后再重启 FastAPI。不要使用 `alembic stamp head` 跳过 DDL；否则会造成 `/api/v1/talents` 已存在、但登录后查询因业务表缺失而失败。
 
 ### 已存在旧 `user` 表
 
