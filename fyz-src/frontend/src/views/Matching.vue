@@ -19,7 +19,7 @@
               <el-option label="匹配度优先" value="score" /><el-option label="急缺岗位优先" value="urgent" />
               <el-option label="最新优先" value="newest" />
             </el-select>
-            <el-button type="primary" size="default" @click="$router.push('/matching')">
+            <el-button type="primary" size="default" @click="uploadVisible = true">
               <el-icon><Upload /></el-icon> 上传简历
             </el-button>
           </div>
@@ -74,23 +74,48 @@
       <el-icon style="font-size:40px;color:var(--color-border);"><Search /></el-icon>
       <p style="margin-top:12px;">没有匹配的人才信息</p>
     </div>
+
+    <el-dialog v-model="uploadVisible" title="上传简历并生成岗位匹配" width="520px">
+      <el-form label-width="92px">
+        <el-form-item label="简历文件">
+          <el-upload :auto-upload="false" :limit="1" accept=".txt,.md,.pdf,.docx" :on-change="onFileChange" :on-remove="onFileRemove">
+            <el-button><el-icon><Upload /></el-icon> 选择文件</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="姓名"><el-input v-model="uploadForm.name" placeholder="未填写时使用文件名" /></el-form-item>
+        <el-form-item label="当前岗位"><el-input v-model="uploadForm.currentPosition" /></el-form-item>
+        <el-form-item label="工作年限"><el-input v-model="uploadForm.experience" placeholder="例如：3 年" /></el-form-item>
+        <el-form-item label="学历"><el-input v-model="uploadForm.education" /></el-form-item>
+        <el-form-item label="部门"><el-input v-model="uploadForm.department" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadVisible = false">取消</el-button>
+        <el-button type="primary" :loading="uploading" :disabled="!uploadFile" @click="submitUpload">上传并匹配</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
+import { ElMessage, type UploadFile } from "element-plus";
 import { storeToRefs } from "pinia";
 import { Search, Upload } from "@element-plus/icons-vue";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import DataState from "@/components/common/DataState.vue";
 import { useTalentStore } from "@/stores/talents";
 import type { TalentSummary } from "@/domain/types";
+import { dataProvider } from "@/data";
 
 const filterName = ref("");
 const filterPosition = ref("");
 const filterDept = ref("");
 const filterScore = ref("");
 const sortBy = ref("score");
+const uploadVisible = ref(false);
+const uploading = ref(false);
+const uploadFile = ref<File | null>(null);
+const uploadForm = reactive({ name: "", currentPosition: "", experience: "", education: "", department: "" });
 const store = useTalentStore();
 const { talents, loading, error } = storeToRefs(store);
 onMounted(() => store.load());
@@ -118,4 +143,19 @@ const urgentCount = computed(() => talents.value.filter(t => t.urgent).length);
 const highMatchCount = computed(() => talents.value.filter(t => t.score >= 90).length);
 
 function applyFilter() {}
+
+function onFileChange(file: UploadFile) { uploadFile.value = file.raw || null; }
+function onFileRemove() { uploadFile.value = null; }
+async function submitUpload() {
+  if (!uploadFile.value) return;
+  uploading.value = true;
+  try {
+    await dataProvider.talents.upload({ file: uploadFile.value, ...uploadForm });
+    await store.refresh();
+    uploadVisible.value = false;
+    ElMessage.success("简历已保存并完成岗位匹配");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "简历上传失败");
+  } finally { uploading.value = false; }
+}
 </script>

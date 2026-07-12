@@ -62,6 +62,19 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(request.get).toHaveBeenCalledWith("/jobs", { params: undefined });
   });
 
+  it("does not send FormData with the global application/json content type", async () => {
+    const form = new FormData();
+    form.append("file", new Blob(["Python"]), "resume.txt");
+    let contentType = "";
+    await request.post("/multipart-probe", form, {
+      adapter: async (config) => {
+        contentType = String(config.headers.get("Content-Type") || "");
+        return { data: response({ ok: true }).data, status: 200, statusText: "OK", headers: {}, config };
+      },
+    });
+    expect(contentType).not.toBe("application/json");
+  });
+
   it("creates an Agent task, reads its completed draft, then uses server entities for publishing", async () => {
     const post = vi.spyOn(request, "post")
       .mockResolvedValueOnce(response({

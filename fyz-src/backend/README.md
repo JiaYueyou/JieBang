@@ -46,6 +46,17 @@ alembic downgrade -1
 alembic revision --autogenerate -m "describe change"
 ```
 
+### ⚠ 数据库版本更新：`20260712_0006_matching`
+
+本版本新增私有简历、解析结果、简历技能、确定性人岗匹配和匹配证据表：`resume`、`resume_parse_result`、`resume_skill`、`match_record`、`match_evidence`。更新代码后必须执行：
+
+```powershell
+alembic upgrade head
+alembic current  # 应显示 20260712_0006 (head)
+```
+
+迁移完成后重启 Uvicorn，确认 `/api/v1/talents` 已注册。不要以 `alembic stamp head` 代替升级，否则会出现 API 已部署但匹配数据表缺失的问题。
+
 新增 ORM 模型后，必须在 `app/models/__init__.py` 导入，确保 Alembic
 自动生成迁移时可以读取完整 metadata。自动生成的 migration 必须经过人工检查。
 

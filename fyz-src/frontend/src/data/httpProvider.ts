@@ -130,7 +130,23 @@ export const httpDataProvider: DataProvider = {
     remove: async (id) => { await request.delete(`/jobs/${id}`); },
     updateStatus: (id,status) => put(`/jobs/${id}/status`,{status}),
   },
-  talents: { list:()=>get("/talents"), get:(id)=>get(`/talents/${id}`) },
+  talents: {
+    list:()=>get("/talents"), get:(id)=>get(`/talents/${id}`),
+    upload: async (input) => {
+      const form = new FormData();
+      form.append("file", input.file);
+      const fields = { name: input.name, current_position: input.currentPosition, experience: input.experience, education: input.education, department: input.department };
+      Object.entries(fields).forEach(([key, value]) => { if (value) form.append(key, value); });
+      await request.post("/resumes", form);
+    },
+    download: async (resumeId, filename) => {
+      const response = await request.get(`/resumes/${resumeId}/file`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click();
+      URL.revokeObjectURL(url);
+    },
+    explain: (matchId) => post(`/matches/${matchId}/explanation`),
+  },
   career: {
     analyze: async (input) => {
       async function extractFiles(files: File[] = []) {

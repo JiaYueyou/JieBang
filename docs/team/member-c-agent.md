@@ -17,7 +17,7 @@
 - 后端已有 DeepSeek Provider、技能抽取和图谱 L4/L5 补全调用。
 - DeepSeek 未配置时已有规则降级。
 - 已有 `AgentRun` 审计、独立 `agent-development` 运行包、版本化 Prompt、Pydantic 结构化输出与 Provider Mock 测试。
-- JD Generation、技能补全、L4/L5 图谱补全和职业规划已具备首版接口；匹配解释的独立报告接口仍待完成。
+- JD Generation、技能补全、L4/L5 图谱补全、职业规划和匹配解释已具备首版接口；匹配解释使用确定性快照与证据引用，不允许模型改写匹配分数。
 - MySQL 已具备来源、技能事实和 enrichment candidate 等可复用数据。
 
 ## 3. 设计边界
@@ -55,7 +55,7 @@
 - 输出分阶段学习目标、前置关系、项目建议和验证方式。
 - 完成四类 Agent API 契约、测试样例和演示数据。
 
-已完成首版：`POST /career/resume-extractions` 支持文本层解析，`POST /career/analyses` 支持技能/简历文本、企业技术栈与内部岗位输入；模型不可用时返回模板学习路径。
+已完成首版：`POST /career/resume-extractions` 支持文本层解析，`POST /career/analyses` 支持技能/简历文本、企业技术栈与内部岗位输入，`POST /matches/{match_id}/explanation` 支持证据化匹配解释；模型不可用时返回模板结果。简历持久化依赖 Alembic `20260712_0006`，部署前必须执行 `alembic upgrade head`。
 
 ## 5. 后 8 周优化
 

@@ -13,6 +13,7 @@ export const providerMode =
 const mockBackedDataProvider: DataProvider = {
   ...mockDataProvider,
   jobs: httpDataProvider.jobs,
+  talents: httpDataProvider.talents,
   career: httpDataProvider.career,
   trends: httpDataProvider.trends,
 };
@@ -20,6 +21,7 @@ const mockBackedDataProvider: DataProvider = {
 const hybridDataProvider: DataProvider = {
   ...mockDataProvider,
   jobs: httpDataProvider.jobs,
+  talents: httpDataProvider.talents,
   career: httpDataProvider.career,
   graph: httpDataProvider.graph,
   trends: httpDataProvider.trends,

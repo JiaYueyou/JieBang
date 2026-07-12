@@ -39,6 +39,8 @@ python scripts/run_database_import.py --replace
 3. 调用项目现有 `GraphService.sync(mode="full")`，仅重建 Neo4j 中 `namespace=jiebang` 的节点和关系；不会调用 DeepSeek。
 4. 校验 MySQL 表、快照版本、最新图谱快照以及 Neo4j 节点/关系数量。
 
+> **数据库版本更新**：包含简历匹配能力的代码版本要求 Alembic revision `20260712_0006`。在导入快照前先确认步骤 1 的 `alembic current` 为 `20260712_0006 (head)`；若快照由旧 revision 导出，需由来源方升级数据库并重新导出快照，避免 `resume`、`match_record` 等表结构或 manifest 版本不一致。
+
 ## 来源方刷新数据快照
 
 只有负责发布数据的来源方需要执行：

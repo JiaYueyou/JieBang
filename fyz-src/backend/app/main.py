@@ -18,12 +18,12 @@ from app.api.v1.graph import router as graph_router
 from app.api.v1.agents import router as agents_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.career import router as career_router
+from app.api.v1.matching import router as matching_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
 # --- 占位路由 ---
 changes_router = make_placeholder_router("changes", "能力更新", "既有岗位能力动态更新")
-matching_router = make_placeholder_router("matching", "匹配诊断", "人岗匹配度诊断")
 admin_router = make_placeholder_router("admin", "系统管理", "系统管理")
 
 

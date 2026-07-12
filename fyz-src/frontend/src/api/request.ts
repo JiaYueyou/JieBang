@@ -9,6 +9,11 @@ const request = axios.create({
 });
 
 request.interceptors.request.use((config) => {
+  // Let the browser generate multipart/form-data with its boundary. Keeping the
+  // instance-level application/json header makes FastAPI report a missing file.
+  if (config.data instanceof FormData) {
+    config.headers.delete("Content-Type");
+  }
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -19,7 +24,7 @@ request.interceptors.request.use((config) => {
 request.interceptors.response.use(
   (response) => {
     const data = response.data as ApiResponse<unknown>;
-    if (data.code !== 200) {
+    if (data && typeof data === "object" && "code" in data && data.code !== 200) {
       ElMessage.error(data.message || "请求失败");
       return Promise.reject(new ApiError(data.message, data.code, response.status));
     }

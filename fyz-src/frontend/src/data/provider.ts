@@ -16,7 +16,13 @@ export interface DataProvider {
     remove(id: number): Promise<void>;
     updateStatus(id: number, status: JobSummary["status"]): Promise<JobSummary>;
   };
-  talents: { list(): Promise<TalentSummary[]>; get(resumeId: number): Promise<TalentSummary | null> };
+  talents: {
+    list(): Promise<TalentSummary[]>;
+    get(resumeId: number): Promise<TalentSummary | null>;
+    upload(input: import("@/domain/types").ResumeUploadPayload): Promise<void>;
+    download(resumeId: number, filename: string): Promise<void>;
+    explain(matchId: number): Promise<import("@/domain/types").MatchExplanation>;
+  };
   career: { analyze(input: {
     skillText: string;
     enterpriseTech: string;
