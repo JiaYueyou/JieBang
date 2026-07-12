@@ -54,8 +54,9 @@ new = '''/* DASHBOARD (Bento) */
 .db-hot-header{padding:6px 0;}.db-hot-col.rank{width:24px;text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0;}
 .db-hot-col.rank.top{color:var(--color-brand);}
 .db-hot-col.name{flex:1;min-width:0;font-size:13px;font-weight:500;}
-.db-hot-col.chart{width:100px;flex-shrink:0;}.db-hot-col.num{width:50px;text-align:right;flex-shrink:0;font-size:12px;}
-.db-hot-col.trend{width:55px;text-align:right;flex-shrink:0;font-size:12px;}
+.db-hot-col.chart{width:100px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}.db-hot-col.num{width:50px;text-align:right;flex-shrink:0;font-size:12px;display:flex;align-items:center;justify-content:flex-end;}
+.db-hot-col.trend{width:55px;text-align:right;flex-shrink:0;font-size:12px;display:flex;align-items:center;justify-content:flex-end;}
+.db-hot-col.action{width:32px;text-align:right;flex-shrink:0;}
 .db-hot-col.trend.up{color:var(--color-success);}.db-hot-col.trend.down{color:var(--color-danger);}
 .db-hot-header .db-hot-col{font-size:11px;color:var(--text-muted);font-weight:600;}
 .db-skill-list{display:flex;flex-direction:column;}
