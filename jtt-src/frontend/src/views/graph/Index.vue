@@ -1,68 +1,72 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue'
+import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue'
 import { Graph } from '@antv/g6'
 import { mockGraphNodes, mockGraphEdges } from '@/mock/data/skills'
+import type { GraphNodeType } from '@/types'
 
 const containerRef = ref<HTMLDivElement>()
-const domain = ref<'all' | 'backend' | 'frontend' | 'ai'>('all')
+const rootTech = ref<string>('all')
+
+// 从数据中提取可用的根技术列表
+const availableRoots = computed(() =>
+  mockGraphNodes.filter((n) => n.type === 'root').map((n) => ({ id: n.id, label: n.label })),
+)
 
 let graph: Graph | null = null
-const anchorPositions = new Map<string, { x: number; y: number }>()
-const MAX_DRAG_DISTANCE = 160
 
-function getDomainFilteredData() {
-  if (domain.value === 'all') {
+// BFS 过滤：从选中根节点出发，收集所有可达节点和边
+function getFilteredData() {
+  if (rootTech.value === 'all') {
     return { nodes: mockGraphNodes, edges: mockGraphEdges }
   }
-  const domainPositions: Record<string, string[]> = {
-    backend: ['pos-java', 'pos-de'],
-    frontend: ['pos-fe'],
-    ai: ['pos-agent', 'pos-ctx'],
-  }
-  const allowedPosIds = domainPositions[domain.value]
-  const reachable = new Set<string>(allowedPosIds)
-  const allEdges = mockGraphEdges
+  const reachable = new Set<string>([rootTech.value])
   let changed = true
   while (changed) {
     changed = false
-    for (const e of allEdges) {
-      if (reachable.has(e.source) && !reachable.has(e.target)) { reachable.add(e.target); changed = true }
-      if (reachable.has(e.target) && !reachable.has(e.source)) { reachable.add(e.source); changed = true }
+    for (const e of mockGraphEdges) {
+      if (reachable.has(e.source) && !reachable.has(e.target)) {
+        reachable.add(e.target); changed = true
+      }
+      if (reachable.has(e.target) && !reachable.has(e.source)) {
+        reachable.add(e.source); changed = true
+      }
     }
   }
   return {
     nodes: mockGraphNodes.filter((n) => reachable.has(n.id)),
-    edges: allEdges.filter((e) => reachable.has(e.source) && reachable.has(e.target)),
+    edges: mockGraphEdges.filter((e) => reachable.has(e.source) && reachable.has(e.target)),
   }
+}
+
+// 节点样式配置 —— 每层不同尺寸和颜色
+const NODE_STYLES: Record<GraphNodeType, { size: [number, number]; fill: string; stroke: string; fontSize: number; fontWeight: number; radius: number }> = {
+  root:             { size: [110, 44], fill: '#1e40af', stroke: '#1e3a8a', fontSize: 13, fontWeight: 700, radius: 22 },
+  position:         { size: [92, 38], fill: '#4f6ef6', stroke: '#3d5bd9', fontSize: 12, fontWeight: 600, radius: 19 },
+  domain_branch:    { size: [78, 34], fill: '#059669', stroke: '#047857', fontSize: 11, fontWeight: 500, radius: 17 },
+  skillset_branch:  { size: [78, 34], fill: '#7c3aed', stroke: '#6d28d9', fontSize: 11, fontWeight: 500, radius: 17 },
+  module:           { size: [64, 28], fill: '#0891b2', stroke: '#0e7490', fontSize: 10, fontWeight: 500, radius: 14 },
+  knowledge:        { size: [50, 24], fill: '#d97706', stroke: '#b45309', fontSize: 9, fontWeight: 500, radius: 12 },
 }
 
 function buildGraph() {
   if (!containerRef.value) return
   const container = containerRef.value
   const width = container.clientWidth || 1200
-  const height = 650
+  const height = 780
 
-  const { nodes: dataNodes, edges: dataEdges } = getDomainFilteredData()
+  const { nodes: dataNodes, edges: dataEdges } = getFilteredData()
 
-  const mappedNodes = dataNodes.map((n) => {
-    let yBase: number
-    let spread: number
-    switch (n.layer) {
-      case 1: yBase = 110; spread = 140; break
-      case 2: yBase = 310; spread = 220; break
-      case 3: yBase = 510; spread = 240; break
-      default: yBase = 325; spread = 200
-    }
-    const angle = Math.random() * Math.PI * 2
-    const r = spread * (0.3 + Math.random() * 0.7)
-    const x = width / 2 + r * Math.cos(angle)
-    const y = yBase + (Math.random() - 0.5) * 30
-    return {
-      id: n.id,
-      data: { label: n.label, nodeType: n.type, layer: n.layer },
-      style: { x, y },
-    }
-  })
+  if (dataNodes.length === 0) {
+    // 无数据时清空容器
+    container.innerHTML = ''
+    return
+  }
+
+  // 准备 dagre 布局所需数据（无随机位置，由算法自动计算）
+  const mappedNodes = dataNodes.map((n) => ({
+    id: n.id,
+    data: { label: n.label, nodeType: n.type, layer: n.layer },
+  }))
 
   const mappedEdges = dataEdges.map((e) => ({
     source: e.source,
@@ -75,104 +79,98 @@ function buildGraph() {
     width,
     height,
     autoFit: 'view',
-    background: '#f2f3f5',
+    background: '#f8f9fb',
     data: { nodes: mappedNodes, edges: mappedEdges },
     node: {
-      type: 'circle',
+      type: 'rect',
       style: (d: any) => {
-        const label = d.data?.label || ''
-        const t = d.data?.nodeType
-        if (t === 'position') {
-          return {
-            size: 56,
-            fill: '#4f6ef6',
-            stroke: '#3d5bd9',
-            lineWidth: 2,
-            labelText: label,
-            labelFill: '#fff',
-            labelFontSize: 12,
-            labelFontWeight: 600,
-            labelPlacement: 'center',
-            shadowColor: 'rgba(79,110,246,0.1)',
-            shadowBlur: 6,
-          }
-        }
-        if (t === 'technology') {
-          return {
-            size: 42,
-            fill: '#0891b2',
-            stroke: '#0e7490',
-            lineWidth: 1.5,
-            labelText: label,
-            labelFill: '#fff',
-            labelFontSize: 10,
-            labelFontWeight: 500,
-            labelPlacement: 'center',
-          }
-        }
-        // skill
+        const t = (d.data?.nodeType || 'module') as GraphNodeType
+        const s = NODE_STYLES[t] || NODE_STYLES.module
         return {
-          size: 32,
-          fill: '#d97706',
-          stroke: '#b45309',
-          lineWidth: 1,
-          labelText: label,
+          size: s.size,
+          radius: s.radius,
+          fill: s.fill,
+          stroke: s.stroke,
+          lineWidth: 2,
+          labelText: d.data?.label || '',
           labelFill: '#fff',
-          labelFontSize: 9,
-          labelFontWeight: 500,
+          labelFontSize: s.fontSize,
+          labelFontWeight: s.fontWeight,
           labelPlacement: 'center',
+          cursor: 'pointer',
         }
       },
       state: {
         selected: {
-          stroke: '#4f6ef6',
+          stroke: '#f59e0b',
           lineWidth: 4,
-          shadowColor: 'rgba(79,110,246,0.5)',
-          shadowBlur: 24,
+          shadowColor: 'rgba(245,158,11,0.4)',
+          shadowBlur: 20,
         },
         highlighted: { opacity: 1 },
         dimmed: { opacity: 0.08 },
       },
     },
     edge: {
-      type: 'cubic',
-      style: {
-        stroke: 'rgba(147,180,245,0.28)',
-        lineWidth: 1,
-        endArrow: false,
+      type: 'cubic-vertical',
+      style: (d: any) => {
+        const rel = d.data?.relation || ''
+        if (rel === 'cross_ref') {
+          // 跨分支虚线（琥珀色）
+          return {
+            stroke: 'rgba(245,158,11,0.4)',
+            lineWidth: 1,
+            lineDash: [5, 4],
+            endArrow: false,
+          }
+        }
+        // 层级边实线（蓝灰色 + 箭头）
+        return {
+          stroke: 'rgba(148,163,184,0.45)',
+          lineWidth: 1.5,
+          endArrow: true,
+        }
       },
       state: {
         highlighted: {
           stroke: 'rgba(79,110,246,0.5)',
-          lineWidth: 2.2,
+          lineWidth: 2.5,
         },
         dimmed: { opacity: 0.03 },
       },
     },
+    // dagre 布局替代 force —— 从上到下五级层级
     layout: {
-      type: 'force',
-      preventOverlap: true,
-      linkDistance: 100,
-      nodeStrength: -650,
-      edgeStrength: 0.1,
-      gravity: 0.28,
-      animation: true,
+      type: 'dagre',
+      rankdir: 'TB',
+      ranksep: 90,
+      nodesep: 50,
+      animation: false,
     },
-    behaviors: ['drag-canvas', 'zoom-canvas', { type: 'drag-element', enableTransient: false }],
+    behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
   })
 
-  // ---- Click highlight ----
+  // 点击节点：高亮完整上下游链路
   graph.on('node:click', (evt: any) => {
     const nodeId = evt.target?.id
     if (!nodeId) return
     const allEdges = graph!.getEdgeData()
     const allNodes = graph!.getNodeData()
 
+    // BFS 收集所有关联节点（上下游完整链路）
     const connectedIds = new Set<string>([nodeId])
-    allEdges.forEach((e: any) => {
-      if (e.source === nodeId) connectedIds.add(e.target)
-      if (e.target === nodeId) connectedIds.add(e.source)
-    })
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const e of allEdges) {
+        if (connectedIds.has(e.source) && !connectedIds.has(e.target)) {
+          connectedIds.add(e.target); changed = true
+        }
+        if (connectedIds.has(e.target) && !connectedIds.has(e.source)) {
+          connectedIds.add(e.source); changed = true
+        }
+      }
+    }
 
     allNodes.forEach((n: any) => {
       if (n.id === nodeId) graph!.setElementState(n.id, 'selected')
@@ -180,11 +178,12 @@ function buildGraph() {
       else graph!.setElementState(n.id, 'dimmed')
     })
     allEdges.forEach((e: any) => {
-      if (e.source === nodeId || e.target === nodeId) graph!.setElementState(e.id, 'highlighted')
+      if (connectedIds.has(e.source) && connectedIds.has(e.target)) graph!.setElementState(e.id, 'highlighted')
       else graph!.setElementState(e.id, 'dimmed')
     })
   })
 
+  // 点击空白取消高亮
   graph.on('canvas:click', () => {
     const allNodes = graph!.getNodeData()
     const allEdges = graph!.getEdgeData()
@@ -192,42 +191,7 @@ function buildGraph() {
     allEdges.forEach((e: any) => graph!.setElementState(e.id, []))
   })
 
-  // ---- Drag constraint ----
-  graph.on('node:dragstart', (evt: any) => {
-    const id = evt.target?.id
-    if (!id) return
-    const pos = graph!.getElementPosition(id)
-    anchorPositions.set(id, { x: pos[0], y: pos[1] })
-  })
-
-  graph.on('node:drag', (evt: any) => {
-    const id = evt.target?.id
-    if (!id) return
-    const anchor = anchorPositions.get(id)
-    if (!anchor) return
-    const pos = graph!.getElementPosition(id)
-    const dx = pos[0] - anchor.x
-    const dy = pos[1] - anchor.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (dist > MAX_DRAG_DISTANCE) {
-      const ratio = MAX_DRAG_DISTANCE / dist
-      graph!.translateElementTo(id, [anchor.x + dx * ratio, anchor.y + dy * ratio], false)
-    }
-  })
-
-  graph.on('node:dragend', () => {
-    graph!.layout()
-  })
-
-  graph.render().then(() => {
-    setTimeout(() => {
-      const nodes = graph!.getNodeData()
-      nodes.forEach((n: any) => {
-        const pos = graph!.getElementPosition(n.id)
-        anchorPositions.set(n.id, { x: pos[0], y: pos[1] })
-      })
-    }, 1500)
-  })
+  graph.render()
 }
 
 function destroyGraph() {
@@ -235,7 +199,7 @@ function destroyGraph() {
 }
 
 onMounted(() => nextTick(() => buildGraph()))
-watch(domain, () => { destroyGraph(); nextTick(() => buildGraph()) })
+watch(rootTech, () => { destroyGraph(); nextTick(() => buildGraph()) })
 onUnmounted(() => destroyGraph())
 </script>
 
@@ -246,25 +210,33 @@ onUnmounted(() => destroyGraph())
         <h3>IT 岗位技能知识图谱</h3>
       </div>
       <div class="toolbar-right">
+        <!-- 图例 -->
         <div class="legend">
-          <span class="legend-item"><span class="legend-dot pos"></span>岗位</span>
-          <span class="legend-item"><span class="legend-dot tech"></span>技术</span>
-          <span class="legend-item"><span class="legend-dot skill"></span>技能</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#1e40af"></span>根技术</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#4f6ef6"></span>岗位</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#059669"></span>应用领域</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span>技能集合</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#0891b2"></span>能力模块</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span>知识点</span>
+          <span class="legend-edge"><span class="legend-line dash"></span>交叉关联</span>
         </div>
-        <div class="domain-filters">
+        <!-- 根技术过滤器 -->
+        <div class="root-filters">
           <button
-            v-for="opt in [
-              { key: 'all', label: '全部' },
-              { key: 'backend', label: '后端' },
-              { key: 'frontend', label: '前端' },
-              { key: 'ai', label: 'AI' },
-            ]"
-            :key="opt.key"
             class="filter-chip"
-            :class="{ active: domain === opt.key }"
-            @click="domain = opt.key as any"
+            :class="{ active: rootTech === 'all' }"
+            @click="rootTech = 'all'"
           >
-            {{ opt.label }}
+            全部
+          </button>
+          <button
+            v-for="rt in availableRoots"
+            :key="rt.id"
+            class="filter-chip"
+            :class="{ active: rootTech === rt.id }"
+            @click="rootTech = rt.id"
+          >
+            {{ rt.label }}
           </button>
         </div>
       </div>
@@ -275,7 +247,7 @@ onUnmounted(() => destroyGraph())
 
 <style scoped>
 .graph-page {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -283,13 +255,14 @@ onUnmounted(() => destroyGraph())
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 12px 16px;
   margin-bottom: 8px;
-  background: transparent;
 }
 
 .toolbar-left h3 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -297,35 +270,48 @@ onUnmounted(() => destroyGraph())
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .legend {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: 11px;
   color: var(--muted);
 }
 
 .legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
-.legend-dot.pos { background: #4f6ef6; }
-.legend-dot.tech { background: #0891b2; }
-.legend-dot.skill { background: #d97706; }
+.legend-edge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
 
-.domain-filters {
+.legend-line.dash {
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed rgba(245, 158, 11, 0.5);
+  flex-shrink: 0;
+}
+
+.root-filters {
   display: flex;
   gap: 4px;
 }
@@ -354,7 +340,7 @@ onUnmounted(() => destroyGraph())
 
 .graph-container {
   width: 100%;
-  height: 650px;
+  height: 780px;
   border-radius: 8px;
   overflow: hidden;
 }

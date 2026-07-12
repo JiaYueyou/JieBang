@@ -1,27 +1,29 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { LearningPath, LearningStep } from '@/types'
+import { learningApi } from '@/api/learning'
 
 export const useLearningStore = defineStore('learning', () => {
   const paths = ref<LearningPath[]>([])
   const loading = ref(false)
 
   const fetchPaths = async () => {
-    // Will be replaced by real API call; mock returns data directly
     loading.value = true
     try {
-      // const res = await learningApi.getList()
-      // paths.value = res.data
+      const res: any = await learningApi.getList()
+      if (res.data) paths.value = res.data
     } finally {
       loading.value = false
     }
   }
 
-  const addPath = (path: LearningPath) => {
-    paths.value.push(path)
+  const addPath = async (path: LearningPath) => {
+    const res: any = await learningApi.create({ name: path.name, positionId: parseInt(path.positionId) || 1 })
+    if (res.data) paths.value.push(res.data)
   }
 
-  const removePath = (id: string) => {
+  const removePath = async (id: string) => {
+    await learningApi.delete(id)
     paths.value = paths.value.filter((p) => p.id !== id)
   }
 
