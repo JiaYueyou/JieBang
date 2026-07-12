@@ -63,25 +63,35 @@ class CareerService:
             warnings=warnings,
         )
 
-    async def analyze(self, request: CareerAnalysisRequest, *, user_id: int) -> CareerAnalysisResponse:
+    async def analyze(
+        self,
+        request: CareerAnalysisRequest,
+        *,
+        user_id: int,
+        agent_run_id: str | None = None,
+    ) -> CareerAnalysisResponse:
         combined_text = " ".join(filter(None, [request.skill_text, request.resume_text]))
         if not combined_text.strip():
             raise InvalidParameterError("员工技能或简历文本至少填写一项")
         skills = self._extract_skills(combined_text)
         candidates = await self._build_candidates(request, skills)
-        run_id = str(uuid.uuid4())
-        run = AgentRun(
-            id=run_id,
-            agent_type=self.agent.agent_type,
-            provider=self.llm.provider_name,
-            model=self.llm.model_name,
-            prompt_version=self.agent.prompt_version,
-            input_summary=f"skills={len(skills)} candidates={len(candidates)}",
-            status="running",
-            retry_count=0,
-            created_by=user_id,
-        )
-        self.db.add(run)
+        run_id = agent_run_id or str(uuid.uuid4())
+        run = await self.db.get(AgentRun, run_id) if agent_run_id else None
+        if run is None:
+            run = AgentRun(
+                id=run_id,
+                agent_type=self.agent.agent_type,
+                provider=self.llm.provider_name,
+                model=self.llm.model_name,
+                prompt_version=self.agent.prompt_version,
+                input_summary=f"skills={len(skills)} candidates={len(candidates)}",
+                status="running",
+                retry_count=0,
+                created_by=user_id,
+            )
+            self.db.add(run)
+        else:
+            run.status = "running"
         await self.db.flush()
         started = time.perf_counter()
         try:
@@ -102,7 +112,9 @@ class CareerService:
         run.duration_ms = int((time.perf_counter() - started) * 1000)
         run.finished_at = datetime.utcnow()
         await self.db.commit()
-        return CareerAnalysisResponse(**output.model_dump(), agent_run_id=run_id)
+        return CareerAnalysisResponse(
+            **output.model_dump(), agent_run_id=run_id, agent_status=run.status
+        )
 
     async def _build_candidates(self, request: CareerAnalysisRequest, skills: list[str]) -> list[CareerPlanCandidate]:
         rows = list((await self.db.execute(

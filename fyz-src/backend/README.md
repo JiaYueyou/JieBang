@@ -132,6 +132,12 @@ celery -A app.core.celery_app.celery_app worker --loglevel=info --pool=solo
 启动 Redis。未配置 `DEEPSEEK_API_KEY` 时，Pipeline 只运行规则抽取并返回
 `llm_enrichment=false`；DeepSeek 超时不会回滚已经确认的规则结果。
 
+Career Planning 与 Match Explanation 也使用相同的 `AsyncTask` 队列。
+本地 eager 模式会在创建请求中直接执行，前端为 Agent 创建请求设置 60 秒独立超时；
+联调真实异步行为时设置 `CELERY_TASK_ALWAYS_EAGER=false`，并同时启动 Redis、
+Celery Worker 和 FastAPI。前端随后轮询 `/api/v1/tasks/{task_id}`，不会受普通
+15 秒 HTTP 超时影响。
+
 主要接口：
 
 ```text

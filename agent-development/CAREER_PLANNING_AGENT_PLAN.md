@@ -17,8 +17,9 @@
 ## 接口
 
 1. `POST /api/v1/career/resume-extractions`：multipart 文件转文本，返回文件名、文本、字符数和警告。
-2. `POST /api/v1/career/analyses`：接收 `skill_text`、`resume_text`、`enterprise_tech`、`internal_jobs[]`、`target_job_ids[]`、`time_budget_weeks`。
-3. 响应包含 `resume_profile`、`recommendations[]`、`agent_run_id`、`warnings[]`。
+2. `POST /api/v1/agents/career-plannings`：创建异步转岗规划任务；接收 `skill_text`、`resume_text`、`enterprise_tech`、`internal_jobs[]`、`target_job_ids[]`、`time_budget_weeks`。
+3. `GET /api/v1/tasks/{task_id}`：轮询任务，终态结果包含 `resume_profile`、`recommendations[]`、`agent_run_id`、`agent_status`、`warnings[]`。
+4. `POST /api/v1/career/analyses`：保留为同步兼容入口，FYZ 页面不再直接调用。
 
 ## 实现顺序
 
@@ -35,6 +36,7 @@
 - 推荐结果中的岗位 ID 和分数来自后端确定性数据。
 - 模型不可用时返回模板化但可用的学习路径，并将 AgentRun 标记为 `degraded`。
 - 空输入、空岗位、非法文件、未认证和模型失败均有明确状态。
+- 模型超过普通 HTTP 超时时间时，页面仍可通过任务轮询获得模型结果或模板降级结果。
 
 ## 下一步衔接
 

@@ -29,7 +29,7 @@ export interface DataProvider {
     enterpriseJobs: string[];
     resumeFiles?: File[];
     enterpriseFiles?: File[];
-  }): Promise<CareerRecommendation[]> };
+  }): Promise<import("@/domain/types").CareerAnalysisResult> };
   graph: {
     getPanorama(query?: GraphQuery): Promise<GraphSubgraph>;
     getNode(nodeId: string): Promise<GraphSubgraph>;

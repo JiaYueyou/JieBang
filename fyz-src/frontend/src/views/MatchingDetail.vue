@@ -93,12 +93,16 @@
     <div class="dash-card" style="margin-top:16px;">
       <div class="dash-card-header">
         <span class="dash-card-title">匹配解释</span>
-        <el-button type="primary" :loading="explaining" @click="generateExplanation">{{ explanation ? '重新生成' : '生成解释' }}</el-button>
+        <el-button type="primary" :loading="explaining" :disabled="explaining" @click="generateExplanation">{{ explanation ? '重新生成' : '生成解释' }}</el-button>
       </div>
       <div class="dash-card-body">
         <el-empty v-if="!explanation" description="基于已落库的匹配证据生成可审计解释" :image-size="72" />
         <template v-else>
           <el-alert :title="explanation.summary" type="info" :closable="false" show-icon />
+          <el-alert
+            v-for="warning in explanation.warnings" :key="warning" :title="warning"
+            type="warning" :closable="false" show-icon style="margin-top:10px;"
+          />
           <div class="md-section"><h4>匹配优势</h4><p v-for="item in explanation.strengths" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
           <div class="md-section"><h4>能力缺口</h4><p v-for="item in explanation.gaps" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
           <div class="md-section" v-if="explanation.interview_suggestions.length"><h4>面试建议</h4><p v-for="item in explanation.interview_suggestions" :key="item">{{ item }}</p></div>

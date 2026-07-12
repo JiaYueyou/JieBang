@@ -37,9 +37,9 @@ class TaskService:
         await self.db.refresh(task)
         return self.to_response(task)
 
-    async def get(self, task_id: str) -> TaskStatusResponse:
+    async def get(self, task_id: str, *, user_id: int | None = None) -> TaskStatusResponse:
         task = await self.tasks.get(task_id)
-        if not task:
+        if not task or (user_id is not None and task.created_by != user_id):
             raise ResourceNotFoundError("任务不存在")
         return self.to_response(task)
 

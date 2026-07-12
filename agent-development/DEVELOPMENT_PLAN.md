@@ -34,7 +34,7 @@ L4/L5 图谱补全的细化方案见 `SKILL_L45_COMPLETION_PLAN.md`。
 2. 实现 Match Explanation Agent；输入只接受持久化的 `match_id`，输出与快照分数强校验。
 3. 实现 Career Planning Agent；复用已验证的差距，不让模型虚构技能、课程或周期。
 
-当前状态：简历原文件私有保存与鉴权下载、解析结果/技能/匹配快照/证据持久化、确定性匹配服务、独立 Match Explanation Agent、模板降级及 FYZ Matching 页面联调均已完成。Career Planning 仍保留即时文本分析兼容入口，下一步改为优先消费已保存匹配快照。
+当前状态：简历原文件私有保存与鉴权下载、解析结果/技能/匹配快照/证据持久化、确定性匹配服务、独立 Match Explanation Agent、异步 Career/Match 任务、模板降级及 FYZ 页面联调均已完成。Career Planning 仍保留即时文本分析兼容入口，下一步改为优先消费已保存匹配快照。
 
 验收：改变模型输出不会改变匹配分数；每条解释可定位到简历、岗位或图谱证据；学习资源可追溯。
 
