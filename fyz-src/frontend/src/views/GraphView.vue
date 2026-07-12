@@ -52,9 +52,15 @@
             <span class="graph-canvas-label">当前视图</span>
             <h3>{{ currentViewTitle }}</h3>
           </div>
-          <div class="graph-mini-legend">
-            <span><i class="solid"></i> 层级关系</span>
-            <span><i class="dashed"></i> 跨树共享</span>
+          <div class="graph-canvas-actions">
+            <button class="graph-overview-btn" @click="resetToOverview">
+              <el-icon><View /></el-icon>
+              回到概览
+            </button>
+            <div class="graph-mini-legend">
+              <span><i class="solid"></i> 层级关系</span>
+              <span><i class="dashed"></i> 跨树共享</span>
+            </div>
           </div>
         </div>
 
@@ -161,7 +167,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { Search } from "@element-plus/icons-vue";
+import { Search, View } from "@element-plus/icons-vue";
 import { useGraphStore } from "@/stores/graph";
 import DataState from "@/components/common/DataState.vue";
 import type { GraphEdge, GraphNode, GraphType } from "@/domain/types";
@@ -179,10 +185,20 @@ const store = useGraphStore();
 const { data, loading, error } = storeToRefs(store);
 const graphNodes = computed(() => data.value.nodes);
 const graphEdges = computed(() => data.value.edges);
+
 onMounted(async () => {
   await store.load();
   activeNodeId.value = graphNodes.value.find(node => node.type === "Job")?.id || graphNodes.value[0]?.id || "";
 });
+
+function resetToOverview() {
+  keyword.value = "";
+  selectedStack.value = "all";
+  selectedLevel.value = "all";
+  selectedType.value = "all";
+  activeNodeId.value = "";
+  store.load(true);
+}
 
 const typeMeta: Record<GraphType, { label: string; short: string; color: string }> = {
   Job: { label: "L1 岗位", short: "L1", color: "var(--g6-l1)" },
@@ -523,6 +539,32 @@ function isNodeHighlighted(node: GraphNode) {
   font-size: 16px;
 }
 
+.graph-canvas-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.graph-overview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.graph-overview-btn:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+  background: var(--color-brand-light);
+}
+
 .graph-mini-legend {
   display: flex;
   gap: 12px;
@@ -610,19 +652,15 @@ function isNodeHighlighted(node: GraphNode) {
 }
 
 .graph-node text {
-  fill: var(--text-primary);
+  fill:#867f7f;
   font-size: 14px;
   font-weight: 600;
-  paint-order: stroke;
-  stroke: rgba(255,255,255,.90);
-  stroke-width: 4px;
 }
 
 .graph-node-layer {
-  fill: var(--text-secondary) !important;
+  fill: #ffffff !important;
   font-size: 14px !important;
   font-family: var(--font-mono);
-  stroke: transparent !important;
 }
 
 .graph-detail-head {
