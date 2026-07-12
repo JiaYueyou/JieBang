@@ -153,6 +153,13 @@ export interface CareerRecommendation {
   explanation?: string;
 }
 
+export interface CareerAnalysisResult {
+  recommendations: CareerRecommendation[];
+  agentRunId: string;
+  agentStatus: "succeeded" | "degraded";
+  warnings: string[];
+}
+
 export interface ResumeUploadPayload {
   file: File;
   name?: string;
@@ -172,6 +179,7 @@ export interface MatchExplanation {
   interview_suggestions: string[];
   generation_mode: "llm" | "template";
   warnings: string[];
+  agent_run_id: string;
 }
 
 export interface GraphNode {

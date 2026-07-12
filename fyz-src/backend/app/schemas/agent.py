@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.core.agent_runtime import (
     GenerateJDRequest,
@@ -16,6 +16,16 @@ from app.schemas.skill import TaskStatusResponse
 class JDGenerationTaskResponse(BaseModel):
     task: TaskStatusResponse
     agent_run_id: str
+
+
+class AgentTaskResponse(BaseModel):
+    task: TaskStatusResponse
+    agent_run_id: str
+
+
+class MatchExplanationTaskRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    match_id: int
 
 
 class AgentRunResponse(BaseModel):
@@ -42,4 +52,6 @@ __all__ = [
     "LLMGeneratedJDDraft",
     "JDGenerationTaskResponse",
     "AgentRunResponse",
+    "AgentTaskResponse",
+    "MatchExplanationTaskRequest",
 ]

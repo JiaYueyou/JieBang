@@ -110,14 +110,24 @@ class MatchingService:
         resume = await self._resume(resume_id, user_id)
         return resume.original_filename, resume.content_type, self.storage.path_for(resume.storage_key)
 
-    async def explain(self, match_id: int, user_id: int) -> MatchExplanationResponse:
+    async def explain(
+        self,
+        match_id: int,
+        user_id: int,
+        *,
+        agent_run_id: str | None = None,
+    ) -> MatchExplanationResponse:
         match = await self.db.scalar(select(MatchRecord).join(Resume).where(MatchRecord.id == match_id, Resume.created_by == user_id, Resume.deleted_at.is_(None)))
         if match is None:
             raise ResourceNotFoundError("匹配记录不存在")
         request = MatchExplanationRequest(match_id=match.id, resume_id=match.resume_id, job_id=match.job_id, job_title=match.job.title, score=match.score, matched_skills=match.matched_skills, missing_skills=match.missing_skills, evidence=[MatchEvidenceInput(evidence_id=e.id, evidence_type=e.evidence_type, skill_name=e.skill_name, evidence_text=e.evidence_text, source_ref=e.source_ref) for e in match.evidence])
         agent = MatchExplanationAgent(self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS)
-        run = AgentRun(id=str(uuid.uuid4()), agent_type=agent.agent_type, provider=self.llm.provider_name, model=self.llm.model_name, prompt_version=agent.prompt_version, input_summary=f"match_id={match.id} evidence={len(match.evidence)}", status="running", retry_count=0, created_by=user_id)
-        self.db.add(run)
+        run = await self.db.get(AgentRun, agent_run_id) if agent_run_id else None
+        if run is None:
+            run = AgentRun(id=agent_run_id or str(uuid.uuid4()), agent_type=agent.agent_type, provider=self.llm.provider_name, model=self.llm.model_name, prompt_version=agent.prompt_version, input_summary=f"match_id={match.id} evidence={len(match.evidence)}", status="running", retry_count=0, created_by=user_id)
+            self.db.add(run)
+        else:
+            run.status = "running"
         await self.db.flush()
         started = time.perf_counter()
         try:

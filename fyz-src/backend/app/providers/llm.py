@@ -73,17 +73,25 @@ class DeepSeekProvider:
     ) -> T:
         if not self.enabled:
             raise RuntimeError("DEEPSEEK_API_KEY is not configured")
+        schema_text = json.dumps(
+            response_schema.model_json_schema(), ensure_ascii=False, separators=(",", ":")
+        )
+        schema_instruction = (
+            "\n\n你必须只返回一个 JSON 对象，并严格满足以下 JSON Schema；"
+            "不得增加解释性文本：\n" + schema_text
+        )
         payload = {
             "model": self.model_name,
             "messages": [
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": system_prompt + schema_instruction},
                 {"role": "user", "content": user_prompt},
             ],
             "response_format": {"type": "json_object"},
             "temperature": 0,
         }
         last_error: Exception | None = None
-        for attempt in range(3):
+        for attempt in range(2):
+            raw_content = ""
             try:
                 async with httpx.AsyncClient(timeout=timeout_seconds) as client:
                     response = await client.post(
@@ -92,10 +100,23 @@ class DeepSeekProvider:
                         json=payload,
                     )
                     response.raise_for_status()
-                    content = response.json()["choices"][0]["message"]["content"]
-                    return response_schema.model_validate(json.loads(content))
+                    raw_content = response.json()["choices"][0]["message"]["content"]
+                    return response_schema.model_validate(json.loads(raw_content))
             except (httpx.HTTPError, json.JSONDecodeError, KeyError, ValueError) as exc:
                 last_error = exc
-                if attempt < 2:
-                    await asyncio.sleep(0.5 * (2**attempt))
+                if attempt == 0:
+                    if raw_content:
+                        payload["messages"] = [
+                            payload["messages"][0],
+                            {
+                                "role": "user",
+                                "content": (
+                                    user_prompt
+                                    + "\n\n上一次输出未通过 Schema 校验。请修复后只返回 JSON。"
+                                    + f"\n校验错误：{str(exc)[:1500]}"
+                                    + f"\n上一次输出：{raw_content[:6000]}"
+                                ),
+                            },
+                        ]
+                    await asyncio.sleep(0.5)
         raise RuntimeError(f"DeepSeek structured output failed: {last_error}")

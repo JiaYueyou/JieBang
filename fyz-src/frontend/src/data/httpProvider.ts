@@ -37,7 +37,13 @@ interface CareerAnalysisResponse {
     suggested_project: string; total_time: string; internal: boolean; explanation: string;
   }>;
   agent_run_id: string;
+  agent_status: "succeeded" | "degraded";
   warnings: string[];
+}
+
+interface AgentTaskCreated<T> {
+  task: AsyncTask<T>;
+  agent_run_id: string;
 }
 
 interface AnalysisOverviewResponse {
@@ -85,9 +91,23 @@ async function get<T>(url: string, params?: object): Promise<T> {
   return response.data.data;
 }
 
-async function post<T>(url: string, data?: unknown): Promise<T> {
-  const response = await request.post<ApiResponse<T>>(url, data);
+async function post<T>(url: string, data?: unknown, timeout?: number): Promise<T> {
+  const response = timeout
+    ? await request.post<ApiResponse<T>>(url, data, { timeout })
+    : await request.post<ApiResponse<T>>(url, data);
   return response.data.data as T;
+}
+
+async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
+  let task = created.task;
+  for (let attempt = 0; attempt < 180 && task.status !== "succeeded" && task.status !== "failed"; attempt += 1) {
+    await sleep(500);
+    task = await get<AsyncTask<T>>(`/tasks/${task.task_id}`);
+  }
+  if (task.status !== "succeeded" || !task.result) {
+    throw new Error(task.error_message || "AI 任务未在预期时间内完成");
+  }
+  return task.result;
 }
 
 async function put<T>(url: string, data?: unknown): Promise<T> {
@@ -145,7 +165,11 @@ export const httpDataProvider: DataProvider = {
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click();
       URL.revokeObjectURL(url);
     },
-    explain: (matchId) => post(`/matches/${matchId}/explanation`),
+    explain: async (matchId) => waitForAgentTask(
+      await post<AgentTaskCreated<import("@/domain/types").MatchExplanation>>(
+        "/agents/match-explanations", { match_id: matchId }, 60000,
+      ),
+    ),
   },
   career: {
     analyze: async (input) => {
@@ -161,13 +185,13 @@ export const httpDataProvider: DataProvider = {
       }
       const resumeText = await extractFiles(input.resumeFiles);
       const enterpriseFileText = await extractFiles(input.enterpriseFiles);
-      const raw = await post<CareerAnalysisResponse>("/career/analyses", {
+      const raw = await waitForAgentTask(await post<AgentTaskCreated<CareerAnalysisResponse>>("/agents/career-plannings", {
         skill_text: input.skillText,
         resume_text: resumeText,
         enterprise_tech: [input.enterpriseTech, enterpriseFileText].filter(Boolean).join("\n"),
         internal_jobs: input.enterpriseJobs,
-      });
-      return raw.recommendations.map((item) => ({
+      }, 60000));
+      return { recommendations: raw.recommendations.map((item) => ({
         rank: item.rank,
         job_id: item.job_id,
         job: item.job,
@@ -181,7 +205,7 @@ export const httpDataProvider: DataProvider = {
         totalTime: item.total_time,
         internal: item.internal,
         explanation: item.explanation,
-      }));
+      })), agentRunId: raw.agent_run_id, agentStatus: raw.agent_status, warnings: raw.warnings };
     },
   },
   graph: {

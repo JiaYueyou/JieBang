@@ -43,9 +43,10 @@ class _FakeResponse:
         return {"choices": [{"message": {"content": self.content}}]}
 
 
-async def test_deepseek_retries_invalid_json_then_succeeds(monkeypatch):
-    contents = iter(["not-json", "{bad", '{"skills": []}'])
+async def test_deepseek_repairs_invalid_json_then_succeeds(monkeypatch):
+    contents = iter(["not-json", '{"skills": []}'])
     calls = []
+    payloads = []
 
     class FakeClient:
         def __init__(self, **_kwargs):
@@ -59,6 +60,7 @@ async def test_deepseek_retries_invalid_json_then_succeeds(monkeypatch):
 
         async def post(self, *_args, **_kwargs):
             calls.append(1)
+            payloads.append(_kwargs["json"])
             return _FakeResponse(next(contents))
 
     async def no_sleep(_seconds):
@@ -73,7 +75,9 @@ async def test_deepseek_retries_invalid_json_then_succeeds(monkeypatch):
         timeout_seconds=1, metadata={},
     )
     assert result.skills == []
-    assert len(calls) == 3
+    assert len(calls) == 2
+    assert "JSON Schema" in payloads[0]["messages"][0]["content"]
+    assert "上一次输出未通过 Schema 校验" in payloads[1]["messages"][1]["content"]
 
 
 async def test_deepseek_rejects_invalid_json_after_retries(monkeypatch):
@@ -105,4 +109,4 @@ async def test_deepseek_rejects_invalid_json_after_retries(monkeypatch):
             system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
             timeout_seconds=1, metadata={},
         )
-    assert len(calls) == 3
+    assert len(calls) == 2

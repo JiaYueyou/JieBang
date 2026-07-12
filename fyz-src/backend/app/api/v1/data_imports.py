@@ -36,7 +36,7 @@ async def import_jobs(
 )
 async def get_task(
     task_id: str,
-    _principal: TokenPrincipal = Depends(get_current_user),
+    principal: TokenPrincipal = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[TaskStatusResponse]:
-    return ApiResponse(data=await TaskService(db).get(task_id))
+    return ApiResponse(data=await TaskService(db).get(task_id, user_id=principal.user_id))

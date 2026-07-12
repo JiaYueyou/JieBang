@@ -80,7 +80,7 @@
             <span class="cg-action-kicker">分析前检查</span>
             <span>员工技能或简历至少提供一项；企业技术栈和内部需求岗位为可选补充。</span>
           </div>
-          <button class="cg-analyze-btn" @click="startAnalyze">
+          <button class="cg-analyze-btn" :disabled="isAnalyzing" @click="startAnalyze">
             <el-icon><Search /></el-icon>
             <span>分析可转岗位</span>
           </button>
@@ -92,9 +92,19 @@
     <div v-if="isAnalyzing" class="dash-card anim-fade-up" style="margin-bottom:16px;">
       <div class="dash-card-body" style="padding:32px;text-align:center;">
         <el-icon class="is-loading" style="font-size:28px;color:var(--color-brand);"><Loading /></el-icon>
-        <p style="margin-top:12px;color:var(--text-muted);">AI 正在分析可转岗路径，结合技能图谱计算匹配度...</p>
+        <p style="margin-top:12px;color:var(--text-muted);">AI 任务已创建，正在结合技能图谱分析；模型较忙时会自动返回模板方案。</p>
       </div>
     </div>
+
+    <el-alert
+      v-if="!isAnalyzing && agentStatus === 'degraded'"
+      title="模型调用未完成，当前展示确定性模板学习路径"
+      type="warning" :closable="false" show-icon style="margin-bottom:12px;"
+    />
+    <el-alert
+      v-for="warning in warnings" :key="warning" :title="warning"
+      type="warning" :closable="false" show-icon style="margin-bottom:8px;"
+    />
 
     <template v-if="results.length > 0 && !isAnalyzing">
       <div class="match-stats-row anim-fade-up">
@@ -193,7 +203,7 @@ const enterpriseTech = ref("");
 const enterpriseJobs = ref("");
 const hasSearched = ref(false);
 const store = useCareerStore();
-const { data: results, loading: isAnalyzing, error } = storeToRefs(store);
+const { data: results, loading: isAnalyzing, error, warnings, agentStatus } = storeToRefs(store);
 const uploadFiles = ref<UploadFile[]>([]);
 const entUploadFiles = ref<UploadFile[]>([]);
 

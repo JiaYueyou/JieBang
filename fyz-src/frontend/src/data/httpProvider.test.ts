@@ -115,6 +115,46 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(remove).toHaveBeenCalledWith(`/jobs/${job.id}`);
   });
 
+  it("uses async Agent tasks and preserves degraded career metadata", async () => {
+    const result = {
+      recommendations: [{
+        rank: 1, job_id: 7, job: "Python 工程师", recommend_score: 80,
+        current_match: 50, after_match: 80, existing: ["Python"], gaps: ["Redis"],
+        learning_plan: [], suggested_project: "缓存实践", total_time: "2 周",
+        internal: false, explanation: "模板解释",
+      }],
+      agent_run_id: "career-run", agent_status: "degraded", warnings: ["模型不可用"],
+    };
+    const post = vi.spyOn(request, "post").mockResolvedValue(response({
+      task: { task_id: "career-task", status: "succeeded", progress: 100, result, error_message: null },
+      agent_run_id: "career-run",
+    }) as never);
+
+    await expect(httpDataProvider.career.analyze({
+      skillText: "Python", enterpriseTech: "", enterpriseJobs: [],
+    })).resolves.toEqual(expect.objectContaining({
+      agentRunId: "career-run", agentStatus: "degraded", warnings: ["模型不可用"],
+    }));
+    expect(post).toHaveBeenCalledWith("/agents/career-plannings", expect.objectContaining({
+      skill_text: "Python",
+    }), { timeout: 60000 });
+  });
+
+  it("creates an async match explanation task with an AI-specific timeout", async () => {
+    const result = {
+      match_id: 3, score: 50, summary: "匹配说明", strengths: [], gaps: [], risks: [],
+      interview_suggestions: [], generation_mode: "template", warnings: ["模板"], agent_run_id: "match-run",
+    };
+    const post = vi.spyOn(request, "post").mockResolvedValue(response({
+      task: { task_id: "match-task", status: "succeeded", progress: 100, result, error_message: null },
+      agent_run_id: "match-run",
+    }) as never);
+    await expect(httpDataProvider.talents.explain(3)).resolves.toEqual(result);
+    expect(post).toHaveBeenCalledWith(
+      "/agents/match-explanations", { match_id: 3 }, { timeout: 60000 },
+    );
+  });
+
   it("maps the real analysis overview response and forwards trend filters", async () => {
     const dataQuality = {
       total_records: 18,

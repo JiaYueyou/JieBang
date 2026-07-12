@@ -18,6 +18,7 @@ class ResumeExtractionResponse(BaseModel):
 
 class CareerAnalysisResponse(CareerAnalysisOutput):
     agent_run_id: str
+    agent_status: str
 
 
 __all__ = [

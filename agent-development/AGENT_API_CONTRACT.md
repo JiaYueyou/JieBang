@@ -142,6 +142,8 @@ multipart 字段 `file` 必填；`name`、`current_position`、`experience`、`e
 
 输出：`match_id`、`resume_id`、`job_id`、`job_title`、`score`、`matched_skills[]`、`missing_skills[]`、`summary`、`strengths[]`、`gaps[]`、`risks[]`、`interview_suggestions[]`、`generation_mode`、`warnings[]`、`agent_run_id`。其中分数与技能快照由服务端注入，模型无法覆盖；解释证据 ID 会过滤为 `match_evidence` 中真实存在的 ID。
 
+FYZ 页面使用异步入口 `POST /api/v1/agents/match-explanations`，请求为 `{ "match_id": integer }`，返回 `{ task, agent_run_id }` 后轮询 `GET /api/v1/tasks/{task_id}`。原 `/matches/{match_id}/explanation` 保留为同步兼容接口。
+
 ### 4.5 已实现：简历分析与职业规划
 
 #### `POST /api/v1/career/resume-extractions`
@@ -163,6 +165,8 @@ multipart 字段 `file` 必填；`name`、`current_position`、`experience`、`e
 
 输出：`resume_profile`、`recommendations[]`、`agent_run_id`、`warnings[]`。每条推荐包含确定性的 `job_id`、`recommend_score`、`current_match`、`after_match`、`existing[]`、`gaps[]`，以及 Agent 生成的 `learning_plan[]`、`suggested_project`、`total_time` 和 `explanation`。
 
+FYZ 页面使用异步入口 `POST /api/v1/agents/career-plannings`，请求字段与 `/career/analyses` 相同；任务结果额外包含 `agent_status(succeeded|degraded)`。同步 `/career/analyses` 继续保留给兼容调用方。
+
 ### 4.6 待开发：新兴岗位复核草稿
 
 #### `POST /api/v1/agents/emerging-job-reviews`
@@ -179,7 +183,7 @@ multipart 字段 `file` 必填；`name`、`current_position`、`experience`、`e
 
 每个新增 Agent 使用同一分层：`schemas/<agent>.py` → `services/<agent>_service.py` → `tasks/<agent>.py` → `api/v1/agents.py`（或同域路由）→ `test/`。复用 `DeepSeekProvider.generate_structured`、`AgentRun`、`AsyncTask` 和任务查询协议，不引入第二套编排框架。
 
-每个模型输出必须经历：JSON 解析 → Pydantic Schema → 枚举/长度/范围 → 业务资源存在性 → 证据存在性 → 业务规则。允许一次带错误反馈的修复调用，最多两次模型尝试；仍失败时执行受控模板降级或明确失败。
+每个模型输出必须经历：JSON 解析 → Pydantic Schema → 枚举/长度/范围 → 业务资源存在性 → 证据存在性 → 业务规则。Provider 将 Pydantic JSON Schema 注入 Prompt；允许一次携带校验错误和上次输出的修复调用，最多两次模型尝试；仍失败时执行受控模板降级或明确失败。
 
 ## 6. 前端联调规则
 
