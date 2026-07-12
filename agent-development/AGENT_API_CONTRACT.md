@@ -1,6 +1,6 @@
-# 智联职引 Agent 开发接口契约 v1.0
+# 智联职引 Agent 开发接口契约 v1.1
 
-更新日期：2026-07-11
+更新日期：2026-07-12
 适用范围：FYZ 管理端（FastAPI、MySQL、Celery、DeepSeek Provider）
 
 ## 1. 目标与边界
@@ -19,11 +19,11 @@ Agent 的职责是把已有、可追溯的业务数据整理为**可编辑草稿
 
 | Agent | 业务目标 | 当前状态 | 写入边界 | 优先级 |
 | --- | --- | --- | --- | --- |
-| JD Generation | 根据招聘需求生成可编辑 JD 草稿 | 已有首版 | 仅 `AgentRun`、`AsyncTask` 与草稿输出；不得直接发布岗位 | P0 |
-| Skill Extraction | 从 JD/简历文本抽取候选技能和证据 | 规则抽取已存在，待统一 Agent 审计与 LLM 补全 | 候选事实必须经词典、来源和规则验证后才可入库/入图 | P0 |
+| JD Generation | 根据招聘需求生成可编辑 JD 草稿 | 已完成首版 | 仅 `AgentRun`、`AsyncTask` 与草稿输出；不得直接发布岗位 | P0 |
+| Skill Extraction | 从 JD/简历文本抽取候选技能和证据 | 岗位抽取已实现，统一公共入口待开发 | 候选事实必须经词典、来源和规则验证后才可入库/入图 | P0 |
 | Skill L4/L5 Completion | 基于已验证 L1–L3 和多来源证据补全技术点、知识点 | 已实现独立 Agent 与后端证据门槛 | 只写候选；通过双来源和置信度门槛后随图谱快照进入读模型 | P0 |
 | Match Explanation | 解释确定性匹配算法已得出的得分、缺口与建议 | 待开发 | 仅生成匹配报告；不得生成或覆盖最终分数 | P1 |
-| Career Planning | 基于已验证技能差距生成学习路径草稿 | 待开发 | 仅写分析结果，学习资源需校验 | P1 |
+| Career Planning | 基于已验证技能差距生成学习路径草稿 | 已完成即时分析首版，待接持久化匹配快照 | 仅写分析结果，学习资源需校验 | P1 |
 | Emerging Job Review | 汇总趋势、聚类和来源证据，生成新兴岗位候选说明 | 趋势与人工决策接口已存在，Agent 待开发 | 仅候选说明；审核通过后才可创建正式岗位 | P1 |
 
 不单独建设“趋势预测 Agent”：趋势指标必须由 `analysis_service` 等确定性服务计算，Agent 可在上述 Agent 中解释指标。
@@ -97,9 +97,11 @@ Agent 的职责是把已有、可追溯的业务数据整理为**可编辑草稿
 
 返回第 3.2 节的 `AgentRun`。前端轮询间隔建议 2 秒，连续 30 次未进入终态后改为提示用户稍后刷新；不得将轮询当作无限重试机制。
 
-### 4.3 待开发：技能抽取
+### 4.3 部分实现：技能抽取
 
 #### `POST /api/v1/agents/skill-extractions`
+
+该统一公共入口尚未实现。当前岗位抽取使用 `POST /api/v1/jobs/{job_id}/extract-skills`，L4/L5 补全由图谱同步内部调用。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -118,23 +120,35 @@ Agent 的职责是把已有、可追溯的业务数据整理为**可编辑草稿
 
 后端只接受置信度不低于 `0.75`、引用 ID 全部存在且覆盖至少两个不同来源平台的 L4/L5。模型原始输出记录在 `AgentRun`，过滤后的输出写入 `graph_enrichment_candidate`；无合格 L4 时保持 `unverified`。
 
-### 4.4 待开发：匹配解释
+### 4.4 已实现：简历持久化、确定性匹配与匹配解释
 
-#### `POST /api/v1/agents/match-explanations`
+原始简历保存在后端私有 `storage/resumes`，数据库只保存不可猜测的 `storage_key` 和文件元数据；文件不挂载为静态资源，上传者通过鉴权接口下载。解析文本、技能、算法快照和证据分别保存到 `resume_parse_result`、`resume_skill`、`match_record`、`match_evidence`。
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `match_id` | integer | 是 | 已由匹配算法计算并保存的记录 |
-| `language` | `zh-CN | en-US` | 否 | 默认 `zh-CN` |
-| `focus` | `summary | gaps | interview` | 否 | 默认 `summary` |
+> **数据库版本变更（必须执行）**：该能力依赖 Alembic revision `20260712_0006_matching`（revision ID：`20260712_0006`）。部署或更新后，在 `fyz-src/backend` 执行 `alembic upgrade head`，确认 `alembic current` 为 `20260712_0006 (head)` 后再重启 API 服务。
 
-输出：`match_id`、`score_snapshot`、`strengths[]`、`gaps[]`、`evidence[]`、`interview_suggestions[]`、`disclaimer`。其中 `score_snapshot` 必须与数据库既有得分一致；每条 `evidence` 必须包含 `source_type`、`source_id`、`text`。
+#### `POST /api/v1/resumes`
+
+multipart 字段 `file` 必填；`name`、`current_position`、`experience`、`education`、`department`、`company`、`location` 可选。上传成功后自动针对开放岗位运行 `skill-coverage-v1`，返回简历技能与 `matches[]`。
+
+#### 查询与文件接口
+
+- `GET /api/v1/talents`：返回当前用户上传简历的最佳匹配摘要。
+- `GET /api/v1/talents/{resume_id}`：返回单份简历的匹配摘要。
+- `GET /api/v1/resumes/{resume_id}/file`：鉴权下载原文件；非上传者返回 404，避免泄露资源存在性。
+
+#### `POST /api/v1/matches/{match_id}/explanation`
+
+`match_id` 来自已保存的确定性匹配记录，不接受前端提交分数或技能数组。
+
+输出：`match_id`、`resume_id`、`job_id`、`job_title`、`score`、`matched_skills[]`、`missing_skills[]`、`summary`、`strengths[]`、`gaps[]`、`risks[]`、`interview_suggestions[]`、`generation_mode`、`warnings[]`、`agent_run_id`。其中分数与技能快照由服务端注入，模型无法覆盖；解释证据 ID 会过滤为 `match_evidence` 中真实存在的 ID。
 
 ### 4.5 已实现：简历分析与职业规划
 
 #### `POST /api/v1/career/resume-extractions`
 
 使用 multipart 字段 `file` 上传 TXT、Markdown、PDF 或 DOCX，返回 `filename`、`text`、`character_count`、`warnings[]`。文件最大 20MB；解析文本最多保留 20000 字符。
+
+前端使用 `FormData` 时不得保留全局 `application/json` 请求头；必须让浏览器设置 `multipart/form-data` 的 boundary，否则服务端会在进入解析器前返回 `422 请求参数校验失败`。
 
 #### `POST /api/v1/career/analyses`
 

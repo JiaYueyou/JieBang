@@ -183,6 +183,7 @@ import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { Search, ArrowRight, Loading, MagicStick, Guide, Upload } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
+import { ElMessage } from "element-plus";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import DataState from "@/components/common/DataState.vue";
 import { useCareerStore } from "@/stores/career";
@@ -216,12 +217,21 @@ function getDifficultyLabel(difficulty: string) {
 }
 
 async function startAnalyze() {
+  const resumeFiles = uploadFiles.value.flatMap((item) => item.raw ? [item.raw] : []);
+  if (!skillInput.value.trim() && resumeFiles.length === 0) {
+    ElMessage.warning("请填写员工技能或至少上传一份简历");
+    return;
+  }
+  if (skillInput.value.length > 6000 || enterpriseTech.value.length > 6000) {
+    ElMessage.warning("技能与企业技术栈文本均不能超过 6000 字符");
+    return;
+  }
   hasSearched.value = true;
   await store.analyze({
     skillText: skillInput.value,
     enterpriseTech: enterpriseTech.value,
     enterpriseJobs: enterpriseJobs.value.split(",").map((item) => item.trim()).filter(Boolean),
-    resumeFiles: uploadFiles.value.flatMap((item) => item.raw ? [item.raw] : []),
+    resumeFiles,
     enterpriseFiles: entUploadFiles.value.flatMap((item) => item.raw ? [item.raw] : []),
   });
 }

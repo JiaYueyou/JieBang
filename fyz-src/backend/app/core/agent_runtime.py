@@ -54,6 +54,9 @@ from jiebang_agents.skill_extraction import (  # noqa: E402
     LLMDiscoveredSkills,
     SkillExtractionAgent,
 )
+from jiebang_agents.match_explanation import (  # noqa: E402
+    MatchEvidenceInput, MatchExplanationAgent, MatchExplanationOutput, MatchExplanationRequest,
+)
 
 __all__ = [
     "ensure_agent_runtime_path",
@@ -79,4 +82,5 @@ __all__ = [
     "GraphEnrichmentOutput",
     "KnowledgePointOutput",
     "TechPointOutput",
+    "MatchExplanationAgent", "MatchExplanationRequest", "MatchExplanationOutput", "MatchEvidenceInput",
 ]

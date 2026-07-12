@@ -77,7 +77,13 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends"> = {
       });
     },
   },
-  talents: { async list(){return delay(db().talents);}, async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);} },
+  talents: {
+    async list(){return delay(db().talents);},
+    async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
+    async upload(){throw new Error("简历上传仅支持后端数据模式");},
+    async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async explain(){throw new Error("匹配解释仅支持后端数据模式");},
+  },
   career: {
     async analyze(input) {
       const internal=input.enterpriseJobs;

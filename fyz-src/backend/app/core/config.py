@@ -72,3 +72,11 @@ DATA_DIR = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "data"),
     )
 )
+
+# Private runtime storage. Files under this directory are never mounted as static assets.
+LOCAL_STORAGE_PATH = os.path.abspath(
+    os.getenv(
+        "LOCAL_STORAGE_PATH",
+        os.path.join(os.path.dirname(__file__), "..", "..", "storage"),
+    )
+)
