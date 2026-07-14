@@ -400,6 +400,9 @@ def step2_normalize_titles(input_path):
         job['level'] = level
         job['stack'] = stack
         job['title_confidence'] = confidence
+        job['ability_summary'] = _build_ability_summary(
+            job.get('jd_text', ''), job.get('requirements', '')
+        )
 
         # 记录映射表
         if raw_title not in title_mapping:
@@ -439,6 +442,7 @@ def step2_normalize_titles(input_path):
         'parsed_education',
         'quality',
         'standardized_title', 'canonical_key', 'level', 'stack', 'title_confidence',
+        'ability_summary',
     ]
 
     with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
@@ -475,6 +479,7 @@ def step2_normalize_titles(input_path):
                 'level': job.get('level', ''),
                 'stack': job.get('stack', ''),
                 'title_confidence': job.get('title_confidence'),
+                'ability_summary': job.get('ability_summary', ''),
             }
             writer.writerow(row)
     print(f"[Step 2] CSV 已保存 → {csv_path}")
@@ -686,6 +691,219 @@ def _calc_confidence(raw_title, std_title):
     if len(std_title) / max(len(raw_clean), 1) > 0.5:
         return 0.85
     return 0.75
+
+
+# ================================================================
+# 技能提取与标准化能力描述
+# ================================================================
+
+# 技能类别 → 标准名 → 正则模式
+SKILL_PATTERNS = {
+    '编程语言': {
+        'Python': [r'\bPython\b'],
+        'Java': [r'\bJava\b'],
+        'C++': [r'\bC\+\+\b'],
+        'C': [r'(?<!\w)C(?![\w+])'],
+        'Go': [r'\bGo\b(?!lang)'],
+        'SQL': [r'\bSQL\b'],
+        'Shell': [r'\bShell\b', r'\bBash\b'],
+        'JavaScript': [r'\bJavaScript\b', r'\bJS\b(?!ON)'],
+        'TypeScript': [r'\bTypeScript\b'],
+        'Scala': [r'\bScala\b'],
+        'Rust': [r'\bRust\b'],
+        'MATLAB': [r'\bMATLAB\b'],
+        'Ruby': [r'\bRuby\b'],
+        'Lua': [r'\bLua\b'],
+    },
+    '后端框架': {
+        'Spring Boot': [r'\bSpring[\s-]*Boot\b'],
+        'Spring Cloud': [r'\bSpring[\s-]*Cloud\b'],
+        'Spring MVC': [r'\bSpring[\s-]*MVC\b'],
+        'Spring': [r'\bSpring\b(?![\s-]*(Boot|Cloud|MVC))'],
+        'MyBatis': [r'\bMyBatis\b'],
+        'Netty': [r'\bNetty\b'],
+        'Nginx': [r'\bNginx\b'],
+        'Tomcat': [r'\bTomcat\b'],
+        'Django': [r'\bDjango\b'],
+        'Flask': [r'\bFlask\b'],
+        'FastAPI': [r'\bFastAPI\b'],
+    },
+    '数据库': {
+        'MySQL': [r'\bMySQL\b'],
+        'PostgreSQL': [r'\bPostgreSQL\b', r'\bPostgres\b'],
+        'Oracle': [r'\bOracle\b'],
+        'Redis': [r'\bRedis\b'],
+        'MongoDB': [r'\bMongoDB\b'],
+        'Elasticsearch': [r'\bElasticsearch\b', r'\bES\b'],
+        'HBase': [r'\bHBase\b'],
+        'Hive': [r'\bHive\b'],
+        'ClickHouse': [r'\bClickHouse\b'],
+    },
+    '中间件/消息队列': {
+        'Kafka': [r'\bKafka\b'],
+        'RabbitMQ': [r'\bRabbitMQ\b'],
+        'RocketMQ': [r'\bRocketMQ\b'],
+        'ZooKeeper': [r'\bZooKeeper\b', r'\bZK\b'],
+        'Nacos': [r'\bNacos\b'],
+    },
+    '大数据技术': {
+        'Hadoop': [r'\bHadoop\b'],
+        'Spark': [r'\bSpark\b'],
+        'Flink': [r'\bFlink\b'],
+        'HDFS': [r'\bHDFS\b'],
+        'Kafka': [r'\bKafka\b'],
+        'ETL': [r'\bETL\b'],
+        '数据仓库': [r'数据仓库', r'数仓'],
+    },
+    'DevOps/云工具': {
+        'Docker': [r'\bDocker\b'],
+        'Kubernetes': [r'\bKubernetes\b', r'\bK8s\b', r'\bk8s\b'],
+        'Jenkins': [r'\bJenkins\b'],
+        'Git': [r'\bGit\b'],
+        'Maven': [r'\bMaven\b'],
+        'Gradle': [r'\bGradle\b'],
+        'Linux': [r'\bLinux\b'],
+        'CI/CD': [r'\bCI/CD\b'],
+    },
+    'AI/ML框架': {
+        'PyTorch': [r'\bPyTorch\b'],
+        'TensorFlow': [r'\bTensorFlow\b'],
+        'scikit-learn': [r'\bsklearn\b', r'\bscikit[\s-]learn\b'],
+        'XGBoost': [r'\bXGBoost\b'],
+        'LightGBM': [r'\bLightGBM\b'],
+        'ONNX': [r'\bONNX\b'],
+        'TensorRT': [r'\bTensorRT\b'],
+    },
+    'AI方向': {
+        'NLP': [r'\bNLP\b', r'自然语言处理'],
+        '计算机视觉': [r'计算机视觉', r'\bCV\b'],
+        '语音识别': [r'语音识别', r'语音'],
+        '多模态': [r'多模态'],
+        '大模型(LLM)': [r'大模型', r'\bLLM\b'],
+        'RAG': [r'\bRAG\b'],
+        'Agent': [r'\bAgent\b'],
+        '深度学习': [r'深度学习'],
+        '机器学习': [r'机器学习'],
+        '强化学习': [r'强化学习'],
+        '知识图谱': [r'知识图谱'],
+        '推荐系统': [r'推荐系统'],
+        '数据挖掘': [r'数据挖掘'],
+        '异常检测': [r'异常检测', r'缺陷检测'],
+    },
+    '硬件/嵌入式': {
+        'ARM': [r'\bARM\b'],
+        'FPGA': [r'\bFPGA\b'],
+        'GPU': [r'\bGPU\b'],
+        'CUDA': [r'\bCUDA\b'],
+        '嵌入式': [r'嵌入式'],
+        '物联网': [r'物联网', r'\bIoT\b'],
+        'Android': [r'\bAndroid\b'],
+        'iOS': [r'\biOS\b'],
+    },
+    '工程能力': {
+        '微服务': [r'微服务'],
+        '分布式系统': [r'分布式'],
+        '高并发': [r'高并发'],
+        '高可用': [r'高可用'],
+        '架构设计': [r'架构设计'],
+        '性能优化': [r'性能优化', r'性能调优'],
+        '设计模式': [r'设计模式'],
+    },
+}
+
+# 编译正则
+_COMPILED_SKILLS = {}
+for cat_name, cat_dict in SKILL_PATTERNS.items():
+    _COMPILED_SKILLS[cat_name] = {}
+    for skill_name, patterns in cat_dict.items():
+        merged = '|'.join(f'(?:{p})' for p in patterns)
+        try:
+            _COMPILED_SKILLS[cat_name][skill_name] = re.compile(merged, re.IGNORECASE)
+        except re.error:
+            pass
+
+
+def _extract_skills_from_text(text):
+    """
+    从文本中提取所有技能，返回 {类别: [技能名, ...]}
+    """
+    if not text:
+        return {}
+    result = {}
+    for cat_name, cat_dict in _COMPILED_SKILLS.items():
+        found = []
+        for skill_name, regex in cat_dict.items():
+            if regex.search(text):
+                found.append(skill_name)
+        if found:
+            result[cat_name] = found
+    return result
+
+
+def _build_ability_summary(jd_text, requirements):
+    """
+    从JD文本中提取技能，生成标准化的能力描述
+    例如 "具备Python、Java编程能力；具备Spring Boot框架应用能力；具备MySQL数据库应用能力"
+    """
+    text = f"{jd_text or ''} {requirements or ''}"
+
+    skills = _extract_skills_from_text(text)
+    if not skills:
+        return ''
+
+    parts = []
+
+    # 编程语言
+    langs = skills.get('编程语言', [])
+    if langs:
+        parts.append(f'具备{"/".join(langs)}编程能力')
+
+    # 后端框架
+    frameworks = skills.get('后端框架', [])
+    if frameworks:
+        parts.append(f'具备{"/".join(frameworks)}框架应用能力')
+
+    # 数据库
+    dbs = skills.get('数据库', [])
+    if dbs:
+        parts.append(f'具备{"/".join(dbs)}数据库应用能力')
+
+    # 中间件
+    mw = skills.get('中间件/消息队列', [])
+    if mw:
+        parts.append(f'具备{"/".join(mw)}等中间件应用能力')
+
+    # 大数据
+    bd = skills.get('大数据技术', [])
+    if bd:
+        parts.append(f'具备{"/".join(bd)}等大数据技术应用能力')
+
+    # DevOps
+    devops = skills.get('DevOps/云工具', [])
+    if devops:
+        parts.append(f'具备{"/".join(devops)}等运维工具应用能力')
+
+    # AI/ML
+    ml = skills.get('AI/ML框架', [])
+    if ml:
+        parts.append(f'具备{"/".join(ml)}等AI框架应用能力')
+
+    # AI方向
+    ai_dir = skills.get('AI方向', [])
+    if ai_dir:
+        parts.append(f'具备{"/".join(ai_dir)}领域能力')
+
+    # 硬件/嵌入式
+    hw = skills.get('硬件/嵌入式', [])
+    if hw:
+        parts.append(f'熟悉{"/".join(hw)}等硬件平台')
+
+    # 工程能力
+    eng = skills.get('工程能力', [])
+    if eng:
+        parts.append(f'具备{"/".join(eng)}等工程能力')
+
+    return '；'.join(parts) if parts else ''
 
 
 def _get_canonical_key(std_title):
