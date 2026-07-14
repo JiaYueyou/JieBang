@@ -20,6 +20,7 @@ Step 2: 岗位名称标准化
 import json
 import re
 import os
+import csv
 from datetime import datetime
 from collections import Counter, defaultdict
 
@@ -426,6 +427,58 @@ def step2_normalize_titles(input_path):
     print(f"[Step 2] 唯一原始title: {len(title_mapping)} 个")
     print(f"[Step 2] 唯一标准化title: {len(set(j['standardized_title'] for j in data))} 个")
 
+    # ---- 输出 CSV（方便导入MySQL和Excel查看）----
+    csv_path = os.path.join(OUTPUT_DIR, 'merged_jobs_iflytek.csv')
+    csv_fieldnames = [
+        'title', 'company', 'city', 'salary', 'experience', 'education',
+        'jd_text', 'responsibilities', 'requirements', 'keywords',
+        'posted_at', 'url', 'source', 'crawled_at',
+        'source_tag',
+        'parsed_salary_min', 'parsed_salary_max',
+        'parsed_experience_min', 'parsed_experience_max',
+        'parsed_education',
+        'quality',
+        'standardized_title', 'canonical_key', 'level', 'stack', 'title_confidence',
+    ]
+
+    with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=csv_fieldnames)
+        writer.writeheader()
+        for job in data:
+            parsed = job.get('parsed', {})
+            salary = parsed.get('salary') if parsed else {}
+            exp = parsed.get('experience') if parsed else {}
+            row = {
+                'title': job.get('title', ''),
+                'company': job.get('company', ''),
+                'city': job.get('city', ''),
+                'salary': job.get('salary'),
+                'experience': job.get('experience'),
+                'education': job.get('education'),
+                'jd_text': job.get('jd_text', ''),
+                'responsibilities': job.get('responsibilities'),
+                'requirements': job.get('requirements'),
+                'keywords': job.get('keywords'),
+                'posted_at': job.get('posted_at'),
+                'url': job.get('url'),
+                'source': job.get('source'),
+                'crawled_at': job.get('crawled_at'),
+                'source_tag': job.get('source_tag'),
+                'parsed_salary_min': salary.get('min') if salary else '',
+                'parsed_salary_max': salary.get('max') if salary else '',
+                'parsed_experience_min': exp.get('min') if exp else '',
+                'parsed_experience_max': exp.get('max') if exp else '',
+                'parsed_education': parsed.get('education') if parsed else '',
+                'quality': job.get('quality'),
+                'standardized_title': job.get('standardized_title', ''),
+                'canonical_key': job.get('canonical_key', ''),
+                'level': job.get('level', ''),
+                'stack': job.get('stack', ''),
+                'title_confidence': job.get('title_confidence'),
+            }
+            writer.writerow(row)
+    print(f"[Step 2] CSV 已保存 → {csv_path}")
+
     return input_path
 
 
@@ -464,6 +517,11 @@ def _normalize_title(raw_title):
     t = re.sub(r'-成本工程师$', '', t).strip()
     t = re.sub(r'-大数据-JAVA$', '', t).strip()
     t = re.sub(r'^研究算法[-/]', '', t).strip()
+    # 去掉末尾中文括号内的方向描述（保留语言类标识）
+    # "prompt工程师（汽车座舱）" → "prompt工程师"
+    # "服务支持专员（粤语）" → 保留（因为粤语/英语/葡语是区分标识）
+    keep_patterns = r'[粤英葡法日韩德]语$'
+    t = re.sub(r'[（(]([^)）]*)[)）]$', lambda m: '' if not re.search(keep_patterns, m.group(1)) else m.group(0), t)
     # 6. 清理
     t = re.sub(r'\s+', '', t)
     t = t.strip('-').strip()
@@ -478,6 +536,9 @@ def _normalize_title(raw_title):
 
 def _strip_level(title):
     """剥离级别关键词，返回 (clean_title, level)"""
+    # 先处理 "中高级" 组合词（整体剥离，级别为 senior）
+    if '中高级' in title:
+        return title.replace('中高级', '').strip(), 'senior'
     for kw in ['高级', '资深']:
         if kw in title:
             return title.replace(kw, '').strip(), 'senior'
@@ -662,4 +723,3 @@ if __name__ == '__main__':
     print(f"输出文件:")
     print(f"  {merged_path}")
     print(f"  {os.path.join(OUTPUT_DIR, 'title_mapping_iflytek.json')}")
-
