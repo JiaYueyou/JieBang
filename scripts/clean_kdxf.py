@@ -663,13 +663,3 @@ if __name__ == '__main__':
     print(f"  {merged_path}")
     print(f"  {os.path.join(OUTPUT_DIR, 'title_mapping_iflytek.json')}")
 
-import csv
-# 导出CSV，适配入库脚本读取
-out_csv_name = "岗位数据_清洗完成.csv"
-if final_data:
-    field_names = final_data[0].keys()
-    with open(out_csv_name, "w", newline="", encoding="utf-8-sig") as fw:
-        writer = csv.DictWriter(fw, fieldnames=field_names)
-        writer.writeheader()
-        writer.writerows(final_data)
-    print(f"\n✅ 已生成文件：{out_csv_name}")
