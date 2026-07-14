@@ -1,6 +1,7 @@
 """LLM Provider Mock 行为测试。"""
 
 import pytest
+import httpx
 
 from app.providers import DeepSeekProvider, MockLLMProvider
 import app.providers.llm as llm_module
@@ -110,3 +111,66 @@ async def test_deepseek_rejects_invalid_json_after_retries(monkeypatch):
             timeout_seconds=1, metadata={},
         )
     assert len(calls) == 2
+
+
+async def test_deepseek_reports_timeout_without_repeating_long_request(monkeypatch):
+    calls = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            calls.append(1)
+            raise httpx.ReadTimeout("", request=httpx.Request("POST", "https://test"))
+
+    monkeypatch.setattr(llm_module.httpx, "AsyncClient", FakeClient)
+    provider = DeepSeekProvider()
+    provider.api_key = "test-key"
+
+    with pytest.raises(RuntimeError, match="response timed out after 30 seconds"):
+        await provider.generate_structured(
+            system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
+            timeout_seconds=30, metadata={},
+        )
+
+    assert len(calls) == 1
+
+
+async def test_deepseek_does_not_inherit_environment_proxy(monkeypatch):
+    client_options = {}
+    request_headers = {}
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            client_options.update(kwargs)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **kwargs):
+            request_headers.update(kwargs["headers"])
+            return _FakeResponse('{"skills": []}')
+
+    monkeypatch.setattr(llm_module.httpx, "AsyncClient", FakeClient)
+    provider = DeepSeekProvider()
+    provider.api_key = "test-key"
+
+    result = await provider.generate_structured(
+        system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
+        timeout_seconds=30, metadata={},
+    )
+
+    assert result.skills == []
+    assert client_options["trust_env"] is False
+    assert "proxy" not in client_options
+    assert "Host" not in request_headers

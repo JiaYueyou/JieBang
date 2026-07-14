@@ -44,12 +44,55 @@
                 </el-col>
               </el-row>
               <el-form-item label="所属部门">
-                <el-input v-model="jdForm.department" placeholder="如：研发中心 · 后台开发组" />
+                <el-select v-model="jdForm.department" placeholder="请选择所属部门" style="width:100%">
+                  <el-option v-for="department in JD_DEPARTMENT_OPTIONS" :key="department" :label="department" :value="department" />
+                </el-select>
               </el-form-item>
-              <el-form-item :label="jdMode === 'req' ? '核心技能要求' : '目标人才特征'">
-                <el-input v-model="jdForm.skillsInput" type="textarea" :rows="3"
-                  :placeholder="jdMode === 'req' ? '用逗号分隔技能，如：Java, Spring Boot, MySQL, Redis' : '描述目标人才特征，如：5年Java经验，精通微服务，有AI项目经验'" />
-              </el-form-item>
+              <div class="suggestion-field">
+                <div class="suggestion-heading">
+                  <div>
+                    <span>{{ jdMode === 'req' ? '核心技能要求' : '目标人才特征' }}</span>
+                    <small>输入岗位名称后，Agent 会自动补充常见建议</small>
+                  </div>
+                  <el-button text type="primary" size="small" :loading="suggestionLoading" :disabled="jdForm.title.trim().length < 2" @click="requestSuggestions(true)">
+                    <el-icon><Refresh /></el-icon>重新建议
+                  </el-button>
+                </div>
+
+                <el-select
+                  v-if="jdMode === 'req'"
+                  v-model="skillRequirements"
+                  multiple
+                  filterable
+                  allow-create
+                  default-first-option
+                  placeholder="输入或选择核心技能"
+                  style="width:100%"
+                  @change="markSuggestionDirty"
+                />
+                <div v-else class="profile-editor">
+                  <div v-for="(_, index) in talentTraits" :key="index" class="profile-row">
+                    <el-input v-model="talentTraits[index]" placeholder="输入一条目标人才特征" @input="markSuggestionDirty" />
+                    <el-button text type="danger" aria-label="删除人才特征" @click="removeTalentTrait(index)"><el-icon><Delete /></el-icon></el-button>
+                  </div>
+                  <el-button size="small" @click="addTalentTrait"><el-icon><Plus /></el-icon>添加人才特征</el-button>
+                </div>
+
+                <div v-if="suggestionLoading || suggestionNotice || suggestionWarning" class="suggestion-status">
+                  <span v-if="suggestionLoading" class="suggestion-pulse"><i></i>Agent 正在分析岗位名称</span>
+                  <span v-else-if="suggestionNotice">{{ suggestionNotice }}</span>
+                  <small v-if="suggestionWarning">{{ suggestionWarning }}</small>
+                </div>
+
+                <div v-if="pendingSuggestions.length" class="suggestion-review">
+                  <div><strong>发现 {{ pendingSuggestions.length }} 条新建议</strong><small>检测到你已编辑当前内容，因此没有自动覆盖。</small></div>
+                  <div>
+                    <el-button size="small" @click="applyPendingSuggestions('append')">追加</el-button>
+                    <el-button size="small" type="primary" plain @click="applyPendingSuggestions('replace')">替换</el-button>
+                    <el-button size="small" text @click="pendingSuggestions = []">忽略</el-button>
+                  </div>
+                </div>
+              </div>
               <el-form-item>
                 <el-button type="primary" :loading="generating" style="width:100%;height:42px;" @click="generateJD">
                   <el-icon><MagicStick /></el-icon> 智能生成 JD
@@ -301,14 +344,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onBeforeUnmount, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete } from "@element-plus/icons-vue";
+import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete, Refresh } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import { useJobStore } from "@/stores/jobs";
 import DataState from "@/components/common/DataState.vue";
+import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
 import type { CapabilityChange, EmergingJob, GeneratedJDDraft, JobSummary } from "@/domain/types";
 
 const tab = ref<"publish" | "insight">("publish");
@@ -318,7 +362,17 @@ const jdMode = ref<"req" | "profile">("req");
 const generating = ref(false);
 const generated = ref<JobSummary | null>(null);
 const generationWarning = ref("");
-const jdForm = reactive({ title: "", level: "", department: "", skillsInput: "" });
+const jdForm = reactive({ title: "", level: "", department: "" });
+const skillRequirements = ref<string[]>([]);
+const talentTraits = ref<string[]>([]);
+const inputDirty = reactive({ requirements: false, profile: false });
+const suggestionLoading = ref(false);
+const suggestionNotice = ref("");
+const suggestionWarning = ref("");
+const pendingSuggestions = ref<string[]>([]);
+let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
+let suggestionRequestId = 0;
+let lastSuggestionKey = "";
 const store = useJobStore();
 const router = useRouter();
 const {
@@ -332,9 +386,104 @@ const {
   error,
 } = storeToRefs(store);
 onMounted(() => Promise.all([store.load(), store.loadInsights()]));
+onBeforeUnmount(() => {
+  if (suggestionTimer) clearTimeout(suggestionTimer);
+  suggestionRequestId += 1;
+});
+
+watch(
+  () => [jdForm.title, jdMode.value, jdForm.level, jdForm.department],
+  () => {
+    pendingSuggestions.value = [];
+    suggestionNotice.value = "";
+    if (suggestionTimer) clearTimeout(suggestionTimer);
+    if (jdForm.title.trim().length < 2) {
+      suggestionLoading.value = false;
+      return;
+    }
+    suggestionTimer = setTimeout(() => requestSuggestions(), 700);
+  },
+);
+
+function currentMode() {
+  return jdMode.value === "req" ? "requirements" as const : "profile" as const;
+}
+
+function currentItems(): string[] {
+  return jdMode.value === "req" ? skillRequirements.value : talentTraits.value;
+}
+
+function setCurrentItems(items: string[]) {
+  const cleaned = [...new Set(items.map((item) => item.trim()).filter(Boolean))];
+  if (jdMode.value === "req") skillRequirements.value = cleaned;
+  else talentTraits.value = cleaned;
+}
+
+function currentDirty() {
+  return jdMode.value === "req" ? inputDirty.requirements : inputDirty.profile;
+}
+
+function markSuggestionDirty() {
+  if (jdMode.value === "req") inputDirty.requirements = true;
+  else inputDirty.profile = true;
+}
+
+async function requestSuggestions(force = false) {
+  const title = jdForm.title.trim();
+  if (title.length < 2) return;
+  const mode = currentMode();
+  const key = JSON.stringify([title, mode, jdForm.level, jdForm.department]);
+  if (!force && key === lastSuggestionKey) return;
+  lastSuggestionKey = key;
+  const requestId = ++suggestionRequestId;
+  suggestionLoading.value = true;
+  suggestionWarning.value = "";
+  try {
+    const result = await store.suggestJDInput({
+      title,
+      mode,
+      level: jdForm.level || undefined,
+      department: jdForm.department || undefined,
+    });
+    if (requestId !== suggestionRequestId || key !== JSON.stringify([jdForm.title.trim(), currentMode(), jdForm.level, jdForm.department])) return;
+    suggestionWarning.value = result.warnings.join(" ");
+    suggestionNotice.value = result.generation_mode === "template" ? "已使用岗位规则模板补充" : "Agent 建议已就绪";
+    if (!currentDirty()) {
+      setCurrentItems(result.suggestions);
+      pendingSuggestions.value = [];
+    } else {
+      const existing = new Set(currentItems());
+      pendingSuggestions.value = result.suggestions.filter((item) => !existing.has(item));
+    }
+  } catch (error) {
+    if (requestId === suggestionRequestId) {
+      suggestionWarning.value = error instanceof Error ? error.message : "岗位建议生成失败";
+    }
+  } finally {
+    if (requestId === suggestionRequestId) suggestionLoading.value = false;
+  }
+}
+
+function applyPendingSuggestions(action: "append" | "replace") {
+  setCurrentItems(action === "append" ? [...currentItems(), ...pendingSuggestions.value] : pendingSuggestions.value);
+  markSuggestionDirty();
+  pendingSuggestions.value = [];
+  suggestionNotice.value = action === "append" ? "新建议已追加" : "已替换为新建议";
+}
+
+function addTalentTrait() {
+  talentTraits.value.push("");
+  inputDirty.profile = true;
+}
+
+function removeTalentTrait(index: number) {
+  talentTraits.value.splice(index, 1);
+  inputDirty.profile = true;
+}
 
 async function generateJD() {
   if (!jdForm.title) { ElMessage.warning("请先输入岗位名称"); return; }
+  if (!jdForm.department) { ElMessage.warning("请选择所属部门"); return; }
   generating.value = true;
   try {
     const draft = await store.generateJD({
@@ -342,7 +491,7 @@ async function generateJD() {
       title: jdForm.title,
       level: jdForm.level || undefined,
       department: jdForm.department || undefined,
-      skills_input: jdForm.skillsInput,
+      skills_input: currentItems().filter(Boolean).join(jdMode.value === "req" ? ", " : "\n"),
     });
     generated.value = toPreviewJob(draft);
     generationWarning.value = draft.warnings.join(" ");
@@ -370,7 +519,10 @@ async function publishFromPreview() {
   generated.value = null;
   generationWarning.value = "";
   jdForm.title = "";
-  jdForm.skillsInput = "";
+  skillRequirements.value = [];
+  talentTraits.value = [];
+  inputDirty.requirements = false;
+  inputDirty.profile = false;
 }
 
 async function closeJob(row: JobSummary) {
@@ -471,7 +623,8 @@ async function prepareHiringPlan(job: EmergingJob) {
   jdMode.value = "req";
   jdForm.title = job.name;
   jdForm.level = "mid";
-  jdForm.skillsInput = job.core_skills.join(", ");
+  skillRequirements.value = [...job.core_skills];
+  inputDirty.requirements = true;
   ElMessage.success("已填入岗位发布表单，请补充部门后生成 JD");
 }
 
@@ -479,11 +632,12 @@ function prepareJDUpdate(change: CapabilityChange) {
   tab.value = "publish";
   jdMode.value = "req";
   jdForm.title = change.job;
-  jdForm.skillsInput = [
+  skillRequirements.value = [
     ...change.added.map((skill) => `新增：${skill}`),
     ...change.modified.map((skill) => `强化：${skill}`),
     ...change.removed.map((skill) => `待移除：${skill}`),
-  ].join(", ");
+  ];
+  inputDirty.requirements = true;
   ElMessage.success("能力变化已填入 JD Agent，请审核后生成更新草稿");
 }
 
@@ -498,4 +652,22 @@ function viewChangeTrend(change: CapabilityChange) {
   margin-top: 12px;
   border-radius: 12px;
 }
+.suggestion-field { margin-bottom: 18px; }
+.suggestion-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px; }
+.suggestion-heading>div { display:flex;flex-direction:column; }
+.suggestion-heading span { color:var(--text-primary);font-size:14px;font-weight:600; }
+.suggestion-heading small { margin-top:2px;color:var(--text-muted);font-size:12px; }
+.profile-editor { display:flex;flex-direction:column;gap:8px; }
+.profile-row { display:flex;align-items:center;gap:6px; }
+.suggestion-status { display:flex;align-items:flex-start;flex-direction:column;gap:3px;margin-top:8px;color:var(--color-brand);font-size:12px; }
+.suggestion-status small { color:var(--color-warning);line-height:1.5; }
+.suggestion-pulse { display:flex;align-items:center;gap:6px; }
+.suggestion-pulse i { width:7px;height:7px;border-radius:50%;background:var(--color-brand);box-shadow:0 0 0 4px var(--color-brand-light);animation:suggestion-breathe 1.2s ease-in-out infinite; }
+.suggestion-review { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:11px 12px;border:1px solid var(--color-brand);border-radius:10px;background:var(--color-brand-light); }
+.suggestion-review>div:first-child { display:flex;flex-direction:column; }
+.suggestion-review strong { color:var(--text-primary);font-size:13px; }
+.suggestion-review small { margin-top:2px;color:var(--text-secondary);font-size:12px; }
+.suggestion-review>div:last-child { display:flex;align-items:center;white-space:nowrap; }
+@keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
+@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}}
 </style>

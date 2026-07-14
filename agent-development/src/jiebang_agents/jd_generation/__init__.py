@@ -5,7 +5,10 @@ from jiebang_agents.jd_generation.schemas import (
     GenerateJDRequest,
     GeneratedJDDraft,
     JDGenerationMode,
+    JDInputSuggestion,
+    JDInputSuggestionRequest,
     LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
 )
 
 __all__ = [
@@ -13,5 +16,8 @@ __all__ = [
     "JDGenerationMode",
     "GenerateJDRequest",
     "GeneratedJDDraft",
+    "JDInputSuggestionRequest",
+    "JDInputSuggestion",
     "LLMGeneratedJDDraft",
+    "LLMJDInputSuggestion",
 ]

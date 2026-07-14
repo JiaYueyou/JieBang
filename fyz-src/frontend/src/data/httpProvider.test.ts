@@ -100,6 +100,33 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(post).toHaveBeenNthCalledWith(2, "/jobs", createPayload);
   });
 
+  it("creates and resolves a JD input suggestion task", async () => {
+    const result = {
+      title: "Java 开发工程师",
+      mode: "requirements" as const,
+      suggestions: ["Java", "Spring Boot", "MySQL"],
+      generation_mode: "template" as const,
+      warnings: ["请人工核对"],
+    };
+    const post = vi.spyOn(request, "post").mockResolvedValue(response({
+      task: { task_id: "suggestion-task", status: "succeeded", progress: 100, result, error_message: null },
+      agent_run_id: "suggestion-run",
+    }) as never);
+
+    await expect(httpDataProvider.jobs.suggestJDInput({
+      mode: "requirements",
+      title: "Java 开发工程师",
+      level: "senior",
+      department: "后台开发组",
+    })).resolves.toEqual(result);
+    expect(post).toHaveBeenCalledWith("/agents/jd-input-suggestions", {
+      mode: "requirements",
+      title: "Java 开发工程师",
+      level: "senior",
+      department: "后台开发组",
+    });
+  });
+
   it("calls the real update, status and soft-delete endpoints", async () => {
     const put = vi.spyOn(request, "put")
       .mockResolvedValueOnce(response({ ...job, title: "Java 架构师" }) as never)
@@ -153,6 +180,30 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(post).toHaveBeenCalledWith(
       "/agents/match-explanations", { match_id: 3 }, { timeout: 60000 },
     );
+  });
+
+  it("surfaces the backend failure reason for an Agent task", async () => {
+    vi.spyOn(request, "post").mockResolvedValue(response({
+      task: { task_id: "match-task", status: "queued", progress: 0, result: null, error_message: null },
+      agent_run_id: "match-run",
+    }) as never);
+    vi.spyOn(request, "get").mockResolvedValue(response({
+      task_id: "match-task", status: "failed", progress: 100, result: null,
+      error_message: "模型服务限流，请稍后重试",
+    }) as never);
+
+    await expect(httpDataProvider.talents.explain(3)).rejects.toThrow("模型服务限流，请稍后重试");
+  });
+
+  it("reports a completed Agent task without a result as an invalid response", async () => {
+    vi.spyOn(request, "post").mockResolvedValue(response({
+      task: { task_id: "career-task", status: "succeeded", progress: 100, result: null, error_message: null },
+      agent_run_id: "career-run",
+    }) as never);
+
+    await expect(httpDataProvider.career.analyze({
+      skillText: "Python", enterpriseTech: "", enterpriseJobs: [],
+    })).rejects.toThrow("AI 任务已完成，但未返回可用结果");
   });
 
   it("maps the real analysis overview response and forwards trend filters", async () => {

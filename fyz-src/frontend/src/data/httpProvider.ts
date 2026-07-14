@@ -6,6 +6,7 @@ import type {
   CapabilityChange,
   EmergingJob,
   GeneratedJDDraft,
+  JDInputSuggestion,
   TrendOverview,
 } from "@/domain/types";
 
@@ -21,6 +22,9 @@ interface JDGenerationCreated {
   task: AsyncTask<GeneratedJDDraft>;
   agent_run_id: string;
 }
+
+const AGENT_POLL_INTERVAL_MS = 2000;
+const AGENT_MAX_POLLS = 90;
 
 interface ResumeExtractionResponse {
   filename: string;
@@ -100,13 +104,13 @@ async function post<T>(url: string, data?: unknown, timeout?: number): Promise<T
 
 async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
   let task = created.task;
-  for (let attempt = 0; attempt < 180 && task.status !== "succeeded" && task.status !== "failed"; attempt += 1) {
-    await sleep(500);
+  for (let attempt = 0; attempt < AGENT_MAX_POLLS && task.status !== "succeeded" && task.status !== "failed"; attempt += 1) {
+    if (attempt > 0) await sleep(AGENT_POLL_INTERVAL_MS);
     task = await get<AsyncTask<T>>(`/tasks/${task.task_id}`);
   }
-  if (task.status !== "succeeded" || !task.result) {
-    throw new Error(task.error_message || "AI 任务未在预期时间内完成");
-  }
+  if (task.status === "failed") throw new Error(task.error_message || "AI 任务执行失败");
+  if (task.status !== "succeeded") throw new Error("AI 任务未在预期时间内完成，请稍后刷新重试");
+  if (task.result === null) throw new Error("AI 任务已完成，但未返回可用结果");
   return task.result;
 }
 
@@ -133,17 +137,16 @@ export const httpDataProvider: DataProvider = {
     decideInsight: async (id, decision, note) => {
       await put(`/analysis/emerging-jobs/${id}/decision`, { decision, note });
     },
+    suggestJDInput: async (input) => {
+      const created = await post<AgentTaskCreated<JDInputSuggestion>>(
+        "/agents/jd-input-suggestions",
+        input,
+      );
+      return waitForAgentTask(created);
+    },
     generateJD: async (input) => {
       const created = await post<JDGenerationCreated>("/agents/jd-generations", input);
-      let task = created.task;
-      for (let attempt = 0; attempt < 60 && task.status !== "succeeded" && task.status !== "failed"; attempt += 1) {
-        await sleep(500);
-        task = await get<AsyncTask<GeneratedJDDraft>>(`/tasks/${task.task_id}`);
-      }
-      if (task.status !== "succeeded" || !task.result) {
-        throw new Error(task.error_message || "JD 生成任务未在预期时间内完成");
-      }
-      return task.result;
+      return waitForAgentTask(created);
     },
     create: (job) => post("/jobs", job),
     update: (job) => put(`/jobs/${job.id}`, job),

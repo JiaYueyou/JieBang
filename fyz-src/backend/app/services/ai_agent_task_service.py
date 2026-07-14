@@ -8,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.agent_runtime import CareerPlanningAgent, MatchExplanationAgent
-from app.core.config import CELERY_TASK_ALWAYS_EAGER
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.models import AgentRun, AsyncTask, MatchRecord, Resume
 from app.providers import DeepSeekProvider
@@ -79,12 +78,11 @@ class AIAgentTaskService:
         )
         self.db.add_all([run, task])
         await self.db.commit()
-
-        from app.tasks.ai_agents import _process_ai_agent, process_ai_agent
-
-        if CELERY_TASK_ALWAYS_EAGER:
-            await _process_ai_agent(task.id)
-        else:
-            process_ai_agent.delay(task.id)
+        # MySQL server defaults (notably created_at) must be loaded before the
+        # response model reads them; this refresh does not wait for the Agent.
         await self.db.refresh(task)
+
+        from app.core.agent_task_runner import dispatch_agent_task
+
+        dispatch_agent_task(task.id, task.task_type)
         return AgentTaskResponse(task=TaskService.to_response(task), agent_run_id=run.id)

@@ -132,11 +132,17 @@ celery -A app.core.celery_app.celery_app worker --loglevel=info --pool=solo
 启动 Redis。未配置 `DEEPSEEK_API_KEY` 时，Pipeline 只运行规则抽取并返回
 `llm_enrichment=false`；DeepSeek 超时不会回滚已经确认的规则结果。
 
-Career Planning 与 Match Explanation 也使用相同的 `AsyncTask` 队列。
-本地 eager 模式会在创建请求中直接执行，前端为 Agent 创建请求设置 60 秒独立超时；
-联调真实异步行为时设置 `CELERY_TASK_ALWAYS_EAGER=false`，并同时启动 Redis、
-Celery Worker 和 FastAPI。前端随后轮询 `/api/v1/tasks/{task_id}`，不会受普通
-15 秒 HTTP 超时影响。
+JD Generation、Career Planning 与 Match Explanation 使用持久化 `AsyncTask`，
+由 FastAPI 进程内异步执行，不依赖 Redis 或 Celery。创建接口立即返回 `task_id`，
+前端轮询 `/api/v1/tasks/{task_id}`；API 重启后会恢复数据库中处于 `queued` 或
+`running` 的 Agent 任务。当前部署应保持单个 Uvicorn Worker，避免多个进程重复
+恢复同一任务。批量数据导入仍沿用上文独立的 Celery 配置，不属于 Agent 执行链路。
+
+DeepSeek 固定使用标准直连地址 `https://api.deepseek.com`，Provider 不读取系统或
+环境变量中的 HTTP 代理。模型名以当前账号可用模型为准。修改 `.env` 后必须完整
+重启 Uvicorn，热重载子进程会继承父进程启动时的旧环境值。Career Planning 的
+完整候选岗位 Prompt 默认允许 60 秒模型响应；前端最多轮询约 180 秒，以覆盖一次
+结构化输出修复调用。
 
 主要接口：
 

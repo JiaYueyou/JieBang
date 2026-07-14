@@ -1,4 +1,11 @@
 from test.api.test_jobs import create_job
+from app.services.career_service import CareerService
+
+
+class DisabledCareerProvider:
+    provider_name = "disabled"
+    model_name = "none"
+    enabled = False
 
 
 async def test_career_analysis_requires_authentication(client):
@@ -47,3 +54,21 @@ async def test_resume_text_extraction_and_degraded_career_plan(client, auth_head
 async def test_career_analysis_rejects_empty_input(client, auth_headers):
     response = await client.post("/api/v1/career/analyses", headers=auth_headers, json={})
     assert response.status_code == 422
+
+
+def test_declared_skills_preserve_free_text_and_cover_equivalent_job_requirements():
+    service = CareerService(None, llm_provider=DisabledCareerProvider())
+
+    skills = service._extract_declared_skills(
+        "Python，Transformer，LangChain，NLP，机器学习，大模型分布式部署，Claude Code"
+    )
+
+    assert "Python" in skills
+    assert "Transformer" in skills
+    assert "Claude Code" in skills
+    assert "大模型分布式部署" in skills
+    assert service._skill_is_covered("Transformer", skills)
+    assert service._skill_is_covered("自然语言处理", skills)
+    assert service._skill_is_covered("有Claude Code使用经验", skills)
+    assert service._skill_is_covered("了解分布式训练或模型部署", skills)
+    assert not service._skill_is_covered("熟悉大模型微调（LoRA等）", skills)

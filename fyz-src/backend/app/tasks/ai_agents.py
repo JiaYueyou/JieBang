@@ -1,10 +1,8 @@
-"""Celery execution for Career Planning and Match Explanation."""
+"""Persisted execution for Career Planning and Match Explanation."""
 
-import asyncio
 from datetime import datetime
 
 from app.core.agent_runtime import CareerPlanningAgent, MatchExplanationAgent
-from app.core.celery_app import celery_app
 from app.core.database import async_session
 from app.models import AgentRun, AsyncTask
 from app.schemas.career import CareerAnalysisRequest
@@ -51,8 +49,3 @@ async def _process_ai_agent(task_id: str) -> dict:
                 run.finished_at = datetime.utcnow()
             await db.commit()
             raise
-
-
-@celery_app.task(name="agent.process_ai")
-def process_ai_agent(task_id: str) -> dict:
-    return asyncio.run(_process_ai_agent(task_id))

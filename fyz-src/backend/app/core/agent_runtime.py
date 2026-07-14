@@ -38,7 +38,10 @@ from jiebang_agents.jd_generation import (  # noqa: E402
     GenerateJDRequest,
     GeneratedJDDraft,
     JDGenerationMode,
+    JDInputSuggestion,
+    JDInputSuggestionRequest,
     LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
 )
 from jiebang_agents.graph_enrichment import (  # noqa: E402
     GraphEnrichmentAgent,
@@ -64,7 +67,10 @@ __all__ = [
     "JDGenerationMode",
     "GenerateJDRequest",
     "GeneratedJDDraft",
+    "JDInputSuggestionRequest",
+    "JDInputSuggestion",
     "LLMGeneratedJDDraft",
+    "LLMJDInputSuggestion",
     "CareerPlanningAgent",
     "CareerAnalysisRequest",
     "CareerPlanCandidate",

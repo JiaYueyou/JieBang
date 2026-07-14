@@ -7,6 +7,8 @@ import type {
   EmergingJob,
   GeneratedJDDraft,
   GenerateJDRequest,
+  JDInputSuggestion,
+  JDInputSuggestionRequest,
   JobCreatePayload,
   JobSummary,
 } from "@/domain/types";
@@ -65,6 +67,10 @@ export const useJobStore = defineStore("jobs", () => {
     return dataProvider.jobs.generateJD(input);
   }
 
+  async function suggestJDInput(input: JDInputSuggestionRequest): Promise<JDInputSuggestion> {
+    return dataProvider.jobs.suggestJDInput(input);
+  }
+
   async function create(job: JobCreatePayload) {
     const saved = await dataProvider.jobs.create(job);
     jobs.value.unshift(saved);
@@ -102,6 +108,7 @@ export const useJobStore = defineStore("jobs", () => {
     loadInsights,
     decideInsight,
     refresh: () => load(true),
+    suggestJDInput,
     generateJD,
     create,
     update,

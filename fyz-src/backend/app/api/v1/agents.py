@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.agent import (
     AgentRunResponse, AgentTaskResponse, GenerateJDRequest,
-    JDGenerationTaskResponse, MatchExplanationTaskRequest,
+    JDGenerationTaskResponse, JDInputSuggestionRequest, MatchExplanationTaskRequest,
 )
 from app.schemas.auth import TokenPrincipal
 from app.schemas.career import CareerAnalysisRequest
@@ -52,10 +52,29 @@ async def create_jd_generation(
     return ApiResponse(message="JD 生成任务已创建", data=result)
 
 
+@router.post(
+    "/jd-input-suggestions",
+    response_model=ApiResponse[JDGenerationTaskResponse],
+)
+async def create_jd_input_suggestion(
+    payload: JDInputSuggestionRequest,
+    principal: TokenPrincipal = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[JDGenerationTaskResponse]:
+    result = await JDGenerationService(db).create_suggestion_task(
+        payload, user_id=principal.user_id
+    )
+    return ApiResponse(message="JD 输入建议任务已创建", data=result)
+
+
 @router.get("/runs/{agent_run_id}", response_model=ApiResponse[AgentRunResponse])
 async def get_agent_run(
     agent_run_id: str,
-    _principal: TokenPrincipal = Depends(get_current_user),
+    principal: TokenPrincipal = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[AgentRunResponse]:
-    return ApiResponse(data=await JDGenerationService(db).get_run(agent_run_id))
+    return ApiResponse(
+        data=await JDGenerationService(db).get_run(
+            agent_run_id, user_id=principal.user_id
+        )
+    )

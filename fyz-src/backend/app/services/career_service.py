@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import io
+import re
 import time
 import uuid
 from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -73,7 +75,10 @@ class CareerService:
         combined_text = " ".join(filter(None, [request.skill_text, request.resume_text]))
         if not combined_text.strip():
             raise InvalidParameterError("员工技能或简历文本至少填写一项")
-        skills = self._extract_skills(combined_text)
+        skills = list(dict.fromkeys([
+            *self._extract_declared_skills(request.skill_text),
+            *self._extract_skills(request.resume_text),
+        ]))[:50]
         candidates = await self._build_candidates(request, skills)
         run_id = agent_run_id or str(uuid.uuid4())
         run = await self.db.get(AgentRun, run_id) if agent_run_id else None
@@ -105,6 +110,9 @@ class CareerService:
             run.status = "degraded" if not bool(getattr(self.llm, "enabled", True)) else "succeeded"
         except Exception as exc:
             output = self.agent.template_output(skills, candidates, request.time_budget_weeks)
+            output = output.model_copy(update={
+                "warnings": ["AI 增强暂未完成，已返回可继续使用的确定性学习路径。"]
+            })
             run.status = "degraded"
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
@@ -127,8 +135,7 @@ class CareerService:
             allowed = set(request.target_job_ids)
             rows = [row for row in rows if row.id in allowed]
         internal_names = {item.casefold() for item in request.internal_jobs}
-        enterprise_skills = self._extract_skills(request.enterprise_tech) if request.enterprise_tech else []
-        user_keys = {canonical_key(item): item for item in skills}
+        enterprise_skills = self._extract_declared_skills(request.enterprise_tech)
         candidates: list[CareerPlanCandidate] = []
         for job in rows:
             job_skills = list(dict.fromkeys(item.name for item in job.skills))
@@ -140,8 +147,8 @@ class CareerService:
             internal = any(name in job.title.casefold() or job.title.casefold() in name for name in internal_names)
             if internal:
                 job_skills = list(dict.fromkeys([*job_skills, *enterprise_skills]))
-            existing = [item for item in job_skills if canonical_key(item) in user_keys]
-            gaps = [item for item in job_skills if canonical_key(item) not in user_keys]
+            existing = [item for item in job_skills if self._skill_is_covered(item, skills)]
+            gaps = [item for item in job_skills if not self._skill_is_covered(item, skills)]
             current = round(len(existing) / len(job_skills) * 100)
             recommend = min(100, current + (8 if internal else 0))
             after = min(100, current + min(40, len(gaps) * 10))
@@ -158,11 +165,85 @@ class CareerService:
         return sorted(candidates, key=lambda item: (-item.recommend_score, len(item.gaps), item.job_id))[:5]
 
     def _extract_skills(self, text: str) -> list[str]:
+        if not text.strip():
+            return []
         output = self.extractor.extract(jd_text=text)
-        skills = [item.name for item in output.skills]
-        if not skills:
-            skills = [part.strip() for part in text.replace("，", ",").split(",") if 1 < len(part.strip()) <= 100]
-        return list(dict.fromkeys(skills))[:50]
+        return list(dict.fromkeys(item.name for item in output.skills))[:50]
+
+    def _extract_declared_skills(self, text: str) -> list[str]:
+        """保留用户在技能输入框中显式填写、但尚未进入词典的技术。"""
+        if not text.strip():
+            return []
+        recognized = self._extract_skills(text)
+        declared = list(recognized)
+        for raw_part in re.split(r"[,，;；、\r\n]+", text):
+            part = re.sub(r"\s+", " ", raw_part).strip(" .。")
+            part = re.sub(r"^(熟悉|掌握|了解|精通|略懂|使用过)", "", part).strip()
+            part = re.sub(r"\b\d+(?:\.\d+)?\s*年(?:经验)?\b", "", part).strip()
+            if not 1 < len(part) <= 100:
+                continue
+            if any(marker in part for marker in ("带过", "团队", "负责", "毕业", "在读")):
+                continue
+            if any(self._normalized_skill(part) == self._normalized_skill(item) for item in recognized):
+                continue
+            declared.append(part)
+        deduplicated: list[str] = []
+        seen: set[str] = set()
+        for skill in declared:
+            key = self._normalized_skill(skill)
+            if key and key not in seen:
+                seen.add(key)
+                deduplicated.append(skill)
+        return deduplicated[:50]
+
+    @classmethod
+    def _skill_is_covered(cls, required: str, owned_skills: list[str]) -> bool:
+        required_key = cls._normalized_skill(required)
+        if not required_key:
+            return False
+        for owned in owned_skills:
+            owned_key = cls._normalized_skill(owned)
+            if not owned_key:
+                continue
+            if required_key == owned_key:
+                return True
+            if min(len(required_key), len(owned_key)) >= 3 and (
+                required_key in owned_key or owned_key in required_key
+            ):
+                shorter = min((required_key, owned_key), key=len)
+                if shorter not in {"大模型"}:
+                    return True
+            if min(len(required_key), len(owned_key)) >= 4 and SequenceMatcher(
+                None, required_key, owned_key
+            ).ratio() >= 0.66:
+                return True
+            if len(cls._technical_topics(required_key) & cls._technical_topics(owned_key)) >= 2:
+                return True
+        return False
+
+    @staticmethod
+    def _technical_topics(value: str) -> set[str]:
+        topics = (
+            "分布式", "训练", "部署", "微调", "向量数据库", "数据分析",
+            "自然语言处理", "计算机视觉", "claudecode", "transformer", "rag",
+        )
+        return {topic for topic in topics if topic in value}
+
+    @staticmethod
+    def _normalized_skill(value: str) -> str:
+        normalized = canonical_key(value)
+        aliases = {
+            "nlp": "自然语言处理",
+            "cv": "计算机视觉",
+            "llm": "大模型",
+        }
+        normalized = canonical_key(aliases.get(normalized, normalized))
+        for marker in (
+            "有", "熟悉", "掌握", "了解", "具备", "使用经验", "相关经验", "经验",
+            "基础", "高级应用", "深入", "实践", "等", "或", "与", "和",
+        ):
+            normalized = normalized.replace(marker, "")
+        return normalized
 
     @staticmethod
     def _decode_text(content: bytes) -> str:

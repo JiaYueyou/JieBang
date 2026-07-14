@@ -1,6 +1,6 @@
 # Agent 开发工作区
 
-本目录是 `feat/fyz-job-agent` 分支上 Agent 需求、接口契约、Prompt、运行时代码和验收用例的独立工作区。后端只保留加载适配、HTTP/Celery 编排和审计持久化；本目录不放密钥、真实简历或模型原始响应。
+本目录是 `feat/fyz-job-agent` 分支上 Agent 需求、接口契约、Prompt、运行时代码和验收用例的独立工作区。后端只保留加载适配、HTTP/进程内异步编排和审计持久化；Agent 执行不依赖 Redis/Celery。本目录不放密钥、真实简历或模型原始响应。
 
 ## 当前交付
 
@@ -31,7 +31,7 @@ agent-development/
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| JD Generation | 已完成首版 | 异步任务、审计、结构化草稿和模板降级可用 |
+| JD Generation | 已完成输入建议增强 | 岗位名称自动补全、异步任务、审计、结构化草稿和规则模板降级可用 |
 | Skill Extraction | 部分完成 | 岗位技能抽取与补全可用，统一文本/简历公共入口待开发 |
 | Skill L4/L5 Completion | 已完成首版 | L1-L3 上下文、双来源和 `0.75` 门槛可用 |
 | Career Planning | 已完成首版 | 文件文本解析、即时确定性推荐、学习路径和 FYZ 联调可用 |
