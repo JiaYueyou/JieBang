@@ -444,7 +444,7 @@ const renderMarkdown = (text: string): string => {
                 :disabled="quizSubmitted"
                 v-model="quizAnswers[q.id]"
               />
-              <span class="opt-label">{{ ['A', 'B', 'C', 'D'][oi] }}. {{ opt }}{{ getQuizOptionIcon(qi, oi) }}</span>
+              <span class="opt-label">{{ ['A', 'B', 'C', 'D'][Number(oi)] }}. {{ opt }}{{ getQuizOptionIcon(qi, Number(oi)) }}</span>
             </label>
           </div>
           <div v-if="quizSubmitted" class="quiz-explanation">
