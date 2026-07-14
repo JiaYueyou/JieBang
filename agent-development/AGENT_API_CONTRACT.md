@@ -1,7 +1,7 @@
 # 智联职引 Agent 开发接口契约 v1.1
 
 更新日期：2026-07-12
-适用范围：FYZ 管理端（FastAPI、MySQL、Celery、DeepSeek Provider）
+适用范围：FYZ 管理端（FastAPI、MySQL、进程内异步任务、DeepSeek Provider）
 
 ## 1. 目标与边界
 
@@ -90,6 +90,19 @@ Agent 的职责是把已有、可追溯的业务数据整理为**可编辑草稿
 响应 `data`：`{ "task": TaskStatus, "agent_run_id": "uuid" }`。
 
 `structured_output`（终态读取）字段为 `title`、`standardized_title`、`level`、`department`、`responsibilities[]`、`requirements[]`、`skills[]`、`bonus_skills[]`、`jd_text`、`assumptions[]`、`warnings[]`、`generation_mode(llm|template)`。草稿需由岗位编辑页面人工确认后再调用既有岗位发布接口。
+
+#### `POST /api/v1/agents/jd-input-suggestions`
+
+根据岗位名称为 JD 表单生成可编辑的输入建议，不生成完整 JD，也不发布岗位。请求字段：
+
+| 字段 | 类型 | 必填 | 约束/说明 |
+| --- | --- | --- | --- |
+| `mode` | `requirements \| profile` | 否 | 默认 `requirements`；分别生成核心技能或人才特征 |
+| `title` | string | 是 | 2–120 字符 |
+| `level` | string/null | 否 | 最长 30 |
+| `department` | string/null | 否 | 最长 100 |
+
+响应 `data` 与 JD 生成任务相同，为 `{ "task": TaskStatus, "agent_run_id": "uuid" }`。任务成功后的 `result` 包含 `title`、`mode`、`suggestions[]`、`generation_mode(llm|template)` 和 `warnings[]`。模型不可用或输出无效时，Agent 使用岗位关键词规则模板降级。
 
 ### 4.2 已有：查询运行审计
 

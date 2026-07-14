@@ -1,7 +1,7 @@
 import type {
   AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
-  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
+  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
 } from "@/domain/types";
 
 export interface DataProvider {
@@ -10,6 +10,7 @@ export interface DataProvider {
     list(): Promise<JobSummary[]>;
     getInsights(skill?: string): Promise<{ emergingJobs: EmergingJob[]; capabilityChanges: CapabilityChange[]; dataQuality: AnalysisDataQuality }>;
     decideInsight(id: number, decision: "confirmed" | "ignored" | "planned", note?: string): Promise<void>;
+    suggestJDInput(input: JDInputSuggestionRequest): Promise<JDInputSuggestion>;
     generateJD(input: GenerateJDRequest): Promise<GeneratedJDDraft>;
     create(job: JobCreatePayload): Promise<JobSummary>;
     update(job: JobSummary): Promise<JobSummary>;

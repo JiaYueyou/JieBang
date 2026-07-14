@@ -1,7 +1,12 @@
 from app.models import AgentRun
 from app.core.database import async_session
 from app.providers import MockLLMProvider
-from app.schemas.agent import GenerateJDRequest, LLMGeneratedJDDraft
+from app.schemas.agent import (
+    GenerateJDRequest,
+    JDInputSuggestionRequest,
+    LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
+)
 from app.services.jd_generation_service import JDGenerationService
 
 
@@ -101,3 +106,28 @@ async def test_generation_uses_explicit_template_fallback_when_provider_disabled
         assert draft.skills == ["Java", "Spring Boot", "MySQL"]
         assert "未配置 DeepSeek" in draft.warnings[0]
         assert (await service.get_run(run_id)).status == "degraded"
+
+
+async def test_input_suggestion_audits_structured_llm_output():
+    output = LLMJDInputSuggestion(
+        suggestions=["Java", "Spring Boot", "MySQL"],
+        warnings=[],
+    )
+    async with async_session() as db:
+        run_id = await add_run(db, "run-suggestion")
+        service = JDGenerationService(db, llm_provider=MockLLMProvider(output=output))
+
+        result = await service.suggest_input(
+            JDInputSuggestionRequest(
+                title="高级 Java 开发工程师",
+                mode="requirements",
+                department="后台开发组",
+            ),
+            agent_run_id=run_id,
+        )
+        await db.commit()
+
+        assert result.suggestions == ["Java", "Spring Boot", "MySQL"]
+        run = await service.get_run(run_id)
+        assert run.status == "succeeded"
+        assert run.structured_output["suggestions"] == result.suggestions

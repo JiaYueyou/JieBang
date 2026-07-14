@@ -135,6 +135,9 @@ class MatchingService:
             run.status = "degraded" if output.generation_mode == "template" else "succeeded"
         except Exception as exc:
             output = agent.template_output(request)
+            output = output.model_copy(update={
+                "warnings": ["AI 增强暂未完成，已返回基于已保存证据的可用匹配解释。"]
+            })
             run.status, run.error_code, run.error_message = "degraded", type(exc).__name__, str(exc)[:2000]
         run.structured_output = output.model_dump(mode="json")
         run.duration_ms = int((time.perf_counter() - started) * 1000)

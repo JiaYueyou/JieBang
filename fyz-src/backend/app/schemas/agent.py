@@ -8,7 +8,10 @@ from app.core.agent_runtime import (
     GenerateJDRequest,
     GeneratedJDDraft,
     JDGenerationMode,
+    JDInputSuggestion,
+    JDInputSuggestionRequest,
     LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
 )
 from app.schemas.skill import TaskStatusResponse
 
@@ -49,7 +52,10 @@ __all__ = [
     "JDGenerationMode",
     "GenerateJDRequest",
     "GeneratedJDDraft",
+    "JDInputSuggestionRequest",
+    "JDInputSuggestion",
     "LLMGeneratedJDDraft",
+    "LLMJDInputSuggestion",
     "JDGenerationTaskResponse",
     "AgentRunResponse",
     "AgentTaskResponse",

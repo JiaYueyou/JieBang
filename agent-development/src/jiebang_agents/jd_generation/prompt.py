@@ -1,8 +1,9 @@
-"""JD Generation Prompt v3。"""
+"""JD Generation 与输入建议 Prompt。"""
 
-from jiebang_agents.jd_generation.schemas import GenerateJDRequest
+from jiebang_agents.jd_generation.schemas import GenerateJDRequest, JDInputSuggestionRequest
 
 PROMPT_VERSION = "jd-generation-v3"
+SUGGESTION_PROMPT_VERSION = "jd-input-suggestion-v1"
 
 SYSTEM_PROMPT = """你是企业招聘 JD 起草助手。
 只根据用户明确提供的需求生成可编辑草稿，不得虚构薪资、福利、学历、工作年限、公司制度或合规承诺。
@@ -41,4 +42,34 @@ def build_user_prompt(request: GenerateJDRequest) -> str:
         company=request.company or "未提供",
         headcount=request.headcount or "未提供",
         skills_input=request.skills_input or "未提供",
+    )
+
+
+SUGGESTION_SYSTEM_PROMPT = """你是企业招聘岗位信息补全助手。
+你的任务仅是根据岗位名称，为待人工编辑的表单补充常见核心技能或目标人才特征。
+不得生成完整 JD，不得虚构薪资、福利、学历、工作年限、公司制度或合规承诺。
+岗位名称、职级和部门由系统控制，不能在输出中修改。
+只返回 JSON 对象，不得返回 Markdown、解释文字或额外字段。"""
+
+
+def build_suggestion_prompt(request: JDInputSuggestionRequest) -> str:
+    target = "5 至 10 个简短、具体、可编辑的常见核心技能" if request.mode.value == "requirements" else "3 至 6 条简短、可编辑的目标人才能力特征"
+    return """请为岗位表单生成输入建议。
+岗位名称：{title}
+生成模式：{mode}
+职级：{level}
+部门：{department}
+输出要求：{target}
+
+严格返回下列 JSON 对象：
+{{
+  "suggestions": ["建议 1"],
+  "warnings": ["需要人工复核的事项"]
+}}
+suggestions 和 warnings 必须是字符串数组；不得输出 title、mode、level、department 或完整 JD。""".format(
+        title=request.title,
+        mode=request.mode.value,
+        level=request.level or "未提供",
+        department=request.department or "未提供",
+        target=target,
     )

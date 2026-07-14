@@ -36,6 +36,21 @@ export interface GenerateJDRequest {
   skills_input: string;
 }
 
+export interface JDInputSuggestionRequest {
+  mode: JDGenerationMode;
+  title: string;
+  level?: string;
+  department?: string;
+}
+
+export interface JDInputSuggestion {
+  title: string;
+  mode: JDGenerationMode;
+  suggestions: string[];
+  generation_mode: "llm" | "template";
+  warnings: string[];
+}
+
 export interface GeneratedJDDraft {
   title: string;
   standardized_title?: string | null;

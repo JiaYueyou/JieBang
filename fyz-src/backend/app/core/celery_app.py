@@ -13,8 +13,7 @@ celery_app = Celery(
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.skill_import", "app.tasks.graph_sync", "app.tasks.jd_generation",
-        "app.tasks.ai_agents",
+        "app.tasks.skill_import", "app.tasks.graph_sync",
     ],
 )
 celery_app.conf.update(

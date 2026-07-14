@@ -1,4 +1,10 @@
-from jiebang_agents.jd_generation import GenerateJDRequest, JDGenerationAgent, LLMGeneratedJDDraft
+from jiebang_agents.jd_generation import (
+    GenerateJDRequest,
+    JDGenerationAgent,
+    JDInputSuggestionRequest,
+    LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
+)
 
 
 class FakeProvider:
@@ -55,3 +61,48 @@ async def test_agent_returns_template_when_provider_is_disabled():
     assert draft.generation_mode == "template"
     assert draft.skills == ["Python", "MySQL"]
     assert draft.warnings
+
+
+async def test_agent_generates_structured_input_suggestions():
+    provider = FakeProvider(
+        LLMJDInputSuggestion(
+            suggestions=["Java", "Spring Boot", "MySQL"],
+            warnings=["请结合团队技术栈复核"],
+        )
+    )
+    agent = JDGenerationAgent(provider, timeout_seconds=9)
+
+    result = await agent.suggest_input(
+        JDInputSuggestionRequest(
+            title="高级 Java 开发工程师",
+            mode="requirements",
+            level="senior",
+            department="后台开发组",
+        )
+    )
+
+    assert result.suggestions == ["Java", "Spring Boot", "MySQL"]
+    assert result.generation_mode == "llm"
+    assert provider.call["metadata"]["agent_type"] == "jd_input_suggestion"
+    assert provider.call["metadata"]["prompt_version"] == agent.suggestion_prompt_version
+
+
+async def test_suggestion_fallback_matches_title_and_profile_mode():
+    class DisabledProvider:
+        provider_name = "disabled"
+        model_name = "none"
+        enabled = False
+
+    agent = JDGenerationAgent(DisabledProvider())
+    skills = await agent.suggest_input(
+        JDInputSuggestionRequest(title="Java 开发工程师", mode="requirements")
+    )
+    profile = await agent.suggest_input(
+        JDInputSuggestionRequest(title="Java 开发工程师", mode="profile")
+    )
+
+    assert skills.suggestions == ["Java", "Spring Boot", "MySQL", "Redis", "微服务架构"]
+    assert profile.suggestions
+    assert profile.suggestions != skills.suggestions
+    assert skills.generation_mode == profile.generation_mode == "template"
+    assert skills.warnings and profile.warnings

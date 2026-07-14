@@ -31,11 +31,19 @@ admin_router = make_placeholder_router("admin", "系统管理", "系统管理")
 async def lifespan(app: FastAPI):
     # 数据库 Schema 由 Alembic 管理；启动阶段只执行显式数据 bootstrap。
     await bootstrap_initial_admin()
+    # Agent 使用进程内异步任务，不依赖 Redis/Celery；重启后恢复未完成任务。
+    from app.core.agent_task_runner import (
+        recover_pending_agent_tasks,
+        shutdown_agent_tasks,
+    )
+
+    await recover_pending_agent_tasks()
     # 初始化 Neo4j 驱动
     from app.core.neo4j import get_driver
 
     get_driver()
     yield
+    await shutdown_agent_tasks()
     close_neo4j()
 
 

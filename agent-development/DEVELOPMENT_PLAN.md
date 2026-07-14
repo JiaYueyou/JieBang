@@ -9,7 +9,7 @@
 ## 阶段 1：夯实 JD Generation 基线（已完成）
 
 1. 已将 JD、技能补全、图谱补全的 Agent 主程序、Prompt 和输出 Schema 迁移到 `agent-development/src/jiebang_agents/`；后端通过目录加载适配接入。
-2. 为请求、LLM JSON、模板降级、运行查询和 Celery eager 模式补齐契约测试。
+2. 为请求、LLM JSON、模板降级、运行查询和进程内异步执行补齐契约测试。
 3. 在岗位编辑页接入创建、轮询、草稿预览、警示和“人工确认发布”闭环。
 
 验收：模型不可用时仍返回可编辑模板草稿；不产生自动发布；每次运行有 `prompt_version`、模型、耗时、错误和结构化输出审计。
@@ -48,7 +48,7 @@ L4/L5 图谱补全的细化方案见 `SKILL_L45_COMPLETION_PLAN.md`。
 
 ## 阶段 5：质量、可观测性与发布准备（贯穿）
 
-- 每个 Agent 具备 Schema、Service、API、Celery、Provider Mock 和权限测试。
+- 每个 Agent 具备 Schema、Service、API、进程内任务、Provider Mock 和权限测试。
 - 将 `agent_type`、状态、耗时、重试次数、降级率纳入管理端监控，禁止记录敏感原文。
 - 为每个 Agent 准备正常、空输入、无资源、越权、超时、限流、非法 JSON、无证据八类用例。
 - 前端按接口契约生成/校验类型；接口变更先更新本目录文档，再同步测试和消费者。

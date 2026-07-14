@@ -1,12 +1,10 @@
-"""智能 JD 草稿生成 Celery 任务。"""
+"""智能 JD 草稿生成持久化任务。"""
 
-import asyncio
 from datetime import datetime
 
-from app.core.celery_app import celery_app
 from app.core.database import async_session
 from app.models import AgentRun, AsyncTask
-from app.schemas.agent import GenerateJDRequest
+from app.schemas.agent import GenerateJDRequest, JDInputSuggestionRequest
 from app.services.jd_generation_service import JDGenerationService
 
 
@@ -21,11 +19,16 @@ async def _process_jd_generation(task_id: str) -> dict:
         await db.commit()
         run_id = str(task.request_data["agent_run_id"])
         try:
-            request = GenerateJDRequest.model_validate(task.request_data["payload"])
-            draft = await JDGenerationService(db).generate(request, agent_run_id=run_id)
+            service = JDGenerationService(db)
+            if task.task_type == service.agent.suggestion_task_type:
+                request = JDInputSuggestionRequest.model_validate(task.request_data["payload"])
+                result = await service.suggest_input(request, agent_run_id=run_id)
+            else:
+                request = GenerateJDRequest.model_validate(task.request_data["payload"])
+                result = await service.generate(request, agent_run_id=run_id)
             task.status = "succeeded"
             task.progress = 100
-            task.result = draft.model_dump(mode="json")
+            task.result = result.model_dump(mode="json")
             task.finished_at = datetime.utcnow()
             await db.commit()
             return task.result
@@ -44,8 +47,3 @@ async def _process_jd_generation(task_id: str) -> dict:
                 run.finished_at = datetime.utcnow()
             await db.commit()
             raise
-
-
-@celery_app.task(name="agent.generate_jd")
-def process_jd_generation(task_id: str) -> dict:
-    return asyncio.run(_process_jd_generation(task_id))

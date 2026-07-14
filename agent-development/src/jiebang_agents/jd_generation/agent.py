@@ -3,13 +3,48 @@
 from __future__ import annotations
 
 from jiebang_agents.base import StructuredLLMProvider
-from jiebang_agents.jd_generation.prompt import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
-from jiebang_agents.jd_generation.schemas import GenerateJDRequest, GeneratedJDDraft, LLMGeneratedJDDraft
+from jiebang_agents.jd_generation.prompt import (
+    PROMPT_VERSION,
+    SUGGESTION_PROMPT_VERSION,
+    SUGGESTION_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+    build_suggestion_prompt,
+    build_user_prompt,
+)
+from jiebang_agents.jd_generation.schemas import (
+    GenerateJDRequest,
+    GeneratedJDDraft,
+    JDGenerationMode,
+    JDInputSuggestion,
+    JDInputSuggestionRequest,
+    LLMGeneratedJDDraft,
+    LLMJDInputSuggestion,
+)
+
+
+TITLE_SKILL_FALLBACKS: tuple[tuple[tuple[str, ...], list[str]], ...] = (
+    (("java",), ["Java", "Spring Boot", "MySQL", "Redis", "微服务架构"]),
+    (("python",), ["Python", "FastAPI", "MySQL", "Redis", "Linux"]),
+    (("后端", "backend"), ["API 设计", "MySQL", "Redis", "Linux", "服务架构"]),
+    (("前端", "frontend"), ["JavaScript", "TypeScript", "Vue", "HTML/CSS", "前端工程化"]),
+    (("数据分析", "数据运营"), ["SQL", "Python", "数据清洗", "数据可视化", "统计分析"]),
+    (("算法", "机器学习", "大模型"), ["Python", "机器学习", "深度学习", "模型评估", "数据处理"]),
+)
+
+DEFAULT_SKILL_SUGGESTIONS = ["岗位专业知识", "问题分析", "沟通协作", "项目交付", "持续学习"]
+DEFAULT_PROFILE_SUGGESTIONS = [
+    "具备与岗位相匹配的专业判断和实践能力",
+    "能够独立分析问题并推动解决方案落地",
+    "具备良好的跨团队沟通与协作能力",
+    "能够持续学习并沉淀可复用经验",
+]
 
 
 class JDGenerationAgent:
     agent_type = "jd_generation"
+    suggestion_task_type = "jd_input_suggestion"
     prompt_version = PROMPT_VERSION
+    suggestion_prompt_version = SUGGESTION_PROMPT_VERSION
 
     def __init__(self, llm: StructuredLLMProvider, *, timeout_seconds: int = 15) -> None:
         self.llm = llm
@@ -26,6 +61,34 @@ class JDGenerationAgent:
             metadata={"agent_type": self.agent_type, "prompt_version": self.prompt_version},
         )
         return self.merge_llm_output(output, request)
+
+    async def suggest_input(self, request: JDInputSuggestionRequest) -> JDInputSuggestion:
+        if not bool(getattr(self.llm, "enabled", True)):
+            return self.template_suggestion(
+                request,
+                "未配置 DeepSeek，当前内容由岗位规则模板生成，请人工核对。",
+            )
+        output = await self.llm.generate_structured(
+            system_prompt=SUGGESTION_SYSTEM_PROMPT,
+            user_prompt=build_suggestion_prompt(request),
+            response_schema=LLMJDInputSuggestion,
+            timeout_seconds=self.timeout_seconds,
+            metadata={
+                "agent_type": self.suggestion_task_type,
+                "prompt_version": self.suggestion_prompt_version,
+            },
+        )
+        suggestions = self.string_list(output.suggestions)
+        if not suggestions:
+            return self.template_suggestion(request, "AI 未返回有效建议，已使用岗位规则模板。")
+        limit = 10 if request.mode == JDGenerationMode.requirements else 6
+        return JDInputSuggestion(
+            title=request.title,
+            mode=request.mode,
+            suggestions=suggestions[:limit],
+            generation_mode="llm",
+            warnings=self.string_list(output.warnings)[:8],
+        )
 
     @classmethod
     def merge_llm_output(cls, output: LLMGeneratedJDDraft, request: GenerateJDRequest) -> GeneratedJDDraft:
@@ -97,4 +160,23 @@ class JDGenerationAgent:
             assumptions=["该草稿未包含薪资、福利、学历和工作年限，请由管理员补充。"],
             warnings=[warning] if warning else [],
             generation_mode="template",
+        )
+
+    @staticmethod
+    def template_suggestion(request: JDInputSuggestionRequest, warning: str) -> JDInputSuggestion:
+        if request.mode == JDGenerationMode.profile:
+            suggestions = DEFAULT_PROFILE_SUGGESTIONS
+        else:
+            normalized_title = request.title.casefold()
+            suggestions = DEFAULT_SKILL_SUGGESTIONS
+            for keywords, candidate_skills in TITLE_SKILL_FALLBACKS:
+                if any(keyword.casefold() in normalized_title for keyword in keywords):
+                    suggestions = candidate_skills
+                    break
+        return JDInputSuggestion(
+            title=request.title,
+            mode=request.mode,
+            suggestions=suggestions,
+            generation_mode="template",
+            warnings=[warning] if warning else [],
         )

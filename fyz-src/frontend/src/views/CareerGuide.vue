@@ -97,12 +97,7 @@
     </div>
 
     <el-alert
-      v-if="!isAnalyzing && agentStatus === 'degraded'"
-      title="模型调用未完成，当前展示确定性模板学习路径"
-      type="warning" :closable="false" show-icon style="margin-bottom:12px;"
-    />
-    <el-alert
-      v-for="warning in warnings" :key="warning" :title="warning"
+      v-for="warning in displayWarnings" :key="warning" :title="warning"
       type="warning" :closable="false" show-icon style="margin-bottom:8px;"
     />
 
@@ -208,6 +203,13 @@ const uploadFiles = ref<UploadFile[]>([]);
 const entUploadFiles = ref<UploadFile[]>([]);
 
 const highPotential = computed(() => results.value.filter(r => r.afterMatch >= 85));
+const displayWarnings = computed(() => {
+  const messages = warnings.value.map((item) => item.trim()).filter(Boolean);
+  if (agentStatus.value === "degraded" && messages.length === 0) {
+    messages.push("AI 增强暂未完成，已展示可继续使用的规则学习路径。");
+  }
+  return [...new Set(messages)];
+});
 const avgGap = computed(() => {
   if (results.value.length === 0) return 0;
   const total = results.value.reduce((sum: number, r: any) => {

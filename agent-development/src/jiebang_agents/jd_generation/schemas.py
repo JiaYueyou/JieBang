@@ -22,6 +22,30 @@ class GenerateJDRequest(BaseModel):
     headcount: int | None = Field(default=None, ge=1, le=10000)
 
 
+class JDInputSuggestionRequest(BaseModel):
+    mode: JDGenerationMode = JDGenerationMode.requirements
+    title: str = Field(min_length=2, max_length=120)
+    level: str | None = Field(default=None, max_length=30)
+    department: str | None = Field(default=None, max_length=100)
+
+
+class JDInputSuggestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=2, max_length=120)
+    mode: JDGenerationMode
+    suggestions: list[str] = Field(min_length=1, max_length=10)
+    generation_mode: str = Field(pattern="^(llm|template)$")
+    warnings: list[str] = Field(default_factory=list, max_length=8)
+
+
+class LLMJDInputSuggestion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    suggestions: Any = Field(default_factory=list)
+    warnings: Any = Field(default_factory=list)
+
+
 class GeneratedJDDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
