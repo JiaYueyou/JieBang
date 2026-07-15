@@ -27,7 +27,7 @@ const handleSelectResume = async (resumeId: string) => {
   visible.value = false
 
   if (props.mode === 'detail' && props.positionId) {
-    router.push(`/match/result/${resumeId}/${props.positionId}`)
+    router.push(`/diagnosis`)
     return
   }
 

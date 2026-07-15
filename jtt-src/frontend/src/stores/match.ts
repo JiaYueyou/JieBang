@@ -34,5 +34,15 @@ export const useMatchStore = defineStore('match', () => {
     history.value = res.data
   }
 
-  return { currentResult, history, loading, doMatch, getResult, fetchHistory }
+  const autoDetect = async (resumeId: string) => {
+    loading.value = true
+    try {
+      const res: any = await matchApi.autoDetect(resumeId)
+      return res.data as MatchResult[]
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { currentResult, history, loading, doMatch, getResult, fetchHistory, autoDetect }
 })

@@ -44,22 +44,16 @@ const router = createRouter({
       meta: { title: '知识图谱' },
     },
     {
-      path: '/resumes',
-      name: 'ResumeList',
-      component: () => import('@/views/resume/Index.vue'),
-      meta: { title: '我的简历' },
+      path: '/diagnosis',
+      name: 'Diagnosis',
+      component: () => import('@/views/diagnosis/Index.vue'),
+      meta: { title: '简历诊断' },
     },
     {
       path: '/resume/upload',
       name: 'ResumeUpload',
       component: () => import('@/views/resume/Upload.vue'),
       meta: { title: '上传简历' },
-    },
-    {
-      path: '/resume/:id',
-      name: 'ResumeDetail',
-      component: () => import('@/views/resume/Detail.vue'),
-      meta: { title: '简历详情' },
     },
     {
       path: '/resume/editor/:id?',
@@ -72,18 +66,6 @@ const router = createRouter({
       name: 'ResumeTailor',
       component: () => import('@/views/resume/Tailor.vue'),
       meta: { title: 'AI 简历优化' },
-    },
-    {
-      path: '/match',
-      name: 'Match',
-      component: () => import('@/views/match/Index.vue'),
-      meta: { title: '匹配诊断' },
-    },
-    {
-      path: '/match/result/:resumeId/:positionId',
-      name: 'MatchResult',
-      component: () => import('@/views/match/Result.vue'),
-      meta: { title: '匹配结果' },
     },
     {
       path: '/learning',
@@ -102,6 +84,12 @@ const router = createRouter({
       name: 'Favorites',
       component: () => import('@/views/favorites/Index.vue'),
       meta: { title: '我的收藏' },
+    },
+    {
+      path: '/career',
+      name: 'Career',
+      component: () => import('@/views/career/Index.vue'),
+      meta: { title: '职业发展' },
     },
   ],
 })

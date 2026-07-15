@@ -17,9 +17,9 @@ const menuItems: MenuItem[] = [
   { key: 'positions', label: '岗位探索', icon: 'Compass', path: '/positions' },
   { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph' },
   { key: 'favorites', label: '我的收藏', icon: 'Star', path: '/favorites' },
-  { key: 'resume', label: '我的简历', icon: 'Document', path: '/resumes' },
-  { key: 'match', label: '匹配诊断', icon: 'Connection', path: '/match' },
+  { key: 'diagnosis', label: '简历诊断', icon: 'Document', path: '/diagnosis' },
   { key: 'learning', label: '学习路径', icon: 'Guide', path: '/learning' },
+  { key: 'career', label: '职业发展', icon: 'TrendCharts', path: '/career' },
 ]
 
 const activeKey = computed(() => {
@@ -28,9 +28,9 @@ const activeKey = computed(() => {
   if (['Positions', 'PositionDetail'].includes(name)) return 'positions'
   if (['Graph'].includes(name)) return 'graph'
   if (['Favorites'].includes(name)) return 'favorites'
-  if (['ResumeList', 'ResumeUpload', 'ResumeDetail', 'ResumeEditor', 'ResumeTailor'].includes(name)) return 'resume'
-  if (['Match', 'MatchResult'].includes(name)) return 'match'
+  if (['Diagnosis', 'ResumeUpload', 'ResumeEditor', 'ResumeTailor'].includes(name)) return 'diagnosis'
   if (['Learning'].includes(name)) return 'learning'
+  if (['Career'].includes(name)) return 'career'
   return 'home'
 })
 

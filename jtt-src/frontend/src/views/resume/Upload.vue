@@ -87,7 +87,7 @@ const startParse = async () => {
       </div>
       <div class="result-actions">
         <el-button type="primary" @click="router.push('/resume/editor/r-uploaded')">在线编辑</el-button>
-        <el-button @click="router.push('/resumes')">查看简历列表</el-button>
+        <el-button @click="router.push('/diagnosis')">查看简历诊断</el-button>
       </div>
     </div>
   </div>

@@ -19,4 +19,7 @@ export const learningApi = {
     api.post('/learning/assistant/recommend-resources', { skill_names: skillNames }),
   quiz: (data: { pathId: string; stepIds?: string[]; questionCount?: number }) =>
     api.post('/learning/assistant/quiz', data),
+
+  generateFromGaps: (resumeId: string, positionId: string) =>
+    api.post('/learning/generate-from-gaps', { resumeId, positionId }),
 }
