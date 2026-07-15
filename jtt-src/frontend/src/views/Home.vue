@@ -65,9 +65,9 @@ const goToPosition = (id: string) => router.push(`/positions/${id}`)
           <el-icon :size="28"><Share /></el-icon>
           <span>知识图谱</span>
         </div>
-        <div class="action-card" @click="router.push('/match')">
+        <div class="action-card" @click="router.push('/diagnosis')">
           <el-icon :size="28"><Connection /></el-icon>
-          <span>匹配诊断</span>
+          <span>简历诊断</span>
         </div>
       </div>
     </section>

@@ -12,4 +12,7 @@ export const matchApi = {
 
   matchBatch: (data: { resumeId: string; positionIds: string[] }) =>
     api.post<ApiResponse<MatchResult[]>>('/match/batch', data),
+
+  autoDetect: (resumeId: string) =>
+    api.post<ApiResponse<MatchResult[]>>('/match/auto-detect', { resumeId }),
 }

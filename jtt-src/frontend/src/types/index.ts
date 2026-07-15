@@ -193,6 +193,66 @@ export interface UserProfile {
   matchHistoryCount: number
 }
 
+// ========== 笔记 / 收藏相关 ==========
+export interface Note {
+  id: string
+  title: string
+  content: string
+  type: 'note' | 'link' | 'resource'
+  url?: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type FavoriteType = 'position' | 'learning_path' | 'note'
+
+export interface FavoriteItem {
+  id: string
+  itemType: FavoriteType
+  itemId: string
+  title: string
+  createdAt: string
+}
+
+// ========== 职业发展相关 ==========
+export interface CareerPreferences {
+  targetIndustry: string
+  targetRoleType: string
+  preferredCity: string
+  salaryExpectation: string
+}
+
+export interface LearningBudget {
+  weeklyHours: number
+  totalWeeks: number
+}
+
+export type FeasibilityRating = 'high' | 'medium' | 'low' | 'very_low'
+
+export interface CareerTransitionAssessment {
+  currentMatchDegree: number
+  transferableSkills: Skill[]
+  missingSkills: Skill[]
+  recommendationReasons: string[]
+  advantages: string[]
+  risks: string[]
+  learningTimeline: string
+  feasibilityRating: FeasibilityRating
+}
+
+export interface CareerPlan {
+  id: string
+  resumeId: string
+  preferences: CareerPreferences
+  budget: LearningBudget
+  targetPositionId: string
+  targetPositionName: string
+  assessment: CareerTransitionAssessment | null
+  createdAt: string
+  updatedAt: string
+}
+
 // ========== API 通用响应 ==========
 export interface ApiResponse<T> {
   code: number
