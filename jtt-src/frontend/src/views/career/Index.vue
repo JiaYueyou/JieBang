@@ -37,11 +37,11 @@ onMounted(async () => {
   } catch { /* mock */ }
   if (resumeStore.resumes.length > 0) {
     resumes.value = resumeStore.resumes
-    planForm.resumeId = resumes.value[0].id
+    planForm.resumeId = resumes.value[0]!.id
   } else {
     const { mockResumes } = await import('@/mock/data/resume')
     resumes.value = mockResumes
-    planForm.resumeId = mockResumes[0].id
+    planForm.resumeId = mockResumes[0]!.id
   }
 
   // Try load saved plan
@@ -63,7 +63,7 @@ onMounted(async () => {
   } catch {
     // Mock fallback
     if (mockCareerPlans.length > 0) {
-      const sp = mockCareerPlans[0]
+      const sp = mockCareerPlans[0]!
       planForm.targetPositionId = sp.targetPositionId
       planForm.weeklyHours = sp.budget.weeklyHours
       planForm.totalWeeks = sp.budget.totalWeeks

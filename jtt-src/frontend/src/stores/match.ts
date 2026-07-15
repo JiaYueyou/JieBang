@@ -36,6 +36,7 @@ export const useMatchStore = defineStore('match', () => {
     history.value = (res.data || []).map(matchResultFromApi)
   }
 
+<<<<<<< HEAD
   // === AI 优化建议（Agent 1: 简历优化智能体）===
 
   const aiSuggestions = ref<ImprovementSuggestion[]>([])
@@ -110,4 +111,17 @@ export const useMatchStore = defineStore('match', () => {
     batchResults, batchLoading, selectedBatchResult,
     doAutoMatch, selectBatchResult,
   }
+=======
+  const autoDetect = async (resumeId: string) => {
+    loading.value = true
+    try {
+      const res: any = await matchApi.autoDetect(resumeId)
+      return res.data as MatchResult[]
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { currentResult, history, loading, doMatch, getResult, fetchHistory, autoDetect }
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 })
