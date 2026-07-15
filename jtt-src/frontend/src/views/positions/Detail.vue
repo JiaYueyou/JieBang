@@ -52,7 +52,7 @@ onMounted(() => {
         >
           {{ favoritesStore.isFavorited(position.id) ? '已收藏' : '收藏岗位' }}
         </el-button>
-        <el-button type="primary" @click="router.push(`/match?positionId=${position.id}`)">
+        <el-button type="primary" @click="router.push(`/diagnosis`)">
           开始匹配诊断
         </el-button>
       </div>

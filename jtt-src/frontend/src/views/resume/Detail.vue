@@ -22,7 +22,7 @@ onMounted(() => {
       </div>
       <div class="head-actions">
         <el-button @click="router.push(`/resume/editor/${resume.id}`)">编辑</el-button>
-        <el-button type="primary" @click="router.push(`/match?resumeId=${resume.id}`)">开始匹配</el-button>
+        <el-button type="primary" @click="router.push(`/diagnosis`)">开始诊断</el-button>
       </div>
     </div>
 

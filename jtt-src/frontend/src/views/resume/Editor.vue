@@ -58,7 +58,7 @@ const applyPhrase = (phrase: string, field: keyof typeof resume) => {
 
 const handleSave = () => {
   ElMessage.success('简历已保存')
-  router.push('/resumes')
+  router.push('/diagnosis')
 }
 </script>
 
