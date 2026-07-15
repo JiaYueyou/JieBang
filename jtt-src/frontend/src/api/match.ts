@@ -28,5 +28,8 @@ export const matchApi = {
 
   autoDetect: (resumeId: string) =>
     api.post<ApiResponse<MatchResult[]>>('/match/auto-detect', { resumeId }),
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }

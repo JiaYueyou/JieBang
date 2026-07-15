@@ -29,8 +29,12 @@ const activeKey = computed(() => {
   if (['Graph'].includes(name)) return 'graph'
   if (['Favorites'].includes(name)) return 'favorites'
 <<<<<<< HEAD
+<<<<<<< HEAD
   if (['DiagnosisIndex', 'DiagnosisDetail'].includes(name)) return 'diagnosis'
   if (['Career'].includes(name)) return 'career'
+=======
+  if (['Diagnosis', 'ResumeUpload', 'ResumeEditor', 'ResumeTailor'].includes(name)) return 'diagnosis'
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
   if (['Diagnosis', 'ResumeUpload', 'ResumeEditor', 'ResumeTailor'].includes(name)) return 'diagnosis'
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)

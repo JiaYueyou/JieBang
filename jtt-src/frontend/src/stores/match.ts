@@ -37,6 +37,7 @@ export const useMatchStore = defineStore('match', () => {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   // === AI 优化建议（Agent 1: 简历优化智能体）===
 
   const aiSuggestions = ref<ImprovementSuggestion[]>([])
@@ -113,6 +114,8 @@ export const useMatchStore = defineStore('match', () => {
     doAutoMatch, selectBatchResult,
   }
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
   const autoDetect = async (resumeId: string) => {
     loading.value = true
     try {
@@ -124,5 +127,8 @@ export const useMatchStore = defineStore('match', () => {
   }
 
   return { currentResult, history, loading, doMatch, getResult, fetchHistory, autoDetect }
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 })

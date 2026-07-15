@@ -1,12 +1,17 @@
 <script setup lang="ts">
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { onMounted, ref } from 'vue'
+=======
+import { ref } from 'vue'
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
 import { ref } from 'vue'
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useFavoritesStore } from '@/stores/favorites'
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 const router = useRouter()
@@ -29,6 +34,8 @@ const goLearning = () => router.push('/learning')
 const resourceTypeLabels: Record<string, string> = {
   course: '课程', book: '书籍', article: '文章', project: '项目', video: '视频',
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 import { useLearningStore } from '@/stores/learning'
 import { mockNotes } from '@/mock/data/notes'
 import type { Note } from '@/types'
@@ -123,6 +130,9 @@ const getNoteTypeLabel = (type: Note['type']) => {
   if (type === 'link') return '链接'
   if (type === 'resource') return '资源'
   return '笔记'
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }
 </script>
@@ -133,7 +143,11 @@ const getNoteTypeLabel = (type: Note['type']) => {
       <div>
         <h2>我的收藏</h2>
 <<<<<<< HEAD
+<<<<<<< HEAD
         <p class="sub">共 {{ favoritesStore.totalCount }} 项收藏</p>
+=======
+        <p class="header-sub">共收藏 {{ favoritesStore.totalCount }} 项</p>
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
         <p class="header-sub">共收藏 {{ favoritesStore.totalCount }} 项</p>
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
@@ -142,6 +156,7 @@ const getNoteTypeLabel = (type: Note['type']) => {
 
     <el-tabs v-model="activeTab" class="fav-tabs">
       <!-- Tab 1: 岗位 -->
+<<<<<<< HEAD
 <<<<<<< HEAD
       <el-tab-pane name="position">
         <template #label>
@@ -177,6 +192,8 @@ const getNoteTypeLabel = (type: Note['type']) => {
             </div>
           </div>
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       <el-tab-pane label="岗位" name="position">
         <template #label>
           <span>岗位 <el-badge :value="favoritesStore.positionCount" :max="99" class="tab-badge" /></span>
@@ -188,6 +205,9 @@ const getNoteTypeLabel = (type: Note['type']) => {
             :position="pos"
             @click="goPosition(pos.id)"
           />
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
         </div>
         <div v-else class="empty-tab">
@@ -197,6 +217,7 @@ const getNoteTypeLabel = (type: Note['type']) => {
         </div>
       </el-tab-pane>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       <!-- Tab 2: 学习资料 -->
       <el-tab-pane name="learning_resource">
@@ -227,6 +248,8 @@ const getNoteTypeLabel = (type: Note['type']) => {
             <div class="fav-card-actions" @click.stop>
               <el-button text size="small" type="danger" @click="handleRemove(fav.id, fav.title)">取消收藏</el-button>
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       <!-- Tab 2: 学习路径 -->
       <el-tab-pane name="learning_path">
         <template #label>
@@ -269,14 +292,22 @@ const getNoteTypeLabel = (type: Note['type']) => {
                 </div>
               </div>
               <el-button type="primary" size="small" @click="router.push('/learning')">去学习</el-button>
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
             </div>
           </div>
         </div>
         <div v-else class="empty-tab">
 <<<<<<< HEAD
+<<<<<<< HEAD
           <el-empty description="暂无收藏的学习资料">
             <el-button type="primary" @click="goLearning">去学习路径发现资料</el-button>
+=======
+          <el-empty description="暂无收藏学习路径">
+            <el-button type="primary" @click="router.push('/learning')">去学习路径</el-button>
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
           <el-empty description="暂无收藏学习路径">
             <el-button type="primary" @click="router.push('/learning')">去学习路径</el-button>
@@ -285,6 +316,7 @@ const getNoteTypeLabel = (type: Note['type']) => {
         </div>
       </el-tab-pane>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       <!-- Tab 3: 错题 -->
       <el-tab-pane name="quiz_error">
@@ -353,6 +385,8 @@ const getNoteTypeLabel = (type: Note['type']) => {
           <el-empty description="AI生成知识点即将上线">
             <p class="coming-soon-hint">AI 智能体功能即将上线，届时可自动生成并收藏知识点</p>
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       <!-- Tab 3: 笔记资料 -->
       <el-tab-pane name="note">
         <template #label>
@@ -393,13 +427,19 @@ const getNoteTypeLabel = (type: Note['type']) => {
         <div v-else class="empty-tab">
           <el-empty description="暂无收藏笔记">
             <el-button type="primary" @click="openNoteEditor()">新建笔记</el-button>
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
           </el-empty>
         </div>
       </el-tab-pane>
     </el-tabs>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 
     <!-- Note Editor Dialog -->
     <el-dialog v-model="noteEditorVisible" :title="editingNote ? '编辑笔记' : '新建笔记'" width="520px">
@@ -429,6 +469,9 @@ const getNoteTypeLabel = (type: Note['type']) => {
         <el-button type="primary" @click="saveNote">保存</el-button>
       </template>
     </el-dialog>
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
   </div>
 </template>
@@ -441,6 +484,7 @@ const getNoteTypeLabel = (type: Note['type']) => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+<<<<<<< HEAD
 <<<<<<< HEAD
 }
 .page-header h2 { font-size: 20px; font-weight: 700; }
@@ -456,6 +500,9 @@ const getNoteTypeLabel = (type: Note['type']) => {
 .fav-grid {
 =======
 }
+=======
+}
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 .header-text h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .header-sub { font-size: 13px; color: var(--muted); }
 
@@ -470,6 +517,7 @@ const getNoteTypeLabel = (type: Note['type']) => {
   margin-top: 16px;
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 .fav-card {
   border: 1px solid var(--hairline);
@@ -596,6 +644,18 @@ const getNoteTypeLabel = (type: Note['type']) => {
   overflow: hidden;
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }
+=======
+.empty-tab { padding: 60px 0; }
+
+/* Learning Paths */
+.path-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.path-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 .path-header {
   display: flex;
   align-items: center;

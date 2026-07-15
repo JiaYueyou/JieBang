@@ -205,10 +205,13 @@ const getScoreColor = (score: number) => {
         <span>学习路径</span>
       </el-card>
 <<<<<<< HEAD
+<<<<<<< HEAD
       <el-card class="link-card" @click="router.push('/career')">
         <el-icon :size="24"><TrendCharts /></el-icon>
         <span>职业发展</span>
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       <el-card class="link-card" @click="router.push('/diagnosis')">
         <el-icon :size="24"><Connection /></el-icon>
         <span>匹配诊断</span>
@@ -228,7 +231,11 @@ const getScoreColor = (score: number) => {
           :key="m.id"
           class="history-item"
 <<<<<<< HEAD
+<<<<<<< HEAD
           @click="router.push(`/diagnosis/${m.resumeId}`)"
+=======
+          @click="router.push(`/diagnosis`)"
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
           @click="router.push(`/diagnosis`)"
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)

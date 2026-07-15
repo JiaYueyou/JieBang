@@ -31,7 +31,11 @@ const handleSelectResume = async (resumeId: string) => {
 
   if (props.mode === 'detail' && props.positionId) {
 <<<<<<< HEAD
+<<<<<<< HEAD
     router.push(`/diagnosis/${resumeId}?positionId=${props.positionId}&focusPos=true`)
+=======
+    router.push(`/diagnosis`)
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
     router.push(`/diagnosis`)
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)

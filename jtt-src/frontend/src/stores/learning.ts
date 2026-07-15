@@ -48,5 +48,16 @@ export const useLearningStore = defineStore('learning', () => {
     return Math.round((done / path.steps.length) * 100)
   }
 
-  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, getCompletionPercent }
+  const generateFromGaps = async (resumeId: string, positionId: string) => {
+    loading.value = true
+    try {
+      const res: any = await learningApi.generateFromGaps(resumeId, positionId)
+      if (res.data) paths.value.push(res.data)
+      return res.data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, getCompletionPercent, generateFromGaps }
 })

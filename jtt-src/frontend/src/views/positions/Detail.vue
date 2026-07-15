@@ -89,7 +89,11 @@ const toggleFav = async () => {
         >
           {{ favoritesStore.isFavorited('position', String(position.id)) ? '已收藏' : '收藏岗位' }}
         </el-button>
+<<<<<<< HEAD
         <el-button type="primary" @click="openMatchDialog">
+=======
+        <el-button type="primary" @click="router.push(`/diagnosis`)">
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
           开始匹配诊断
         </el-button>
       </div>

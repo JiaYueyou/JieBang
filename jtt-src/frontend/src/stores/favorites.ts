@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { favoritesApi, type FavoriteItem, type FavoriteCreate } from '@/api/favorites'
 
 export const useFavoritesStore = defineStore('favorites', () => {
@@ -82,6 +83,13 @@ import { mockLearningPaths } from '@/mock/data/learning'
 import { mockNotes } from '@/mock/data/notes'
 import type { FavoriteType, Note } from '@/types'
 
+=======
+import { mockPositions } from '@/mock/data/positions'
+import { mockLearningPaths } from '@/mock/data/learning'
+import { mockNotes } from '@/mock/data/notes'
+import type { FavoriteType, Note } from '@/types'
+
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 interface FavoriteRecord {
   positions: string[]
   learningPaths: string[]
@@ -151,6 +159,9 @@ export const useFavoritesStore = defineStore('favorites', () => {
     noteFavorites,
     noteCount,
     totalCount,
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
   }
 })

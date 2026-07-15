@@ -37,11 +37,19 @@ onMounted(async () => {
   } catch { /* mock */ }
   if (resumeStore.resumes.length > 0) {
     resumes.value = resumeStore.resumes
+<<<<<<< HEAD
     planForm.resumeId = resumes.value[0]!.id
   } else {
     const { mockResumes } = await import('@/mock/data/resume')
     resumes.value = mockResumes
     planForm.resumeId = mockResumes[0]!.id
+=======
+    planForm.resumeId = resumes.value[0].id
+  } else {
+    const { mockResumes } = await import('@/mock/data/resume')
+    resumes.value = mockResumes
+    planForm.resumeId = mockResumes[0].id
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
   }
 
   // Try load saved plan
@@ -63,7 +71,11 @@ onMounted(async () => {
   } catch {
     // Mock fallback
     if (mockCareerPlans.length > 0) {
+<<<<<<< HEAD
       const sp = mockCareerPlans[0]!
+=======
+      const sp = mockCareerPlans[0]
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       planForm.targetPositionId = sp.targetPositionId
       planForm.weeklyHours = sp.budget.weeklyHours
       planForm.totalWeeks = sp.budget.totalWeeks

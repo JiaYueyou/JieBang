@@ -36,6 +36,7 @@ const router = createRouter({
     },
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
       path: '/favorites', name: 'Favorites',
       component: () => import('@/views/favorites/Index.vue'),
       meta: { title: '我的收藏' },
@@ -43,6 +44,10 @@ const router = createRouter({
     // 简历诊断（合并原"我的简历" + "匹配诊断"）
     {
       path: '/diagnosis', name: 'DiagnosisIndex',
+=======
+      path: '/diagnosis',
+      name: 'Diagnosis',
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
       path: '/diagnosis',
       name: 'Diagnosis',
@@ -57,6 +62,7 @@ const router = createRouter({
     },
     // 职业发展
     {
+<<<<<<< HEAD
       path: '/career', name: 'Career',
       component: () => import('@/views/career/Index.vue'),
       meta: { title: '职业发展' },
@@ -65,6 +71,8 @@ const router = createRouter({
 <<<<<<< HEAD
       path: '/learning', name: 'Learning',
 =======
+=======
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
       path: '/resume/editor/:id?',
       name: 'ResumeEditor',
       component: () => import('@/views/resume/Editor.vue'),
@@ -102,6 +110,9 @@ const router = createRouter({
       component: () => import('@/views/career/Index.vue'),
       meta: { title: '职业发展' },
     },
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
   ],
 })

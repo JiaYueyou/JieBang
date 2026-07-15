@@ -33,5 +33,8 @@ export const learningApi = {
 
   generateFromGaps: (resumeId: string, positionId: string) =>
     api.post('/learning/generate-from-gaps', { resumeId, positionId }),
+<<<<<<< HEAD
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
+=======
 >>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }

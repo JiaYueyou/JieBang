@@ -63,9 +63,15 @@ const goToPosition = (id: string) => router.push(`/positions/${id}`)
           <span>知识图谱</span>
         </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
         <div class="action-card" @click="router.push('/career')">
           <el-icon :size="28"><TrendCharts /></el-icon>
           <span>职业发展</span>
+=======
+        <div class="action-card" @click="router.push('/diagnosis')">
+          <el-icon :size="28"><Connection /></el-icon>
+          <span>简历诊断</span>
+>>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 =======
         <div class="action-card" @click="router.push('/diagnosis')">
           <el-icon :size="28"><Connection /></el-icon>
