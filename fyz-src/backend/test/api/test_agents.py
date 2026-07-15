@@ -55,6 +55,32 @@ async def test_jd_generation_task_returns_editable_template_and_agent_audit(clie
     assert run.json()["data"]["status"] == "degraded"
 
 
+async def test_internal_jd_generation_returns_private_transfer_draft(client, auth_headers):
+    response = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=auth_headers,
+        json={
+            "target": "internal",
+            "mode": "requirements",
+            "title": "内部平台工程师",
+            "department": "平台研发部",
+            "skills_input": "Java, MySQL, Redis, Docker, Kubernetes",
+            "internal_reason": "内部平台能力升级",
+            "receiving_manager": "平台负责人",
+        },
+    )
+    assert response.status_code == 200
+    created = response.json()["data"]
+    task = await wait_for_task(client, auth_headers, created["task"]["task_id"])
+    result = task["result"]
+    assert result["target"] == "internal"
+    assert result["generation_mode"] == "template"
+    assert result["trainable_skills"] == ["Kubernetes"]
+    assert result["transfer_profile"]
+    assert result["manager_confirmations"]
+    assert "内部岗位需求说明" in result["jd_text"]
+
+
 async def test_jd_input_suggestion_returns_title_specific_editable_fallback(client, auth_headers):
     response = await client.post(
         "/api/v1/agents/jd-input-suggestions",
@@ -108,9 +134,25 @@ async def test_agent_run_is_only_visible_to_its_creator(client, auth_headers):
 
 
 async def test_career_planning_async_task_returns_degraded_result(client, auth_headers):
-    from test.api.test_jobs import create_job
+    from test.api.test_internal_transfer import position_payload
 
-    await create_job(client, auth_headers, title="Python 工程师", skills=["Python", "Redis"])
+    created = await client.post(
+        "/api/v1/internal-transfer/positions",
+        headers=auth_headers,
+        json={
+            **position_payload(),
+            "title": "Python 工程师",
+            "required_skills": ["Python", "Redis"],
+            "trainable_skills": [],
+        },
+    )
+    position_id = created.json()["data"]["id"]
+    for status in ("pending_approval", "open"):
+        await client.put(
+            f"/api/v1/internal-transfer/positions/{position_id}/status",
+            headers=auth_headers,
+            json={"status": status},
+        )
     response = await client.post(
         "/api/v1/agents/career-plannings", headers=auth_headers,
         json={"skill_text": "Python"},

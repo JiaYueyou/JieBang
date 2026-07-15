@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from jiebang_agents.base import StructuredLLMProvider
 from jiebang_agents.jd_generation.prompt import (
+    INTERNAL_SUGGESTION_SYSTEM_PROMPT,
+    INTERNAL_SYSTEM_PROMPT,
     PROMPT_VERSION,
+    PUBLIC_SUGGESTION_SYSTEM_PROMPT,
+    PUBLIC_SYSTEM_PROMPT,
     SUGGESTION_PROMPT_VERSION,
-    SUGGESTION_SYSTEM_PROMPT,
-    SYSTEM_PROMPT,
     build_suggestion_prompt,
     build_user_prompt,
 )
@@ -15,6 +17,7 @@ from jiebang_agents.jd_generation.schemas import (
     GenerateJDRequest,
     GeneratedJDDraft,
     JDGenerationMode,
+    JDGenerationTarget,
     JDInputSuggestion,
     JDInputSuggestionRequest,
     LLMGeneratedJDDraft,
@@ -54,11 +57,19 @@ class JDGenerationAgent:
         if not bool(getattr(self.llm, "enabled", True)):
             return self.template_draft(request, "未配置 DeepSeek，已生成可编辑模板草稿。")
         output = await self.llm.generate_structured(
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=(
+                INTERNAL_SYSTEM_PROMPT
+                if request.target == JDGenerationTarget.internal
+                else PUBLIC_SYSTEM_PROMPT
+            ),
             user_prompt=build_user_prompt(request),
             response_schema=LLMGeneratedJDDraft,
             timeout_seconds=self.timeout_seconds,
-            metadata={"agent_type": self.agent_type, "prompt_version": self.prompt_version},
+            metadata={
+                "agent_type": self.agent_type,
+                "prompt_version": self.prompt_version,
+                "target": request.target.value,
+            },
         )
         return self.merge_llm_output(output, request)
 
@@ -69,13 +80,18 @@ class JDGenerationAgent:
                 "未配置 DeepSeek，当前内容由岗位规则模板生成，请人工核对。",
             )
         output = await self.llm.generate_structured(
-            system_prompt=SUGGESTION_SYSTEM_PROMPT,
+            system_prompt=(
+                INTERNAL_SUGGESTION_SYSTEM_PROMPT
+                if request.target == JDGenerationTarget.internal
+                else PUBLIC_SUGGESTION_SYSTEM_PROMPT
+            ),
             user_prompt=build_suggestion_prompt(request),
             response_schema=LLMJDInputSuggestion,
             timeout_seconds=self.timeout_seconds,
             metadata={
                 "agent_type": self.suggestion_task_type,
                 "prompt_version": self.suggestion_prompt_version,
+                "target": request.target.value,
             },
         )
         suggestions = self.string_list(output.suggestions)
@@ -84,6 +100,7 @@ class JDGenerationAgent:
         limit = 10 if request.mode == JDGenerationMode.requirements else 6
         return JDInputSuggestion(
             title=request.title,
+            target=request.target,
             mode=request.mode,
             suggestions=suggestions[:limit],
             generation_mode="llm",
@@ -96,6 +113,14 @@ class JDGenerationAgent:
         responsibilities = cls.string_list(output.responsibilities) or template.responsibilities
         requirements = cls.string_list(output.requirements) or template.requirements
         skills = cls.string_list(output.skills) or template.skills
+        trainable_skills = (
+            cls.string_list(output.trainable_skills) or template.trainable_skills
+            if request.target == JDGenerationTarget.internal
+            else []
+        )
+        trainable_keys = {item.casefold() for item in trainable_skills}
+        if trainable_keys:
+            skills = [item for item in skills if item.casefold() not in trainable_keys]
         assumptions = cls.string_list(output.assumptions) or template.assumptions
         jd_text = output.jd_text.strip() if isinstance(output.jd_text, str) else ""
         if not jd_text:
@@ -107,6 +132,7 @@ class JDGenerationAgent:
             ])
         return GeneratedJDDraft(
             title=request.title,
+            target=request.target,
             standardized_title=output.standardized_title,
             level=request.level or "mid",
             department=request.department or "待确定部门",
@@ -114,6 +140,17 @@ class JDGenerationAgent:
             requirements=requirements[:8],
             skills=skills[:20],
             bonus_skills=cls.string_list(output.bonus_skills)[:12],
+            trainable_skills=trainable_skills[:12],
+            transfer_profile=(
+                cls.string_list(output.transfer_profile)[:8]
+                if request.target == JDGenerationTarget.internal
+                else []
+            ),
+            manager_confirmations=(
+                cls.string_list(output.manager_confirmations)[:8]
+                if request.target == JDGenerationTarget.internal
+                else []
+            ),
             jd_text=jd_text,
             assumptions=assumptions[:8],
             warnings=cls.string_list(output.warnings)[:8],
@@ -130,34 +167,50 @@ class JDGenerationAgent:
     def template_draft(request: GenerateJDRequest, warning: str) -> GeneratedJDDraft:
         skills = [item.strip() for item in request.skills_input.replace("，", ",").split(",") if item.strip()]
         department = request.department or "待确定部门"
+        internal = request.target == JDGenerationTarget.internal
         responsibilities = [
-            f"负责{request.title}相关方案的设计、实施与持续优化。",
-            "与产品、研发及相关业务团队协作，按计划交付工作成果。",
+            f"承担{request.title}相关内部业务目标与交付责任。" if internal else f"负责{request.title}相关方案的设计、实施与持续优化。",
+            "与接收部门及相关业务团队协作，完成内部岗位交接与目标落地。" if internal else "与产品、研发及相关业务团队协作，按计划交付工作成果。",
             "沉淀岗位相关文档、流程和可复用经验。",
         ]
         requirements = [
-            f"具备与{request.title}相匹配的专业知识和实践能力。",
+            f"具备转入{request.title}所需的专业基础和可迁移实践能力。" if internal else f"具备与{request.title}相匹配的专业知识和实践能力。",
             "具备良好的沟通协作与问题分析能力。",
         ]
         if skills:
             requirements.insert(0, f"熟悉以下核心技能：{'、'.join(skills[:8])}。")
         jd_text = "\n".join([
+            "内部岗位需求说明" if internal else "公开招聘岗位 JD",
             f"岗位名称：{request.title}",
-            f"所属部门：{department}",
+            f"{'接收部门' if internal else '所属部门'}：{department}",
             "岗位职责：" + "；".join(responsibilities),
             "任职要求：" + "；".join(requirements),
         ])
         return GeneratedJDDraft(
             title=request.title,
+            target=request.target,
             standardized_title=None,
             level=request.level or "mid",
             department=department,
             responsibilities=responsibilities,
             requirements=requirements,
-            skills=skills[:20],
+            skills=(skills[:4] if internal else skills[:20]),
             bonus_skills=[],
+            trainable_skills=(skills[4:8] if internal else []),
+            transfer_profile=(
+                ["具备相近岗位或项目经验", "能够在培养期内完成关键技能补齐"]
+                if internal else []
+            ),
+            manager_confirmations=(
+                ["请确认内部开放范围、转岗资格和计划到岗时间"]
+                if internal else []
+            ),
             jd_text=jd_text,
-            assumptions=["该草稿未包含薪资、福利、学历和工作年限，请由管理员补充。"],
+            assumptions=[
+                "该内部草稿未确认开放范围、审批条件和到岗时间，请由管理层补充。"
+                if internal else
+                "该草稿未包含薪资、福利、学历和工作年限，请由管理员补充。"
+            ],
             warnings=[warning] if warning else [],
             generation_mode="template",
         )
@@ -175,6 +228,7 @@ class JDGenerationAgent:
                     break
         return JDInputSuggestion(
             title=request.title,
+            target=request.target,
             mode=request.mode,
             suggestions=suggestions,
             generation_mode="template",

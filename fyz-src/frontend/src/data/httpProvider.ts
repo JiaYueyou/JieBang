@@ -211,6 +211,22 @@ export const httpDataProvider: DataProvider = {
       })), agentRunId: raw.agent_run_id, agentStatus: raw.agent_status, warnings: raw.warnings };
     },
   },
+  internalTransfer: {
+    searchEmployeeDirectory: (keyword) => get("/internal-transfer/employee-directory", { keyword, limit: 10 }),
+    createTalentFromDirectory: (employeeId) => post(`/internal-transfer/talents/from-directory/${employeeId}`, {}),
+    listPositions: () => get("/internal-transfer/positions"),
+    createPosition: (input) => post("/internal-transfer/positions", input),
+    updatePositionStatus: (id, status) => put(`/internal-transfer/positions/${id}/status`, { status }),
+    listTalents: () => get("/internal-transfer/talents"),
+    createTalent: (input) => post("/internal-transfer/talents", input),
+    listSkillDemands: () => get("/internal-transfer/skill-demands"),
+    listRuleSets: () => get("/internal-transfer/rule-sets"),
+    createRuleSet: (input) => post("/internal-transfer/rule-sets", input),
+    matchByTalent: (input) => post("/internal-transfer/matches/by-talent", input),
+    matchByPosition: (input) => post("/internal-transfer/matches/by-position", input),
+    listDecisions: () => get("/internal-transfer/decisions"),
+    createDecision: (input) => post("/internal-transfer/decisions", input),
+  },
   graph: {
     getPanorama:(query)=>get("/graph/panorama",query?{
       stack:query.stack,level:query.level,node_type:query.nodeType,
