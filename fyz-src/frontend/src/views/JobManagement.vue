@@ -22,6 +22,16 @@
           </div>
           <div class="dash-card-body">
             <el-form :model="jdForm" label-position="top" size="default">
+              <div class="demand-switch" role="radiogroup" aria-label="岗位需求类型">
+                <button type="button" class="demand-option public" :class="{ active: demandTarget === 'public' }" @click="selectDemandTarget('public')">
+                  <span class="demand-mark"><el-icon><Promotion /></el-icon></span>
+                  <span><strong>公开招聘需求</strong><small>面向外部候选人，生成公开 JD</small></span>
+                </button>
+                <button type="button" class="demand-option internal" :class="{ active: demandTarget === 'internal' }" @click="selectDemandTarget('internal')">
+                  <span class="demand-mark"><el-icon><OfficeBuilding /></el-icon></span>
+                  <span><strong>内部私有需求</strong><small>仅用于企业人才流动，不对 C 端公开</small></span>
+                </button>
+              </div>
               <div class="jm-form-hint">
                 <el-radio-group v-model="jdMode" size="small">
                   <el-radio-button value="req">输入需求生成 JD</el-radio-button>
@@ -47,6 +57,21 @@
                 <el-select v-model="jdForm.department" placeholder="请选择所属部门" style="width:100%">
                   <el-option v-for="department in JD_DEPARTMENT_OPTIONS" :key="department" :label="department" :value="department" />
                 </el-select>
+              </el-form-item>
+              <el-row v-if="demandTarget === 'internal'" :gutter="16">
+                <el-col :span="12">
+                  <el-form-item label="接收负责人">
+                    <el-input v-model="internalForm.receivingManager" placeholder="如：平台研发负责人" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="内部开放名额">
+                    <el-input-number v-model="internalForm.headcount" :min="1" :max="100" style="width:100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item v-if="demandTarget === 'internal'" label="内部需求原因">
+                <el-input v-model="internalForm.openReason" placeholder="如：新项目启动，需要补充平台能力" />
               </el-form-item>
               <div class="suggestion-field">
                 <div class="suggestion-heading">
@@ -94,8 +119,8 @@
                 </div>
               </div>
               <el-form-item>
-                <el-button type="primary" :loading="generating" style="width:100%;height:42px;" @click="generateJD">
-                  <el-icon><MagicStick /></el-icon> 智能生成 JD
+                <el-button type="primary" :class="{ 'internal-generate': demandTarget === 'internal' }" :loading="generating" style="width:100%;height:42px;" @click="generateJD">
+                  <el-icon><MagicStick /></el-icon> {{ demandTarget === 'internal' ? '生成内部岗位说明' : '智能生成公开 JD' }}
                 </el-button>
               </el-form-item>
             </el-form>
@@ -105,8 +130,8 @@
         <!-- Right: Preview -->
         <div class="dash-card" style="display:flex;flex-direction:column;">
           <div class="dash-card-header">
-            <span class="dash-card-title">JD 预览</span>
-            <span class="dash-card-badge" v-if="generated">{{ generated.title }}</span>
+            <span class="dash-card-title">{{ previewTarget === 'internal' ? '内部岗位说明预览' : '公开 JD 预览' }}</span>
+            <span class="dash-card-badge" :class="{ 'badge-internal': previewTarget === 'internal' }" v-if="generated">{{ previewTarget === 'internal' ? '内部私有' : '公开招聘' }}</span>
           </div>
           <div class="dash-card-body" style="flex:1;display:flex;flex-direction:column;">
             <div v-if="!generated" class="jm-empty jm-empty-fill">
@@ -119,34 +144,43 @@
                 <div class="jd-meta-row">
                   <el-tag size="small" type="info">{{ generated.level }}</el-tag>
                   <el-tag size="small">{{ generated.department }}</el-tag>
-                  <span class="jd-salary">{{ generated.salary_range }}</span>
+                  <span v-if="previewTarget === 'public'" class="jd-salary">{{ generated.salary_range }}</span>
                 </div>
                 <el-alert v-if="generationWarning" :title="generationWarning" type="warning" :closable="false" show-icon />
                 <div class="jd-section"><h4>工作职责</h4><ul><li v-for="(r,i) in generated.responsibilities" :key="i">{{ r }}</li></ul></div>
                 <div class="jd-section"><h4>任职要求</h4><ul><li v-for="(r,i) in generated.requirements" :key="i">{{ r }}</li></ul></div>
                 <div class="jd-section"><h4>加分技能</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><el-tag v-for="s in generated.bonus_skills" :key="s" size="small" type="success">{{ s }}</el-tag></div></div>
+                <template v-if="previewTarget === 'internal' && generatedDraft">
+                  <div class="jd-section"><h4>可培养技能</h4><div class="skill-wrap"><el-tag v-for="s in generatedDraft.trainable_skills" :key="s" size="small" type="warning" effect="plain">{{ s }}</el-tag></div></div>
+                  <div class="jd-section"><h4>适合转岗人才特征</h4><ul><li v-for="item in generatedDraft.transfer_profile" :key="item">{{ item }}</li></ul></div>
+                  <div class="jd-section manager-check"><h4>管理层待确认</h4><ul><li v-for="item in generatedDraft.manager_confirmations" :key="item">{{ item }}</li></ul></div>
+                </template>
               </div>
               <div class="jd-preview-actions">
                 <el-button @click="copyJD"><el-icon><CopyDocument /></el-icon> 复制</el-button>
-                <el-button @click="openDetail(generated, true)"><el-icon><Edit /></el-icon> 编辑草稿</el-button>
-                <el-button type="primary" @click="publishFromPreview"><el-icon><Check /></el-icon> 发布岗位</el-button>
+                <el-button v-if="previewTarget === 'public'" @click="openDetail(generated, true)"><el-icon><Edit /></el-icon> 编辑草稿</el-button>
+                <el-button type="primary" @click="publishFromPreview"><el-icon><Check /></el-icon> {{ previewTarget === 'internal' ? '保存内部岗位' : '发布公开岗位' }}</el-button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Published jobs -->
-      <div class="dash-card jm-published" style="margin-top:16px;">
-        <div class="dash-card-header">
-          <span class="dash-card-title">已发布岗位</span>
-          <span class="dash-card-badge">{{ publishedJobs.length }} 个</span>
-        </div>
-        <div class="dash-card-body" style="padding-top:0;">
-          <el-table :data="publishedJobs" style="width:100%" size="default" stripe>
+      <!-- Public and internal positions stay visually adjacent but operationally isolated. -->
+      <div id="position-ledger" class="position-ledger" style="margin-top:16px;">
+        <section class="dash-card ledger-pane public-ledger">
+          <div class="ledger-head">
+            <div><span class="ledger-kicker">PUBLIC MARKET</span><h3>公开招聘信息</h3><p>仅进入外部招聘与 C 端岗位市场</p></div>
+            <span class="ledger-count">{{ filteredPublicJobs.length }}</span>
+          </div>
+          <div class="ledger-filters">
+            <el-input v-model="publicKeyword" clearable placeholder="搜索公开岗位" :prefix-icon="Search" />
+            <el-select v-model="publicStatus" clearable placeholder="招聘状态"><el-option label="招聘中" value="open"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="已关闭" value="closed"/></el-select>
+          </div>
+          <el-table :data="filteredPublicJobs" style="width:100%" size="default">
             <el-table-column prop="title" label="岗位名称" min-width="180" />
-            <el-table-column prop="department" label="部门" width="140" align="center" />
-            <el-table-column prop="headcount" label="招聘人数" width="90" align="center" />
+            <el-table-column prop="department" label="部门" min-width="110" />
+            <el-table-column prop="headcount" label="人数" width="66" align="center" />
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'open' ? 'success' : 'info'" size="small">
@@ -154,11 +188,9 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="发布日期" width="120" align="center" />
-            <el-table-column label="操作" width="190" align="center">
+            <el-table-column label="操作" width="150" align="right">
               <template #default="{ row }">
                 <div class="table-actions">
-                  <FavoriteButton type="job" :target-id="row.id" :title="row.title" compact />
                   <el-button text type="primary" size="small" @click="openDetail(row)">
                     <el-icon><Edit /></el-icon> 编辑
                   </el-button>
@@ -173,7 +205,35 @@
               </template>
             </el-table-column>
           </el-table>
-        </div>
+        </section>
+
+        <section class="dash-card ledger-pane internal-ledger">
+          <div class="ledger-head">
+            <div><span class="ledger-kicker">PRIVATE MOBILITY</span><h3>内部需求岗位</h3><p>仅用于企业人才流动与管理决策</p></div>
+            <span class="ledger-count">{{ filteredInternalPositions.length }}</span>
+          </div>
+          <div class="ledger-filters">
+            <el-input v-model="internalKeyword" clearable placeholder="搜索内部岗位" :prefix-icon="Search" />
+            <el-select v-model="internalStatus" clearable placeholder="内部状态"><el-option label="内部开放" value="open"/><el-option label="待审批" value="pending_approval"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="名额已满" value="filled"/><el-option label="已关闭" value="closed"/></el-select>
+          </div>
+          <el-table :data="filteredInternalPositions" style="width:100%" size="default">
+            <el-table-column prop="title" label="内部岗位" min-width="160" />
+            <el-table-column prop="department" label="接收部门" min-width="110" />
+            <el-table-column prop="headcount" label="名额" width="66" align="center" />
+            <el-table-column prop="status" label="状态" width="96" align="center">
+              <template #default="{ row }"><el-tag size="small" :type="row.status === 'open' ? 'warning' : 'info'">{{ internalStatusLabel(row.status) }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="操作" width="160" align="right">
+              <template #default="{ row }">
+                <el-button v-if="row.status === 'draft'" text type="primary" size="small" @click="setInternalStatus(row.id, 'pending_approval')">提交审批</el-button>
+                <el-button v-else-if="row.status === 'pending_approval'" text type="warning" size="small" @click="setInternalStatus(row.id, 'open')">开放</el-button>
+                <el-button v-else-if="row.status === 'open'" text type="warning" size="small" @click="setInternalStatus(row.id, 'paused')">暂停</el-button>
+                <el-button v-else-if="row.status === 'paused'" text type="primary" size="small" @click="setInternalStatus(row.id, 'open')">恢复</el-button>
+                <el-button v-if="row.status === 'open'" text size="small" @click="router.push({ path: '/career', query: { positionId: row.id } })">适配人才</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </section>
       </div>
     </div>
 
@@ -344,25 +404,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeUnmount, onMounted, watch } from "vue";
+import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete, Refresh } from "@element-plus/icons-vue";
+import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete, Refresh, Promotion, OfficeBuilding } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
-import { useRouter } from "vue-router";
-import FavoriteButton from "@/components/common/FavoriteButton.vue";
+import { useRoute, useRouter } from "vue-router";
 import { useJobStore } from "@/stores/jobs";
 import DataState from "@/components/common/DataState.vue";
 import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
-import type { CapabilityChange, EmergingJob, GeneratedJDDraft, JobSummary } from "@/domain/types";
+import type { CapabilityChange, EmergingJob, GeneratedJDDraft, InternalPositionStatus, JobSummary } from "@/domain/types";
 
 const tab = ref<"publish" | "insight">("publish");
 
 // ── Tab A ──
 const jdMode = ref<"req" | "profile">("req");
+const demandTarget = ref<"public" | "internal">("public");
 const generating = ref(false);
 const generated = ref<JobSummary | null>(null);
+const generatedDraft = ref<GeneratedJDDraft | null>(null);
 const generationWarning = ref("");
 const jdForm = reactive({ title: "", level: "", department: "" });
+const internalForm = reactive({
+  receivingManager: "",
+  headcount: 1,
+  openReason: "组织人才配置",
+});
 const skillRequirements = ref<string[]>([]);
 const talentTraits = ref<string[]>([]);
 const inputDirty = reactive({ requirements: false, profile: false });
@@ -375,8 +441,10 @@ let suggestionRequestId = 0;
 let lastSuggestionKey = "";
 const store = useJobStore();
 const router = useRouter();
+const route = useRoute();
 const {
   jobs: publishedJobs,
+  internalPositions,
   emergingJobs,
   capabilityChanges,
   insightQuality,
@@ -385,14 +453,39 @@ const {
   loading,
   error,
 } = storeToRefs(store);
-onMounted(() => Promise.all([store.load(), store.loadInsights()]));
+const publicKeyword = ref("");
+const publicStatus = ref("");
+const internalKeyword = ref("");
+const internalStatus = ref("");
+const filteredPublicJobs = computed(() => {
+  const keyword = publicKeyword.value.trim().toLowerCase();
+  return publishedJobs.value.filter((job) => {
+    const matchesKeyword = !keyword || `${job.title} ${job.department}`.toLowerCase().includes(keyword);
+    return matchesKeyword && (!publicStatus.value || job.status === publicStatus.value);
+  });
+});
+const filteredInternalPositions = computed(() => {
+  const keyword = internalKeyword.value.trim().toLowerCase();
+  return internalPositions.value.filter((position) => {
+    const matchesKeyword = !keyword || `${position.title} ${position.department} ${position.receiving_manager || ""}`.toLowerCase().includes(keyword);
+    return matchesKeyword && (!internalStatus.value || position.status === internalStatus.value);
+  });
+});
+const previewTarget = computed(() => generatedDraft.value?.target || demandTarget.value);
+onMounted(async () => {
+  await Promise.all([store.load(), store.loadInsights()]);
+  if (route.query.scope === "internal") {
+    await nextTick();
+    document.getElementById("position-ledger")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
 onBeforeUnmount(() => {
   if (suggestionTimer) clearTimeout(suggestionTimer);
   suggestionRequestId += 1;
 });
 
 watch(
-  () => [jdForm.title, jdMode.value, jdForm.level, jdForm.department],
+  () => [jdForm.title, jdMode.value, jdForm.level, jdForm.department, demandTarget.value],
   () => {
     pendingSuggestions.value = [];
     suggestionNotice.value = "";
@@ -428,11 +521,22 @@ function markSuggestionDirty() {
   else inputDirty.profile = true;
 }
 
+function selectDemandTarget(target: "public" | "internal") {
+  if (target === demandTarget.value) return;
+  demandTarget.value = target;
+  if (generated.value) {
+    generated.value = null;
+    generatedDraft.value = null;
+    generationWarning.value = "";
+    ElMessage.info("需求类型已切换，请按新的发布目标重新生成岗位内容");
+  }
+}
+
 async function requestSuggestions(force = false) {
   const title = jdForm.title.trim();
   if (title.length < 2) return;
   const mode = currentMode();
-  const key = JSON.stringify([title, mode, jdForm.level, jdForm.department]);
+  const key = JSON.stringify([title, mode, jdForm.level, jdForm.department, demandTarget.value]);
   if (!force && key === lastSuggestionKey) return;
   lastSuggestionKey = key;
   const requestId = ++suggestionRequestId;
@@ -442,10 +546,11 @@ async function requestSuggestions(force = false) {
     const result = await store.suggestJDInput({
       title,
       mode,
+      target: demandTarget.value,
       level: jdForm.level || undefined,
       department: jdForm.department || undefined,
     });
-    if (requestId !== suggestionRequestId || key !== JSON.stringify([jdForm.title.trim(), currentMode(), jdForm.level, jdForm.department])) return;
+    if (requestId !== suggestionRequestId || key !== JSON.stringify([jdForm.title.trim(), currentMode(), jdForm.level, jdForm.department, demandTarget.value])) return;
     suggestionWarning.value = result.warnings.join(" ");
     suggestionNotice.value = result.generation_mode === "template" ? "已使用岗位规则模板补充" : "Agent 建议已就绪";
     if (!currentDirty()) {
@@ -488,11 +593,16 @@ async function generateJD() {
   try {
     const draft = await store.generateJD({
       mode: jdMode.value === "req" ? "requirements" : "profile",
+      target: demandTarget.value,
       title: jdForm.title,
       level: jdForm.level || undefined,
       department: jdForm.department || undefined,
       skills_input: currentItems().filter(Boolean).join(jdMode.value === "req" ? ", " : "\n"),
+      headcount: demandTarget.value === "internal" ? internalForm.headcount : undefined,
+      internal_reason: demandTarget.value === "internal" ? internalForm.openReason : undefined,
+      receiving_manager: demandTarget.value === "internal" ? internalForm.receivingManager || undefined : undefined,
     });
+    generatedDraft.value = draft;
     generated.value = toPreviewJob(draft);
     generationWarning.value = draft.warnings.join(" ");
     ElMessage.success("JD 生成完成");
@@ -506,23 +616,73 @@ async function generateJD() {
 function copyJD() {
   const jd = generated.value;
   if (!jd) return;
-  navigator.clipboard.writeText(
-    `【${jd.title}】\n${jd.department} · ${jd.level} · ${jd.salary_range}\n\n工作职责：\n${jd.responsibilities.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n任职要求：\n${jd.requirements.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n加分技能：${jd.bonus_skills.join("、")}`
-  );
+  const internalSections = generatedDraft.value?.target === "internal"
+    ? `\n\n可培养技能：${generatedDraft.value.trainable_skills.join("、")}\n\n适合转岗人才特征：\n${generatedDraft.value.transfer_profile.map((item, index) => `${index + 1}. ${item}`).join("\n")}\n\n管理层待确认：\n${generatedDraft.value.manager_confirmations.map((item, index) => `${index + 1}. ${item}`).join("\n")}`
+    : "";
+  navigator.clipboard.writeText(`【${jd.title}】\n${jd.department} · ${jd.level}${previewTarget.value === "public" ? ` · ${jd.salary_range}` : " · 内部私有需求"}\n\n工作职责：\n${jd.responsibilities.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n任职要求：\n${jd.requirements.map((r:string,i:number)=>`${i+1}. ${r}`).join("\n")}\n\n加分技能：${jd.bonus_skills.join("、")}${internalSections}`);
   ElMessage.success("已复制到剪贴板");
 }
 
 async function publishFromPreview() {
-  if (!generated.value) return;
-  await store.create(toPublishPayload(generated.value));
-  ElMessage.success("岗位发布成功");
+  if (!generated.value || !generatedDraft.value) return;
+  if (generatedDraft.value.target === "internal") {
+    const draft = generatedDraft.value;
+    await store.createInternalPosition({
+      title: draft.title,
+      standardized_title: draft.standardized_title,
+      department: draft.department,
+      receiving_manager: internalForm.receivingManager || null,
+      level: draft.level,
+      headcount: internalForm.headcount,
+      open_reason: internalForm.openReason,
+      responsibilities: draft.responsibilities,
+      requirements: draft.requirements,
+      required_skills: draft.skills,
+      trainable_skills: draft.trainable_skills,
+      transfer_profile: draft.transfer_profile,
+      manager_confirmations: draft.manager_confirmations,
+      min_tenure_months: 6,
+      min_position_tenure_months: 6,
+      allowed_departments: [],
+      restrictions: [],
+      target_start_date: null,
+      open_from: null,
+      open_until: null,
+      internal_description: draft.jd_text,
+      status: "draft",
+    });
+    ElMessage.success("内部岗位已保存为草稿，可提交审批后开放");
+  } else {
+    await store.create(toPublishPayload(generated.value));
+    ElMessage.success("公开岗位发布成功");
+  }
   generated.value = null;
+  generatedDraft.value = null;
   generationWarning.value = "";
   jdForm.title = "";
+  internalForm.receivingManager = "";
+  internalForm.headcount = 1;
+  internalForm.openReason = "组织人才配置";
   skillRequirements.value = [];
   talentTraits.value = [];
   inputDirty.requirements = false;
   inputDirty.profile = false;
+}
+
+function internalStatusLabel(status: InternalPositionStatus) {
+  return {
+    draft: "草稿",
+    pending_approval: "待审批",
+    open: "内部开放",
+    paused: "已暂停",
+    filled: "名额已满",
+    closed: "已关闭",
+  }[status];
+}
+
+async function setInternalStatus(id: number, status: InternalPositionStatus) {
+  await store.updateInternalPositionStatus(id, status);
+  ElMessage.success(`内部岗位状态已更新为“${internalStatusLabel(status)}”`);
 }
 
 async function closeJob(row: JobSummary) {
@@ -620,6 +780,7 @@ async function confirmEmergingJob(job: EmergingJob) {
 async function prepareHiringPlan(job: EmergingJob) {
   await store.decideInsight(job.id, "planned", "已转入智能 JD 招聘计划");
   tab.value = "publish";
+  demandTarget.value = "public";
   jdMode.value = "req";
   jdForm.title = job.name;
   jdForm.level = "mid";
@@ -630,6 +791,7 @@ async function prepareHiringPlan(job: EmergingJob) {
 
 function prepareJDUpdate(change: CapabilityChange) {
   tab.value = "publish";
+  demandTarget.value = "public";
   jdMode.value = "req";
   jdForm.title = change.job;
   skillRequirements.value = [
@@ -668,6 +830,34 @@ function viewChangeTrend(change: CapabilityChange) {
 .suggestion-review strong { color:var(--text-primary);font-size:13px; }
 .suggestion-review small { margin-top:2px;color:var(--text-secondary);font-size:12px; }
 .suggestion-review>div:last-child { display:flex;align-items:center;white-space:nowrap; }
+.demand-switch { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px; }
+.demand-option { display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer;transition:.2s ease; }
+.demand-option:hover { border-color:var(--color-brand);transform:translateY(-1px); }
+.demand-option.active.public { border-color:var(--color-brand);background:var(--color-brand-light);box-shadow:0 0 0 2px rgba(79,110,246,.08); }
+.demand-option.active.internal { border-color:#c98228;background:#fff8eb;box-shadow:0 0 0 2px rgba(201,130,40,.08); }
+.demand-mark { display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#edf1ff;color:var(--color-brand);font-size:17px;flex:0 0 auto; }
+.demand-option.internal .demand-mark { background:#fff0d5;color:#b46b12; }
+.demand-option span:last-child { display:flex;flex-direction:column;min-width:0; }
+.demand-option strong { font-size:13px; }
+.demand-option small { margin-top:2px;color:var(--text-muted);font-size:11px;line-height:1.35; }
+.internal-generate { --el-button-bg-color:#b87420;--el-button-border-color:#b87420;--el-button-hover-bg-color:#c98228;--el-button-hover-border-color:#c98228; }
+.badge-internal { color:#9a5a0b!important;background:#fff1d8!important; }
+.skill-wrap { display:flex;gap:6px;flex-wrap:wrap; }
+.manager-check { padding:12px 14px;border:1px solid #f2d29e;border-radius:10px;background:#fffaf1; }
+.position-ledger { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start; }
+.ledger-pane { min-width:0;overflow:hidden; }
+.ledger-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 12px;border-bottom:1px solid var(--border-color); }
+.ledger-head h3 { margin:3px 0 2px;color:var(--text-primary);font-size:17px; }
+.ledger-head p { margin:0;color:var(--text-muted);font-size:12px; }
+.ledger-kicker { color:var(--color-brand);font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.1em; }
+.internal-ledger .ledger-kicker { color:#ad680f; }
+.ledger-count { display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:10px;background:var(--color-brand-light);color:var(--color-brand);font-family:"JetBrains Mono",monospace;font-weight:700; }
+.internal-ledger .ledger-count { background:#fff1d8;color:#a35e0c; }
+.ledger-filters { display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:8px;padding:12px 14px; }
+.public-ledger { border-top:3px solid var(--color-brand); }
+.internal-ledger { border-top:3px solid #c98228; }
+.table-actions { display:flex;align-items:center;justify-content:flex-end; }
 @keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
-@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}}
+@media(max-width:1180px){.position-ledger{grid-template-columns:1fr}}
+@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters{grid-template-columns:1fr}}
 </style>

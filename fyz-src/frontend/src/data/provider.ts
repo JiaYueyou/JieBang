@@ -2,6 +2,8 @@ import type {
   AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
+  EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
+  SkillDemandSummary, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
 } from "@/domain/types";
 
 export interface DataProvider {
@@ -31,6 +33,22 @@ export interface DataProvider {
     resumeFiles?: File[];
     enterpriseFiles?: File[];
   }): Promise<import("@/domain/types").CareerAnalysisResult> };
+  internalTransfer: {
+    searchEmployeeDirectory(keyword: string): Promise<EnterpriseEmployeeDirectory[]>;
+    createTalentFromDirectory(employeeId: number): Promise<EnterpriseTalent>;
+    listPositions(): Promise<InternalPosition[]>;
+    createPosition(input: InternalPositionCreate): Promise<InternalPosition>;
+    updatePositionStatus(id: number, status: InternalPosition["status"]): Promise<InternalPosition>;
+    listTalents(): Promise<EnterpriseTalent[]>;
+    createTalent(input: EnterpriseTalentCreate): Promise<EnterpriseTalent>;
+    listSkillDemands(): Promise<SkillDemandSummary[]>;
+    listRuleSets(): Promise<TransferRuleSet[]>;
+    createRuleSet(input: TransferRuleSetCreate): Promise<TransferRuleSet>;
+    matchByTalent(input: { talent_id: number; position_ids?: number[]; rule_set_id?: number }): Promise<InternalMatchResult[]>;
+    matchByPosition(input: { position_id: number; talent_ids?: number[]; rule_set_id?: number }): Promise<InternalMatchResult[]>;
+    listDecisions(): Promise<TransferDecision[]>;
+    createDecision(input: { talent_id: number; position_id: number; rule_set_id?: number; note?: string }): Promise<TransferDecision>;
+  };
   graph: {
     getPanorama(query?: GraphQuery): Promise<GraphSubgraph>;
     getNode(nodeId: string): Promise<GraphSubgraph>;

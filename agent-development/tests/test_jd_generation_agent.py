@@ -63,6 +63,76 @@ async def test_agent_returns_template_when_provider_is_disabled():
     assert draft.warnings
 
 
+async def test_internal_target_uses_private_mobility_prompt_and_fields():
+    provider = FakeProvider(
+        LLMGeneratedJDDraft(
+            responsibilities=["负责内部平台交付"],
+            requirements=["具备相近项目经验"],
+            skills=["Python", "FastAPI"],
+            trainable_skills=["Kubernetes"],
+            transfer_profile=["后端研发背景"],
+            manager_confirmations=["确认计划到岗时间"],
+            jd_text="内部岗位需求说明",
+        )
+    )
+    draft = await JDGenerationAgent(provider).generate(
+        GenerateJDRequest(
+            target="internal",
+            title="AI 平台工程师",
+            department="平台研发部",
+            internal_reason="内部能力升级",
+            receiving_manager="平台负责人",
+        )
+    )
+
+    assert draft.target.value == "internal"
+    assert draft.trainable_skills == ["Kubernetes"]
+    assert not set(draft.skills) & set(draft.trainable_skills)
+    assert draft.transfer_profile == ["后端研发背景"]
+    assert "内部岗位" in provider.call["system_prompt"]
+    assert "不是公开招聘" in provider.call["system_prompt"]
+    assert provider.call["metadata"]["target"] == "internal"
+
+
+async def test_public_target_drops_internal_only_llm_fields():
+    provider = FakeProvider(
+        LLMGeneratedJDDraft(
+            skills=["Python"],
+            trainable_skills=["不应保留"],
+            transfer_profile=["不应保留"],
+            manager_confirmations=["不应保留"],
+        )
+    )
+    draft = await JDGenerationAgent(provider).generate(
+        GenerateJDRequest(target="public", title="Python 工程师")
+    )
+
+    assert draft.target.value == "public"
+    assert draft.trainable_skills == []
+    assert draft.transfer_profile == []
+    assert draft.manager_confirmations == []
+    assert "公开招聘" in provider.call["system_prompt"]
+
+
+async def test_internal_template_separates_required_and_trainable_skills():
+    class DisabledProvider:
+        provider_name = "disabled"
+        model_name = "none"
+        enabled = False
+
+    draft = await JDGenerationAgent(DisabledProvider()).generate(
+        GenerateJDRequest(
+            target="internal",
+            title="平台工程师",
+            skills_input="Java, MySQL, Redis, Docker, Kubernetes, Prometheus",
+        )
+    )
+
+    assert draft.skills == ["Java", "MySQL", "Redis", "Docker"]
+    assert draft.trainable_skills == ["Kubernetes", "Prometheus"]
+    assert not set(draft.skills) & set(draft.trainable_skills)
+
+
 async def test_agent_generates_structured_input_suggestions():
     provider = FakeProvider(
         LLMJDInputSuggestion(

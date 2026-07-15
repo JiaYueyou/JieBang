@@ -8,6 +8,7 @@ from app.core.agent_runtime import (
     GenerateJDRequest,
     GeneratedJDDraft,
     JDGenerationMode,
+    JDGenerationTarget,
     JDInputSuggestion,
     JDInputSuggestionRequest,
     LLMGeneratedJDDraft,
@@ -50,6 +51,7 @@ class AgentRunResponse(BaseModel):
 
 __all__ = [
     "JDGenerationMode",
+    "JDGenerationTarget",
     "GenerateJDRequest",
     "GeneratedJDDraft",
     "JDInputSuggestionRequest",
