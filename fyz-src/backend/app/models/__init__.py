@@ -22,6 +22,13 @@ from app.models.graph import (
 )
 from app.models.analysis import AnalysisInsightDecision
 from app.models.matching import MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
+from app.models.internal_transfer import (
+    EnterpriseEmployeeDirectory,
+    EnterpriseTalent,
+    InternalPosition,
+    TransferDecision,
+    TransferRuleSet,
+)
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
@@ -30,4 +37,5 @@ __all__ = [
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
     "AnalysisInsightDecision",
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
+    "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
 ]

@@ -16,7 +16,7 @@ from app.core.agent_runtime import CareerPlanCandidate, CareerPlanningAgent
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import InvalidParameterError
 from app.domain.skill_dictionary import canonical_key
-from app.models import AgentRun, JobPosting
+from app.models import AgentRun, InternalPosition
 from app.providers import DeepSeekProvider, LLMProvider
 from app.schemas.career import CareerAnalysisRequest, CareerAnalysisResponse, ResumeExtractionResponse
 from app.services.skill_extractor import RuleSkillExtractor
@@ -126,31 +126,25 @@ class CareerService:
 
     async def _build_candidates(self, request: CareerAnalysisRequest, skills: list[str]) -> list[CareerPlanCandidate]:
         rows = list((await self.db.execute(
-            select(JobPosting).where(
-                JobPosting.deleted_at.is_(None),
-                JobPosting.status == "open",
-            ).order_by(JobPosting.id)
+            select(InternalPosition).where(
+                InternalPosition.status == "open",
+            ).order_by(InternalPosition.id)
         )).scalars())
         if request.target_job_ids:
             allowed = set(request.target_job_ids)
             rows = [row for row in rows if row.id in allowed]
-        internal_names = {item.casefold() for item in request.internal_jobs}
-        enterprise_skills = self._extract_declared_skills(request.enterprise_tech)
         candidates: list[CareerPlanCandidate] = []
         for job in rows:
-            job_skills = list(dict.fromkeys(item.name for item in job.skills))
-            if not job_skills:
-                extracted = self.extractor.extract(jd_text=job.jd_text, responsibilities=" ".join(job.responsibilities), requirements=" ".join(job.requirements))
-                job_skills = [item.name for item in extracted.skills]
+            job_skills = list(dict.fromkeys([
+                *(job.required_skills or []),
+                *(job.trainable_skills or []),
+            ]))
             if not job_skills:
                 continue
-            internal = any(name in job.title.casefold() or job.title.casefold() in name for name in internal_names)
-            if internal:
-                job_skills = list(dict.fromkeys([*job_skills, *enterprise_skills]))
             existing = [item for item in job_skills if self._skill_is_covered(item, skills)]
             gaps = [item for item in job_skills if not self._skill_is_covered(item, skills)]
             current = round(len(existing) / len(job_skills) * 100)
-            recommend = min(100, current + (8 if internal else 0))
+            recommend = min(100, current + 8)
             after = min(100, current + min(40, len(gaps) * 10))
             candidates.append(CareerPlanCandidate(
                 job_id=job.id,
@@ -160,7 +154,7 @@ class CareerService:
                 recommend_score=recommend,
                 existing=existing,
                 gaps=gaps,
-                internal=internal,
+                internal=True,
             ))
         return sorted(candidates, key=lambda item: (-item.recommend_score, len(item.gaps), item.job_id))[:5]
 

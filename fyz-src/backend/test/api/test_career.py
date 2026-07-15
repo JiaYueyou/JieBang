@@ -1,5 +1,5 @@
-from test.api.test_jobs import create_job
 from app.services.career_service import CareerService
+from test.api.test_internal_transfer import position_payload
 
 
 class DisabledCareerProvider:
@@ -21,13 +21,27 @@ async def test_resume_text_extraction_and_degraded_career_plan(client, auth_head
     )
     assert extracted.status_code == 200
     resume_text = extracted.json()["data"]["text"]
-    job = (await create_job(
-        client,
-        auth_headers,
-        title="Python 平台工程师",
-        skills=["Python", "FastAPI", "Redis"],
-        bonus_skills=[],
-    )).json()["data"]
+    created = await client.post(
+        "/api/v1/internal-transfer/positions",
+        headers=auth_headers,
+        json={
+            **position_payload(),
+            "title": "Python 平台工程师",
+            "required_skills": ["Python", "FastAPI", "Redis"],
+            "trainable_skills": [],
+        },
+    )
+    job = created.json()["data"]
+    await client.put(
+        f"/api/v1/internal-transfer/positions/{job['id']}/status",
+        headers=auth_headers,
+        json={"status": "pending_approval"},
+    )
+    await client.put(
+        f"/api/v1/internal-transfer/positions/{job['id']}/status",
+        headers=auth_headers,
+        json={"status": "open"},
+    )
 
     response = await client.post(
         "/api/v1/career/analyses",
@@ -36,7 +50,6 @@ async def test_resume_text_extraction_and_degraded_career_plan(client, auth_head
             "skill_text": "Python, FastAPI",
             "resume_text": resume_text,
             "enterprise_tech": "Redis",
-            "internal_jobs": ["Python 平台工程师"],
         },
     )
 

@@ -11,10 +11,13 @@ import type {
   JDInputSuggestionRequest,
   JobCreatePayload,
   JobSummary,
+  InternalPosition,
+  InternalPositionCreate,
 } from "@/domain/types";
 
 export const useJobStore = defineStore("jobs", () => {
   const jobs = ref<JobSummary[]>([]);
+  const internalPositions = ref<InternalPosition[]>([]);
   const emergingJobs = ref<EmergingJob[]>([]);
   const capabilityChanges = ref<CapabilityChange[]>([]);
   const insightQuality = ref<AnalysisDataQuality | null>(null);
@@ -29,7 +32,15 @@ export const useJobStore = defineStore("jobs", () => {
     loading.value = true;
     error.value = "";
     try {
-      jobs.value = await dataProvider.jobs.list();
+      const [publicResult, internalResult] = await Promise.allSettled([
+        dataProvider.jobs.list(),
+        dataProvider.internalTransfer.listPositions(),
+      ]);
+      if (publicResult.status === "fulfilled") jobs.value = publicResult.value;
+      if (internalResult.status === "fulfilled") internalPositions.value = internalResult.value;
+      if (publicResult.status === "rejected" && internalResult.status === "rejected") {
+        throw publicResult.reason;
+      }
       loaded.value = true;
     } catch (exception) {
       error.value = exception instanceof Error ? exception.message : "加载失败";
@@ -77,6 +88,18 @@ export const useJobStore = defineStore("jobs", () => {
     return saved;
   }
 
+  async function createInternalPosition(input: InternalPositionCreate) {
+    const saved = await dataProvider.internalTransfer.createPosition(input);
+    internalPositions.value.unshift(saved);
+    return saved;
+  }
+
+  async function updateInternalPositionStatus(id: number, status: InternalPosition["status"]) {
+    const saved = await dataProvider.internalTransfer.updatePositionStatus(id, status);
+    const index = internalPositions.value.findIndex((position) => position.id === id);
+    if (index >= 0) internalPositions.value[index] = saved;
+  }
+
   async function update(job: JobSummary) {
     const saved = await dataProvider.jobs.update(job);
     const index = jobs.value.findIndex((value) => value.id === saved.id);
@@ -96,6 +119,7 @@ export const useJobStore = defineStore("jobs", () => {
 
   return {
     jobs,
+    internalPositions,
     emergingJobs,
     capabilityChanges,
     insightQuality,
@@ -111,6 +135,8 @@ export const useJobStore = defineStore("jobs", () => {
     suggestJDInput,
     generateJD,
     create,
+    createInternalPosition,
+    updateInternalPositionStatus,
     update,
     remove,
     updateStatus,

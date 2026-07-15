@@ -27,16 +27,22 @@ export interface JobSummary {
 }
 
 export type JDGenerationMode = "requirements" | "profile";
+export type JDGenerationTarget = "public" | "internal";
 
 export interface GenerateJDRequest {
+  target: JDGenerationTarget;
   mode: JDGenerationMode;
   title: string;
   level?: string;
   department?: string;
   skills_input: string;
+  headcount?: number;
+  internal_reason?: string;
+  receiving_manager?: string;
 }
 
 export interface JDInputSuggestionRequest {
+  target: JDGenerationTarget;
   mode: JDGenerationMode;
   title: string;
   level?: string;
@@ -45,6 +51,7 @@ export interface JDInputSuggestionRequest {
 
 export interface JDInputSuggestion {
   title: string;
+  target: JDGenerationTarget;
   mode: JDGenerationMode;
   suggestions: string[];
   generation_mode: "llm" | "template";
@@ -53,6 +60,7 @@ export interface JDInputSuggestion {
 
 export interface GeneratedJDDraft {
   title: string;
+  target: JDGenerationTarget;
   standardized_title?: string | null;
   level: string;
   department: string;
@@ -60,6 +68,9 @@ export interface GeneratedJDDraft {
   requirements: string[];
   skills: string[];
   bonus_skills: string[];
+  trainable_skills: string[];
+  transfer_profile: string[];
+  manager_confirmations: string[];
   jd_text: string;
   assumptions: string[];
   warnings: string[];
@@ -78,6 +89,135 @@ export interface JobCreatePayload {
   bonus_skills: string[];
   jd_text: string;
   status: JobStatus;
+}
+
+export type InternalPositionStatus = "draft" | "pending_approval" | "open" | "paused" | "filled" | "closed";
+
+export interface InternalPosition {
+  id: EntityId;
+  title: string;
+  standardized_title?: string | null;
+  department: string;
+  receiving_manager?: string | null;
+  level: string;
+  headcount: number;
+  open_reason: string;
+  responsibilities: string[];
+  requirements: string[];
+  required_skills: string[];
+  trainable_skills: string[];
+  transfer_profile: string[];
+  manager_confirmations: string[];
+  min_tenure_months: number;
+  min_position_tenure_months: number;
+  allowed_departments: string[];
+  restrictions: string[];
+  target_start_date?: string | null;
+  open_from?: string | null;
+  open_until?: string | null;
+  internal_description: string;
+  status: InternalPositionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InternalPositionCreate = Omit<InternalPosition, "id" | "created_at" | "updated_at">;
+
+export interface EnterpriseTalent {
+  id: EntityId;
+  employee_no: string;
+  name: string;
+  department: string;
+  current_position: string;
+  level: string;
+  location?: string | null;
+  tenure_months: number;
+  position_tenure_months: number;
+  skills: string[];
+  project_highlights: string[];
+  status: "active" | "inactive" | "restricted";
+  created_at: string;
+  updated_at: string;
+}
+
+export type EnterpriseTalentCreate = Omit<EnterpriseTalent, "id" | "created_at" | "updated_at">;
+
+export interface EnterpriseEmployeeDirectory {
+  id: EntityId;
+  employee_no: string;
+  name: string;
+  department: string;
+  current_position: string;
+  level: string;
+  location?: string | null;
+  tenure_months: number;
+  position_tenure_months: number;
+  skills: string[];
+  project_highlights: string[];
+  status: "active" | "inactive";
+  source: string;
+  in_talent_pool: boolean;
+  synced_at: string;
+}
+
+export interface TransferRuleSet {
+  id: EntityId;
+  name: string;
+  version: number;
+  min_tenure_months: number;
+  min_position_tenure_months: number;
+  min_match_score: number;
+  skill_weight: number;
+  tenure_weight: number;
+  status: "draft" | "active" | "inactive";
+  created_at: string;
+  updated_at: string;
+}
+
+export type TransferRuleSetCreate = Omit<TransferRuleSet, "id" | "version" | "created_at" | "updated_at">;
+
+export interface InternalMatchResult {
+  talent_id: EntityId;
+  employee_no: string;
+  talent_name: string;
+  current_department: string;
+  current_position: string;
+  position_id: EntityId;
+  position_title: string;
+  target_department: string;
+  eligible: boolean;
+  disqualifications: string[];
+  score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  trainable_gaps: string[];
+  estimated_development_weeks: number;
+  rule_set_id: EntityId | null;
+  rule_version: number;
+}
+
+export interface SkillDemandSummary {
+  skill: string;
+  position_count: number;
+  demand_headcount: number;
+  talent_supply: number;
+  gap: number;
+  departments: string[];
+  requirement_type: "required" | "trainable";
+}
+
+export interface TransferDecision {
+  id: EntityId;
+  talent_id: EntityId;
+  talent_name: string;
+  position_id: EntityId;
+  position_title: string;
+  match_score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  status: string;
+  note: string;
+  created_at: string;
 }
 
 export type JobDetail = JobSummary;

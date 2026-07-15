@@ -34,6 +34,7 @@ const createPayload: JobCreatePayload = {
 
 const draft: GeneratedJDDraft = {
   title: "Java 平台工程师",
+  target: "public",
   standardized_title: "Java 工程师",
   level: "senior",
   department: "研发中心",
@@ -41,6 +42,9 @@ const draft: GeneratedJDDraft = {
   requirements: ["熟悉 Java"],
   skills: ["Java", "Spring Boot"],
   bonus_skills: ["Kubernetes"],
+  trainable_skills: [],
+  transfer_profile: [],
+  manager_confirmations: [],
   jd_text: "完整 JD 草稿",
   assumptions: [],
   warnings: [],
@@ -87,13 +91,13 @@ describe("HTTP job and JD Agent provider contract", () => {
     }) as never);
 
     await expect(httpDataProvider.jobs.generateJD({
-      mode: "requirements", title: job.title, level: job.level,
+      target: "public", mode: "requirements", title: job.title, level: job.level,
       department: job.department, skills_input: "Java, Spring Boot",
     })).resolves.toEqual(draft);
     await expect(httpDataProvider.jobs.create(createPayload)).resolves.toEqual(job);
 
     expect(post).toHaveBeenNthCalledWith(1, "/agents/jd-generations", {
-      mode: "requirements", title: job.title, level: job.level,
+      target: "public", mode: "requirements", title: job.title, level: job.level,
       department: job.department, skills_input: "Java, Spring Boot",
     });
     expect(get).toHaveBeenCalledWith("/tasks/task-1", { params: undefined });
@@ -103,6 +107,7 @@ describe("HTTP job and JD Agent provider contract", () => {
   it("creates and resolves a JD input suggestion task", async () => {
     const result = {
       title: "Java 开发工程师",
+      target: "public" as const,
       mode: "requirements" as const,
       suggestions: ["Java", "Spring Boot", "MySQL"],
       generation_mode: "template" as const,
@@ -114,12 +119,14 @@ describe("HTTP job and JD Agent provider contract", () => {
     }) as never);
 
     await expect(httpDataProvider.jobs.suggestJDInput({
+      target: "public",
       mode: "requirements",
       title: "Java 开发工程师",
       level: "senior",
       department: "后台开发组",
     })).resolves.toEqual(result);
     expect(post).toHaveBeenCalledWith("/agents/jd-input-suggestions", {
+      target: "public",
       mode: "requirements",
       title: "Java 开发工程师",
       level: "senior",
@@ -289,5 +296,40 @@ describe("HTTP job and JD Agent provider contract", () => {
       decision: "confirmed",
       note: "Review this week",
     });
+  });
+
+  it("searches the employee directory by partial number and adds the selected employee", async () => {
+    const employee = {
+      id: 18,
+      employee_no: "20260715018",
+      name: "李然",
+      department: "数据平台部",
+      current_position: "数据开发工程师",
+      level: "senior",
+      location: "合肥",
+      tenure_months: 26,
+      position_tenure_months: 14,
+      skills: ["Python", "Spark"],
+      project_highlights: [],
+      status: "active" as const,
+      source: "hr_sync",
+      in_talent_pool: false,
+      synced_at: "2026-07-15T10:00:00",
+    };
+    const talent = {
+      ...employee,
+      id: 7,
+      status: "active" as const,
+      created_at: "2026-07-15T10:01:00",
+      updated_at: "2026-07-15T10:01:00",
+    };
+    const get = vi.spyOn(request, "get").mockResolvedValue(response([employee]) as never);
+    const post = vi.spyOn(request, "post").mockResolvedValue(response(talent) as never);
+
+    await expect(httpDataProvider.internalTransfer.searchEmployeeDirectory("15018")).resolves.toEqual([employee]);
+    await expect(httpDataProvider.internalTransfer.createTalentFromDirectory(18)).resolves.toEqual(talent);
+
+    expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", { params: { keyword: "15018", limit: 10 } });
+    expect(post).toHaveBeenCalledWith("/internal-transfer/talents/from-directory/18", {});
   });
 });

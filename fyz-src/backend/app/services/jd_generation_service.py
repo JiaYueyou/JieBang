@@ -55,7 +55,7 @@ class JDGenerationService:
             user_id=user_id,
             task_type=self.agent.suggestion_task_type,
             prompt_version=self.agent.suggestion_prompt_version,
-            input_summary=f"input_suggestion/{request.mode.value}: {request.title}"[:500],
+            input_summary=f"input_suggestion/{request.target.value}/{request.mode.value}: {request.title}"[:500],
         )
 
     async def _create_task(
@@ -180,4 +180,4 @@ class JDGenerationService:
 
     @staticmethod
     def _input_summary(request: GenerateJDRequest) -> str:
-        return f"{request.mode.value}: {request.title}; {request.skills_input}"[:500]
+        return f"{request.target.value}/{request.mode.value}: {request.title}; {request.skills_input}"[:500]

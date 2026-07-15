@@ -94,7 +94,7 @@ const menuItems = [
   { path: "/dashboard", title: "工作台",   icon: "Odometer" },
   { path: "/jobs",      title: "岗位管理", icon: "Briefcase" },
   { path: "/matching",  title: "人才匹配", icon: "Connection" },
-  { path: "/career",    title: "转岗指南", icon: "Guide" },
+  { path: "/career",    title: "转岗决策", icon: "Guide" },
   { path: "/graph",     title: "技能图谱", icon: "Share" },
   { path: "/trends",    title: "趋势分析", icon: "TrendCharts" },
   { path: "/favorites", title: "我的收藏", icon: "Star" },

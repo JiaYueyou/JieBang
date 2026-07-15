@@ -48,7 +48,7 @@ const router = createRouter({
           path: "career",
           name: "CareerGuide",
           component: () => import("@/views/CareerGuide.vue"),
-          meta: { title: "转岗指南" },
+          meta: { title: "转岗分析与决策" },
         },
         {
           path: "graph",

@@ -15,6 +15,7 @@ const mockBackedDataProvider: DataProvider = {
   jobs: httpDataProvider.jobs,
   talents: httpDataProvider.talents,
   career: httpDataProvider.career,
+  internalTransfer: httpDataProvider.internalTransfer,
   trends: httpDataProvider.trends,
 };
 
@@ -23,6 +24,7 @@ const hybridDataProvider: DataProvider = {
   jobs: httpDataProvider.jobs,
   talents: httpDataProvider.talents,
   career: httpDataProvider.career,
+  internalTransfer: httpDataProvider.internalTransfer,
   graph: httpDataProvider.graph,
   trends: httpDataProvider.trends,
 };
