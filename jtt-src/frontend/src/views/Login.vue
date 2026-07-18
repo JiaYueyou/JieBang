@@ -9,7 +9,7 @@ const userStore = useUserStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const form = reactive({ username: '123456', password: '123456' })
+const form = reactive({ username: 'admin', password: 'admin123' })
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
