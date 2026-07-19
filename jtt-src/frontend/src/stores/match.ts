@@ -36,10 +36,7 @@ export const useMatchStore = defineStore('match', () => {
     history.value = (res.data || []).map(matchResultFromApi)
   }
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 144cd35 (fix(jtt): fit Error: Process completed with exit code 1.)
   // === AI 优化建议（Agent 1: 简历优化智能体）===
 
   const aiSuggestions = ref<ImprovementSuggestion[]>([])

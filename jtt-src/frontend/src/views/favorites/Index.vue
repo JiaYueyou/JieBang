@@ -209,6 +209,7 @@ const resourceTypeLabels: Record<string, string> = {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  margin-top: 16px;
 }
 
 .fav-card {
@@ -288,10 +289,9 @@ const resourceTypeLabels: Record<string, string> = {
 .error-answer.correct span:last-child { color: var(--success); }
 .error-explain { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
-<<<<<<< HEAD
+
 .empty-tab { padding: 40px 0; text-align: center; }
 .coming-soon-hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
-=======
 .error-label {
   font-size: 11px;
   font-weight: 600;
@@ -369,5 +369,4 @@ const resourceTypeLabels: Record<string, string> = {
 .note-preview { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
 .note-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .note-date { font-size: 12px; color: var(--weak); }
->>>>>>> 144cd35 (fix(jtt): fit Error: Process completed with exit code 1.)
 </style>

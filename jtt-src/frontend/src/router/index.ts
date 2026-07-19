@@ -56,6 +56,7 @@ const router = createRouter({
       component: () => import('@/views/career/Index.vue'),
       meta: { title: '职业发展' },
     },
+    // 职业发展
     {
       path: '/learning', name: 'Learning',
       component: () => import('@/views/learning/Index.vue'),
