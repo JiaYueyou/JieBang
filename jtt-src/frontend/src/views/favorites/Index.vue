@@ -288,6 +288,86 @@ const resourceTypeLabels: Record<string, string> = {
 .error-answer.correct span:last-child { color: var(--success); }
 .error-explain { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
+<<<<<<< HEAD
 .empty-tab { padding: 40px 0; text-align: center; }
 .coming-soon-hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+=======
+.error-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.error-explanation {
+  font-size: 12px;
+  color: #a16207;
+  background: #fefce8;
+  padding: 8px 12px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+/* Empty states */
+.empty-tab { padding: 60px 0; }
+
+.coming-soon-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.path-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+}
+.path-head-left, .path-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.path-name { font-size: 14px; font-weight: 600; }
+.path-dur { font-size: 12px; color: var(--muted); }
+.expand-icon { transition: transform 0.2s; color: var(--muted); }
+.expand-icon.rotated { transform: rotate(180deg); }
+
+.path-body { padding: 0 20px 16px; border-top: 1px solid var(--hairline); }
+.path-steps { padding: 12px 0; }
+.path-step { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+.step-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-dot.done { background: var(--brand); border-color: var(--brand); color: #fff; }
+.step-info { display: flex; align-items: center; gap: 10px; }
+.step-title { font-size: 13px; }
+.step-dur { font-size: 12px; color: var(--muted); }
+
+/* Notes */
+.note-toolbar { margin: 16px 0 12px; }
+.note-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.note-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  transition: box-shadow 0.2s;
+}
+.note-card:hover { box-shadow: var(--shadow-hover); }
+.note-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.note-type-label { font-size: 12px; color: var(--muted); }
+.note-card-actions { margin-left: auto; display: flex; gap: 2px; }
+.note-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.note-preview { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+.note-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.note-date { font-size: 12px; color: var(--weak); }
+>>>>>>> 144cd35 (fix(jtt): fit Error: Process completed with exit code 1.)
 </style>
