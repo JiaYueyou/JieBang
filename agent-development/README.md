@@ -27,6 +27,14 @@ agent-development/
 
 > **数据库版本变更**：简历持久化与匹配解释引入 revision `20260712_0006`。更新本分支后，先在 `fyz-src/backend` 执行 `alembic upgrade head`，再重启 Uvicorn；仅更新前端或未重启旧进程会导致 `/api/v1/talents` 仍返回 404。
 
+## L4-L5 智能体模块
+
+`l45_agent/` 是基于 DeepSeek 大模型的 L4-L5 知识图谱补全模块：
+
+- **作用**：为 L3 技能自动生成 TechPoint（L4）和 KnowledgePoint（L5）
+- **集成位置**：`fyz-src/backend/scripts/05_enrich_l45.py`（流水线第 5 步）
+- **详细文档**：[l45_agent/README.md](l45_agent/README.md)
+
 ## 当前能力状态
 
 | 能力 | 状态 | 说明 |
