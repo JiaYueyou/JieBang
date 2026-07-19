@@ -1,24 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import { useLearningStore } from '@/stores/learning'
-import type { JobPosition } from '@/types'
-import { mockPositions } from '@/mock/data/positions'
-import { mockLearningPaths } from '@/mock/data/learning'
 import PositionCard from '@/components/positions/PositionCard.vue'
 
 const router = useRouter()
 const positionsStore = usePositionsStore()
 const learningStore = useLearningStore()
 
-const recommendedPositions = ref<JobPosition[]>([])
+const recommendedPositions = computed(() => positionsStore.positions.slice(0, 4))
 const expandedPathId = ref<string | null>(null)
 
-onMounted(() => {
-  recommendedPositions.value = mockPositions.slice(0, 4)
+onMounted(async () => {
+  await positionsStore.fetchPositions()
   if (learningStore.paths.length === 0) {
-    learningStore.paths = JSON.parse(JSON.stringify(mockLearningPaths))
+    await learningStore.fetchPaths()
   }
 })
 
@@ -53,9 +50,9 @@ const goToPosition = (id: string) => router.push(`/positions/${id}`)
         <p>发现最适合你的职业方向，让 AI 帮你打造完美简历</p>
       </div>
       <div class="quick-actions">
-        <div class="action-card" @click="router.push('/resume/upload')">
-          <el-icon :size="28"><Upload /></el-icon>
-          <span>上传简历</span>
+        <div class="action-card" @click="router.push('/diagnosis')">
+          <el-icon :size="28"><Document /></el-icon>
+          <span>简历诊断</span>
         </div>
         <div class="action-card" @click="router.push('/positions')">
           <el-icon :size="28"><Compass /></el-icon>
@@ -65,9 +62,9 @@ const goToPosition = (id: string) => router.push(`/positions/${id}`)
           <el-icon :size="28"><Share /></el-icon>
           <span>知识图谱</span>
         </div>
-        <div class="action-card" @click="router.push('/diagnosis')">
-          <el-icon :size="28"><Connection /></el-icon>
-          <span>简历诊断</span>
+        <div class="action-card" @click="router.push('/career')">
+          <el-icon :size="28"><TrendCharts /></el-icon>
+          <span>职业发展</span>
         </div>
       </div>
     </section>

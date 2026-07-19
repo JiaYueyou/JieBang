@@ -19,8 +19,8 @@ class LearningPath(Base):
     # 步骤和资源以 JSON 存储
     steps: Mapped[list] = mapped_column(JSON, default=list, comment="学习步骤列表")
     total_duration: Mapped[str] = mapped_column(String(50), default="", comment="总学习时长，如 12周")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
 class LearningStep:

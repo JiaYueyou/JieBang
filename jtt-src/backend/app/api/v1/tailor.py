@@ -48,7 +48,8 @@ async def apply_all(
     service: TailorService = Depends(get_tailor_service),
 ):
     """批量应用所有已接受的建议，生成新简历"""
-    new_id = await service.apply_all(req.resume_id, req.suggestion_ids)
+    payload = [s.model_dump() for s in (req.suggestions or [])] or None
+    new_id = await service.apply_all(req.resume_id, req.suggestion_ids, payload)
     return ApiResponse(data={"new_resume_id": new_id})
 
 
@@ -68,5 +69,6 @@ async def save_as_new(
     service: TailorService = Depends(get_tailor_service),
 ):
     """保存优化后的简历为新版本"""
-    new_id = await service.save_as_new(req.resume_id, req.suggestion_ids)
+    payload = [s.model_dump() for s in (req.suggestions or [])] or None
+    new_id = await service.save_as_new(req.resume_id, req.suggestion_ids, payload)
     return ApiResponse(data={"new_resume_id": new_id})

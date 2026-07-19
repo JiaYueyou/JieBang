@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ResumeData } from '@/types'
 import { resumeApi } from '@/api/resume'
+import { resumeFromApi, resumeToApi } from '@/utils/transform'
 
 export const useResumeStore = defineStore('resume', () => {
   const resumes = ref<ResumeData[]>([])
@@ -12,7 +13,7 @@ export const useResumeStore = defineStore('resume', () => {
     loading.value = true
     try {
       const res: any = await resumeApi.getList()
-      resumes.value = res.data
+      resumes.value = (res.data || []).map(resumeFromApi)
     } finally {
       loading.value = false
     }
@@ -22,24 +23,26 @@ export const useResumeStore = defineStore('resume', () => {
     loading.value = true
     try {
       const res: any = await resumeApi.getDetail(id)
-      currentResume.value = res.data
+      currentResume.value = resumeFromApi(res.data)
     } finally {
       loading.value = false
     }
   }
 
   const create = async (data: Partial<ResumeData>) => {
-    const res: any = await resumeApi.create(data)
-    resumes.value.unshift(res.data)
-    return res.data
+    const res: any = await resumeApi.create(resumeToApi(data))
+    const created = resumeFromApi(res.data)
+    resumes.value.unshift(created)
+    return created
   }
 
   const update = async (id: string, data: Partial<ResumeData>) => {
-    const res: any = await resumeApi.update(id, data)
+    const res: any = await resumeApi.update(id, resumeToApi(data))
+    const updated = resumeFromApi(res.data)
     const idx = resumes.value.findIndex((r) => r.id === id)
-    if (idx > -1) resumes.value[idx] = res.data
-    if (currentResume.value?.id === id) currentResume.value = res.data
-    return res.data
+    if (idx > -1) resumes.value[idx] = updated
+    if (currentResume.value?.id === id) currentResume.value = updated
+    return updated
   }
 
   const remove = async (id: string) => {
@@ -50,8 +53,9 @@ export const useResumeStore = defineStore('resume', () => {
 
   const duplicate = async (id: string) => {
     const res: any = await resumeApi.duplicate(id)
-    resumes.value.unshift(res.data)
-    return res.data
+    const duped = resumeFromApi(res.data)
+    resumes.value.unshift(duped)
+    return duped
   }
 
   return { resumes, currentResume, loading, fetchList, fetchDetail, create, update, remove, duplicate }

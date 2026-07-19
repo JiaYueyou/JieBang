@@ -19,13 +19,19 @@ const rules: FormRules = {
   ],
 }
 
+const errorMsg = ref('')
+
 const handleLogin = async () => {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   loading.value = true
+  errorMsg.value = ''
   try {
     await userStore.login(form.username, form.password)
     router.push('/home')
+  } catch (e: any) {
+    const msg = e?.response?.data?.message || e?.message || '登录失败，请检查网络连接'
+    errorMsg.value = msg
   } finally {
     loading.value = false
   }
@@ -51,6 +57,7 @@ const handleLogin = async () => {
         <el-form-item label="密码" prop="password">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" prefix-icon="Lock" size="large" show-password />
         </el-form-item>
+        <div v-if="errorMsg" class="login-error">{{ errorMsg }}</div>
         <el-form-item>
           <el-button type="primary" size="large" class="submit-btn" :loading="loading" @click="handleLogin">
             登 录
@@ -127,6 +134,16 @@ const handleLogin = async () => {
 
 .auth-form {
   margin-bottom: 20px;
+}
+
+.login-error {
+  background: #fef2f2;
+  color: #ef4444;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  border: 1px solid #fecaca;
 }
 
 .submit-btn {

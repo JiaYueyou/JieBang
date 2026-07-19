@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const visible = ref(false)
 const inputText = ref('')
@@ -15,11 +16,12 @@ const toggle = () => {
 }
 
 const sendPreset = (cmd: string) => {
-  inputText.value = cmd
+  ElMessage.info('AI智能体功能即将上线，敬请期待')
 }
 
 const handleSend = () => {
   if (inputText.value.trim()) {
+    ElMessage.info('AI智能体功能即将上线，敬请期待')
     inputText.value = ''
   }
 }

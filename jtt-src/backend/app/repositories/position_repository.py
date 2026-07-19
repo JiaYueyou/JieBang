@@ -3,7 +3,6 @@
 """
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from app.models.position import JobPosition, Skill, SkillChange
 
 
@@ -23,13 +22,11 @@ class PositionRepository:
         if category:
             query = query.where(JobPosition.category == category)
         if keyword:
-            # 关键词搜索岗位名称和概述
             query = query.where(
                 (JobPosition.name.ilike(f"%{keyword}%")) |
                 (JobPosition.summary.ilike(f"%{keyword}%"))
             )
         if tech_stack:
-            # JSON 数组模糊匹配，查找包含指定技术栈的岗位
             query = query.where(JobPosition.tech_stack.contains([tech_stack]))
 
         # 计数查询
@@ -43,13 +40,9 @@ class PositionRepository:
         return list(result.scalars().all()), total
 
     async def get_by_id(self, position_id: int) -> JobPosition | None:
-        """根据 ID 获取岗位详情，含关联技能和变化历史"""
+        """根据 ID 获取岗位详情"""
         result = await self.db.execute(
-            select(JobPosition)
-            .where(JobPosition.id == position_id)
-            .options(selectinload(JobPosition.required_skills))
-            .options(selectinload(JobPosition.preferred_skills))
-            .options(selectinload(JobPosition.skill_changes))
+            select(JobPosition).where(JobPosition.id == position_id)
         )
         return result.scalar_one_or_none()
 
@@ -63,12 +56,14 @@ class PositionRepository:
     async def update_skills(self, position_id: int, skills: list[dict], kind: str):
         """替换岗位的某项技能列表（先删后加）"""
         # 删除旧的
-        await self.db.execute(
+        old = await self.db.execute(
             select(Skill).where(
                 Skill.position_id == position_id,
                 Skill.kind == kind,
             )
         )
+        for sk in old.scalars().all():
+            await self.db.delete(sk)
         # 插入新的
         for sk in skills:
             s = Skill(position_id=position_id, kind=kind, **sk)
@@ -78,3 +73,42 @@ class PositionRepository:
         """添加一条技能变化记录"""
         sc = SkillChange(position_id=position_id, **change)
         self.db.add(sc)
+
+    async def get_skills_for_positions(self, position_ids: list[int]) -> dict[int, list[dict]]:
+        """批量获取岗位的技能，按 position_id 分组返回"""
+        if not position_ids:
+            return {}
+        result = await self.db.execute(
+            select(Skill).where(Skill.position_id.in_(position_ids))
+        )
+        skills = result.scalars().all()
+        grouped: dict[int, list[dict]] = {}
+        for sk in skills:
+            grouped.setdefault(sk.position_id, []).append({
+                "id": sk.id, "name": sk.name,
+                "level": sk.level, "kind": sk.kind,
+                "category": sk.category,
+            })
+        return grouped
+
+    async def get_all_ids(self) -> list[int]:
+        """获取所有岗位 ID 列表（用于自动匹配遍历）"""
+        result = await self.db.execute(select(JobPosition.id))
+        return [row[0] for row in result.all()]
+
+    async def get_skill_changes_for_positions(self, position_ids: list[int]) -> dict[int, list[dict]]:
+        """批量获取岗位的技能变化历史，按 position_id 分组返回"""
+        if not position_ids:
+            return {}
+        result = await self.db.execute(
+            select(SkillChange).where(SkillChange.position_id.in_(position_ids))
+        )
+        changes = result.scalars().all()
+        grouped: dict[int, list[dict]] = {}
+        for sc in changes:
+            grouped.setdefault(sc.position_id, []).append({
+                "id": sc.id, "skill_name": sc.skill_name,
+                "change_type": sc.change_type, "change_date": sc.change_date,
+                "description": sc.description, "source": sc.source,
+            })
+        return grouped
