@@ -175,7 +175,7 @@ const onFollowUpClick = (msg: string) => {
 const collectResource = async (res: LearningResource, stepTitle: string) => {
   const itemId = `resource-${res.id}`
   if (favoritesStore.isFavorited('learning_resource', itemId)) {
-    const fav = favoritesStore.allFavorites.find(f => f.item_type === 'learning_resource' && f.item_id === itemId)
+    const fav = favoritesStore.allFavorites.find((f: any) => f.item_type === 'learning_resource' && f.item_id === itemId)
     if (fav) { await favoritesStore.remove(fav.id); ElMessage.success('已取消收藏') }
   } else {
     await favoritesStore.add({
