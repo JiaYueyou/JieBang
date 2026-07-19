@@ -116,8 +116,8 @@ def _detect_proficiency(text: str, match_start: int) -> tuple[float, str]:
     prefix = text[clause_start:match_start]
 
     # 从右向左找最近的程度词：找所有程度词，取距离技能最近的
-    best_boost = 0.70
-    best_label = "familiar"
+    best_boost = 1.0
+    best_label = "skilled"
     best_distance = 999
 
     for pattern, boost in PROFICIENCY_LEVELS:
