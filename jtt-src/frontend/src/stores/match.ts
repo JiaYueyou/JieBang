@@ -88,8 +88,9 @@ export const useMatchStore = defineStore('match', () => {
         .sort((a: MatchResult, b: MatchResult) => b.totalScore - a.totalScore)
       // 自动展开第一名
       if (batchResults.value.length > 0 && !selectedBatchResult.value) {
-        selectedBatchResult.value = batchResults.value[0]
-        fetchAiSuggestions(resumeId, batchResults.value[0].positionId)
+        const first = batchResults.value[0]!
+        selectedBatchResult.value = first
+        fetchAiSuggestions(resumeId, first.positionId)
       }
       return batchResults.value
     } finally {
