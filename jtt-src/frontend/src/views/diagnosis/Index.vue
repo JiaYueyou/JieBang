@@ -43,7 +43,7 @@ const toggleExpand = async (resumeId: string) => {
   if (!matchResults.value[resumeId]) {
     loadingMatch.value[resumeId] = true
     try {
-      const results = await matchStore.autoDetect(resumeId)
+      const results = await matchStore.doAutoMatch(resumeId)
       matchResults.value[resumeId] = results || []
     } catch {
       ElMessage.error('加载匹配结果失败')
@@ -76,7 +76,7 @@ const startUpload = async () => {
   if (!uploadFile.value) return
   uploading.value = true
   try {
-    await resumeStore.uploadFile(uploadFile.value)
+    await resumeStore.upload(uploadFile.value)
     resumes.value = resumeStore.resumes
     ElMessage.success('简历解析完成')
     uploadVisible.value = false
@@ -120,7 +120,7 @@ const getScoreColor = (score: number) => {
 const bestScoreFor = (resumeId: string): MatchResult | null => {
   const results = matchResults.value[resumeId]
   if (!results || results.length === 0) return null
-  return results.reduce((best, r) => r.totalScore > best.totalScore ? r : best, results[0])
+  return results.reduce((best: MatchResult, r: MatchResult) => r.totalScore > best.totalScore ? r : best, results[0]!)
 }
 </script>
 
@@ -170,7 +170,7 @@ const bestScoreFor = (resumeId: string): MatchResult | null => {
             <!-- Mini match scores -->
             <div v-if="matchResults[r.id]" class="card-mini-scores">
               <span
-                v-for="mr in matchResults[r.id].slice(0, 3)"
+                v-for="mr in (matchResults[r.id] || []).slice(0, 3)"
                 :key="mr.positionId"
                 class="mini-score"
                 :style="{ color: getScoreColor(mr.totalScore) }"
@@ -198,8 +198,8 @@ const bestScoreFor = (resumeId: string): MatchResult | null => {
             <span>正在匹配诊断...</span>
           </div>
           <MatchPanel
-            v-else-if="matchResults[r.id] && matchResults[r.id].length > 0"
-            :results="matchResults[r.id]"
+            v-else-if="matchResults[r.id] && matchResults[r.id]!.length > 0"
+            :results="matchResults[r.id]!"
             :resume-id="r.id"
             @edit="goEditor"
           />

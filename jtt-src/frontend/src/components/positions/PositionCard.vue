@@ -12,7 +12,7 @@ const isFav = () => favoritesStore.isFavorited('position', String(props.position
 const toggleFav = async () => {
   const posId = String(props.position.id)
   if (favoritesStore.isFavorited('position', posId)) {
-    const fav = favoritesStore.allFavorites.find(f => f.item_type === 'position' && f.item_id === posId)
+    const fav = favoritesStore.allFavorites.find((f: any) => f.item_type === 'position' && f.item_id === posId)
     if (fav) await favoritesStore.remove(fav.id)
   } else {
     await favoritesStore.add({
