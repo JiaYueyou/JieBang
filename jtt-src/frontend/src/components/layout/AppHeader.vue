@@ -146,14 +146,7 @@ const handleEducationChange = async (val: string) => {
               <el-icon><User /></el-icon>个人中心
             </el-dropdown-item>
             <el-dropdown-item @click="router.push('/diagnosis')">
-<<<<<<< HEAD
-<<<<<<< HEAD
               <el-icon><Document /></el-icon>简历诊断
-=======
-=======
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
-              <el-icon><Document /></el-icon>我的简历
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
             </el-dropdown-item>
             <el-dropdown-item divided @click="router.push('/login')">
               <el-icon><SwitchButton /></el-icon>退出登录

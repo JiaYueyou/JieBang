@@ -22,19 +22,9 @@ export const learningApi = {
   recommendResources: (skillNames: string[]) =>
     api.post('/learning/assistant/recommend-resources', { skill_names: skillNames }, { timeout: 90000 }),
   quiz: (data: { pathId: string; stepIds?: string[]; questionCount?: number }) =>
-<<<<<<< HEAD
     api.post('/learning/assistant/quiz', {
       path_id: Number(data.pathId),
       step_ids: data.stepIds ?? [],
       question_count: data.questionCount ?? 5,
     }, { timeout: 90000 }),
-=======
-    api.post('/learning/assistant/quiz', data),
-
-  generateFromGaps: (resumeId: string, positionId: string) =>
-    api.post('/learning/generate-from-gaps', { resumeId, positionId }),
-<<<<<<< HEAD
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
-=======
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }

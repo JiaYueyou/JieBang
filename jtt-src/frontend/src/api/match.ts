@@ -14,7 +14,6 @@ export const matchApi = {
   getHistory: () => api.get<ApiResponse<MatchResult[]>>('/match/history'),
 
   matchBatch: (data: { resumeId: string; positionIds: string[] }) =>
-<<<<<<< HEAD
     api.post<ApiResponse<MatchResult[]>>('/match/batch', {
       resume_id: Number(data.resumeId),
       position_ids: data.positionIds.map(Number),
@@ -23,13 +22,4 @@ export const matchApi = {
   // [Agent 3] 自动匹配：将简历与所有岗位逐一匹配，按分数降序返回诊断报告
   autoMatch: (resumeId: string) =>
     api.post<ApiResponse<MatchResult[]>>(`/match/auto/${resumeId}`),
-=======
-    api.post<ApiResponse<MatchResult[]>>('/match/batch', data),
-
-  autoDetect: (resumeId: string) =>
-    api.post<ApiResponse<MatchResult[]>>('/match/auto-detect', { resumeId }),
-<<<<<<< HEAD
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
-=======
->>>>>>> aa08688 (feat(fyz-backend): add job filtering)
 }
