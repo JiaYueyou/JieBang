@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { LearningPath, LearningStep } from '@/types'
 import { learningApi } from '@/api/learning'
+import { pathFromApi } from '@/utils/transform'
 
 export const useLearningStore = defineStore('learning', () => {
   const paths = ref<LearningPath[]>([])
@@ -11,7 +12,7 @@ export const useLearningStore = defineStore('learning', () => {
     loading.value = true
     try {
       const res: any = await learningApi.getList()
-      if (res.data) paths.value = res.data
+      if (res.data) paths.value = (res.data || []).map(pathFromApi)
     } finally {
       loading.value = false
     }
@@ -19,7 +20,7 @@ export const useLearningStore = defineStore('learning', () => {
 
   const addPath = async (path: LearningPath) => {
     const res: any = await learningApi.create({ name: path.name, positionId: parseInt(path.positionId) || 1 })
-    if (res.data) paths.value.push(res.data)
+    if (res.data) paths.value.push(pathFromApi(res.data))
   }
 
   const removePath = async (id: string) => {

@@ -1,33 +1,70 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { JobPosition } from '@/types'
-import { mockPositions } from '@/mock/data/positions'
-import { mockGraphNodes, mockGraphEdges } from '@/mock/data/skills'
+import { usePositionsStore } from '@/stores/positions'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useResumeStore } from '@/stores/resume'
 import QuickMatchFab from '@/components/common/QuickMatchFab.vue'
 
 const route = useRoute()
 const router = useRouter()
+const positionsStore = usePositionsStore()
 const favoritesStore = useFavoritesStore()
-const position = ref<JobPosition | null>(null)
-
-onMounted(() => {
-  const id = route.params.id as string
-  position.value = mockPositions.find((p) => p.id === id) || null
-})
-
+const resumeStore = useResumeStore()
+const position = ref<any>(null)
 const relatedNodes = ref<any[]>([])
 const relatedEdges = ref<any[]>([])
+const resumeDialogVisible = ref(false)
 
-onMounted(() => {
-  if (position.value) {
-    const posId = `pos-${position.value.id}`
-    relatedEdges.value = mockGraphEdges.filter((e) => e.source === posId)
-    const skillIds = relatedEdges.value.map((e) => e.target)
-    relatedNodes.value = mockGraphNodes.filter((n) => skillIds.includes(n.id))
-  }
+const openMatchDialog = () => {
+  resumeDialogVisible.value = true
+}
+
+const selectResumeAndDiagnose = (resumeId: string) => {
+  resumeDialogVisible.value = false
+  const posId = route.params.id as string
+  router.push(`/diagnosis/${resumeId}?positionId=${posId}&focusPos=true`)
+}
+
+onMounted(async () => {
+  const id = route.params.id as string
+  await Promise.all([
+    positionsStore.fetchDetail(id),
+    resumeStore.fetchList(),
+  ])
+  position.value = positionsStore.currentPosition
+  await positionsStore.fetchGraph()
+  const posId = `pos-${id}`
+  relatedEdges.value = positionsStore.graphEdges.filter((e: any) => e.source === posId)
+  const skillIds = relatedEdges.value.map((e: any) => e.target)
+  relatedNodes.value = positionsStore.graphNodes.filter((n: any) => skillIds.includes(n.id))
 })
+
+const toggleFav = async () => {
+  if (!position.value) return
+  const posId = String(position.value.id)
+  const faved = favoritesStore.isFavorited('position', posId)
+  if (faved) {
+    const fav = favoritesStore.allFavorites.find(f => f.item_type === 'position' && f.item_id === posId)
+    if (fav) await favoritesStore.remove(fav.id)
+  } else {
+    await favoritesStore.add({
+      item_type: 'position',
+      item_id: posId,
+      title: position.value.name,
+      summary: position.value.summary?.slice(0, 100) || '',
+      metadata: {
+        position_id: position.value.id,
+        name: position.value.name,
+        category: position.value.category,
+        career_level: position.value.careerLevel,
+        salary_range: position.value.salaryRange,
+        skills: [...(position.value.requiredSkills || []), ...(position.value.preferredSkills || [])].map((s: any) => s.name),
+      },
+      tags: position.value.techStack || [],
+    })
+  }
+}
 </script>
 
 <template>
@@ -46,13 +83,13 @@ onMounted(() => {
       </div>
       <div class="header-actions">
         <el-button
-          :type="favoritesStore.isFavorited(position.id) ? 'warning' : 'default'"
-          :icon="favoritesStore.isFavorited(position.id) ? 'StarFilled' : 'Star'"
-          @click="favoritesStore.toggleFavorite(position.id)"
+          :type="favoritesStore.isFavorited('position', String(position.id)) ? 'warning' : 'default'"
+          :icon="favoritesStore.isFavorited('position', String(position.id)) ? 'StarFilled' : 'Star'"
+          @click="toggleFav"
         >
-          {{ favoritesStore.isFavorited(position.id) ? '已收藏' : '收藏岗位' }}
+          {{ favoritesStore.isFavorited('position', String(position.id)) ? '已收藏' : '收藏岗位' }}
         </el-button>
-        <el-button type="primary" @click="router.push(`/diagnosis`)">
+        <el-button type="primary" @click="openMatchDialog">
           开始匹配诊断
         </el-button>
       </div>
@@ -139,12 +176,34 @@ onMounted(() => {
         <el-card v-if="position.category === 'new'" class="section-card">
           <template #header><span class="card-header">学习建议</span></template>
           <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">该岗位为新兴岗位，可根据必备技能自动推导学习路径</p>
-          <el-button type="primary" plain size="default">一键生成学习路径</el-button>
+          <el-button type="primary" plain size="default" @click="router.push('/career')">一键生成学习路径</el-button>
         </el-card>
       </div>
     </div>
 
     <QuickMatchFab mode="detail" :position-id="route.params.id as string" />
+
+    <!-- 简历选择对话框 -->
+    <el-dialog v-model="resumeDialogVisible" title="选择简历开始匹配诊断" width="480px" top="12vh">
+      <div v-if="resumeStore.resumes.length === 0" style="text-align:center;padding:20px;">
+        <p style="color:var(--muted);margin-bottom:12px;">暂无简历，请先创建</p>
+        <el-button type="primary" @click="router.push('/diagnosis')">去创建简历</el-button>
+      </div>
+      <div v-else class="resume-picker-list">
+        <div
+          v-for="r in resumeStore.resumes"
+          :key="r.id"
+          class="resume-picker-item"
+          @click="selectResumeAndDiagnose(r.id)"
+        >
+          <div class="picker-left">
+            <el-icon :size="20"><Document /></el-icon>
+            <span class="picker-name">{{ r.name }}</span>
+          </div>
+          <el-icon :size="16" color="var(--brand)"><ArrowRight /></el-icon>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -287,4 +346,16 @@ onMounted(() => {
 
 .change-desc { font-size: 12px; color: var(--muted); margin: 2px 0; }
 .change-meta { font-size: 11px; color: var(--weak); }
+
+/* Resume picker dialog */
+.resume-picker-list { display: flex; flex-direction: column; gap: 8px; }
+.resume-picker-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: var(--radius);
+  border: 1px solid var(--hairline); cursor: pointer;
+  transition: all 0.15s;
+}
+.resume-picker-item:hover { background: var(--canvas); border-color: var(--brand); }
+.picker-left { display: flex; align-items: center; gap: 10px; }
+.picker-name { font-size: 14px; font-weight: 500; }
 </style>

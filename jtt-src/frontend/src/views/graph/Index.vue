@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue'
 import { Graph } from '@antv/g6'
-import { mockGraphNodes, mockGraphEdges } from '@/mock/data/skills'
+import { usePositionsStore } from '@/stores/positions'
 import type { GraphNodeType } from '@/types'
 
+const positionsStore = usePositionsStore()
 const containerRef = ref<HTMLDivElement>()
 const rootTech = ref<string>('all')
 
+const graphNodes = computed(() => positionsStore.graphNodes)
+const graphEdges = computed(() => positionsStore.graphEdges)
+
 // 从数据中提取可用的根技术列表
 const availableRoots = computed(() =>
-  mockGraphNodes.filter((n) => n.type === 'root').map((n) => ({ id: n.id, label: n.label })),
+  graphNodes.value.filter((n) => n.type === 'root').map((n) => ({ id: n.id, label: n.label })),
 )
 
 let graph: Graph | null = null
@@ -17,13 +21,13 @@ let graph: Graph | null = null
 // BFS 过滤：从选中根节点出发，收集所有可达节点和边
 function getFilteredData() {
   if (rootTech.value === 'all') {
-    return { nodes: mockGraphNodes, edges: mockGraphEdges }
+    return { nodes: graphNodes.value, edges: graphEdges.value }
   }
   const reachable = new Set<string>([rootTech.value])
   let changed = true
   while (changed) {
     changed = false
-    for (const e of mockGraphEdges) {
+    for (const e of graphEdges.value) {
       if (reachable.has(e.source) && !reachable.has(e.target)) {
         reachable.add(e.target); changed = true
       }
@@ -33,8 +37,8 @@ function getFilteredData() {
     }
   }
   return {
-    nodes: mockGraphNodes.filter((n) => reachable.has(n.id)),
-    edges: mockGraphEdges.filter((e) => reachable.has(e.source) && reachable.has(e.target)),
+    nodes: graphNodes.value.filter((n) => reachable.has(n.id)),
+    edges: graphEdges.value.filter((e) => reachable.has(e.source) && reachable.has(e.target)),
   }
 }
 
@@ -198,7 +202,10 @@ function destroyGraph() {
   if (graph) { graph.destroy(); graph = null }
 }
 
-onMounted(() => nextTick(() => buildGraph()))
+onMounted(async () => {
+  if (graphNodes.value.length === 0) await positionsStore.fetchGraph()
+  nextTick(() => buildGraph())
+})
 watch(rootTech, () => { destroyGraph(); nextTick(() => buildGraph()) })
 onUnmounted(() => destroyGraph())
 </script>

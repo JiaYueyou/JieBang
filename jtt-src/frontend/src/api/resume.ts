@@ -8,7 +8,7 @@ export const resumeApi = {
       timeout: 30000,
     }),
 
-  getList: () => api.get<ApiResponse<ResumeData[]>>('/resumes'),
+  getList: () => api.get<ApiResponse<ResumeData[]>>('/resume/resumes'),
 
   getDetail: (id: string) => api.get<ApiResponse<ResumeData>>(`/resume/${id}`),
 

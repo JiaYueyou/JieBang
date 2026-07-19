@@ -130,6 +130,8 @@ export interface ImprovementSuggestion {
   reason: string
   changeType: 'small' | 'large' // 小改/大改
   accepted: boolean
+  verified: boolean // 是否通过知识图谱校验
+  warning?: string | null // 校验警告信息
 }
 
 export interface MatchResult {

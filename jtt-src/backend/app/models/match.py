@@ -22,8 +22,8 @@ class MatchResult(Base):
     dimensions: Mapped[list] = mapped_column(JSON, default=list, comment="各维度评分列表")
     gap_analysis: Mapped[dict] = mapped_column(JSON, default=dict, comment="差距分析结果")
     suggestions: Mapped[list] = mapped_column(JSON, default=list, comment="优化建议列表")
-    match_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="匹配时间")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    match_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="匹配时间")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 # 以下为 JSON 存储结构的类型说明，不映射数据库表

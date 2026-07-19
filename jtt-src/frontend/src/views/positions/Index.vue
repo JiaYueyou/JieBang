@@ -1,26 +1,25 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { JobPosition } from '@/types'
-import { mockPositions } from '@/mock/data/positions'
+import { usePositionsStore } from '@/stores/positions'
 import PositionCard from '@/components/positions/PositionCard.vue'
 import QuickMatchFab from '@/components/common/QuickMatchFab.vue'
 
 const router = useRouter()
+const positionsStore = usePositionsStore()
 const activeTab = ref<'all' | 'new' | 'existing'>('all')
 const keyword = ref('')
-const positions = ref<JobPosition[]>([])
 
-onMounted(() => { positions.value = mockPositions })
+onMounted(() => positionsStore.fetchPositions())
 
 const filtered = computed(() => {
-  let list = positions.value
+  let list = positionsStore.positions
   if (activeTab.value !== 'all') list = list.filter((p) => p.category === activeTab.value)
   if (keyword.value) list = list.filter((p) => p.name.includes(keyword.value) || p.summary.includes(keyword.value))
   return list
 })
 
-const allPositionIds = computed(() => positions.value.map((p) => p.id))
+const allPositionIds = computed(() => positionsStore.positions.map((p) => p.id))
 
 const goDetail = (id: string) => router.push(`/positions/${id}`)
 </script>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useLearningStore } from '@/stores/learning'
-import { mockLearningPaths } from '@/mock/data/learning'
+import { useFavoritesStore } from '@/stores/favorites'
 import { learningApi } from '@/api/learning'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { LearningPath, LearningResource } from '@/types'
 
 const learningStore = useLearningStore()
+const favoritesStore = useFavoritesStore()
 
 // ========== 路径展开 ==========
 const expandedId = ref<string | null>(null)
@@ -49,10 +50,11 @@ const resourceIcons: Record<string, string> = {
 }
 
 // ========== 初始化 ==========
-onMounted(() => {
+onMounted(async () => {
   if (learningStore.paths.length === 0) {
-    learningStore.paths = JSON.parse(JSON.stringify(mockLearningPaths))
+    await learningStore.fetchPaths()
   }
+  await favoritesStore.fetchAll()
 })
 
 // ========== 路径操作 ==========
@@ -167,6 +169,51 @@ const onPresetClick = (msg: string) => {
 const onFollowUpClick = (msg: string) => {
   chatInput.value = msg
   sendMessage()
+}
+
+// 收藏学习资源
+const collectResource = async (res: LearningResource, stepTitle: string) => {
+  const itemId = `resource-${res.id}`
+  if (favoritesStore.isFavorited('learning_resource', itemId)) {
+    const fav = favoritesStore.allFavorites.find(f => f.item_type === 'learning_resource' && f.item_id === itemId)
+    if (fav) { await favoritesStore.remove(fav.id); ElMessage.success('已取消收藏') }
+  } else {
+    await favoritesStore.add({
+      item_type: 'learning_resource',
+      item_id: itemId,
+      title: res.title,
+      summary: `${stepTitle} · ${res.type}`,
+      metadata: { resource_id: res.id, title: res.title, type: res.type, url: res.url, platform: res.platform },
+      tags: [res.type, res.platform],
+    })
+    ElMessage.success('已收藏学习资料')
+  }
+}
+
+// 加入错题本
+const addQuizError = async (q: any) => {
+  const userAnswer = quizAnswers.value[q.id]
+  if (userAnswer === undefined) return
+  const itemId = `quiz-${q.id}`
+  if (favoritesStore.isFavorited('quiz_error', itemId)) {
+    ElMessage.info('该题已在错题本中')
+    return
+  }
+  await favoritesStore.add({
+    item_type: 'quiz_error',
+    item_id: itemId,
+    title: q.question?.slice(0, 50) || '错题',
+    summary: `正确答案: ${q.options[q.correctAnswer]}`,
+    metadata: {
+      quiz_id: quizPathId.value,
+      question: q.question,
+      user_answer: q.options[userAnswer],
+      correct_answer: q.options[q.correctAnswer],
+      explanation: q.explanation,
+    },
+    tags: ['quiz'],
+  })
+  ElMessage.success('已加入错题本')
 }
 
 /** 简单 Markdown 渲染：处理 **粗体**、- 列表、> 引用、### 标题 */
@@ -364,6 +411,14 @@ const renderMarkdown = (text: string): string => {
                       :title="`${res.platform} · ${res.title}`"
                     >
                       {{ resourceIcons[res.type] || '📌' }} {{ res.title }}
+                      <el-button
+                        text
+                        size="small"
+                        :type="favoritesStore.isFavorited('learning_resource', 'resource-' + res.id) ? 'warning' : 'default'"
+                        :icon="favoritesStore.isFavorited('learning_resource', 'resource-' + res.id) ? 'StarFilled' : 'Star'"
+                        @click.stop="collectResource(res, step.title)"
+                        style="margin-left: 4px; padding: 0 4px; font-size: 12px;"
+                      />
                     </span>
                   </div>
                 </div>
@@ -449,6 +504,14 @@ const renderMarkdown = (text: string): string => {
           </div>
           <div v-if="quizSubmitted" class="quiz-explanation">
             💡 {{ q.explanation }}
+            <el-button
+              text size="small" type="danger"
+              :disabled="favoritesStore.isFavorited('quiz_error', 'quiz-' + q.id)"
+              @click="addQuizError(q)"
+              style="margin-top: 6px;"
+            >
+              {{ favoritesStore.isFavorited('quiz_error', 'quiz-' + q.id) ? '已加入错题本' : '+ 加入错题本' }}
+            </el-button>
           </div>
         </div>
       </div>
