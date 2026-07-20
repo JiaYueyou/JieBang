@@ -1,6 +1,36 @@
 from jiebang_agents.base import StructuredLLMProvider
 from jiebang_agents.graph_enrichment.prompt import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
-from jiebang_agents.graph_enrichment.schemas import GraphEnrichmentOutput, SkillGraphCompletionInput
+from jiebang_agents.graph_enrichment.schemas import (
+    GraphEnrichmentOutput,
+    KnowledgePointOutput,
+    SkillGraphCompletionInput,
+    TechPointOutput,
+)
+
+
+def _truncate(value: str | None, max_length: int) -> str:
+    value = (value or "").strip()
+    return value[:max_length] if value else ""
+
+
+def _normalize_knowledge(item: KnowledgePointOutput) -> KnowledgePointOutput:
+    return item.model_copy(
+        update={
+            "name": _truncate(item.name, 100),
+            "description": _truncate(item.description, 500),
+            "prerequisites": [_truncate(p, 100) for p in (item.prerequisites or []) if _truncate(p, 100)],
+        }
+    )
+
+
+def _normalize_tech_point(point: TechPointOutput) -> TechPointOutput:
+    return point.model_copy(
+        update={
+            "name": _truncate(point.name, 100),
+            "detail": _truncate(point.detail, 500),
+            "knowledge_points": [_normalize_knowledge(k) for k in (point.knowledge_points or [])],
+        }
+    )
 
 
 class SkillGraphCompletionAgent:
@@ -19,13 +49,15 @@ class SkillGraphCompletionAgent:
             timeout_seconds=self.timeout_seconds,
             metadata={"agent_type": self.agent_type, "prompt_version": self.prompt_version},
         )
-        return output.model_copy(
+        normalized = output.model_copy(
             update={
                 "skill_name": request.tech_stack,
                 "job_directions": request.job_directions,
                 "skill_area": request.skill_area,
+                "tech_points": [_normalize_tech_point(p) for p in (output.tech_points or [])],
             }
         )
+        return normalized
 
     async def enrich(
         self,
