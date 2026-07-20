@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
-import type { MatchResult } from '@/types'
+import type { MatchResult, ImprovementSuggestion } from '@/types'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
@@ -12,6 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'edit', resumeId: string): void
+  (e: 'apply', resumeId: string, suggestions: ImprovementSuggestion[]): void
 }>()
 
 const router = useRouter()
@@ -19,8 +20,33 @@ const learningStore = useLearningStore()
 
 const activePosIdx = ref(0)
 const generatingPath = ref(false)
+const applying = ref(false)
 
 const currentResult = computed(() => props.results[activePosIdx.value] ?? null)
+
+const acceptedCount = computed(() => {
+  if (!currentResult.value) return 0
+  return currentResult.value.suggestions.filter(s => s.accepted).length
+})
+
+const toggleAccept = (sg: ImprovementSuggestion) => {
+  sg.accepted = !sg.accepted
+}
+
+const applyAccepted = async () => {
+  const r = currentResult.value
+  if (!r || acceptedCount.value === 0) {
+    ElMessage.warning('请先选择要应用的优化建议')
+    return
+  }
+  applying.value = true
+  try {
+    const accepted = r.suggestions.filter(s => s.accepted)
+    emit('apply', props.resumeId, accepted)
+  } finally {
+    applying.value = false
+  }
+}
 
 const getScoreColor = (score: number) => {
   if (score >= 80) return 'var(--success)'
@@ -126,8 +152,11 @@ const generateLearningPath = async () => {
 
     <!-- Suggestions -->
     <div class="panel-section" v-if="currentResult.suggestions.length > 0">
-      <h5 class="section-title">优化建议</h5>
-      <div v-for="sg in currentResult.suggestions" :key="sg.id" class="sg-item">
+      <div class="section-header">
+        <h5 class="section-title">优化建议</h5>
+        <span v-if="acceptedCount > 0" class="accepted-badge">已选 {{ acceptedCount }} 条</span>
+      </div>
+      <div v-for="sg in currentResult.suggestions" :key="sg.id" class="sg-item" :class="{ accepted: sg.accepted }">
         <div class="sg-head">
           <span class="sg-tag">{{ sg.section }}</span>
           <el-tag :type="sg.changeType === 'small' ? 'success' : 'warning'" size="small" effect="plain">
@@ -135,6 +164,34 @@ const generateLearningPath = async () => {
           </el-tag>
         </div>
         <p class="sg-reason">{{ sg.reason }}</p>
+        <div v-if="sg.suggested" class="sg-diff">
+          <span class="sg-original">{{ sg.original }}</span>
+          <span class="sg-arrow">→</span>
+          <span class="sg-suggested">{{ sg.suggested }}</span>
+        </div>
+        <div class="sg-actions">
+          <el-button
+            :type="sg.accepted ? 'success' : 'default'"
+            size="small"
+            :icon="sg.accepted ? 'Check' : 'Plus'"
+            @click="toggleAccept(sg)"
+          >
+            {{ sg.accepted ? '已接受' : '接受' }}
+          </el-button>
+          <el-button
+            v-if="sg.accepted"
+            size="small"
+            icon="Close"
+            @click="toggleAccept(sg)"
+          >
+            撤销
+          </el-button>
+        </div>
+      </div>
+      <div class="apply-bar" v-if="acceptedCount > 0">
+        <el-button type="primary" :loading="applying" @click="applyAccepted">
+          应用已接受的建议到简历
+        </el-button>
       </div>
     </div>
   </div>
@@ -233,11 +290,24 @@ const generateLearningPath = async () => {
 .dim-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 .dim-score { font-size: 13px; font-weight: 600; width: 32px; text-align: right; }
 
-.sg-item { padding: 10px 0; border-bottom: 1px solid var(--hairline); }
+.sg-item { padding: 10px 0; border-bottom: 1px solid var(--hairline); transition: background 0.2s; }
 .sg-item:last-child { border-bottom: none; }
+.sg-item.accepted { background: #f0f9eb; border-radius: 6px; padding: 10px 8px; margin: 0 -8px; }
 .sg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .sg-tag { font-size: 12px; padding: 2px 8px; background: var(--canvas); border-radius: 4px; color: var(--muted); }
 .sg-reason { font-size: 13px; color: var(--ink); line-height: 1.5; }
+
+.sg-diff { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: var(--canvas); border-radius: 4px; font-size: 13px; }
+.sg-original { color: var(--danger); text-decoration: line-through; flex: 1; word-break: break-all; }
+.sg-arrow { color: var(--muted); flex-shrink: 0; }
+.sg-suggested { color: var(--success); flex: 1; word-break: break-all; }
+
+.sg-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+.section-header { display: flex; align-items: center; gap: 12px; }
+.accepted-badge { font-size: 12px; color: var(--success); font-weight: 600; }
+
+.apply-bar { padding-top: 12px; text-align: right; }
 
 .match-empty { padding: 40px 0; }
 </style>

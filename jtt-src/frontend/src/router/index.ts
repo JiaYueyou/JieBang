@@ -39,6 +39,12 @@ const router = createRouter({
       component: () => import('@/views/favorites/Index.vue'),
       meta: { title: '我的收藏' },
     },
+    // 简历编辑
+    {
+      path: '/resume/editor/:id?', name: 'ResumeEditor',
+      component: () => import('@/views/resume/Editor.vue'),
+      meta: { title: '简历编辑' },
+    },
     // 简历诊断（合并原"我的简历" + "匹配诊断"）
     {
       path: '/diagnosis', name: 'DiagnosisIndex',

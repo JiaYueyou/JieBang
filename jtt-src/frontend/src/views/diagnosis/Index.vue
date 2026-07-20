@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
 import { useMatchStore } from '@/stores/match'
-import type { ResumeData, MatchResult } from '@/types'
+import type { ResumeData, MatchResult, ImprovementSuggestion } from '@/types'
 import { ElMessage } from 'element-plus'
 import MatchPanel from '@/components/diagnosis/MatchPanel.vue'
 
@@ -99,6 +99,17 @@ const startUpload = async () => {
 }
 
 const goEditor = (id?: string) => router.push(`/resume/editor/${id || ''}`)
+
+// Apply accepted suggestions to resume
+const handleApplySuggestion = async (resumeId: string, suggestions: ImprovementSuggestion[]) => {
+  try {
+    matchStore.aiSuggestions = suggestions
+    await matchStore.applyOptimization(resumeId)
+    ElMessage.success('优化建议已同步到简历')
+  } catch {
+    ElMessage.error('应用优化建议失败')
+  }
+}
 const handleDuplicate = (id: string) => {
   const r = resumes.value.find((r) => r.id === id)
   if (r) {
@@ -202,6 +213,7 @@ const bestScoreFor = (resumeId: string): MatchResult | null => {
             :results="matchResults[r.id]!"
             :resume-id="r.id"
             @edit="goEditor"
+            @apply="handleApplySuggestion"
           />
           <div v-else class="expand-empty">
             <el-empty description="暂无匹配结果" />

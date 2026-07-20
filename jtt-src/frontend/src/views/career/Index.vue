@@ -1,121 +1,123 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
-import { careerApi } from '@/api/career'
+import { useMatchStore } from '@/stores/match'
+import { useLearningStore } from '@/stores/learning'
 import { mockPositions } from '@/mock/data/positions'
-import { mockCareerPlans } from '@/mock/data/career'
-import type { CareerTransitionAssessment, CareerPlan, LearningBudget, ResumeData } from '@/types'
+import type { ResumeData, MatchResult } from '@/types'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const resumeStore = useResumeStore()
+const matchStore = useMatchStore()
+const learningStore = useLearningStore()
 
-const resumes = ref<ResumeData[]>([])
-const positions = ref(mockPositions)
-const assessing = ref(false)
-const saving = ref(false)
+// Mode switching
+const activeMode = ref<'known' | 'unknown'>('known')
 
 // Form
-const planForm = reactive({
-  resumeId: '',
-  targetPositionId: '',
-  weeklyHours: 15,
-  totalWeeks: 12,
-  targetIndustry: '互联网',
-  targetRoleType: '技术研发',
-  preferredCity: '北京',
-  salaryExpectation: '25K-40K',
-})
+const resumes = ref<ResumeData[]>([])
+const positions = ref(mockPositions)
+const selectedResumeId = ref('')
+const selectedPositionId = ref('')
+const matching = ref(false)
+const generatingPath = ref(false)
 
-// Assessment result
-const assessment = ref<CareerTransitionAssessment | null>(null)
-const savedPlan = ref<CareerPlan | null>(null)
+// Match results
+const matchResults = ref<MatchResult[]>([])
+const expandedPositionId = ref<string | null>(null)
 
 onMounted(async () => {
-  // Load resumes
   try {
     await resumeStore.fetchList()
-  } catch { /* mock */ }
-  if (resumeStore.resumes.length > 0) {
     resumes.value = resumeStore.resumes
-    planForm.resumeId = resumes.value[0]!.id
-  } else {
+
+  } catch { /* use mock fallback */ }
+  if (resumes.value.length === 0) {
     const { mockResumes } = await import('@/mock/data/resume')
     resumes.value = mockResumes
-    planForm.resumeId = mockResumes[0]!.id
   }
-
-  // Try load saved plan
-  try {
-    const res = await careerApi.getPlan()
-    if ((res as any).data) {
-      savedPlan.value = (res as any).data
-      const sp = savedPlan.value!
-      planForm.resumeId = sp.resumeId
-      planForm.targetPositionId = sp.targetPositionId
-      planForm.weeklyHours = sp.budget.weeklyHours
-      planForm.totalWeeks = sp.budget.totalWeeks
-      planForm.targetIndustry = sp.preferences.targetIndustry
-      planForm.targetRoleType = sp.preferences.targetRoleType
-      planForm.preferredCity = sp.preferences.preferredCity
-      planForm.salaryExpectation = sp.preferences.salaryExpectation
-      if (sp.assessment) assessment.value = sp.assessment
-    }
-  } catch {
-    // Mock fallback
-    if (mockCareerPlans.length > 0) {
-      const sp = mockCareerPlans[0]!
-      planForm.targetPositionId = sp.targetPositionId
-      planForm.weeklyHours = sp.budget.weeklyHours
-      planForm.totalWeeks = sp.budget.totalWeeks
-      if (sp.assessment) assessment.value = sp.assessment
-    }
+  if (resumes.value.length > 0) {
+    selectedResumeId.value = resumes.value[0].id
   }
 })
 
-const runAssessment = async () => {
-  if (!planForm.resumeId || !planForm.targetPositionId) {
+// Current selection info
+const currentMatchResult = computed(() => {
+  if (!selectedPositionId.value) return null
+  return matchResults.value.find((r) => r.positionId === selectedPositionId.value) || null
+})
+
+const selectedPosition = computed(() =>
+  positions.value.find((p) => p.id === selectedPositionId.value),
+)
+
+const selectedResumeName = computed(() => {
+  const r = resumes.value.find((r) => r.id === selectedResumeId.value)
+  return r?.name || ''
+})
+
+// Mode A: Analyze skill gap for known target position
+const analyzeGap = async () => {
+  if (!selectedResumeId.value || !selectedPositionId.value) {
     ElMessage.warning('请选择简历和目标岗位')
     return
   }
-  assessing.value = true
+  matching.value = true
   try {
-    const budget: LearningBudget = { weeklyHours: planForm.weeklyHours, totalWeeks: planForm.totalWeeks }
-    const res = await careerApi.assess({
-      resumeId: planForm.resumeId,
-      targetPositionId: planForm.targetPositionId,
-      budget,
-    })
-    assessment.value = (res as any).data
-    ElMessage.success('评估完成')
+    await matchStore.doAutoMatch(selectedResumeId.value)
+    matchResults.value = matchStore.batchResults
+    ElMessage.success('技能差距分析完成')
   } catch {
-    ElMessage.error('评估失败，请重试')
+    // Fallback to mock
+    const { mockHistoryMatches } = await import('@/mock/data/match')
+    matchResults.value = mockHistoryMatches.slice(0, 5)
+    ElMessage.warning('使用离线数据')
   } finally {
-    assessing.value = false
+    matching.value = false
   }
 }
 
-const savePlan = async () => {
-  saving.value = true
+// Mode B: Recommend positions based on resume
+const recommendPositions = async () => {
+  if (!selectedResumeId.value) {
+    ElMessage.warning('请选择简历')
+    return
+  }
+  matching.value = true
   try {
-    const planData: Partial<CareerPlan> = {
-      resumeId: planForm.resumeId,
-      preferences: {
-        targetIndustry: planForm.targetIndustry,
-        targetRoleType: planForm.targetRoleType,
-        preferredCity: planForm.preferredCity,
-        salaryExpectation: planForm.salaryExpectation,
-      },
-      budget: { weeklyHours: planForm.weeklyHours, totalWeeks: planForm.totalWeeks },
-      targetPositionId: planForm.targetPositionId,
-      targetPositionName: positions.value.find((p) => p.id === planForm.targetPositionId)?.name || '',
-      assessment: assessment.value,
+    await matchStore.doAutoMatch(selectedResumeId.value)
+    matchResults.value = matchStore.batchResults
+    if (matchResults.value.length === 0) {
+      ElMessage.info('暂无匹配的岗位推荐')
     }
-    await careerApi.savePlan(planData)
-    ElMessage.success('计划已保存')
   } catch {
-    ElMessage.error('保存失败')
+    const { mockHistoryMatches } = await import('@/mock/data/match')
+    matchResults.value = mockHistoryMatches.slice(0, 5)
+    ElMessage.warning('使用离线数据')
   } finally {
-    saving.value = false
+    matching.value = false
+  }
+}
+
+const selectPosition = (positionId: string) => {
+  selectedPositionId.value = positionId
+  expandedPositionId.value = expandedPositionId.value === positionId ? null : positionId
+}
+
+// Generate learning path from skill gaps
+const generateLearningPath = async () => {
+  if (!selectedResumeId.value || !selectedPositionId.value) return
+  generatingPath.value = true
+  try {
+    await learningStore.generateFromGaps(selectedResumeId.value, selectedPositionId.value)
+    ElMessage.success('学习路径已生成！')
+    router.push('/learning')
+  } catch {
+    ElMessage.error('生成学习路径失败，请重试')
+  } finally {
+    generatingPath.value = false
   }
 }
 
@@ -124,261 +126,373 @@ const getScoreColor = (score: number) => {
   if (score >= 50) return 'var(--warning)'
   return 'var(--danger)'
 }
-
-const feasibilityColors: Record<string, string> = {
-  high: 'var(--success)',
-  medium: 'var(--warning)',
-  low: 'var(--danger)',
-  very_low: 'var(--danger)',
-}
-
-const feasibilityLabels: Record<string, string> = {
-  high: '高 — 建议转岗',
-  medium: '中等 — 需充分准备',
-  low: '较低 — 慎重考虑',
-  very_low: '极低 — 不建议转岗',
-}
-
-const industryOptions = ['互联网', '金融', '教育', '医疗', '制造', '能源', '零售', '物流', '其他']
-const roleOptions = ['技术研发', '产品', '设计', '运营', '市场', '数据分析', '项目管理', '其他']
 </script>
 
 <template>
   <div class="career-page">
     <div class="page-head">
       <h2>职业发展</h2>
-      <p class="head-sub">规划学习路线，评估转岗可行性</p>
+      <p class="head-sub">分析技能差距，规划学习路线</p>
     </div>
 
-    <div class="career-layout">
-      <!-- Left: Settings -->
-      <div class="settings-card">
-        <h4 class="card-title">学习计划设置</h4>
-        <el-form label-position="top" class="plan-form">
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="我的简历">
-                <el-select v-model="planForm.resumeId" placeholder="选择简历" style="width:100%">
-                  <el-option v-for="r in resumes" :key="r.id" :label="r.name" :value="r.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="目标岗位">
-                <el-select v-model="planForm.targetPositionId" placeholder="选择目标岗位" filterable style="width:100%">
-                  <el-option v-for="p in positions" :key="p.id" :label="`${p.name} (${p.salaryRange})`" :value="p.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <div
+        class="mode-tab"
+        :class="{ active: activeMode === 'known' }"
+        @click="activeMode = 'known'"
+      >
+        <el-icon><Aim /></el-icon>
+        <span>我有目标岗位</span>
+      </div>
+      <div
+        class="mode-tab"
+        :class="{ active: activeMode === 'unknown' }"
+        @click="activeMode = 'unknown'"
+      >
+        <el-icon><Search /></el-icon>
+        <span>帮我推荐岗位</span>
+      </div>
+    </div>
 
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="每周学习时长（小时）">
-                <el-input-number v-model="planForm.weeklyHours" :min="1" :max="40" :step="1" style="width:100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="计划总周数">
-                <el-input-number v-model="planForm.totalWeeks" :min="1" :max="52" :step="1" style="width:100%" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="目标行业">
-                <el-select v-model="planForm.targetIndustry" style="width:100%">
-                  <el-option v-for="ind in industryOptions" :key="ind" :label="ind" :value="ind" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="目标岗位类型">
-                <el-select v-model="planForm.targetRoleType" style="width:100%">
-                  <el-option v-for="r in roleOptions" :key="r" :label="r" :value="r" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="期望城市">
-                <el-input v-model="planForm.preferredCity" placeholder="如 北京" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="薪资期望">
-                <el-input v-model="planForm.salaryExpectation" placeholder="如 25K-40K" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <div class="form-actions">
-            <el-button type="primary" :loading="assessing" @click="runAssessment">
-              <el-icon><Connection /></el-icon>开始转岗评估
-            </el-button>
-            <el-button :loading="saving" @click="savePlan">保存计划</el-button>
-          </div>
-        </el-form>
+    <!-- ========== Mode A: Known Target ========== -->
+    <div v-if="activeMode === 'known'" class="mode-panel">
+      <div class="form-card">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="我的简历">
+              <el-select v-model="selectedResumeId" placeholder="选择简历" style="width: 100%">
+                <el-option v-for="r in resumes" :key="r.id" :label="r.name" :value="r.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="目标岗位">
+              <el-select v-model="selectedPositionId" placeholder="选择目标岗位" filterable style="width: 100%">
+                <el-option v-for="p in positions" :key="p.id" :label="`${p.name} (${p.salaryRange})`" :value="p.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-button type="primary" :loading="matching" @click="analyzeGap">
+          分析技能差距
+        </el-button>
       </div>
 
-      <!-- Right: Assessment Results -->
-      <div class="result-area" v-if="assessment">
+      <!-- Gap Result -->
+      <div v-if="currentMatchResult" class="result-card">
         <div class="result-hero">
-          <div class="score-circle" :style="{ borderColor: getScoreColor(assessment.currentMatchDegree) }">
-            <span class="score-num">{{ assessment.currentMatchDegree }}</span>
+          <div class="score-circle" :style="{ borderColor: getScoreColor(currentMatchResult.totalScore) }">
+            <span class="score-num">{{ currentMatchResult.totalScore }}</span>
             <span class="score-label">匹配分</span>
           </div>
-          <div class="hero-right">
-            <div class="feasibility-badge" :style="{ background: feasibilityColors[assessment.feasibilityRating], color: '#fff' }">
-              转岗可行性：{{ feasibilityLabels[assessment.feasibilityRating] }}
+          <div class="hero-info">
+            <h4>{{ selectedResumeName }} → {{ selectedPosition?.name }}</h4>
+            <p class="hero-note">匹配度越高，转岗所需的学习成本越低</p>
+          </div>
+        </div>
+
+        <div class="gap-section">
+          <div class="gap-block">
+            <span class="gap-label danger">缺失技能</span>
+            <div class="gap-tags">
+              <el-tag v-for="sk in currentMatchResult.gapAnalysis.missingSkills" :key="sk.id" type="danger" size="small" effect="plain">{{ sk.name }}</el-tag>
+              <span v-if="!currentMatchResult.gapAnalysis.missingSkills.length" class="no-data">无</span>
             </div>
-            <div class="timeline-badge">
-              <el-icon><Clock /></el-icon>预计学习周期：{{ assessment.learningTimeline }}
+          </div>
+          <div class="gap-block">
+            <span class="gap-label warning">需加强</span>
+            <div class="gap-tags">
+              <el-tag v-for="sk in currentMatchResult.gapAnalysis.weakSkills" :key="sk.id" type="warning" size="small" effect="plain">{{ sk.name }}</el-tag>
+              <span v-if="!currentMatchResult.gapAnalysis.weakSkills.length" class="no-data">无</span>
             </div>
-            <div class="hours-badge">
-              <el-icon><Timer /></el-icon>总学习时间：约 {{ planForm.weeklyHours * planForm.totalWeeks }} 小时
+          </div>
+          <div class="gap-block">
+            <span class="gap-label success">已匹配</span>
+            <div class="gap-tags">
+              <el-tag v-for="sk in currentMatchResult.gapAnalysis.matchSkills" :key="sk.id" type="success" size="small" effect="plain">{{ sk.name }}</el-tag>
+              <span v-if="!currentMatchResult.gapAnalysis.matchSkills.length" class="no-data">--</span>
             </div>
           </div>
         </div>
 
-        <!-- Skills -->
-        <el-card class="res-card">
-          <template #header><span class="card-h">可迁移技能</span></template>
-          <div class="skill-tags">
-            <el-tag v-for="sk in assessment.transferableSkills" :key="sk.id" type="success" effect="plain" size="large">
-              {{ sk.name }} <span class="skill-level">{{ sk.level }}</span>
-            </el-tag>
-            <span v-if="!assessment.transferableSkills.length" class="no-data">无</span>
-          </div>
-        </el-card>
-
-        <el-card class="res-card">
-          <template #header><span class="card-h">需补充技能</span></template>
-          <div class="skill-tags">
-            <el-tag v-for="sk in assessment.missingSkills" :key="sk.id" type="danger" effect="plain" size="large">
-              {{ sk.name }} <span class="skill-level">{{ sk.level }}</span>
-            </el-tag>
-            <span v-if="!assessment.missingSkills.length" class="no-data">无</span>
-          </div>
-        </el-card>
-
-        <!-- Analysis -->
-        <el-card class="res-card">
-          <template #header><span class="card-h">推荐原因</span></template>
-          <ul class="point-list">
-            <li v-for="(reason, idx) in assessment.recommendationReasons" :key="idx">{{ reason }}</li>
-          </ul>
-        </el-card>
-
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-card class="res-card">
-              <template #header><span class="card-h" style="color:var(--success)">优势总结</span></template>
-              <ul class="point-list">
-                <li v-for="(a, idx) in assessment.advantages" :key="idx">{{ a }}</li>
-              </ul>
-            </el-card>
-          </el-col>
-          <el-col :span="12">
-            <el-card class="res-card">
-              <template #header><span class="card-h" style="color:var(--danger)">主要风险</span></template>
-              <ul class="point-list">
-                <li v-for="(r, idx) in assessment.risks" :key="idx">{{ r }}</li>
-              </ul>
-            </el-card>
-          </el-col>
-        </el-row>
+        <div class="path-action">
+          <el-button type="success" :loading="generatingPath" @click="generateLearningPath">
+            生成学习路径
+          </el-button>
+        </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="result-empty">
-        <el-empty description="选择目标岗位并点击「开始转岗评估」查看分析结果">
-          <template #image>
-            <el-icon :size="60" color="var(--weak)"><TrendCharts /></el-icon>
-          </template>
-        </el-empty>
+      <div v-else-if="!matching" class="empty-hint">
+        <el-empty description="选择目标岗位并点击「分析技能差距」查看分析结果" :image-size="80" />
+      </div>
+    </div>
+
+    <!-- ========== Mode B: Recommend Positions ========== -->
+    <div v-if="activeMode === 'unknown'" class="mode-panel">
+      <div class="form-card">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="我的简历">
+              <el-select v-model="selectedResumeId" placeholder="选择简历" style="width: 100%">
+                <el-option v-for="r in resumes" :key="r.id" :label="r.name" :value="r.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-button type="primary" :loading="matching" @click="recommendPositions">
+          开始匹配推荐
+        </el-button>
+      </div>
+
+      <!-- Position Cards -->
+      <div v-if="matchResults.length > 0" class="position-cards">
+        <div
+          v-for="mr in matchResults"
+          :key="mr.positionId"
+          class="pos-card"
+          :class="{ expanded: expandedPositionId === mr.positionId }"
+        >
+          <div class="pos-card-main" @click="selectPosition(mr.positionId)">
+            <div class="pos-score" :style="{ background: getScoreColor(mr.totalScore), color: '#fff' }">
+              {{ mr.totalScore }}
+            </div>
+            <div class="pos-info">
+              <h4>{{ mr.positionName }}</h4>
+              <p>
+                {{ positions.find(p => p.id === mr.positionId)?.salaryRange || '' }}
+                <el-tag size="small" effect="plain" style="margin-left:8px">
+                  {{ positions.find(p => p.id === mr.positionId)?.category === 'new' ? '新兴岗位' : '现有岗位' }}
+                </el-tag>
+              </p>
+            </div>
+            <div class="pos-expand-icon">
+              <el-icon :size="16"><ArrowDown /></el-icon>
+            </div>
+          </div>
+
+          <!-- Expanded Gap Analysis -->
+          <div v-if="expandedPositionId === mr.positionId" class="pos-card-detail">
+            <div class="gap-section">
+              <div class="gap-block">
+                <span class="gap-label danger">缺失技能</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.missingSkills" :key="sk.id" type="danger" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.missingSkills.length" class="no-data">无</span>
+                </div>
+              </div>
+              <div class="gap-block">
+                <span class="gap-label warning">需加强</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.weakSkills" :key="sk.id" type="warning" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.weakSkills.length" class="no-data">无</span>
+                </div>
+              </div>
+              <div class="gap-block">
+                <span class="gap-label success">已匹配</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.matchSkills" :key="sk.id" type="success" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.matchSkills.length" class="no-data">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dimensions -->
+            <div v-if="mr.dimensions.length > 0" class="dim-section">
+              <div v-for="d in mr.dimensions" :key="d.name" class="dim-item">
+                <span class="dim-name">{{ d.name }}</span>
+                <div class="dim-bar-bg">
+                  <div class="dim-bar-fill" :style="{ width: d.score + '%', background: getScoreColor(d.score) }"></div>
+                </div>
+                <span class="dim-score">{{ d.score }}</span>
+              </div>
+            </div>
+
+            <div class="path-action">
+              <el-button type="success" :loading="generatingPath" @click.stop="generateLearningPath">
+                生成学习路径
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!matching" class="empty-hint">
+        <el-empty description="选择简历并点击「开始匹配推荐」查看适合你的岗位" :image-size="80" />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.career-page { max-width: 1200px; margin: 0 auto; }
+.career-page { max-width: 1000px; margin: 0 auto; }
 
-.page-head { margin-bottom: 24px; }
+.page-head { margin-bottom: 20px; }
 .page-head h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .head-sub { font-size: 14px; color: var(--muted); }
 
-.career-layout { display: flex; flex-direction: column; gap: 24px; }
+/* Mode Tabs */
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.mode-tab:hover { color: var(--ink); background: var(--canvas); }
+.mode-tab.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
 
-.settings-card {
+/* Form */
+.form-card {
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 24px;
+  margin-bottom: 24px;
 }
-.card-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+.form-card .el-form-item { margin-bottom: 0; }
 
-.plan-form .el-form-item { margin-bottom: 16px; }
+/* Result Card */
+.result-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
 
-.form-actions { display: flex; gap: 10px; margin-top: 8px; }
-
-/* Results */
 .result-hero {
   display: flex;
   align-items: center;
-  gap: 32px;
-  background: #fff;
-  padding: 28px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  gap: 24px;
+  padding: 24px;
 }
 
 .score-circle {
-  width: 110px;
-  height: 110px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
-  border: 5px solid;
+  border: 4px solid;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.score-num { font-size: 32px; font-weight: 800; color: var(--ink); }
+.score-num { font-size: 24px; font-weight: 800; color: var(--ink); }
 .score-label { font-size: 12px; color: var(--muted); }
 
-.hero-right { display: flex; flex-direction: column; gap: 10px; }
-.feasibility-badge { display: inline-block; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; width: fit-content; }
-.timeline-badge, .hours-badge {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: var(--ink);
-}
+.hero-info h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.hero-note { font-size: 13px; color: var(--muted); }
 
-.res-card { margin-bottom: 16px; }
-.card-h { font-size: 14px; font-weight: 600; }
-
-.skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.skill-level {
-  font-size: 11px;
-  opacity: 0.7;
+/* Gap Analysis */
+.gap-section {
+  padding: 0 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+.gap-block { display: flex; align-items: flex-start; gap: 12px; }
+.gap-label {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 56px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.gap-label.danger { background: #fef0f0; color: var(--danger); }
+.gap-label.warning { background: #fdf6ec; color: var(--warning); }
+.gap-label.success { background: #f0f9eb; color: var(--success); }
+.gap-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .no-data { font-size: 13px; color: var(--weak); }
 
-.point-list {
-  margin: 0;
-  padding-left: 20px;
+/* Dimensions */
+.dim-section {
+  padding: 0 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.point-list li {
-  font-size: 13px;
-  color: var(--ink);
-  line-height: 1.8;
+.dim-item { display: flex; align-items: center; gap: 10px; }
+.dim-name { font-size: 12px; width: 70px; flex-shrink: 0; color: var(--muted); }
+.dim-bar-bg { flex: 1; height: 6px; background: var(--canvas); border-radius: 3px; overflow: hidden; }
+.dim-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.dim-score { font-size: 12px; font-weight: 600; width: 28px; text-align: right; }
+
+.path-action {
+  padding: 16px 24px;
+  border-top: 1px solid var(--hairline);
+  text-align: right;
 }
 
-.result-empty {
-  padding: 60px 0;
+.empty-hint { padding: 40px 0; }
+
+/* Position Cards (Mode B) */
+.position-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pos-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.pos-card-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pos-card-main:hover { background: var(--canvas); }
+
+.pos-score {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pos-info { flex: 1; min-width: 0; }
+.pos-info h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.pos-info p { font-size: 13px; color: var(--muted); }
+
+.pos-expand-icon {
+  color: var(--muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.pos-card.expanded .pos-expand-icon { transform: rotate(180deg); }
+
+.pos-card-detail {
+  border-top: 1px solid var(--hairline);
+  padding-top: 12px;
 }
 </style>
