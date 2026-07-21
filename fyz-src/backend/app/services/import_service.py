@@ -16,7 +16,11 @@ from app.repositories import SkillRepository
 from app.services.skill_extractor import content_fingerprint, normalize_text
 from app.services.skill_service import SkillService
 
-ALLOWED_FILES = {"jd_crawl_ifly.json", "jd_crawl_zl.json", "jd_crawl2.json"}
+ALLOWED_FILES = {
+    "jd_crawl_ifly.json", "jd_crawl_zl.json", "jd_crawl2.json",
+    "jd_crawl_ifly_full.json", "jd_crawl_ifly_merged.json",
+    "jd_crawl_zl_new.json",
+}
 
 
 def standardize_title(title: str) -> str:
