@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 import uuid
 from collections import defaultdict
@@ -39,6 +40,19 @@ from app.schemas.graph import (
     GraphSubgraph,
 )
 from app.schemas.skill import TaskStatusResponse
+
+# Offset for synthetic source IDs from internal JobPosting evidence,
+# avoiding collision with raw SourceDocument.id values.
+_INTERNAL_SOURCE_ID_OFFSET = 10_000_000
+
+
+class _EvidenceRow:
+    __slots__ = ("id", "source", "evidence_text")
+
+    def __init__(self, id: int, source: str, evidence_text: str) -> None:
+        self.id = id
+        self.source = source
+        self.evidence_text = evidence_text
 
 
 class GraphService:
@@ -137,11 +151,27 @@ class GraphService:
             standard_count = await self.aggregate_standard_jobs()
             batch.progress = 20
             await self.db.commit()
+            enrichment_stats = {
+                "enabled": bool(getattr(self.llm, "enabled", True)),
+                "candidates_total": 0,
+                "candidates_verified": 0,
+                "candidates_failed": 0,
+                "candidates_skipped": 0,
+                "tech_points_written": 0,
+                "knowledge_points_written": 0,
+            }
             if enrich_top_skills:
-                await self._prepare_top_candidates(snapshot_id, user_id)
+                enrichment_stats.update(
+                    await self._prepare_top_candidates(snapshot_id, user_id)
+                )
             batch.progress = 45
             await self.db.commit()
             nodes, edges, fact_count = await self._build_payload(snapshot)
+            tech_points, knowledge_points = await self._append_verified_deep_nodes(
+                snapshot_id, nodes, edges
+            )
+            enrichment_stats["tech_points_written"] = tech_points
+            enrichment_stats["knowledge_points_written"] = knowledge_points
             await asyncio.to_thread(self._write_payload, nodes, edges, version, mode)
             counts = await asyncio.to_thread(self.graph.counts)
             for row in nodes.get("TechStack", []):
@@ -156,7 +186,7 @@ class GraphService:
             snapshot.completed_at = datetime.utcnow()
             snapshot.metadata_json = {
                 "standard_jobs": standard_count,
-                "enrichment_enabled": bool(getattr(self.llm, "enabled", True)),
+                "enrichment": enrichment_stats,
             }
             batch.status = "succeeded"
             batch.progress = 100
@@ -186,7 +216,8 @@ class GraphService:
             await self.db.commit()
             raise
 
-    async def _prepare_top_candidates(self, snapshot_id: str, user_id: int | None) -> None:
+    async def _prepare_top_candidates(self, snapshot_id: str, user_id: int | None) -> dict[str, int]:
+        logger = logging.getLogger(__name__)
         rows = (await self.db.execute(
             select(Skill, func.count(JobSkillFact.id).label("coverage"))
             .join(JobSkillFact, JobSkillFact.skill_id == Skill.id)
@@ -198,8 +229,10 @@ class GraphService:
             .order_by(func.count(JobSkillFact.id).desc(), Skill.id)
             .limit(20)
         )).all()
+        stats = {"candidates_total": len(rows), "candidates_verified": 0, "candidates_failed": 0, "candidates_skipped": 0}
+        logger.info("graph_enrichment: preparing %d top candidates for snapshot %s", len(rows), snapshot_id)
         for skill, _coverage in rows:
-            evidence_rows = (await self.db.execute(
+            raw_evidence_rows = (await self.db.execute(
                 select(
                     SourceDocument.id,
                     SourceDocument.source,
@@ -214,7 +247,42 @@ class GraphService:
                 .order_by(SourceDocument.source, SourceDocument.id)
                 .limit(8)
             )).all()
-            source_ids = list(dict.fromkeys(int(row.id) for row in evidence_rows))
+            internal_evidence_rows = (await self.db.execute(
+                select(
+                    JobPosting.id,
+                    JobPosting.company,
+                    JobSkillFact.evidence_text,
+                )
+                .join(JobSkillFact, JobSkillFact.job_id == JobPosting.id)
+                .where(
+                    JobSkillFact.skill_id == skill.id,
+                    JobSkillFact.verification_status == "verified",
+                    JobPosting.deleted_at.is_(None),
+                )
+                .order_by(JobPosting.company, JobPosting.id)
+                .limit(8)
+            )).all()
+            evidence_rows: list[_EvidenceRow] = [
+                _EvidenceRow(int(row.id), str(row.source), str(row.evidence_text))
+                for row in raw_evidence_rows
+            ]
+            evidence_rows.extend([
+                _EvidenceRow(
+                    _INTERNAL_SOURCE_ID_OFFSET + int(row.id),
+                    f"internal:{row.company or 'unknown'}",
+                    str(row.evidence_text),
+                )
+                for row in internal_evidence_rows
+            ])
+            # Preserve order while deduplicating by source_id.
+            seen_ids: set[int] = set()
+            deduped_evidence: list[_EvidenceRow] = []
+            for row in evidence_rows:
+                if row.id not in seen_ids:
+                    seen_ids.add(row.id)
+                    deduped_evidence.append(row)
+            evidence_rows = deduped_evidence
+            source_ids = [row.id for row in evidence_rows]
             candidate = GraphEnrichmentCandidate(
                 snapshot_id=snapshot_id,
                 skill_id=skill.id,
@@ -224,10 +292,44 @@ class GraphService:
                 verification_status="unverified",
             )
             provider_enabled = bool(getattr(self.llm, "enabled", True))
-            independent_sources = {str(row.source) for row in evidence_rows}
-            if provider_enabled and len(source_ids) >= 2 and len(independent_sources) >= 2:
+            independent_sources = {row.source for row in evidence_rows}
+            if not provider_enabled:
+                candidate.candidate_data = {"reason": "llm_disabled", "skill_name": skill.name}
+                stats["candidates_skipped"] += 1
+                logger.info("graph_enrichment: skill=%s skipped (llm disabled)", skill.name)
+            elif len(source_ids) < 2 or len(independent_sources) < 2:
+                candidate.candidate_data = {
+                    "reason": "insufficient_evidence",
+                    "skill_name": skill.name,
+                    "sources": sorted(independent_sources),
+                    "source_count": len(source_ids),
+                }
+                stats["candidates_skipped"] += 1
+                logger.info(
+                    "graph_enrichment: skill=%s skipped (insufficient evidence: %d sources, %d platforms)",
+                    skill.name, len(source_ids), len(independent_sources),
+                )
+            else:
                 await self._enrich_candidate(candidate, skill, evidence_rows, user_id)
+                if candidate.candidate_data.get("reason") == "llm_failed":
+                    stats["candidates_failed"] += 1
+                    logger.warning("graph_enrichment: skill=%s enrichment failed", skill.name)
+                elif candidate.verification_status == "verified":
+                    stats["candidates_verified"] += 1
+                    logger.info("graph_enrichment: skill=%s verified", skill.name)
+                else:
+                    stats["candidates_skipped"] += 1
+                    logger.info("graph_enrichment: skill=%s filtered out", skill.name)
             await self.audit.add_candidate(candidate)
+        logger.info(
+            "graph_enrichment: snapshot=%s total=%d verified=%d failed=%d skipped=%d",
+            snapshot_id,
+            stats["candidates_total"],
+            stats["candidates_verified"],
+            stats["candidates_failed"],
+            stats["candidates_skipped"],
+        )
+        return stats
 
     async def _job_directions_for_skill(self, skill_id: int) -> list[str]:
         raw_names = (await self.db.execute(
@@ -253,8 +355,10 @@ class GraphService:
         return list(dict.fromkeys([*raw_names, *internal_names]))[:20]
 
     async def _enrich_candidate(self, candidate, skill, evidence_rows, user_id) -> None:
+        logger = logging.getLogger(__name__)
         run_id = str(uuid.uuid4())
         started = time.perf_counter()
+        logger.info("graph_enrichment: enriching skill=%s run_id=%s", skill.name, run_id)
         run = AgentRun(
             id=run_id,
             agent_type="graph_enrichment",
@@ -268,6 +372,7 @@ class GraphService:
         )
         self.db.add(run)
         await self.db.flush()
+        candidate.agent_run_id = run_id
         evidence = [
             {
                 "source_id": row.id,
@@ -287,14 +392,22 @@ class GraphService:
             candidate.candidate_data = filtered.model_dump(mode="json")
             candidate.confidence = confidence
             candidate.verification_status = "verified" if filtered.tech_points else "unverified"
-            candidate.agent_run_id = run_id
             run.status = "succeeded"
             run.structured_output = output.model_dump(mode="json")
+            logger.info(
+                "graph_enrichment: skill=%s run_id=%s tech_points=%d knowledge_points=%d confidence=%.2f",
+                skill.name,
+                run_id,
+                len(filtered.tech_points),
+                sum(len(p.knowledge_points) for p in filtered.tech_points),
+                confidence,
+            )
         except Exception as exc:
             candidate.candidate_data = {"reason": "llm_failed", "error": str(exc)[:500]}
             run.status = "failed"
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
+            logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
             run.finished_at = datetime.utcnow()
@@ -303,31 +416,60 @@ class GraphService:
     def _filter_verified_completion(
         output: GraphEnrichmentOutput, evidence: list[dict]
     ) -> tuple[GraphEnrichmentOutput, float]:
-        source_by_id = {int(item["source_id"]): str(item["source"]) for item in evidence}
+        logger = logging.getLogger(__name__)
+        source_by_id: dict[int, str] = {}
+        for item in evidence:
+            try:
+                source_by_id[int(item["source_id"])] = str(item["source"])
+            except (TypeError, ValueError):
+                continue
+        drop_reasons: list[dict] = []
 
-        def valid_references(source_ids: list[int]) -> bool:
-            unique_ids = set(source_ids)
-            return (
-                len(unique_ids) >= 2
-                and unique_ids.issubset(source_by_id)
-                and len({source_by_id[source_id] for source_id in unique_ids}) >= 2
-            )
+        def valid_references(source_ids: list[int]) -> tuple[bool, str]:
+            try:
+                unique_ids = {int(sid) for sid in source_ids}
+            except (TypeError, ValueError):
+                return False, "invalid_source_id"
+            unique_ids = {sid for sid in unique_ids if sid in source_by_id}
+            if len(unique_ids) < 2:
+                return False, "insufficient_sources"
+            platforms = {source_by_id[sid] for sid in unique_ids}
+            if len(platforms) < 2:
+                return False, "single_platform"
+            return True, ""
 
         accepted_points = []
         accepted_confidences: list[float] = []
         for point in output.tech_points:
-            if point.confidence < 0.75 or not valid_references(point.source_ids):
+            if point.confidence < 0.75:
+                drop_reasons.append({"type": "tech_point", "name": point.name, "reason": "low_confidence"})
                 continue
-            accepted_knowledge = [
-                item
-                for item in point.knowledge_points
-                if item.confidence >= 0.75 and valid_references(item.source_ids)
-            ]
+            ok, reason = valid_references(point.source_ids)
+            if not ok:
+                drop_reasons.append({"type": "tech_point", "name": point.name, "reason": reason})
+                continue
+            accepted_knowledge = []
+            for item in point.knowledge_points:
+                if item.confidence < 0.75:
+                    drop_reasons.append({"type": "knowledge_point", "name": item.name, "reason": "low_confidence"})
+                    continue
+                ok_k, reason_k = valid_references(item.source_ids)
+                if not ok_k:
+                    drop_reasons.append({"type": "knowledge_point", "name": item.name, "reason": reason_k})
+                    continue
+                accepted_knowledge.append(item)
             accepted_points.append(point.model_copy(update={"knowledge_points": accepted_knowledge}))
             accepted_confidences.append(point.confidence)
             accepted_confidences.extend(item.confidence for item in accepted_knowledge)
         filtered = output.model_copy(update={"tech_points": accepted_points})
-        return filtered, min(accepted_confidences, default=0)
+        confidence = min(accepted_confidences, default=0)
+        if drop_reasons:
+            logger.info(
+                "graph_enrichment: filtered %d points; reasons=%s",
+                len(drop_reasons),
+                drop_reasons,
+            )
+        return filtered, confidence
 
     async def _build_payload(self, snapshot: GraphSnapshot) -> tuple[dict, dict, int]:
         standard_jobs = list((await self.db.execute(select(StandardJob))).scalars())
@@ -476,7 +618,6 @@ class GraphService:
                 f"job:{job.id}", "snapshot:current", version=snapshot.version,
                 snapshotId=snapshot.id,
             ))
-        await self._append_verified_deep_nodes(snapshot.id, nodes, edges, skills)
         # Deduplicate source nodes and edges generated by repeated facts.
         for label, rows in nodes.items():
             nodes[label] = list({row["id"]: row for row in rows}.values())
@@ -486,16 +627,23 @@ class GraphService:
             }.values())
         return nodes, edges, len(job_skill_stats)
 
-    async def _append_verified_deep_nodes(self, snapshot_id, nodes, edges, skills) -> None:
+    async def _append_verified_deep_nodes(
+        self, snapshot_id, nodes, edges, skills: dict[int, Skill] | None = None
+    ) -> tuple[int, int]:
+        logger = logging.getLogger(__name__)
         candidates = list((await self.db.execute(
             select(GraphEnrichmentCandidate).where(
                 GraphEnrichmentCandidate.snapshot_id == snapshot_id,
                 GraphEnrichmentCandidate.verification_status == "verified",
             )
         )).scalars())
+        tech_points = 0
+        knowledge_points = 0
+        skills = skills or {}
         for candidate in candidates:
             skill = skills.get(candidate.skill_id) or await self.db.get(Skill, candidate.skill_id)
             if not skill:
+                logger.warning("graph_enrichment: candidate skill_id=%d not found", candidate.skill_id)
                 continue
             output = GraphEnrichmentOutput.model_validate(candidate.candidate_data)
             for point_index, point in enumerate(output.tech_points):
@@ -509,6 +657,7 @@ class GraphService:
                     f"skill:{skill.id}", point_id, confidence=point.confidence,
                     sourceCount=len(set(point.source_ids)),
                 ))
+                tech_points += 1
                 for knowledge_index, knowledge in enumerate(point.knowledge_points):
                     if knowledge.confidence < 0.75 or len(set(knowledge.source_ids)) < 2:
                         continue
@@ -523,6 +672,12 @@ class GraphService:
                         point_id, knowledge_id, confidence=knowledge.confidence,
                         sourceCount=len(set(knowledge.source_ids)),
                     ))
+                    knowledge_points += 1
+        logger.info(
+            "graph_enrichment: appended tech_points=%d knowledge_points=%d for snapshot=%s",
+            tech_points, knowledge_points, snapshot_id,
+        )
+        return tech_points, knowledge_points
 
     def _write_payload(self, nodes, edges, version: str, mode: str) -> None:
         self.graph.ensure_schema()
