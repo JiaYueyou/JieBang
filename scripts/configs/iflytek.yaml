@@ -1,0 +1,56 @@
+# 科大讯飞官网 — 爬虫配置
+# 数据源：iflytek.zhiye.com (社会化招聘)
+# 对应爬虫：spiders/iflytek_spider.py
+
+# ========== 基础信息 ==========
+name: "iflytek"
+source_name: "科大讯飞招聘"
+base_url: "https://iflytek.zhiye.com/api/Jobad/GetJobAdPageList"
+
+# ========== 请求配置 ==========
+method: POST
+request_interval: 1.0        # 每秒最多1次请求
+retry_times: 3                # 失败重试3次
+retry_delay: 2               # 重试间隔2秒
+timeout: 30
+
+# ========== 分页 ==========
+page_start: 0                 # 起始页码（从0开始）
+total_pages: 11               # 共11页（每页20条，共220条）
+page_size: 20
+
+# ========== 请求体模板 ==========
+request_body_template:
+  PageIndex: "{page}"         # {page} 会被替换为实际页码
+  PageSize: 20
+  Category: ["1"]
+  KeyWords: ""
+  SpecialType: 0
+  PortalId: ""
+  DisplayFields:
+    - Category
+    - Kind
+    - LocId
+    - PostDate
+    - ClassificationOne
+    - ClassificationTwo
+    - WorkWeChatQrCode
+
+# ========== 解析规则 ==========
+parse_rules:
+  title: "$..JobAdName"
+  city: "$..LocNames"
+  salary: "$..Salary"
+  duty: "$..Duty"
+  require: "$..Require"
+  post_date: "$.Data[*].PostDate"
+  job_id: "$..Id"
+
+# ========== 额外请求头 ==========
+headers:
+  Accept: "application/json"
+  Content-Type: "application/json"
+  Origin: "https://iflytek.zhiye.com"
+  Referer: "https://iflytek.zhiye.com/social/jobs"
+  X-Requested-With: "xmlhttprequest"
+  langType: "zh_CN"
