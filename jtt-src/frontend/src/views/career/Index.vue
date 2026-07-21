@@ -39,7 +39,7 @@ onMounted(async () => {
     resumes.value = mockResumes
   }
   if (resumes.value.length > 0) {
-    selectedResumeId.value = resumes.value[0].id
+    selectedResumeId.value = resumes.value[0]!.id
   }
 })
 

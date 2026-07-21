@@ -58,5 +58,14 @@ export const useResumeStore = defineStore('resume', () => {
     return duped
   }
 
-  return { resumes, currentResume, loading, fetchList, fetchDetail, create, update, remove, duplicate }
+  const upload = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res: any = await resumeApi.upload(formData)
+    const uploaded = resumeFromApi(res.data)
+    resumes.value.unshift(uploaded)
+    return uploaded
+  }
+
+  return { resumes, currentResume, loading, fetchList, fetchDetail, create, update, remove, duplicate, upload }
 })

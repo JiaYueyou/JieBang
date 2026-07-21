@@ -83,11 +83,12 @@ const startUpload = async () => {
     uploadFile.value = null
   } catch {
     // Mock fallback
+    const file = uploadFile.value!
     const { mockResumes } = await import('@/mock/data/resume')
     const newResume = JSON.parse(JSON.stringify(mockResumes[0]))
     newResume.id = `r-${Date.now()}`
-    newResume.name = uploadFile.value.name.replace(/\.(pdf|doc|docx)$/i, '')
-    newResume.sourceFile = uploadFile.value.name
+    newResume.name = file.name.replace(/\.(pdf|doc|docx)$/i, '')
+    newResume.sourceFile = file.name
     newResume.createdAt = new Date().toISOString()
     resumes.value.unshift(newResume)
     ElMessage.success('简历解析完成（离线模式）')
