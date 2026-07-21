@@ -141,8 +141,8 @@ onMounted(() => {
 // ── Job demand option ──
 const jobDemandOption = computed(() => ({
   tooltip: { trigger: "axis" },
-  legend: { bottom: 0, textStyle: { fontSize: 12 } },
-  grid: { left: 12, right: 20, top: 8, bottom: 32 },
+  legend: { bottom: 15, textStyle: { fontSize: 12 } },
+  grid: { left: 12, right: 20, top: 8, bottom: 60 },
   xAxis: { type: "category", data: months.value.slice(0, Number(timeRange.value)), axisLabel: { fontSize: 10 } },
   yAxis: { type: "value", axisLabel: { fontSize: 10 } },
   series: (data.value?.jobDemand ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values.slice(0,Number(timeRange.value)),smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
@@ -151,8 +151,8 @@ const jobDemandOption = computed(() => ({
 // ── Salary option ──
 const salaryOption = computed(() => ({
   tooltip: { trigger: "axis" },
-  legend: { bottom: 0, textStyle: { fontSize: 12 } },
-  grid: { left: 12, right: 20, top: 8, bottom: 32 },
+  legend: { bottom: 15, textStyle: { fontSize: 12 } },
+  grid: { left: 12, right: 20, top: 8, bottom: 60 },
   xAxis: { type: "category", data: months.value.slice(0, Number(timeRange.value)), axisLabel: { fontSize: 10 } },
   yAxis: { type: "value", name: "K", axisLabel: { fontSize: 10 } },
   series: (data.value?.salary ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values.slice(0,Number(timeRange.value)),smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
