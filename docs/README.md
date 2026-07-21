@@ -19,6 +19,12 @@
 - [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)
 - [后端专项说明](../fyz-src/backend/README.md)
 - [离线数据分析配置](../data_analysis/README.md)
+- [AI 助手独立服务（JTT 求职端）](../jtt-src/ai-assistant/README.md)
+
+## 智能体
+
+- [智能体产品需求文档（完整版）](../jtt-src/agent.md)
+- [智能体前端实现文档（JTT 求职端）](../jtt-src/zyq-agent.md)
 
 ## 接口
 

@@ -3,33 +3,51 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { ImprovementSuggestion, JobPosition } from '@/types'
-import { mockTailorSuggestions } from '@/mock/data/tailor'
-import { mockPositions } from '@/mock/data/positions'
+import { tailorApi } from '@/api/tailor'
+import { positionsApi } from '@/api/positions'
+import { matchApi } from '@/api/match'
 
 const route = useRoute()
 const suggestions = ref<ImprovementSuggestion[]>([])
 const position = ref<JobPosition | null>(null)
 const matchScore = ref(68)
+const loading = ref(true)
 
-onMounted(() => {
+onMounted(async () => {
   const resumeId = route.params.resumeId as string
   const positionId = route.params.positionId as string
-  const key = `${resumeId}_${positionId}`
-  suggestions.value = JSON.parse(JSON.stringify(mockTailorSuggestions[key] || mockTailorSuggestions['r-1_ep-1'] || []))
-  position.value = mockPositions.find((p) => p.id === positionId) || null
+  try {
+    const [sgRes, posRes, matchRes]: any = await Promise.all([
+      tailorApi.getSuggestions(resumeId, positionId),
+      positionsApi.getDetail(positionId),
+      matchApi.getResult(resumeId, positionId),
+    ])
+    suggestions.value = sgRes.data || []
+    position.value = posRes.data || null
+    matchScore.value = matchRes.data?.totalScore ?? 68
+  } catch {
+    ElMessage.warning('数据加载失败，使用默认数据')
+  } finally {
+    loading.value = false
+  }
 })
 
 const toggleSuggestion = (sg: ImprovementSuggestion) => {
   sg.accepted = !sg.accepted
 }
 
-const applyAll = () => {
-  const count = suggestions.value.filter((s) => s.accepted).length
-  if (count === 0) {
+const applyAll = async () => {
+  const accepted = suggestions.value.filter((s) => s.accepted)
+  if (accepted.length === 0) {
     ElMessage.warning('请至少选择一条建议')
     return
   }
-  ElMessage.success(`已将 ${count} 条优化应用到简历，已另存为新版本`)
+  try {
+    await tailorApi.applyAll(route.params.resumeId as string, accepted.map((s) => s.id))
+    ElMessage.success(`已将 ${accepted.length} 条优化应用到简历，已另存为新版本`)
+  } catch {
+    ElMessage.error('应用失败，请稍后重试')
+  }
 }
 
 const rejectAll = () => {

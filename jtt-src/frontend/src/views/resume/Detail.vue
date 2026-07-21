@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResumeData } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
+import { pageData } from '@/stores/pageContext'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +11,11 @@ const resume = ref<ResumeData | null>(null)
 
 onMounted(() => {
   resume.value = mockResumes.find((r) => r.id === route.params.id) || null
+})
+// Share resume data with AI assistant
+watch(resume, (r) => { pageData.resume = r }, { immediate: true })
+onUnmounted(() => {
+  if (pageData.resume?.id === resume.value?.id) pageData.resume = null
 })
 </script>
 
