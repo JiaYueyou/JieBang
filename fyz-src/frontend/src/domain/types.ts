@@ -188,11 +188,20 @@ export interface GraphNode {
   type: GraphType;
   stack?: "ai" | "backend" | "data" | "devops" | null;
   level?: "junior" | "middle" | "senior" | null;
+  level_label?: string;
   x: number;
   y: number;
   description: string;
   importance?: number;
   frequency?: number;
+  color?: string;
+  size?: number;
+  total_records?: number;
+  category_key?: string;
+  job_count?: number;
+  category?: string;
+  parent_skill?: string;
+  parent_tech_point?: string;
 }
 
 export interface GraphEdge {

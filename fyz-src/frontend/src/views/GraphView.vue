@@ -1,6 +1,6 @@
 <template>
   <div>
-    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
+    <DataState :loading="loading" :error="error" @retry="loadGraph" />
     <section class="graph-toolbar anim-fade-up">
       <div class="graph-search">
         <el-icon><Search /></el-icon>
@@ -13,8 +13,8 @@
         <el-option v-for="item in levelOptions" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <div class="graph-stats-mini">
-        <span>{{ filteredNodes.length }} 节点</span>
-        <span>{{ filteredEdges.length }} 边</span>
+        <span>{{ nodeCount }} 节点</span>
+        <span>{{ edgeCount }} 边</span>
         <span>{{ activeNode?.frequency ?? activeNode?.importance ?? "-" }} 热度</span>
       </div>
     </section>
@@ -35,15 +35,6 @@
             <em>{{ layer.desc }}</em>
           </button>
         </div>
-
-        <div class="graph-card-title with-gap">图谱查询能力</div>
-        <div class="graph-api-list">
-          <span>panorama：全景过滤</span>
-          <span>node：节点详情</span>
-          <span>expand：展开子树</span>
-          <span>search：模糊搜索</span>
-          <span>path：路径高亮</span>
-        </div>
       </aside>
 
       <main class="graph-canvas-card">
@@ -59,64 +50,19 @@
             </button>
             <div class="graph-mini-legend">
               <span><i class="solid"></i> 层级关系</span>
-              <span><i class="dashed"></i> 跨树共享</span>
             </div>
           </div>
         </div>
 
         <div class="graph-canvas">
-          <svg viewBox="0 0 920 520" role="img" aria-label="技能图谱可视化">
-            <defs>
-              <filter id="graphGlow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            <g class="graph-svg-grid">
-              <path v-for="line in 8" :key="`h-${line}`" :d="`M 0 ${line * 64} H 920`" />
-              <path v-for="line in 12" :key="`v-${line}`" :d="`M ${line * 76} 0 V 520`" />
-            </g>
-
-            <g>
-              <line
-                v-for="edge in filteredEdges"
-                :key="edge.id"
-                :x1="nodeMap[edge.source]?.x"
-                :y1="nodeMap[edge.source]?.y"
-                :x2="nodeMap[edge.target]?.x"
-                :y2="nodeMap[edge.target]?.y"
-                class="graph-edge"
-                :class="{ weak: edge.relation === 'RELATED_TO' || edge.relation === 'SAME_AS', active: isActiveEdge(edge) }"
-              />
-            </g>
-
-            <g>
-              <g
-                v-for="node in filteredNodes"
-                :key="node.id"
-                :transform="`translate(${node.x}, ${node.y})`"
-              >
-                <g
-                  class="graph-node"
-                  :class="{ active: node.id === activeNodeId, dimmed: !isNodeHighlighted(node) }"
-                  @click="activeNodeId = node.id"
-                >
-                  <circle
-                    :r="nodeRadius(node)"
-                    :fill="typeMeta[node.type].color"
-                    :filter="node.id === activeNodeId ? 'url(#graphGlow)' : undefined"
-                  />
-                  <circle :r="nodeRadius(node) + 8" class="graph-node-ring" />
-                  <text text-anchor="middle" :y="nodeRadius(node) + 22">{{ node.name }}</text>
-                  <text text-anchor="middle" y="5" class="graph-node-layer">{{ typeMeta[node.type].short }}</text>
-                </g>
-              </g>
-            </g>
-          </svg>
+          <Graph3DCanvas
+            ref="graphCanvasRef"
+            :graph="currentGraph"
+            :highlighted-path="highlightedPath"
+            :pinned-node-ids="pinnedNodeIds"
+            @node-click="handleNodeClick"
+            @node-pin="handleNodePin"
+          />
         </div>
       </main>
 
@@ -151,12 +97,18 @@
             <button
               v-for="node in relatedNodes"
               :key="node.id"
-              @click="activeNodeId = node.id"
+              @click="handleRelatedNodeClick(node)"
             >
               <span :style="{ background: typeMeta[node.type].color }"></span>
               {{ node.name }}
             </button>
             <em v-if="relatedNodes.length === 0">暂无直接关联节点</em>
+          </div>
+        </template>
+        <template v-else>
+          <div class="graph-detail-empty">
+            <el-icon><HelpFilled /></el-icon>
+            <p>点击图谱中的节点查看详情</p>
           </div>
         </template>
       </aside>
@@ -165,12 +117,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
-import { Search, View } from "@element-plus/icons-vue";
-import { useGraphStore } from "@/stores/graph";
+import { Search, View, HelpFilled } from "@element-plus/icons-vue";
+import Graph from "graphology";
+import Graph3DCanvas from "@/components/graph/Graph3DCanvas.vue";
+import { buildGraphFromBackend } from "@/data/graphBuilder";
 import DataState from "@/components/common/DataState.vue";
-import type { GraphEdge, GraphNode, GraphType } from "@/domain/types";
+import type { GraphNode, GraphType } from "@/domain/types";
 
 type FilterType = GraphType | "all";
 type StackType = "all" | "ai" | "backend" | "data" | "devops";
@@ -180,42 +134,61 @@ const keyword = ref("");
 const selectedStack = ref<StackType>("all");
 const selectedLevel = ref<LevelType>("all");
 const selectedType = ref<FilterType>("all");
-const activeNodeId = ref("");
-const store = useGraphStore();
-const { data, loading, error } = storeToRefs(store);
-const graphNodes = computed(() => data.value.nodes);
-const graphEdges = computed(() => data.value.edges);
+const loading = ref(false);
+const error = ref("");
+const currentGraph = ref<Graph | null>(null);
+const activeNode = ref<GraphNode | null>(null);
+const highlightedPath = ref<string[]>([]);
+const pinnedNodeIds = ref<string[]>([]);
+const graphCanvasRef = ref<InstanceType<typeof Graph3DCanvas> | null>(null);
 
 onMounted(async () => {
-  await store.load();
-  activeNodeId.value = graphNodes.value.find(node => node.type === "Job")?.id || graphNodes.value[0]?.id || "";
+  await loadGraph();
 });
+
+async function loadGraph() {
+  loading.value = true;
+  error.value = "";
+  try {
+    currentGraph.value = await buildGraphFromBackend();
+    activeNode.value = null;
+    highlightedPath.value = [];
+    pinnedNodeIds.value = [];
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "加载失败";
+    currentGraph.value = null;
+  } finally {
+    loading.value = false;
+  }
+}
 
 function resetToOverview() {
   keyword.value = "";
   selectedStack.value = "all";
   selectedLevel.value = "all";
   selectedType.value = "all";
-  activeNodeId.value = "";
-  store.load(true);
+  activeNode.value = null;
+  highlightedPath.value = [];
+  pinnedNodeIds.value = [];
+  loadGraph();
 }
 
 const typeMeta: Record<GraphType, { label: string; short: string; color: string }> = {
-  Job: { label: "L1 岗位", short: "L1", color: "var(--g6-l1)" },
-  SkillArea: { label: "L2 技能领域", short: "L2", color: "var(--g6-l2)" },
-  TechStack: { label: "L3 技术栈", short: "L3", color: "var(--g6-l3)" },
-  TechPoint: { label: "L4 技术细节点", short: "L4", color: "var(--g6-l4)" },
-  KnowledgePoint: { label: "L5 知识要点", short: "L5", color: "var(--g6-l5)" },
+  Job: { label: "L1 岗位", short: "L1", color: "#122d6e" },
+  SkillArea: { label: "L2 技能领域", short: "L2", color: "#2f47b8" },
+  TechStack: { label: "L3 技术栈", short: "L3", color: "#3f5ae0" },
+  TechPoint: { label: "L4 技术细节点", short: "L4", color: "#7893de" },
+  KnowledgePoint: { label: "L5 知识要点", short: "L5", color: "#b4c2f2" },
   SourceDocument: { label: "来源证据", short: "SRC", color: "#94a3b8" },
   GraphSnapshot: { label: "图谱快照", short: "VER", color: "#64748b" },
 };
 
 const layers = [
-  { type: "Job" as GraphType, label: "Job", desc: "岗位", color: "var(--g6-l1)" },
-  { type: "SkillArea" as GraphType, label: "SkillArea", desc: "技能领域", color: "var(--g6-l2)" },
-  { type: "TechStack" as GraphType, label: "TechStack", desc: "技术栈", color: "var(--g6-l3)" },
-  { type: "TechPoint" as GraphType, label: "TechPoint", desc: "技术细节点", color: "var(--g6-l4)" },
-  { type: "KnowledgePoint" as GraphType, label: "KnowledgePoint", desc: "知识要点", color: "var(--g6-l5)" },
+  { type: "Job" as GraphType, label: "Job", desc: "岗位", color: "#122d6e" },
+  { type: "SkillArea" as GraphType, label: "SkillArea", desc: "技能领域", color: "#2f47b8" },
+  { type: "TechStack" as GraphType, label: "TechStack", desc: "技术栈", color: "#3f5ae0" },
+  { type: "TechPoint" as GraphType, label: "TechPoint", desc: "技术细节点", color: "#7893de" },
+  { type: "KnowledgePoint" as GraphType, label: "KnowledgePoint", desc: "知识要点", color: "#b4c2f2" },
 ];
 
 const stackOptions: { label: string; value: StackType }[] = [
@@ -233,51 +206,39 @@ const levelOptions: { label: string; value: LevelType }[] = [
   { label: "高级", value: "senior" },
 ];
 
-let filterTimer: ReturnType<typeof setTimeout> | undefined;
-watch([keyword, selectedStack, selectedLevel, selectedType], () => {
-  clearTimeout(filterTimer);
-  filterTimer = setTimeout(async () => {
-    await store.load(true, {
-      keyword: keyword.value.trim() || undefined,
-      stack: selectedStack.value === "all" ? undefined : selectedStack.value,
-      level: selectedLevel.value === "all" ? undefined : selectedLevel.value,
-      nodeType: selectedType.value === "all" ? undefined : selectedType.value,
-      limit: 1000,
-    });
-    if (!graphNodes.value.some(node => node.id === activeNodeId.value)) {
-      activeNodeId.value = graphNodes.value.find(node => node.type === "Job")?.id || graphNodes.value[0]?.id || "";
-    }
-  }, 250);
-});
-
-const nodeMap = computed(() => Object.fromEntries(graphNodes.value.map(node => [node.id, node])));
-
-const filteredNodes = computed(() => {
-  const text = keyword.value.trim().toLowerCase();
-  return graphNodes.value.filter((node) => {
-    const matchesStack = selectedStack.value === "all" || node.stack === selectedStack.value;
-    const matchesLevel = selectedLevel.value === "all" || node.level === selectedLevel.value;
-    const matchesType = selectedType.value === "all" || node.type === selectedType.value;
-    const matchesKeyword = !text || [node.name, node.description, node.type, node.stack, node.level]
-      .join(" ")
-      .toLowerCase()
-      .includes(text);
-    return matchesStack && matchesLevel && matchesType && matchesKeyword;
-  });
-});
-
-const visibleIds = computed(() => new Set(filteredNodes.value.map(node => node.id)));
-
-const filteredEdges = computed(() => graphEdges.value.filter(edge => visibleIds.value.has(edge.source) && visibleIds.value.has(edge.target)));
-
-const activeNode = computed(() => graphNodes.value.find(node => node.id === activeNodeId.value) || filteredNodes.value[0]);
+const nodeCount = computed(() => currentGraph.value?.order || 0);
+const edgeCount = computed(() => currentGraph.value?.size || 0);
 
 const relatedNodes = computed(() => {
-  if (!activeNode.value) return [];
-  const ids = graphEdges.value
-    .filter(edge => edge.source === activeNode.value?.id || edge.target === activeNode.value?.id)
-    .map(edge => edge.source === activeNode.value?.id ? edge.target : edge.source);
-  return graphNodes.value.filter(node => ids.includes(node.id));
+  if (!activeNode.value || !currentGraph.value) return [];
+  const ids = new Set<string>();
+  currentGraph.value.forEachEdge((_edgeId, _attrs, source, target) => {
+    if (source === activeNode.value?.id) {
+      ids.add(target);
+    }
+    if (target === activeNode.value?.id) {
+      ids.add(source);
+    }
+  });
+  const result: GraphNode[] = [];
+  ids.forEach(id => {
+    const attrs = currentGraph.value?.getNodeAttributes(id);
+    if (attrs) {
+      result.push({
+        id: attrs.id || id,
+        name: attrs.name || attrs.label || id,
+        type: attrs.type as GraphType,
+        stack: attrs.stack as any,
+        level: attrs.level as any,
+        x: attrs.x || 0,
+        y: attrs.y || 0,
+        description: attrs.description || "",
+        importance: attrs.importance,
+        frequency: attrs.frequency,
+      });
+    }
+  });
+  return result;
 });
 
 const currentViewTitle = computed(() => {
@@ -286,107 +247,30 @@ const currentViewTitle = computed(() => {
   return `${stack} · ${level} · ${selectedType.value === "all" ? "全层级" : typeMeta[selectedType.value].label}`;
 });
 
-function nodeRadius(node: GraphNode) {
-  const radiusMap: Record<GraphType, number> = {
-    Job: 30,
-    SkillArea: 25,
-    TechStack: 22,
-    TechPoint: 19,
-    KnowledgePoint: 16,
-    SourceDocument: 14,
-    GraphSnapshot: 18,
-  };
-  return radiusMap[node.type];
+function handleNodeClick(node: GraphNode | null) {
+  activeNode.value = node;
 }
 
-function isActiveEdge(edge: GraphEdge) {
-  return edge.source === activeNode.value?.id || edge.target === activeNode.value?.id;
+function handleNodePin(nodeId: string, pinned: boolean) {
+  if (pinned) {
+    pinnedNodeIds.value = [nodeId];
+  }
 }
 
-function isNodeHighlighted(node: GraphNode) {
-  if (!activeNode.value) return true;
-  if (node.id === activeNode.value.id) return true;
-  return relatedNodes.value.some(item => item.id === node.id);
+function handleRelatedNodeClick(node: GraphNode) {
+  activeNode.value = node;
 }
+
+let filterTimer: ReturnType<typeof setTimeout> | undefined;
+watch([keyword, selectedStack, selectedLevel, selectedType], () => {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(async () => {
+    await loadGraph();
+  }, 250);
+});
 </script>
 
 <style scoped>
-.graph-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 18px;
-  margin-bottom: 16px;
-  padding: 24px;
-  border: 1px solid rgba(79,110,246,.20);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(79,110,246,.18), transparent 34%),
-    radial-gradient(circle at 82% 16%, rgba(52,179,126,.16), transparent 30%),
-    linear-gradient(135deg, #10172a, #17203a 46%, #f8fafc 46.2%, var(--color-bg-elevated));
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.graph-kicker {
-  display: inline-flex;
-  margin-bottom: 10px;
-  color: #a9bbff;
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.graph-hero-main h2 {
-  max-width: 620px;
-  color: #fff;
-  font-size: 26px;
-  line-height: 1.25;
-  letter-spacing: -.03em;
-}
-
-.graph-hero-main p {
-  max-width: 660px;
-  margin-top: 12px;
-  color: rgba(255,255,255,.72);
-  font-size: 14px;
-}
-
-.graph-hero-main code {
-  color: #dbe4ff;
-  font-family: var(--font-mono);
-}
-
-.graph-hero-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  align-self: end;
-}
-
-.graph-stat {
-  padding: 16px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: rgba(255,255,255,.82);
-  backdrop-filter: blur(14px);
-}
-
-.graph-stat strong {
-  display: block;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 24px;
-  line-height: 1;
-}
-
-.graph-stat span {
-  display: block;
-  margin-top: 6px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
 .graph-toolbar {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto auto;
@@ -589,78 +473,8 @@ function isNodeHighlighted(node: GraphNode) {
 }
 
 .graph-canvas {
-  background:
-    radial-gradient(circle at 50% 20%, rgba(79,110,246,.08), transparent 34%),
-    var(--color-bg-base);
-}
-
-.graph-canvas svg {
-  display: block;
   width: 100%;
-  min-height: 540px;
-}
-
-.graph-svg-grid path {
-  stroke: rgba(0,0,0,.04);
-  stroke-width: 1;
-}
-
-.graph-edge {
-  stroke: rgba(79,110,246,.25);
-  stroke-width: 2;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.graph-edge.weak {
-  stroke-dasharray: 8 8;
-  stroke: rgba(52,179,126,.30);
-}
-
-.graph-edge.active {
-  stroke: var(--color-brand);
-  stroke-width: 3;
-}
-
-@keyframes nodeFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-3px); }
-}
-
-.graph-node {
-  cursor: pointer;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.graph-node.dimmed {
-  opacity: .38;
-}
-
-.graph-node circle:first-child {
-  stroke: #fff;
-  stroke-width: 2;
-}
-
-.graph-node-ring {
-  fill: transparent;
-  stroke: rgba(0,0,0,.06);
-  stroke-width: 1;
-}
-
-.graph-node.active .graph-node-ring {
-  stroke: var(--color-brand);
-  stroke-width: 2;
-}
-
-.graph-node text {
-  fill:#867f7f;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.graph-node-layer {
-  fill: #ffffff !important;
-  font-size: 14px !important;
-  font-family: var(--font-mono);
+  height: 600px;
 }
 
 .graph-detail-head {
@@ -742,6 +556,24 @@ function isNodeHighlighted(node: GraphNode) {
   font-style: normal;
 }
 
+.graph-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+}
+
+.graph-detail-empty el-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.graph-detail-empty p {
+  font-size: 14px;
+}
+
 @media (max-width: 1280px) {
   .graph-layout {
     grid-template-columns: 220px minmax(0, 1fr);
@@ -753,14 +585,9 @@ function isNodeHighlighted(node: GraphNode) {
 }
 
 @media (max-width: 960px) {
-  .graph-hero,
   .graph-toolbar,
   .graph-layout {
     grid-template-columns: 1fr;
-  }
-
-  .graph-hero-stats {
-    grid-template-columns: repeat(3, 1fr);
   }
 
   .graph-filter-group {
@@ -769,7 +596,6 @@ function isNodeHighlighted(node: GraphNode) {
 }
 
 @media (max-width: 640px) {
-  .graph-hero-stats,
   .graph-detail-grid {
     grid-template-columns: 1fr;
   }
