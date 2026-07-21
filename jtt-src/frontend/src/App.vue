@@ -19,11 +19,7 @@ const isFullPage = computed(() => ['Login', 'Register'].includes(route.name as s
     <div class="main-area">
       <AppHeader />
       <main class="content">
-        <router-view v-slot="{ Component, route: r }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" :key="r.fullPath" />
-          </transition>
-        </router-view>
+        <router-view />
       </main>
     </div>
     <FloatingAIButton />

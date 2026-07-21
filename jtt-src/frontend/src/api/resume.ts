@@ -5,9 +5,10 @@ export const resumeApi = {
   upload: (formData: FormData) =>
     api.post<ApiResponse<ResumeData>>('/resume/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
     }),
 
-  getList: () => api.get<ApiResponse<ResumeData[]>>('/resumes'),
+  getList: () => api.get<ApiResponse<ResumeData[]>>('/resume/resumes'),
 
   getDetail: (id: string) => api.get<ApiResponse<ResumeData>>(`/resume/${id}`),
 

@@ -16,6 +16,7 @@ from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
 from app.core.neo4j import run_read
 from app.providers.llm import get_llm_provider
+from app.services.match_service import _skill_names_match
 
 
 class LearningService:
@@ -167,9 +168,13 @@ class LearningService:
             if resume:
                 user_skills = set(s.get("name", "") for s in (resume.skill_list or []))
 
+        # 岗位技能存储在独立的 skill 表中，需单独加载
+        skills_map = await self.position_repo.get_skills_for_positions([position_id])
+        position_skills = skills_map.get(position_id, [])
+
         # 组装 Prompt
         required_skills_str = ", ".join(
-            [s.name for s in (position.required_skills or [])]
+            s["name"] for s in position_skills if s.get("kind") == "required"
         )
         skill_tree_str = json.dumps(skill_tree, ensure_ascii=False) if skill_tree else "暂无图谱数据"
         user_skills_str = ", ".join(user_skills) if user_skills else "未知"
@@ -192,13 +197,18 @@ class LearningService:
             )},
         ]
 
+        # [AI] 学习路径 LLM 生成入口 —— 成功时返回个性化学习计划，失败时走规则降级
+        # [AI] 替换 LLM_API_KEY 为真实 DeepSeek key 后生效（当前走 fallback，基于技能差距生成步骤）
         try:
             response = await self.llm.chat(messages, response_format={"type": "json_object"})
             plan = json.loads(response.get("content", "{}"))
             if isinstance(plan, list):
                 plan = {"name": f"{position.name}学习路径", "steps": plan}
+            if not plan.get("steps"):
+                plan = self._fallback_plan(position, position_skills, user_skills)
         except Exception:
-            plan = {"name": f"{position.name}学习路径", "steps": []}
+            # [AI] LLM 不可用时的规则降级：基于技能差距生成学习步骤
+            plan = self._fallback_plan(position, position_skills, user_skills)
 
         # 为每个 step 生成 ID
         steps = []
@@ -227,6 +237,45 @@ class LearningService:
             "steps": steps,
             "total_duration": f"{total_weeks}周",
         }
+
+    def _fallback_plan(self, position, position_skills: list[dict], user_skills: set) -> dict:
+        """LLM 不可用时的规则降级：按 必备→加分 顺序为缺失技能生成学习步骤"""
+        def covered(name: str) -> bool:
+            return any(_skill_names_match(us, name) for us in user_skills)
+
+        missing_required = [
+            s["name"] for s in position_skills
+            if s.get("kind") == "required" and not covered(s["name"])
+        ]
+        missing_preferred = [
+            s["name"] for s in position_skills
+            if s.get("kind") == "preferred" and not covered(s["name"])
+        ]
+        ordered = missing_required + missing_preferred
+        if not ordered:
+            # 没有差距时按岗位技能做进阶复习
+            ordered = [s["name"] for s in position_skills][:4]
+
+        steps = []
+        for name in ordered[:5]:
+            steps.append({
+                "title": f"掌握 {name}",
+                "description": f"系统学习 {name} 的核心概念与实践方法，完成配套练习，达到「{position.name}」岗位要求。",
+                "duration": "2周",
+                "resources": [
+                    {"title": f"{name} 入门到实战", "type": "course", "url": "", "platform": "慕课网 / B站"},
+                    {"title": f"{name} 实战项目", "type": "project", "url": "", "platform": "GitHub"},
+                ],
+            })
+        steps.append({
+            "title": "综合实战与作品集",
+            "description": f"综合运用以上技能，完成一个面向「{position.name}」岗位的实战项目，沉淀为可展示的作品集。",
+            "duration": "2周",
+            "resources": [
+                {"title": "岗位综合实战指南", "type": "article", "url": "", "platform": "掘金 / 知乎"},
+            ],
+        })
+        return {"name": f"{position.name}学习路径", "steps": steps}
 
     async def recommend_resources(self, skill_names: list[str]) -> dict:
         """根据技能名称推荐学习资源"""

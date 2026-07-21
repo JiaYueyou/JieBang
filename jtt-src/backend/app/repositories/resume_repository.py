@@ -45,8 +45,8 @@ class ResumeRepository:
 
     async def duplicate(self, resume: Resume) -> Resume:
         """复制简历（生成副本）"""
-        # 将 SQLAlchemy 对象转为 dict，排除 id 和时间戳
+        # 将 SQLAlchemy 对象转为 dict，排除 id、外键和时间戳（user_id 由 create 单独传入）
         data = {c.name: getattr(resume, c.name) for c in resume.__table__.columns
-                if c.name not in ("id", "created_at", "updated_at")}
+                if c.name not in ("id", "user_id", "created_at", "updated_at")}
         data["name"] = f"{resume.name} (副本)"
         return await self.create(resume.user_id, data)

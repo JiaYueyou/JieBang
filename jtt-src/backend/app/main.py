@@ -46,6 +46,13 @@ async def lifespan(app: FastAPI):
             await create_initial_admin()
         except Exception as e:
             logger.warning(f"创建初始管理员失败（可能数据库未就绪）: {e}")
+    # 种子数据（岗位、简历、学习路径、收藏），仅在表为空时填充
+    try:
+        from app.seed import seed_all
+        await seed_all()
+        logger.info("种子数据检查完成")
+    except Exception as e:
+        logger.warning(f"种子数据填充失败（可能数据库未就绪）: {e}")
     try:
         get_driver()  # 初始化 Neo4j 连接
     except Exception as e:

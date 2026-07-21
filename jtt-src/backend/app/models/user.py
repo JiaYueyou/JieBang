@@ -23,5 +23,5 @@ class User(Base):
     # 统计字段
     resume_count: Mapped[int] = mapped_column(default=0, comment="简历数量")
     match_history_count: Mapped[int] = mapped_column(default=0, comment="匹配历史次数")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="创建时间")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), comment="更新时间")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="创建时间")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")

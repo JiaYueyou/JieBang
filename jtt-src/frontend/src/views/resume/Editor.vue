@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useResumeStore } from '@/stores/resume'
 import { ElMessage } from 'element-plus'
 import type { ResumeData } from '@/types'
-import { mockResumes } from '@/mock/data/resume'
 import { generateOptimizedPhrases } from '@/mock/data/tailor'
 
 const route = useRoute()
 const router = useRouter()
+const resumeStore = useResumeStore()
+
+const loading = ref(false)
+const saving = ref(false)
+const isEdit = ref(false)
 
 const resume = reactive<Partial<ResumeData>>({
   name: '新建简历',
@@ -20,12 +25,21 @@ const resume = reactive<Partial<ResumeData>>({
   selfEvaluation: '',
 })
 
-watch(() => route.params.id, (id) => {
-  if (id) {
-    const existing = mockResumes.find((r) => r.id === id)
-    if (existing) Object.assign(resume, JSON.parse(JSON.stringify(existing)))
+onMounted(async () => {
+  const id = route.params.id as string | undefined
+  if (!id) return
+  isEdit.value = true
+  loading.value = true
+  try {
+    await resumeStore.fetchDetail(id)
+    const data = resumeStore.currentResume
+    if (data) Object.assign(resume, JSON.parse(JSON.stringify(data)))
+  } catch {
+    ElMessage.warning('加载简历失败，使用离线数据')
+  } finally {
+    loading.value = false
   }
-}, { immediate: true })
+})
 
 // AI phrase optimization
 const showOptimizer = ref(false)
@@ -56,9 +70,26 @@ const applyPhrase = (phrase: string, field: keyof typeof resume) => {
   ElMessage.success('已应用优化语句')
 }
 
-const handleSave = () => {
-  ElMessage.success('简历已保存')
-  router.push('/resumes')
+const handleSave = async () => {
+  if (!resume.name?.trim()) {
+    ElMessage.warning('请输入简历名称')
+    return
+  }
+  saving.value = true
+  try {
+    if (isEdit.value && route.params.id) {
+      await resumeStore.update(route.params.id as string, resume)
+      ElMessage.success('简历已更新')
+    } else {
+      await resumeStore.create(resume)
+      ElMessage.success('简历已创建')
+    }
+    router.push('/diagnosis')
+  } catch {
+    ElMessage.error('保存失败，请重试')
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -68,11 +99,16 @@ const handleSave = () => {
       <el-input v-model="resume.name" class="name-input" size="large" placeholder="简历名称" />
       <div>
         <el-button @click="router.back()">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
       </div>
     </div>
 
-    <div class="editor-body">
+    <div v-if="loading" class="editor-loading">
+      <el-icon class="loading-spin" :size="32"><Loading /></el-icon>
+      <span>加载中...</span>
+    </div>
+
+    <div v-else class="editor-body">
       <!-- Left: Form -->
       <div class="editor-form">
         <el-card class="form-section">
@@ -166,6 +202,24 @@ const handleSave = () => {
 
 <style scoped>
 .editor-page { max-width: 1200px; margin: 0 auto; }
+
+.editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.loading-spin { animation: spin 1s linear infinite; color: var(--brand); }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .editor-header {
   display: flex;

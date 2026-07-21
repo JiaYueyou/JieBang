@@ -3,10 +3,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { mockHistoryMatches } from '@/mock/data/match'
+import { useMatchStore } from '@/stores/match'
 
 const router = useRouter()
 const userStore = useUserStore()
+const matchStore = useMatchStore()
 
 const profileFormRef = ref()
 const passwordFormRef = ref()
@@ -43,6 +44,7 @@ onMounted(async () => {
   if (userStore.isLoggedIn) {
     await userStore.fetchProfile()
   }
+  await matchStore.fetchHistory()
   if (userStore.user) {
     profileForm.nickname = userStore.user.nickname || ''
     profileForm.email = userStore.user.email || ''
@@ -190,9 +192,9 @@ const getScoreColor = (score: number) => {
 
     <!-- 快捷入口 -->
     <div class="quick-links">
-      <el-card class="link-card" @click="router.push('/resumes')">
+      <el-card class="link-card" @click="router.push('/diagnosis')">
         <el-icon :size="24"><Document /></el-icon>
-        <span>我的简历</span>
+        <span>简历诊断</span>
       </el-card>
       <el-card class="link-card" @click="router.push('/favorites')">
         <el-icon :size="24"><Star /></el-icon>
@@ -202,24 +204,24 @@ const getScoreColor = (score: number) => {
         <el-icon :size="24"><Guide /></el-icon>
         <span>学习路径</span>
       </el-card>
-      <el-card class="link-card" @click="router.push('/match')">
-        <el-icon :size="24"><Connection /></el-icon>
-        <span>匹配诊断</span>
+      <el-card class="link-card" @click="router.push('/career')">
+        <el-icon :size="24"><TrendCharts /></el-icon>
+        <span>职业发展</span>
       </el-card>
     </div>
 
     <!-- 匹配历史 -->
     <el-card class="history-card">
       <template #header><span class="card-title">匹配历史</span></template>
-      <div v-if="mockHistoryMatches.length === 0" class="no-history">
+      <div v-if="matchStore.history.length === 0" class="no-history">
         <el-empty description="暂无匹配记录" />
       </div>
       <div v-else class="history-list">
         <div
-          v-for="m in mockHistoryMatches"
+          v-for="m in matchStore.history"
           :key="m.id"
           class="history-item"
-          @click="router.push(`/match/result/${m.resumeId}/${m.positionId}`)"
+          @click="router.push(`/diagnosis/${m.resumeId}`)"
         >
           <div class="h-left">
             <h5>{{ m.resumeName }} → {{ m.positionName }}</h5>

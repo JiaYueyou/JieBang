@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { MatchResult } from '@/types'
-import { mockResumes } from '@/mock/data/resume'
+import { useResumeStore } from '@/stores/resume'
 import { matchApi } from '@/api/match'
 
 const props = withDefaults(
@@ -16,10 +16,13 @@ const props = withDefaults(
 )
 
 const router = useRouter()
+const resumeStore = useResumeStore()
 const visible = ref(false)
 const dialogVisible = ref(false)
 const batchLoading = ref(false)
 const batchResults = ref<MatchResult[]>([])
+
+onMounted(() => resumeStore.fetchList())
 
 const popoverTitle = props.mode === 'detail' ? '选择简历开始匹配诊断' : '选择简历发起匹配'
 
@@ -27,7 +30,7 @@ const handleSelectResume = async (resumeId: string) => {
   visible.value = false
 
   if (props.mode === 'detail' && props.positionId) {
-    router.push(`/match/result/${resumeId}/${props.positionId}`)
+    router.push(`/diagnosis/${resumeId}?positionId=${props.positionId}&focusPos=true`)
     return
   }
 
@@ -69,7 +72,7 @@ const getScoreColor = (score: number) => {
         <div class="popover-title">{{ popoverTitle }}</div>
         <div class="resume-options">
           <div
-            v-for="r in mockResumes"
+            v-for="r in resumeStore.resumes"
             :key="r.id"
             class="resume-option"
             :class="{ loading: batchLoading }"
@@ -84,7 +87,7 @@ const getScoreColor = (score: number) => {
           </div>
         </div>
         <div class="popover-footer">
-          <el-button text size="small" @click="router.push('/resume/upload')">上传新简历</el-button>
+          <el-button text size="small" @click="router.push('/diagnosis')">新建简历</el-button>
         </div>
       </div>
     </transition>
@@ -113,7 +116,7 @@ const getScoreColor = (score: number) => {
         <div class="batch-left">
           <span class="batch-pos-name">{{ r.positionName }}</span>
           <el-tag size="small" effect="plain" type="info">
-            {{ mockResumes.find((rr) => rr.id === r.resumeId)?.name || '未知简历' }}
+            {{ resumeStore.resumes.find((rr) => rr.id === r.resumeId)?.name || '未知简历' }}
           </el-tag>
         </div>
         <div class="batch-score" :style="{ color: getScoreColor(r.totalScore) }">

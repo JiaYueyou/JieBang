@@ -5,6 +5,8 @@ import { mockResumes } from './data/resume'
 import { mockMatchResults, mockHistoryMatches } from './data/match'
 import { mockTailorSuggestions, generateOptimizedPhrases } from './data/tailor'
 import { mockLearningPaths } from './data/learning'
+import { mockNotes } from './data/notes'
+import { mockCareerAssessments, mockCareerPlans } from './data/career'
 
 const BASE = '/api'
 
@@ -365,6 +367,157 @@ export const handlers = [
       ]
     }
     return HttpResponse.json({ code: 200, message: 'ok', data: { skills } })
+  }),
+
+  // Match auto-detect
+  http.post(`${BASE}/match/auto-detect`, async ({ request }) => {
+    await delay(800)
+    const body = await request.json() as { resumeId: string }
+    // 返回该简历对应所有已知匹配结果，未预计算的随机低分
+    const allPositions = mockPositions.map((pos) => {
+      const key = `${body.resumeId}_${pos.id}`
+      return mockMatchResults[key] || {
+        id: `m-auto-${Date.now()}-${pos.id}`,
+        resumeId: body.resumeId,
+        positionId: pos.id,
+        positionName: pos.name,
+        resumeName: mockResumes.find((r) => r.id === body.resumeId)?.name || '未知简历',
+        totalScore: Math.floor(Math.random() * 40) + 45,
+        dimensions: [
+          { name: '技能匹配', score: 65, weight: 0.4, details: '' },
+          { name: '经验匹配', score: 60, weight: 0.3, details: '' },
+          { name: '学历匹配', score: 75, weight: 0.15, details: '' },
+          { name: '综合素质', score: 55, weight: 0.15, details: '' },
+        ],
+        gapAnalysis: { missingSkills: [], weakSkills: [], matchSkills: [] },
+        suggestions: [],
+        matchDate: new Date().toISOString(),
+      }
+    })
+    return HttpResponse.json({ code: 200, message: 'ok', data: allPositions })
+  }),
+
+  // Learning: generate path from skill gaps
+  http.post(`${BASE}/learning/generate-from-gaps`, async ({ request }) => {
+    await delay(1500)
+    const body = await request.json() as { resumeId: string; positionId: string }
+    const position = mockPositions.find((p) => p.id === body.positionId)
+    const gapPath = {
+      id: `lp-gap-${Date.now()}`,
+      name: `${position?.name || '目标岗位'} 技能补齐路径`,
+      positionId: body.positionId,
+      positionName: position?.name || '',
+      steps: (position?.requiredSkills || []).map((skill, idx) => ({
+        id: `gap-step-${idx + 1}`,
+        order: idx + 1,
+        title: `学习 ${skill.name}`,
+        description: `掌握 ${skill.name}（${skill.category}）的核心知识和实践技能`,
+        duration: idx < 2 ? '1-2周' : '2-3周',
+        resources: [
+          { id: `gr-${idx}-1`, title: `${skill.name} 入门实战`, type: 'course' as const, url: '', platform: '慕课网' },
+          { id: `gr-${idx}-2`, title: `${skill.name} 官方文档`, type: 'article' as const, url: '', platform: '官网' },
+        ],
+        completed: false,
+      })),
+      totalDuration: `${(position?.requiredSkills?.length || 3) * 2}周`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    return HttpResponse.json({ code: 200, message: 'ok', data: gapPath })
+  }),
+
+  // Favorites
+  http.post(`${BASE}/favorites/position`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  http.get(`${BASE}/favorites/learning-paths`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: mockLearningPaths.map((p) => p.id) })
+  }),
+
+  http.post(`${BASE}/favorites/learning-path`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  http.get(`${BASE}/favorites/notes`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: mockNotes })
+  }),
+
+  http.post(`${BASE}/favorites/notes`, async ({ request }) => {
+    await delay(300)
+    const body = await request.json() as any
+    const note = {
+      id: `n-${Date.now()}`,
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    mockNotes.unshift(note)
+    return HttpResponse.json({ code: 200, message: 'ok', data: note })
+  }),
+
+  http.put(`${BASE}/favorites/notes/:id`, async ({ params, request }) => {
+    await delay(300)
+    const body = await request.json() as any
+    const idx = mockNotes.findIndex((n) => n.id === params.id)
+    if (idx >= 0) {
+      mockNotes[idx] = { ...mockNotes[idx], ...body, updatedAt: new Date().toISOString() }
+      return HttpResponse.json({ code: 200, message: 'ok', data: mockNotes[idx] })
+    }
+    return HttpResponse.json({ code: 404, message: 'not found', data: null }, { status: 404 })
+  }),
+
+  http.delete(`${BASE}/favorites/notes/:id`, async ({ params }) => {
+    await delay(200)
+    const idx = mockNotes.findIndex((n) => n.id === params.id)
+    if (idx >= 0) mockNotes.splice(idx, 1)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  // Career
+  http.get(`${BASE}/career/plan`, async () => {
+    await delay(200)
+    const plan = mockCareerPlans[0] || null
+    return HttpResponse.json({ code: 200, message: 'ok', data: plan })
+  }),
+
+  http.post(`${BASE}/career/plan`, async ({ request }) => {
+    await delay(300)
+    const body = await request.json() as any
+    const plan = {
+      id: `cp-${Date.now()}`,
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    if (mockCareerPlans.length > 0) {
+      mockCareerPlans[0] = plan
+    } else {
+      mockCareerPlans.push(plan)
+    }
+    return HttpResponse.json({ code: 200, message: 'ok', data: plan })
+  }),
+
+  http.post(`${BASE}/career/assess`, async ({ request }) => {
+    await delay(1500)
+    const body = await request.json() as { resumeId: string; targetPositionId: string; budget: { weeklyHours: number; totalWeeks: number } }
+    const key = `${body.resumeId}_${body.targetPositionId}`
+    const assessment =
+      mockCareerAssessments[key] || {
+        currentMatchDegree: Math.floor(Math.random() * 30) + 45,
+        transferableSkills: [],
+        missingSkills: mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills || [],
+        recommendationReasons: ['该岗位与你的技能有一定关联', '行业发展前景良好'],
+        advantages: ['具备编程基础能力'],
+        risks: ['需要系统学习新领域知识', '学习成本较高'],
+        learningTimeline: `${Math.ceil((mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills.length || 4) / 2)}-${mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills.length || 4}个月`,
+        feasibilityRating: 'medium' as const,
+      }
+    return HttpResponse.json({ code: 200, message: 'ok', data: assessment })
   }),
 
   http.post(`${BASE}/learning/assistant/quiz`, async () => {

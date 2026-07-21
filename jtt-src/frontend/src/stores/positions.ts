@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { JobPosition, GraphNode, GraphEdge } from '@/types'
 import { positionsApi } from '@/api/positions'
+import { positionFromApi } from '@/utils/transform'
 
 export const usePositionsStore = defineStore('positions', () => {
   const positions = ref<JobPosition[]>([])
@@ -15,7 +16,7 @@ export const usePositionsStore = defineStore('positions', () => {
     loading.value = true
     try {
       const res: any = await positionsApi.getList(params || {})
-      positions.value = res.data.list
+      positions.value = (res.data.list || []).map(positionFromApi)
       total.value = res.data.total
     } finally {
       loading.value = false
@@ -26,7 +27,7 @@ export const usePositionsStore = defineStore('positions', () => {
     loading.value = true
     try {
       const res: any = await positionsApi.getDetail(id)
-      currentPosition.value = res.data
+      currentPosition.value = positionFromApi(res.data)
     } finally {
       loading.value = false
     }
