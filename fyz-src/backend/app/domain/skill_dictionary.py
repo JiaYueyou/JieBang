@@ -62,6 +62,7 @@ SKILL_DICT = {
 _SKILL_NAMES_CASEFOLD = {name.casefold(): name for name in SKILL_DICT}
 
 SKILL_ALIASES = {
+    # ── 大小写别名 ──
     "k8s": "Kubernetes",
     "springboot": "Spring Boot",
     "spring boot": "Spring Boot",
@@ -81,6 +82,13 @@ SKILL_ALIASES = {
     "golang": "Go",
     "mongo": "MongoDB",
     "zk": "ZooKeeper",
+    # ── 来自 data_analysis 的补充别名 ──
+    ".net": "C#",
+    "node": "Node.js",
+    "pytorch": "PyTorch",
+    "tf": "TensorFlow",
+    "es6": "JavaScript",
+    "ai": "大模型",
 }
 
 
