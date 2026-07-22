@@ -256,6 +256,67 @@ export interface CareerPlan {
 }
 
 // ========== API 通用响应 ==========
+// ========== AI 助手相关 ==========
+export interface ChatAction {
+  label: string
+  to: string
+  icon?: string
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  images?: string[]
+  timestamp: number
+  relatedConcepts?: { name: string; nodeId: string; relation: string }[]
+  suggestedResources?: LearningResource[]
+  followUpQuestions?: string[]
+  actions?: ChatAction[]
+}
+
+export interface PageContext {
+  name: string
+  path: string
+  params?: Record<string, any>
+  positionId?: string
+  positionName?: string
+  resumeId?: string
+  /** 当前页面的简历数据（完整） */
+  resumeData?: {
+    name: string
+    targetPosition: string
+    skills: { name: string; level: string; category: string }[]
+    workExperience: { company: string; position: string; description: string; skills: string[] }[]
+    education: { school: string; degree: string; major: string }[]
+  }
+  /** 当前页面的匹配结果数据 */
+  matchData?: {
+    totalScore: number
+    positionName: string
+    resumeName: string
+    dimensions: { name: string; score: number; weight: number }[]
+    missingSkills: string[]
+    weakSkills: string[]
+    matchSkills: string[]
+  }
+}
+
+export interface AssistantChatRequest {
+  message: string
+  images?: string[]
+  pageContext?: PageContext
+  history?: { role: 'user' | 'assistant'; content: string }[]
+}
+
+export interface AssistantChatResponse {
+  reply: string
+  relatedConcepts?: { name: string; nodeId: string; relation: string }[]
+  suggestedResources?: LearningResource[]
+  followUpQuestions?: string[]
+  actions?: ChatAction[]
+}
+
 export interface ApiResponse<T> {
   code: number
   message: string

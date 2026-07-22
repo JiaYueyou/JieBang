@@ -1,12 +1,28 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { LearningPath, LearningStep } from '@/types'
 import { learningApi } from '@/api/learning'
 import { pathFromApi } from '@/utils/transform'
 
+const STORAGE_KEY = 'jiebang_learning_paths'
+
+function loadSavedPaths(): LearningPath[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function savePaths(paths: LearningPath[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(paths)) } catch {}
+}
+
 export const useLearningStore = defineStore('learning', () => {
-  const paths = ref<LearningPath[]>([])
+  const paths = ref<LearningPath[]>(loadSavedPaths())
   const loading = ref(false)
+
+  // Persist to localStorage on every change
+  watch(paths, (val) => savePaths(val), { deep: true })
 
   const fetchPaths = async () => {
     loading.value = true

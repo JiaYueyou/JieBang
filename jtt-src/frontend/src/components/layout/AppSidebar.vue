@@ -15,6 +15,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { key: 'home', label: '首页', icon: 'HomeFilled', path: '/home' },
   { key: 'positions', label: '岗位探索', icon: 'Compass', path: '/positions' },
+  { key: 'career', label: '职业发展', icon: 'TrendCharts', path: '/career' },
   { key: 'graph', label: '知识图谱', icon: 'Share', path: '/graph' },
   { key: 'favorites', label: '我的收藏', icon: 'Star', path: '/favorites' },
   { key: 'diagnosis', label: '简历诊断', icon: 'Document', path: '/diagnosis' },
@@ -27,6 +28,7 @@ const activeKey = computed(() => {
   if (['Home'].includes(name)) return 'home'
   if (['Positions', 'PositionDetail'].includes(name)) return 'positions'
   if (['Graph'].includes(name)) return 'graph'
+  if (['Career'].includes(name)) return 'career'
   if (['Favorites'].includes(name)) return 'favorites'
   if (['DiagnosisIndex', 'DiagnosisDetail'].includes(name)) return 'diagnosis'
   if (['Career'].includes(name)) return 'career'

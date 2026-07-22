@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useFavoritesStore } from '@/stores/favorites'
 import { learningApi } from '@/api/learning'
+import { assistantApi } from '@/api/assistant'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { LearningPath, LearningResource } from '@/types'
 
@@ -27,17 +28,18 @@ const quizSubmitted = ref(false)
 const quizLoading = ref(false)
 
 // ========== AI 助手 ==========
-const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[] }[]>([])
+const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }[]>([])
 const chatInput = ref('')
 const chatLoading = ref(false)
 const chatContainerRef = ref<HTMLDivElement>()
+const flowState = ref<'idle' | 'awaiting_position' | 'awaiting_skill' | 'awaiting_scenario' | 'awaiting_target'>('idle')
 
 // 预设快捷指令
 const presetCommands = [
-  { label: '生成学习路径', icon: '🎯', msg: '请根据 Java 开发工程师岗位，为我生成一份学习路径' },
-  { label: '推荐学习资源', icon: '📚', msg: '推荐 Spring Boot 和微服务的学习资源' },
-  { label: '学习路线咨询', icon: '🧭', msg: '我是一名后端开发，想转行 AI 智能体方向，应该怎么学？' },
-  { label: '技能差距分析', icon: '📊', msg: '分析我当前技能与目标岗位的差距' },
+  { label: '生成学习路径', icon: '🎯', msg: '__gen_path__' },
+  { label: '推荐学习资源', icon: '📚', msg: '__rec_resource__' },
+  { label: '学习路线咨询', icon: '🧭', msg: '__career_advice__' },
+  { label: '技能差距分析', icon: '📊', msg: '__gap_analysis__' },
 ]
 
 // 资源类型图标映射
@@ -127,13 +129,17 @@ const getQuizOptionIcon = (qIdx: number, optIdx: number) => {
   return ''
 }
 
-// ========== AI 聊天 ==========
+// ========== AI 聊天（含学习路径生成流程）==========
 const scrollChatToBottom = () => {
   nextTick(() => {
     if (chatContainerRef.value) {
       chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
     }
   })
+}
+
+const addAssistantMsg = (content: string, extras?: { concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }) => {
+  chatMessages.value.push({ role: 'assistant', content, ...extras })
 }
 
 const sendMessage = async () => {
@@ -143,7 +149,97 @@ const sendMessage = async () => {
   chatMessages.value.push({ role: 'user', content: msg })
   chatLoading.value = true
   scrollChatToBottom()
-  try {
+
+  // ── Flow: user answered the clarifying question ──
+  const currentFlow = flowState.value
+  flowState.value = 'idle'
+
+  if (currentFlow === 'awaiting_position') {
+    const positionName = msg
+
+    // Show "generating" message
+    addAssistantMsg('正在联网搜索「' + positionName + '」的最新技能要求并生成学习路径，请稍候…（约15-30秒）')
+    scrollChatToBottom()
+
+    try {
+      const res: any = await assistantApi.generateLearningPath(positionName)
+      const data = res.data
+      if (!data || !data.steps || data.steps.length === 0) {
+        throw new Error('未生成有效路径')
+      }
+
+      // Build detailed step display
+      let reply = '## ' + data.pathName + '\n\n'
+      reply += '**目标岗位**：' + data.positionName + '\n'
+      reply += '**总时长**：' + data.totalDuration + '\n'
+      reply += '**信息来源**：' + data.sourceNote
+      if (data.searchResultsCount) {
+        reply += '（检索到 ' + data.searchResultsCount + ' 条相关信息）'
+      }
+      reply += '\n\n---\n\n'
+
+      for (let i = 0; i < data.steps.length; i++) {
+        const s = data.steps[i]
+        reply += '### ' + (i + 1) + '. ' + s.title + '（' + s.duration + '）\n'
+        reply += s.description + '\n\n'
+        if (s.resources && s.resources.length > 0) {
+          reply += '推荐资源：\n'
+          for (const r of s.resources) {
+            reply += '- ' + (resourceIcons[r.type] || '📌') + ' **' + r.title + '** @' + r.platform + '\n'
+          }
+          reply += '\n'
+        }
+      }
+
+      chatLoading.value = false
+      addAssistantMsg(reply, {
+        followUps: ['其他岗位推荐', '优化这个学习路径', '生成测试题'],
+        isPath: true,
+      })
+      scrollChatToBottom()
+
+      // Add to learning paths store (right panel)
+      const newPath: any = {
+        id: 'lp-gen-' + Date.now(),
+        name: data.pathName,
+        positionId: '',
+        positionName: data.positionName,
+        steps: data.steps.map((s: any, idx: number) => ({
+          id: 'step-gen-' + idx + '-' + Date.now(),
+          order: idx + 1,
+          title: s.title,
+          description: s.description,
+          duration: s.duration,
+          resources: (s.resources || []).map((r: any, ri: number) => ({
+            id: 'res-gen-' + idx + '-' + ri,
+            title: r.title,
+            type: r.type || 'course',
+            url: '',
+            platform: r.platform || '',
+          })),
+          completed: false,
+        })),
+        totalDuration: data.totalDuration,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      learningStore.paths.unshift(newPath)
+      nextTick(() => { expandedId.value = newPath.id })
+      ElMessage.success('学习路径已生成并添加到列表')
+      return
+    } catch (e: any) {
+      chatLoading.value = false
+      const errMsg = e?.response?.data?.detail?.message || e?.message || '生成失败'
+      addAssistantMsg('抱歉，生成学习路径时出错：' + errMsg + '\n\n请重试或换个岗位名称。', {
+        followUps: ['重新生成', '换个岗位'],
+      })
+      scrollChatToBottom()
+      return
+    }
+  }
+
+  	  // ── Normal AI chat (all flows reach here) ──
+	try {
     const res: any = await learningApi.chat({ message: msg })
     const data = res.data
     chatMessages.value.push({
@@ -162,11 +258,47 @@ const sendMessage = async () => {
 }
 
 const onPresetClick = (msg: string) => {
+  if (chatLoading.value) return
+
+  if (msg === '__gen_path__') {
+    flowState.value = 'awaiting_position'
+    chatMessages.value.push({ role: 'user', content: '生成学习路径' })
+    addAssistantMsg('好的！请问您想要生成**哪个岗位**的学习路径呢？\n\n例如：Java开发工程师、AI智能体开发、前端工程师、大数据工程师…')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__rec_resource__') {
+    flowState.value = 'awaiting_skill'
+    chatMessages.value.push({ role: 'user', content: '推荐学习资源' })
+    addAssistantMsg('好的！请问您想学习**哪个技能或技术方向**的资源？\n\n例如：Spring Boot、Python、Docker、机器学习…')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__career_advice__') {
+    flowState.value = 'awaiting_scenario'
+    chatMessages.value.push({ role: 'user', content: '学习路线咨询' })
+    addAssistantMsg('好的！请简单描述一下您的情况和问题，例如：\n\n- "我是一名后端开发，想转行 AI 方向，应该怎么学？"\n- "我是零基础，想学前端开发，从哪开始？"\n- "工作3年了，想提升系统架构能力，有什么路线？"')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__gap_analysis__') {
+    flowState.value = 'awaiting_target'
+    chatMessages.value.push({ role: 'user', content: '技能差距分析' })
+    addAssistantMsg('好的！请问您的**目标岗位**是什么？我来对比您当前的技能进行分析。\n\n例如：Java后端工程师、AI算法工程师、全栈开发…')
+    scrollChatToBottom()
+    return
+  }
+
+  // Fallback: normal chat
   chatInput.value = msg
   sendMessage()
 }
 
 const onFollowUpClick = (msg: string) => {
+  if (chatLoading.value) return
   chatInput.value = msg
   sendMessage()
 }

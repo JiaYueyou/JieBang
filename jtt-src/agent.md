@@ -497,7 +497,57 @@ RETURN n.id AS id, n.label AS label, n.type AS type LIMIT 5
 
 ## 5. 附录
 
+<<<<<<< HEAD
 ### 5.1 前端组件对照表
+=======
+### 5.1 AI 助手独立服务（选项 A）
+
+JTT 前端 AI 浮窗（FloatingAIButton）支持接入真实大模型，通过独立的 LLM 代理服务实现，**不依赖 MySQL/Neo4j/Redis**。
+
+#### 架构
+
+```
+JTT 前端 (port 5173)
+  │
+  ├── /api/assistant/chat ──────────► AI 助手服务 (port 8001) ──► DeepSeek API
+  │                                    (standalone, 仅需 API Key)
+  │
+  └── /api/* （其他请求）────────────► 主后端 (port 8000)
+                                       (需 MySQL + Neo4j)
+```
+
+#### 位置
+
+`jtt-src/ai-assistant/` — 完整的独立服务，含 README 和配置模板。
+
+#### 快速启动
+
+```bash
+cd jtt-src/ai-assistant
+cp .env.example .env
+# 编辑 .env，填入 DEEPSEEK_API_KEY
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+详见 `jtt-src/ai-assistant/README.md`。
+
+#### API 端点
+
+| 方法 | 路径 | 说明 | 超时 |
+|------|------|------|------|
+| POST | `/api/assistant/chat` | AI 对话（支持上下文+页面数据） | 60s |
+| GET | `/health` | 健康检查 | — |
+
+#### 降级策略
+
+AI 助手服务不可用时（服务未启动或无 API Key）：
+- 前端请求会返回 503 错误
+- FloatingAIButton 显示"AI 服务暂不可用"提示
+- 其他业务功能（岗位浏览、简历管理、匹配诊断）不受影响
+
+### 5.2 前端组件对照表
+>>>>>>> 2c75d7d (feat(jtt): AI assistant DeepSeek integration + career page + auto-match + path persistence)
 
 | Agent | 页面 | 前端组件 | 触发操作 |
 |-------|------|---------|---------|
@@ -508,6 +558,7 @@ RETURN n.id AS id, n.label AS label, n.type AS type LIMIT 5
 | Agent 3 | 岗位探索页 | `QuickMatchFab.vue` | 右下角 "+" → 选择简历 → 查看匹配结果 |
 | Agent 3 | 简历诊断页 | `diagnosis/Index.vue` | 展开简历 → 自动加载匹配结果 |
 
+<<<<<<< HEAD
 ### 5.2 LLM Provider 配置
 
 ```
@@ -520,6 +571,32 @@ TESTING = False  # True 时使用 MockLLMProvider，不调用真实 API
 ```
 
 ### 5.3 Neo4j 图谱 Schema
+=======
+### 5.3 LLM Provider 配置
+
+#### 主后端（FYZ，全功能模式）
+
+```
+# fyz-src/backend/.env
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_TIMEOUT_SECONDS=60
+```
+
+#### AI 助手独立服务（JTT，选项 A）
+
+```
+# jtt-src/ai-assistant/.env
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_TIMEOUT_SECONDS=60
+SERVICE_PORT=8001
+```
+
+### 5.4 Neo4j 图谱 Schema
+>>>>>>> 2c75d7d (feat(jtt): AI assistant DeepSeek integration + career page + auto-match + path persistence)
 
 ```
 (Position {id, name})
@@ -531,7 +608,11 @@ TESTING = False  # True 时使用 MockLLMProvider，不调用真实 API
 (SkillChange {skill_name, change_type, description}) -- 技能变化历史
 ```
 
+<<<<<<< HEAD
 ### 5.4 文件索引
+=======
+### 5.5 文件索引
+>>>>>>> 2c75d7d (feat(jtt): AI assistant DeepSeek integration + career page + auto-match + path persistence)
 
 | 层级 | 文件 | 对应 Agent |
 |------|------|-----------|
@@ -553,3 +634,10 @@ TESTING = False  # True 时使用 MockLLMProvider，不调用真实 API
 | 前端 API | `api/tailor.ts` | Agent 1 |
 | 前端 API | `api/learning.ts` | Agent 2 |
 | 前端 API | `api/match.ts` | Agent 3 |
+<<<<<<< HEAD
+=======
+| 前端 API | `api/assistant.ts` | 全局 AI 助手 |
+| 前端组件 | `components/common/FloatingAIButton.vue` | 全局 AI 助手 |
+| 前端 Store | `stores/pageContext.ts` | 全局 AI 助手 |
+| AI 服务 | `ai-assistant/main.py` | 全局 AI 助手（选项 A） |
+>>>>>>> 2c75d7d (feat(jtt): AI assistant DeepSeek integration + career page + auto-match + path persistence)

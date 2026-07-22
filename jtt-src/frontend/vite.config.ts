@@ -16,6 +16,18 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/api/learning/assistant': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/api/assistant': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/api/tailor/optimize-phrase': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://127.0.0.1:8001',
         changeOrigin: true,
