@@ -46,7 +46,7 @@ const goToPosition = (id: string) => router.push(`/positions/${id}`)
     <!-- 上半部分 -->
     <section class="hero-section">
       <div class="welcome-text">
-        <h1>早上好，求职者</h1>
+        <h1>你好，求职者</h1>
         <p>发现最适合你的职业方向，让 AI 帮你打造完美简历</p>
       </div>
       <div class="quick-actions">

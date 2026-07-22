@@ -132,16 +132,43 @@ const handleSave = async () => {
         </el-card>
 
         <el-card class="form-section">
-          <template #header><span class="sec-title">工作经历</span></template>
+          <template #header>
+            <div class="section-header">
+              <span class="sec-title">工作经历</span>
+              <el-button type="primary" text size="small" @click="resume.workExperience!.push({ company: '', position: '', startDate: '', endDate: '', description: '', skills: [] })">
+                + 添加
+              </el-button>
+            </div>
+          </template>
+          <div v-if="!resume.workExperience?.length" class="empty-hint">暂无工作经历，点击"添加"录入</div>
           <div v-for="(exp, i) in resume.workExperience" :key="i" class="exp-block">
-            <el-input v-model="exp.company" placeholder="公司" size="small" />
-            <el-input v-model="exp.position" placeholder="职位" size="small" style="margin-top: 6px;" />
-            <div class="textarea-wrapper">
-              <el-input v-model="exp.description" type="textarea" :rows="3" placeholder="工作描述…" />
-              <el-button class="ai-btn" :icon="'Edit'" text size="small" type="success" @click="openOptimizer(exp.description)">AI 优化</el-button>
+            <div class="exp-block-header">
+              <span>经历 {{ i + 1 }}</span>
+              <el-button type="danger" text size="small" @click="resume.workExperience!.splice(i, 1)">删除</el-button>
+            </div>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-input v-model="exp.company" placeholder="公司名称" />
+              </el-col>
+              <el-col :span="12">
+                <el-input v-model="exp.position" placeholder="职位" />
+              </el-col>
+            </el-row>
+            <el-row :gutter="12" style="margin-top: 10px;">
+              <el-col :span="12">
+                <el-input v-model="exp.startDate" placeholder="开始日期" />
+              </el-col>
+              <el-col :span="12">
+                <el-input v-model="exp.endDate" placeholder="结束日期" />
+              </el-col>
+            </el-row>
+            <div style="margin-top: 10px;">
+              <div class="textarea-wrapper">
+                <el-input v-model="exp.description" type="textarea" :rows="3" placeholder="工作内容描述" />
+                <el-button class="ai-btn" text size="small" type="success" @click="openOptimizer(exp.description || '')">AI 优化</el-button>
+              </div>
             </div>
           </div>
-          <el-button text type="primary" size="small">+ 添加经历</el-button>
         </el-card>
 
         <el-card class="form-section">
@@ -160,7 +187,7 @@ const handleSave = async () => {
             <h2>{{ resume.personalInfo?.name || '姓名' }}</h2>
             <p>{{ resume.personalInfo?.email }} | {{ resume.personalInfo?.phone }}</p>
           </div>
-          <div class="preview-section">
+          <div class="preview-section" v-if="resume.workExperience">
             <h4>工作经历</h4>
             <div v-for="exp in resume.workExperience" :key="exp.company" class="pv-exp">
               <h5>{{ exp.position }} - {{ exp.company }}</h5>
@@ -249,10 +276,34 @@ const handleSave = async () => {
 
 .sec-title { font-size: 15px; font-weight: 600; }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+
 .exp-block {
   margin-bottom: 14px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--hairline);
+}
+
+.exp-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .textarea-wrapper { position: relative; margin-top: 6px; }

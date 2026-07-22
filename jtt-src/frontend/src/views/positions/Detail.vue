@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useResumeStore } from '@/stores/resume'
-import QuickMatchFab from '@/components/common/QuickMatchFab.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,8 +11,6 @@ const positionsStore = usePositionsStore()
 const favoritesStore = useFavoritesStore()
 const resumeStore = useResumeStore()
 const position = ref<any>(null)
-const relatedNodes = ref<any[]>([])
-const relatedEdges = ref<any[]>([])
 const resumeDialogVisible = ref(false)
 
 const openMatchDialog = () => {
@@ -33,11 +30,6 @@ onMounted(async () => {
     resumeStore.fetchList(),
   ])
   position.value = positionsStore.currentPosition
-  await positionsStore.fetchGraph()
-  const posId = `pos-${id}`
-  relatedEdges.value = positionsStore.graphEdges.filter((e: any) => e.source === posId)
-  const skillIds = relatedEdges.value.map((e: any) => e.target)
-  relatedNodes.value = positionsStore.graphNodes.filter((n: any) => skillIds.includes(n.id))
 })
 
 const toggleFav = async () => {
@@ -59,12 +51,58 @@ const toggleFav = async () => {
         category: position.value.category,
         career_level: position.value.careerLevel,
         salary_range: position.value.salaryRange,
-        skills: [...(position.value.requiredSkills || []), ...(position.value.preferredSkills || [])].map((s: any) => s.name),
+        skills: (position.value.requiredSkills || []).map((s: any) => s.name),
       },
       tags: position.value.techStack || [],
     })
   }
 }
+
+const stackLabel = (stack?: string) => {
+  const map: Record<string, string> = { ai: 'AI/人工智能', backend: '后端开发', data: '数据', devops: '运维/DevOps' }
+  return stack ? map[stack] || stack : ''
+}
+
+// 解析数字分条的文本，返回 {label, items}[] 结构
+const parseNumberedText = (text: string): { label?: string; items: string[] }[] => {
+  if (!text) return []
+  // 先按【xxx】分段标题拆分
+  const sectionParts = text.split(/(【[^】]+】)/)
+  const sections: { label?: string; items: string[] }[] = []
+
+  for (let i = 0; i < sectionParts.length; i++) {
+    const part = sectionParts[i]!.trim()
+    if (!part) continue
+    // 是分段标题
+    if (/^【[^】]+】$/.test(part)) {
+      continue
+    }
+    // 获取上一部分是否为标题
+    const label = i > 0 && /^【[^】]+】$/.test(sectionParts[i - 1]!.trim())
+      ? sectionParts[i - 1]!.trim()
+      : undefined
+
+    // 按数字编号拆分：1、 2. 3） 等，去掉原始编号前缀
+    const rawItems = part
+      .split(/(?=\d+[、.）)．]\s*)/)
+      .map(s => s.trim().replace(/^\d+[、.）)．]\s*/, '').trim())
+      .filter(s => s.length > 0)
+
+    if (rawItems.length > 1) {
+      sections.push({ label, items: rawItems })
+    } else if (rawItems.length === 1 && rawItems[0]) {
+      // 单条无编号的，尝试按句号拆分短句
+      const sentences = rawItems[0].split(/[。；;]/).map(s => s.trim()).filter(s => s.length > 5)
+      if (sentences.length >= 2) {
+        sections.push({ label, items: sentences.map(s => s + '。') })
+      } else {
+        sections.push({ label, items: [rawItems[0]] })
+      }
+    }
+  }
+  return sections
+}
+
 </script>
 
 <template>
@@ -76,9 +114,15 @@ const toggleFav = async () => {
           <el-tag :type="position.category === 'new' ? 'success' : ''" effect="plain">
             {{ position.category === 'new' ? '新兴岗位' : '既有岗位' }}
           </el-tag>
-          <span class="meta-text">{{ position.careerLevel === 'junior' ? '初级' : position.careerLevel === 'mid' ? '中级' : '高级' }}</span>
-          <span class="meta-text salary">{{ position.salaryRange }}</span>
-          <span class="meta-text">更新于 {{ position.updatedAt }}</span>
+          <span v-if="position.stack" class="meta-text">{{ stackLabel(position.stack) }}</span>
+          <span v-if="position.company" class="meta-text">{{ position.company }}</span>
+          <span v-if="position.city" class="meta-text">{{ position.city }}</span>
+          <span v-if="position.salaryRange" class="meta-text salary">{{ position.salaryRange }}</span>
+          <span v-if="position.postedAt" class="meta-text">发布于 {{ position.postedAt }}</span>
+        </div>
+        <div v-if="position.experience || position.education" class="header-tags">
+          <el-tag v-if="position.experience" size="small" effect="plain">{{ position.experience }}</el-tag>
+          <el-tag v-if="position.education" size="small" effect="plain">{{ position.education }}</el-tag>
         </div>
       </div>
       <div class="header-actions">
@@ -97,82 +141,96 @@ const toggleFav = async () => {
 
     <div class="detail-body">
       <div class="detail-main">
-        <!-- 岗位定义 -->
-        <el-card class="section-card">
-          <template #header><span class="card-header">岗位概述</span></template>
-          <p class="summary">{{ position.summary }}</p>
-        </el-card>
-
-        <!-- 核心职责 -->
-        <el-card class="section-card">
-          <template #header><span class="card-header">核心职责</span></template>
-          <ul class="responsibility-list">
-            <li v-for="(r, i) in position.responsibilities" :key="i">{{ r }}</li>
-          </ul>
-        </el-card>
-
-        <!-- 技能要求 -->
-        <el-card class="section-card">
-          <template #header><span class="card-header">必备技能</span></template>
-          <div class="skill-group">
-            <div v-for="sk in position.requiredSkills" :key="sk.id" class="skill-chip required">
-              {{ sk.name }}
-            </div>
-          </div>
-          <template v-if="position.preferredSkills.length > 0">
-            <div style="margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 8px;">加分技能</div>
-            <div class="skill-group">
-              <div v-for="sk in position.preferredSkills" :key="sk.id" class="skill-chip preferred">
-                {{ sk.name }}
+        <!-- JD 全文 -->
+        <el-card v-if="position.jdText" class="section-card">
+          <template #header><span class="card-header">岗位详情（JD）</span></template>
+          <div v-for="(section, si) in parseNumberedText(position.jdText)" :key="'jd-s'+si" class="item-section">
+            <div v-if="section.label" class="item-section-label">{{ section.label }}</div>
+            <div class="item-tags">
+              <div v-for="(item, ii) in section.items" :key="ii" class="item-tag">
+                <span v-if="section.items.length > 1" class="item-num">{{ ii + 1 }}</span>
+                <span class="item-text">{{ item }}</span>
               </div>
             </div>
-          </template>
+          </div>
         </el-card>
 
-        <!-- 行业应用场景 -->
-        <el-card class="section-card">
-          <template #header><span class="card-header">典型行业场景</span></template>
-          <div class="scenario-list">
-            <el-tag v-for="s in position.industryScenarios" :key="s" size="default" effect="plain" type="success">
-              {{ s }}
-            </el-tag>
+        <!-- 职责要求 -->
+        <el-card v-if="position.responsibilitiesText" class="section-card">
+          <template #header><span class="card-header">岗位职责</span></template>
+          <div v-for="(section, si) in parseNumberedText(position.responsibilitiesText)" :key="'resp-s'+si" class="item-section">
+            <div v-if="section.label" class="item-section-label">{{ section.label }}</div>
+            <div class="item-tags">
+              <div v-for="(item, ii) in section.items" :key="ii" class="item-tag">
+                <span v-if="section.items.length > 1" class="item-num">{{ ii + 1 }}</span>
+                <span class="item-text">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- 任职要求 -->
+        <el-card v-if="position.requirementsText" class="section-card">
+          <template #header><span class="card-header">任职要求</span></template>
+          <div v-for="(section, si) in parseNumberedText(position.requirementsText)" :key="'req-s'+si" class="item-section">
+            <div v-if="section.label" class="item-section-label">{{ section.label }}</div>
+            <div class="item-tags">
+              <div v-for="(item, ii) in section.items" :key="ii" class="item-tag">
+                <span v-if="section.items.length > 1" class="item-num">{{ ii + 1 }}</span>
+                <span class="item-text">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- 技能标签 -->
+        <el-card v-if="position.requiredSkills && position.requiredSkills.length > 0" class="section-card">
+          <template #header><span class="card-header">相关技能</span></template>
+          <div class="skill-group">
+            <div v-for="sk in position.requiredSkills" :key="sk.id" class="skill-chip">
+              {{ sk.name }}
+            </div>
           </div>
         </el-card>
       </div>
 
       <div class="detail-side">
-        <!-- 局部技能图谱 -->
+        <!-- 基本信息 -->
         <el-card class="section-card">
-          <template #header><span class="card-header">关联技能</span></template>
-          <div class="skill-graph-mini">
-            <div class="graph-node-pos">{{ position.name }}</div>
-            <div class="graph-links">
-              <div v-for="node in relatedNodes" :key="node.id" class="graph-node-skill">
-                {{ node.label }}
-              </div>
+          <template #header><span class="card-header">基本信息</span></template>
+          <div class="info-list">
+            <div v-if="position.company" class="info-row">
+              <span class="info-label">公司</span>
+              <span class="info-value">{{ position.company }}</span>
+            </div>
+            <div v-if="position.city" class="info-row">
+              <span class="info-label">城市</span>
+              <span class="info-value">{{ position.city }}</span>
+            </div>
+            <div v-if="position.salaryRange" class="info-row">
+              <span class="info-label">薪资</span>
+              <span class="info-value salary">{{ position.salaryRange }}</span>
+            </div>
+            <div v-if="position.experience" class="info-row">
+              <span class="info-label">经验要求</span>
+              <span class="info-value">{{ position.experience }}</span>
+            </div>
+            <div v-if="position.education" class="info-row">
+              <span class="info-label">学历要求</span>
+              <span class="info-value">{{ position.education }}</span>
+            </div>
+            <div v-if="position.stack" class="info-row">
+              <span class="info-label">技术栈</span>
+              <span class="info-value">{{ stackLabel(position.stack) }}</span>
+            </div>
+            <div v-if="position.postedAt" class="info-row">
+              <span class="info-label">发布日期</span>
+              <span class="info-value">{{ position.postedAt }}</span>
             </div>
           </div>
         </el-card>
 
-        <!-- 既有岗位：能力变化时间线 -->
-        <el-card v-if="position.category === 'existing' && position.skillChanges" class="section-card">
-          <template #header><span class="card-header">能力动态变化</span></template>
-          <div class="change-timeline">
-            <div v-for="sc in position.skillChanges" :key="sc.id" class="change-item" :class="sc.type">
-              <div class="change-dot" :class="sc.type"></div>
-              <div class="change-info">
-                <div class="change-skill">
-                  <span class="change-type">{{ sc.type === 'added' ? '新增' : sc.type === 'removed' ? '删除' : '修改' }}</span>
-                  {{ sc.skillName }}
-                </div>
-                <p class="change-desc">{{ sc.description }}</p>
-                <div class="change-meta">{{ sc.date }} · 来源：{{ sc.source }}</div>
-              </div>
-            </div>
-          </div>
-        </el-card>
-
-        <!-- 新兴岗位：生成学习路径 -->
+        <!-- 学习建议 -->
         <el-card v-if="position.category === 'new'" class="section-card">
           <template #header><span class="card-header">学习建议</span></template>
           <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">该岗位为新兴岗位，可根据必备技能自动推导学习路径</p>
@@ -180,8 +238,6 @@ const toggleFav = async () => {
         </el-card>
       </div>
     </div>
-
-    <QuickMatchFab mode="detail" :position-id="route.params.id as string" />
 
     <!-- 简历选择对话框 -->
     <el-dialog v-model="resumeDialogVisible" title="选择简历开始匹配诊断" width="480px" top="12vh">
@@ -234,6 +290,14 @@ const toggleFav = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .meta-text { font-size: 13px; color: var(--muted); }
@@ -250,13 +314,58 @@ const toggleFav = async () => {
 
 .summary { font-size: 14px; color: var(--ink); line-height: 1.6; }
 
-.responsibility-list {
-  padding-left: 18px;
-}
-.responsibility-list li {
-  font-size: 14px;
+/* 分条标签 */
+.item-section { margin-bottom: 14px; }
+.item-section:last-child { margin-bottom: 0; }
+
+.item-section-label {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ink);
-  line-height: 1.8;
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+.item-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-tag {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--canvas);
+  border-radius: 6px;
+  border-left: 3px solid var(--brand);
+  transition: background 0.15s;
+}
+.item-tag:hover {
+  background: var(--brand-light);
+}
+
+.item-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.item-text {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.65;
+  flex: 1;
 }
 
 .skill-group {
@@ -270,82 +379,22 @@ const toggleFav = async () => {
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-}
-.skill-chip.required {
   background: var(--brand-light);
   color: var(--brand);
 }
-.skill-chip.preferred {
-  background: var(--canvas);
-  color: var(--muted);
-  border: 1px solid var(--hairline);
-}
 
-.scenario-list { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Side info */
+.info-list { display: flex; flex-direction: column; gap: 10px; }
 
-/* Mini skill graph */
-.skill-graph-mini {
+.info-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
 }
 
-.graph-node-pos {
-  padding: 8px 16px;
-  background: var(--brand);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.graph-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-}
-
-.graph-node-skill {
-  padding: 6px 12px;
-  background: var(--brand-light);
-  color: var(--brand);
-  border-radius: 14px;
-  font-size: 12px;
-}
-
-/* Change timeline */
-.change-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.change-item {
-  display: flex;
-  gap: 12px;
-}
-
-.change-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-.change-dot.added { background: var(--brand); }
-.change-dot.removed { background: var(--danger); }
-.change-dot.modified { background: var(--warning); }
-
-.change-skill { font-size: 13px; font-weight: 600; color: var(--ink); }
-.change-type { font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-right: 6px; }
-.change-item.added .change-type { background: var(--brand-light); color: var(--brand); }
-.change-item.removed .change-type { background: #FFF1F0; color: var(--danger); }
-.change-item.modified .change-type { background: #FFF7E6; color: var(--warning); }
-
-.change-desc { font-size: 12px; color: var(--muted); margin: 2px 0; }
-.change-meta { font-size: 11px; color: var(--weak); }
+.info-label { font-size: 13px; color: var(--muted); }
+.info-value { font-size: 13px; color: var(--ink); font-weight: 500; }
+.info-value.salary { color: var(--danger); font-weight: 600; }
 
 /* Resume picker dialog */
 .resume-picker-list { display: flex; flex-direction: column; gap: 8px; }

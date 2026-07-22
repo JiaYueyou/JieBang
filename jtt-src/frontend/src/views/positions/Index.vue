@@ -1,25 +1,33 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import PositionCard from '@/components/positions/PositionCard.vue'
-import QuickMatchFab from '@/components/common/QuickMatchFab.vue'
 
 const router = useRouter()
 const positionsStore = usePositionsStore()
 const activeTab = ref<'all' | 'new' | 'existing'>('all')
 const keyword = ref('')
 
-onMounted(() => positionsStore.fetchPositions())
+// 加载岗位数据，根据 tab 传 category 参数
+const loadPositions = () => {
+  const params: Record<string, any> = { pageSize: 200 }
+  if (activeTab.value !== 'all') params.category = activeTab.value
+  positionsStore.fetchPositions(params)
+}
+
+onMounted(() => loadPositions())
+
+// 切换 tab 时重新请求后端
+watch(activeTab, () => loadPositions())
 
 const filtered = computed(() => {
   let list = positionsStore.positions
-  if (activeTab.value !== 'all') list = list.filter((p) => p.category === activeTab.value)
-  if (keyword.value) list = list.filter((p) => p.name.includes(keyword.value) || p.summary.includes(keyword.value))
+  if (keyword.value) {
+    list = list.filter((p) => p.name.includes(keyword.value) || p.summary.includes(keyword.value))
+  }
   return list
 })
-
-const allPositionIds = computed(() => positionsStore.positions.map((p) => p.id))
 
 const goDetail = (id: string) => router.push(`/positions/${id}`)
 </script>
@@ -35,15 +43,15 @@ const goDetail = (id: string) => router.push(`/positions/${id}`)
       <el-input v-model="keyword" placeholder="搜索岗位名称或关键词" prefix-icon="Search" clearable class="search" />
     </div>
 
+    <div v-if="positionsStore.total > 0" class="result-count">共 {{ positionsStore.total }} 个岗位</div>
+
     <div class="position-grid">
       <PositionCard v-for="pos in filtered" :key="pos.id" :position="pos" @click="goDetail(pos.id)" />
     </div>
 
-    <div v-if="filtered.length === 0" class="empty">
+    <div v-if="filtered.length === 0 && !positionsStore.loading" class="empty">
       <el-empty description="暂无匹配岗位" />
     </div>
-
-    <QuickMatchFab mode="list" :all-position-ids="allPositionIds" />
   </div>
 </template>
 
@@ -75,6 +83,12 @@ const goDetail = (id: string) => router.push(`/positions/${id}`)
 
 .search { width: 300px; }
 .search :deep(.el-input__wrapper) { border-radius: 20px; }
+
+.result-count {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
 
 .position-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .empty { padding: 60px 0; }

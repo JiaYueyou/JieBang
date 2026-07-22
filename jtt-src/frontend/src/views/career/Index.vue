@@ -174,7 +174,7 @@ const getScoreColor = (score: number) => {
             </el-form-item>
           </el-col>
         </el-row>
-        <el-button type="primary" :loading="matching" @click="analyzeGap">
+        <el-button type="primary" :loading="matching" @click="analyzeGap" style="margin-top: 20px;">
           分析技能差距
         </el-button>
       </div>
@@ -240,7 +240,7 @@ const getScoreColor = (score: number) => {
             </el-form-item>
           </el-col>
         </el-row>
-        <el-button type="primary" :loading="matching" @click="recommendPositions">
+        <el-button type="primary" :loading="matching" @click="recommendPositions" style="margin-top: 20px;">
           开始匹配推荐
         </el-button>
       </div>

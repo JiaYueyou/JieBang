@@ -51,7 +51,7 @@ async def get_resume(
     return ApiResponse(data=detail)
 
 
-@router.post("/", response_model=ApiResponse[ResumeResponse])
+@router.post("", response_model=ApiResponse[ResumeResponse])
 async def create_resume(
     req: ResumeCreate,
     user: dict = Depends(get_current_user),
