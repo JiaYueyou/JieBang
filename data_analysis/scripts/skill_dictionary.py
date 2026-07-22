@@ -3,6 +3,12 @@
 
 本文件仅为桥接层，实际定义在 fyz-src/backend/app/domain/skill_dictionary.py。
 修改技能时请编辑 backend 版本，不要编辑本文件。
+
+
+## 后续变更记录
+
+- **2026-07-22**: 新增别名 `.NET→C#`、`Node→Node.js`、`Pytorch→PyTorch`、`TF→TensorFlow`、`ES6→JavaScript`
+- **2026-07-22**: 别名 `AI→大模型` 已回滚。理由：`AI` 含义过宽（可指人工智能领域、AI 算法岗、AI 工具等），不应硬映射到单一技能词条 `大模型`。
 """
 
 import sys

@@ -49,7 +49,7 @@ from app.domain.skill_dictionary import SKILL_DICT, SKILL_ALIASES, normalize_ski
 
 | 文件 | 改动 |
 |:-----|:------|
-| `fyz-src/backend/app/domain/skill_dictionary.py` | **权威源**，新增 6 个别名（`.NET→C#`、`Node→Node.js`、`Pytorch→PyTorch`、`TF→TensorFlow`、`ES6→JavaScript`、`AI→大模型`） |
+| `fyz-src/backend/app/domain/skill_dictionary.py` | **权威源**，新增 6 个别名（`.NET→C#`、`Node→Node.js`、`Pytorch→PyTorch`、`TF→TensorFlow`、`ES6→JavaScript`、`AI→大模型`）**【注：`AI→大模型` 已回滚，见下方说明】** |
 | `data_analysis/scripts/skill_dictionary.py` | 原独立副本 → 改为导入桥接层，实际定义指向 backend |
 | `data_analysis/scripts/skill_extractor.py` | 导入来源不变（`from skill_dictionary import ...`），因上层已是桥接，自动指向权威源 |
 | `scripts/clean_kdxf.py` | **未改动**（见下节说明） |

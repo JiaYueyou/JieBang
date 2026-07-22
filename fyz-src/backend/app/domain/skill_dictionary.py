@@ -88,7 +88,6 @@ SKILL_ALIASES = {
     "pytorch": "PyTorch",
     "tf": "TensorFlow",
     "es6": "JavaScript",
-    "ai": "大模型",
 }
 
 
