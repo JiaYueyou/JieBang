@@ -43,7 +43,7 @@ const applyAll = async () => {
     return
   }
   try {
-    await tailorApi.applyAll(route.params.resumeId as string, accepted.map((s) => s.id))
+    await tailorApi.applyAll(route.params.resumeId as string, accepted)
     ElMessage.success(`已将 ${accepted.length} 条优化应用到简历，已另存为新版本`)
   } catch {
     ElMessage.error('应用失败，请稍后重试')

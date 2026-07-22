@@ -28,7 +28,6 @@ let msgId = 0
 // ── Conversation history (last 20 for context) ──
 const conversationHistory = computed(() =>
   messages.value
-    .filter(m => m.role !== 'system')
     .slice(-20)
     .map(m => ({ role: m.role, content: m.content }))
 )
@@ -89,10 +88,11 @@ const inputPlaceholder = computed(() => {
 // ── Smart context-aware suggestions ──
 const quickActions = computed(() => {
   const n = pageContext.value.name
-  if (n === 'positions-detail' && positionsStore.currentPosition) {
+  const currentPos = positionsStore.currentPosition
+  if (n === 'positions-detail' && currentPos) {
     return [{
-      label: `分析「${positionsStore.currentPosition.name}」是否适合我`,
-      action: () => sendMessage(`分析${positionsStore.currentPosition.name}这个岗位的要求和前景`),
+      label: `分析「${currentPos.name}」是否适合我`,
+      action: () => sendMessage(`分析${currentPos.name}这个岗位的要求和前景`),
     }]
   }
   if (n === 'positions' || n === 'positions-index') {
@@ -316,8 +316,8 @@ const onActionClick = (act: ChatAction) => {
   }
   // Match flow: resume selected → compute scores
   if (act.to.startsWith('__match_resume__:')) {
-    const resumeId = act.to.split(':')[1]
-    showMatchResults(resumeId)
+    const resumeId = act.to.split(':')[1] || ''
+    if (resumeId) showMatchResults(resumeId)
     return
   }
   // Match flow: position selected → navigate to match result
