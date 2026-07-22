@@ -5,6 +5,52 @@ import type { ResumeData, JobPosition, LearningPath, ImprovementSuggestion, Matc
 
 // ========== 简历转换 ==========
 
+/** 工作经历内部字段 camelCase → snake_case */
+function expToApi(e: any) {
+  return {
+    company: e.company,
+    position: e.position,
+    start_date: e.startDate ?? e.start_date ?? '',
+    end_date: e.endDate ?? e.end_date ?? '',
+    description: e.description,
+    skills: e.skills || [],
+  }
+}
+
+/** 工作经历内部字段 snake_case → camelCase */
+function expFromApi(e: any) {
+  return {
+    company: e.company,
+    position: e.position,
+    startDate: e.start_date ?? e.startDate ?? '',
+    endDate: e.end_date ?? e.endDate ?? '',
+    description: e.description,
+    skills: e.skills || [],
+  }
+}
+
+/** 教育经历内部字段 camelCase → snake_case */
+function eduToApi(e: any) {
+  return {
+    school: e.school,
+    degree: e.degree,
+    major: e.major,
+    start_date: e.startDate ?? e.start_date ?? '',
+    end_date: e.endDate ?? e.end_date ?? '',
+  }
+}
+
+/** 教育经历内部字段 snake_case → camelCase */
+function eduFromApi(e: any) {
+  return {
+    school: e.school,
+    degree: e.degree,
+    major: e.major,
+    startDate: e.start_date ?? e.startDate ?? '',
+    endDate: e.end_date ?? e.endDate ?? '',
+  }
+}
+
 /** 后端 API 返回的简历格式（snake_case） */
 interface ResumeApiData {
   id: number
@@ -25,7 +71,7 @@ interface ResumeApiData {
 // ========== 岗位转换 ==========
 
 export function positionFromApi(data: any): JobPosition {
-  return {
+  const result: any = {
     id: String(data.id),
     name: data.name || '',
     category: data.category || 'existing',
@@ -59,6 +105,20 @@ export function positionFromApi(data: any): JobPosition {
     createdAt: data.created_at || '',
     updatedAt: data.updated_at || '',
   }
+  // 爬虫数据额外字段
+  if (data.company) result.company = data.company
+  if (data.city) result.city = data.city
+  if (data.experience) result.experience = data.experience
+  if (data.education) result.education = data.education
+  // 详情页额外字段
+  if (data.original_title) result.originalTitle = data.original_title
+  if (data.jd_text) result.jdText = data.jd_text
+  if (data.responsibilities_text) result.responsibilitiesText = data.responsibilities_text
+  if (data.requirements_text) result.requirementsText = data.requirements_text
+  if (data.posted_at) result.postedAt = data.posted_at
+  if (data.stack) result.stack = data.stack
+  if (data.std_job_name) result.stdJobName = data.std_job_name
+  return result as JobPosition
 }
 
 // ========== 学习路径转换 ==========
@@ -107,8 +167,8 @@ export function resumeFromApi(data: ResumeApiData): ResumeData {
       salaryExpectation: data.job_intent?.salary_expectation || '',
       workMode: (data.job_intent?.work_mode as any) || 'fulltime',
     },
-    education: data.education || [],
-    workExperience: data.work_experience || [],
+    education: (data.education || []).map(eduFromApi),
+    workExperience: (data.work_experience || []).map(expFromApi),
     projects: data.projects || [],
     skills: data.skills || [],
     selfEvaluation: data.self_evaluation || '',
@@ -139,8 +199,8 @@ export function resumeToApi(data: Partial<ResumeData>): Record<string, any> {
       work_mode: data.jobIntent.workMode,
     }
   }
-  if (data.education !== undefined) result.education = data.education
-  if (data.workExperience !== undefined) result.work_experience = data.workExperience
+  if (data.education !== undefined) result.education = data.education.map(eduToApi)
+  if (data.workExperience !== undefined) result.work_experience = data.workExperience.map(expToApi)
   if (data.projects !== undefined) result.projects = data.projects
   if (data.skills !== undefined) result.skills = data.skills
   return result

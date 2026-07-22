@@ -30,7 +30,20 @@ export interface JobPosition {
   techStack: string[]
   careerLevel: 'junior' | 'mid' | 'senior'
   salaryRange: string
-  skillChanges?: SkillChange[] // 仅既有岗位
+  skillChanges?: SkillChange[]
+  // 爬虫数据额外字段
+  company?: string
+  city?: string
+  experience?: string
+  education?: string
+  // 详情页额外字段
+  originalTitle?: string
+  jdText?: string
+  responsibilitiesText?: string
+  requirementsText?: string
+  postedAt?: string
+  stack?: string
+  stdJobName?: string
   createdAt: string
   updatedAt: string
 }

@@ -58,6 +58,10 @@ const toggleFav = async () => {
         </el-tag>
       </div>
       <p class="card-desc">{{ (position.summary || '').slice(0, 80) }}...</p>
+      <p v-if="position.company" class="card-company">
+        <span>{{ position.company }}</span>
+        <span v-if="position.city" class="card-city">{{ position.city }}</span>
+      </p>
     </div>
     <div class="card-bottom">
       <div class="card-skills">
@@ -146,6 +150,23 @@ const toggleFav = async () => {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.card-company {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-city {
+  color: var(--brand);
+  background: var(--brand-light);
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
 }
 
 .card-bottom {

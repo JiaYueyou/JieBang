@@ -171,7 +171,7 @@ const startParse = async () => {
 
 .preview-label {
   width: 60px;
-  font-size: 13px;
+  font-size: 13px;zhelaingge
   color: var(--muted);
   flex-shrink: 0;
 }

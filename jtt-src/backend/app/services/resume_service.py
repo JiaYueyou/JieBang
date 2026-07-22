@@ -28,8 +28,10 @@ class ResumeService:
         return self._to_dict(resume)
 
     async def create(self, user_id: int, data: dict) -> dict:
-        """手动创建空简历"""
-        resume = await self.repo.create(user_id, {"name": data.get("name", "我的简历")})
+        """手动创建简历（支持完整字段）"""
+        create_data = self._build_resume_data(data)
+        create_data["name"] = data.get("name", "我的简历")
+        resume = await self.repo.create(user_id, create_data)
         await self.db.commit()
         return self._to_dict(resume)
 
@@ -39,16 +41,19 @@ class ResumeService:
         if not resume:
             raise ResourceNotFoundError("简历不存在")
 
-        # 映射前端字段名到数据库字段名
-        field_mapping = {
-            "name": "name",
-            "target_position": "target_position",
-            "self_evaluation": "self_evaluation",
-        }
-        update_data = {}
+        update_data = self._build_resume_data(data)
+        await self.repo.update(resume, **update_data)
+        await self.db.commit()
+        await self.db.refresh(resume)
+        return self._to_dict(resume)
+
+    def _build_resume_data(self, data: dict) -> dict:
+        """将前端传来的结构化字段映射为数据库列名"""
+        result: dict = {}
+
         if data.get("personal_info"):
             pi = data["personal_info"]
-            update_data.update({
+            result.update({
                 "personal_name": pi.get("name", ""),
                 "personal_email": pi.get("email", ""),
                 "personal_phone": pi.get("phone", ""),
@@ -56,29 +61,26 @@ class ResumeService:
             })
         if data.get("job_intent"):
             ji = data["job_intent"]
-            update_data.update({
+            result.update({
                 "desired_position": ji.get("desired_position", ""),
                 "desired_city": ji.get("desired_city", ""),
                 "salary_expectation": ji.get("salary_expectation", ""),
                 "work_mode": ji.get("work_mode", "fulltime"),
             })
         if data.get("education") is not None:
-            update_data["education_list"] = data["education"]
+            result["education_list"] = data["education"]
         if data.get("work_experience") is not None:
-            update_data["work_experience_list"] = data["work_experience"]
+            result["work_experience_list"] = data["work_experience"]
         if data.get("projects") is not None:
-            update_data["project_list"] = data["projects"]
+            result["project_list"] = data["projects"]
         if data.get("skills") is not None:
-            update_data["skill_list"] = data["skills"]
+            result["skill_list"] = data["skills"]
 
-        for k, v in field_mapping.items():
-            if data.get(k) is not None:
-                update_data[v] = data[k]
+        for front_key, db_key in (("name", "name"), ("target_position", "target_position"), ("self_evaluation", "self_evaluation")):
+            if data.get(front_key) is not None:
+                result[db_key] = data[front_key]
 
-        await self.repo.update(resume, **update_data)
-        await self.db.commit()
-        await self.db.refresh(resume)
-        return self._to_dict(resume)
+        return result
 
     async def delete(self, resume_id: int):
         """删除简历"""
