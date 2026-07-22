@@ -320,7 +320,6 @@ export const handlers = [
 
   // ── /api/assistant/chat is now handled by the standalone AI service (port 8001) ──
 
-<<<<<<< HEAD
   // Match auto-detect
   http.post(`${BASE}/match/auto-detect`, async ({ request }) => {
     await delay(800)
@@ -472,9 +471,6 @@ export const handlers = [
     return HttpResponse.json({ code: 200, message: 'ok', data: assessment })
   }),
 
-=======
-  // ── /api/learning/assistant/quiz handled by AI service (port 8001) ──
->>>>>>> 2c75d7d (feat(jtt): AI assistant DeepSeek integration + career page + auto-match + path persistence)
   http.post(`${BASE}/learning/assistant/quiz`, async () => {
     await delay(1000)
     return HttpResponse.json({
