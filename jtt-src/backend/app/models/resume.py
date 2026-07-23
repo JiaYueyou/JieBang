@@ -29,6 +29,8 @@ class Resume(Base):
     self_evaluation: Mapped[str] = mapped_column(Text, default="", comment="自我评价")
     # 来源文件
     source_file: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="上传的原始文件名")
+    source_file_path: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="上传文件的服务器存储路径")
+    raw_text: Mapped[str | None] = mapped_column(Text, nullable=True, comment="简历提取后的完整纯文本")
     # 关联的列表数据
     education_list: Mapped[list] = mapped_column(JSON, default=list, comment="教育经历列表")
     work_experience_list: Mapped[list] = mapped_column(JSON, default=list, comment="工作经历列表")

@@ -39,7 +39,14 @@ class ResumeRepository:
         await self.db.flush()
 
     async def delete(self, resume: Resume):
-        """删除简历"""
+        """删除简历（先删关联匹配记录，避免 FK 约束报错）"""
+        from app.models.match import MatchResult
+        match_result = await self.db.execute(
+            select(MatchResult).where(MatchResult.resume_id == resume.id)
+        )
+        for mr in match_result.scalars().all():
+            await self.db.delete(mr)
+        await self.db.flush()
         await self.db.delete(resume)
         await self.db.flush()
 

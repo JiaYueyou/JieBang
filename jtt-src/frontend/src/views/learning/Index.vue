@@ -6,6 +6,12 @@ import { learningApi } from '@/api/learning'
 import { assistantApi } from '@/api/assistant'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { LearningPath, LearningResource } from '@/types'
+import lujingIcon from '@/assets/icon/lujing.svg'
+import ziyuanIcon from '@/assets/icon/ziyuan.svg'
+import zixunIcon from '@/assets/icon/zixun.svg'
+import chajufenxiIcon from '@/assets/icon/chajufenxi.svg'
+import xuexiceshiIcon from '@/assets/icon/xuexiceshi.svg'
+import chongmingmingIcon from '@/assets/icon/chongmingming.svg'
 
 const learningStore = useLearningStore()
 const favoritesStore = useFavoritesStore()
@@ -36,10 +42,10 @@ const flowState = ref<'idle' | 'awaiting_position' | 'awaiting_skill' | 'awaitin
 
 // 预设快捷指令
 const presetCommands = [
-  { label: '生成学习路径', icon: '🎯', msg: '__gen_path__' },
-  { label: '推荐学习资源', icon: '📚', msg: '__rec_resource__' },
-  { label: '学习路线咨询', icon: '🧭', msg: '__career_advice__' },
-  { label: '技能差距分析', icon: '📊', msg: '__gap_analysis__' },
+  { label: '生成学习路径', icon: lujingIcon, msg: '请根据 Java 开发工程师岗位，为我生成一份学习路径' },
+  { label: '推荐学习资源', icon: ziyuanIcon, msg: '推荐 Spring Boot 和微服务的学习资源' },
+  { label: '学习路线咨询', icon: zixunIcon, msg: '我是一名后端开发，想转行 AI 智能体方向，应该怎么学？' },
+  { label: '技能差距分析', icon: chajufenxiIcon, msg: '分析我当前技能与目标岗位的差距' },
 ]
 
 // 资源类型图标映射
@@ -383,7 +389,7 @@ const renderMarkdown = (text: string): string => {
             :disabled="chatLoading"
             @click="onPresetClick(cmd.msg)"
           >
-            <span class="preset-icon">{{ cmd.icon }}</span>
+            <img class="preset-icon" :src="cmd.icon" />
             <span>{{ cmd.label }}</span>
           </button>
         </div>
@@ -560,10 +566,10 @@ const renderMarkdown = (text: string): string => {
             <!-- 操作按钮 -->
             <div class="path-actions">
               <button class="act-btn" @click.stop="openQuiz(path)">
-                📝 学习测试
+                <img class="btn-icon" :src="xuexiceshiIcon" /> 学习测试
               </button>
               <button class="act-btn" @click.stop="openRenameDialog(path)">
-                ✏️ 重命名
+                <img class="btn-icon" :src="chongmingmingIcon" /> 重命名
               </button>
               <button class="act-btn danger" @click.stop="handleDeletePath(path.id, path.name)">
                 🗑️ 删除
@@ -752,7 +758,7 @@ const renderMarkdown = (text: string): string => {
 }
 
 .preset-chip:disabled { opacity: .5; cursor: not-allowed; }
-.preset-icon { font-size: 13px; }
+.preset-icon { width: 14px; height: 14px; }
 
 /* 聊天区域 */
 .chat-messages {
@@ -1298,6 +1304,8 @@ const renderMarkdown = (text: string): string => {
   border-color: #ef4444;
   color: #ef4444;
 }
+
+.btn-icon { width: 14px; height: 14px; vertical-align: middle; margin-right: 2px; }
 
 /* ========== 测试对话框 ========== */
 .quiz-loading, .quiz-empty {
