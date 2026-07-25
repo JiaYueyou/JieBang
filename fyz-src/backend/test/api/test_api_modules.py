@@ -8,7 +8,6 @@ MODULES = [
     ("/api/v1/graph/", "技能图谱"),
     ("/api/v1/matching/", "匹配诊断"),
     ("/api/v1/analysis/", "趋势分析"),
-    ("/api/v1/admin/", "系统管理"),
 ]
 
 
@@ -36,3 +35,26 @@ class TestPlaceholderModules:
             "data": None,
             "meta": None,
         }
+
+
+class TestAdminModule:
+    """系统管理 — 真实路由测试"""
+
+    async def test_overview_returns_200(self, client, auth_headers):
+        resp = await client.get("/api/v1/admin/overview", headers=auth_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["code"] == 200
+        assert "metrics" in body["data"]
+        assert "crawlers" in body["data"]
+
+    async def test_overview_blocked_without_auth(self, client):
+        resp = await client.get("/api/v1/admin/overview")
+        assert resp.status_code == 401
+
+    async def test_list_crawlers(self, client, auth_headers):
+        resp = await client.get("/api/v1/admin/data-sources/1/status", headers=auth_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["code"] == 200
+        assert "name" in body["data"]

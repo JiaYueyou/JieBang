@@ -219,7 +219,15 @@ class ZhaopinSpider(BaseSpider):
 # 主入口
 # ============================================================
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="智联招聘爬虫")
+    parser.add_argument("--output-dir", default=None, help="输出目录（默认当前目录）")
+    args = parser.parse_args()
+
     spider = ZhaopinSpider()
+    if args.output_dir:
+        spider.save_output_dir = args.output_dir
     filepath = spider.run()
 
     if filepath and os.path.exists(filepath):
