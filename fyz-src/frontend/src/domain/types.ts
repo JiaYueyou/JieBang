@@ -476,6 +476,7 @@ export interface DataSource {
   success: number;
   duration: string;
   progress: number;
+  progress_info?: string;
   schedule: string;
   nextRun: string;
 }

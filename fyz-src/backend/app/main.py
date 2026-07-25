@@ -20,12 +20,12 @@ from app.api.v1.analysis import router as analysis_router
 from app.api.v1.career import router as career_router
 from app.api.v1.matching import router as matching_router
 from app.api.v1.internal_transfer import router as internal_transfer_router
+from app.api.v1.admin import router as admin_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
 # --- 占位路由 ---
 changes_router = make_placeholder_router("changes", "能力更新", "既有岗位能力动态更新")
-admin_router = make_placeholder_router("admin", "系统管理", "系统管理")
 
 
 @asynccontextmanager

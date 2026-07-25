@@ -131,7 +131,7 @@
             <div><span>平均耗时</span><strong>{{ crawler.duration }}</strong></div>
           </div>
           <div class="crawler-progress">
-            <div><span>{{ crawler.running ? "正在采集" : crawler.enabled ? "等待调度" : "任务已暂停" }}</span><strong>{{ crawler.progress }}%</strong></div>
+            <div><span>{{ crawler.progress_info || (crawler.running ? "正在采集" : crawler.enabled ? "等待调度" : "任务已暂停") }}</span><strong>{{ crawler.progress }}%</strong></div>
             <el-progress :percentage="crawler.progress" :show-text="false" :status="crawler.enabled ? undefined : 'warning'" />
           </div>
           <div class="crawler-meta">
@@ -330,7 +330,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useAdminStore } from "@/stores/admin";
@@ -352,7 +352,10 @@ const roleFilter = ref("");
 const statusFilter = ref("");
 const store = useAdminStore();
 const { data: admin, loading, error } = storeToRefs(store);
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => store.load());
+onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
 
 const navItems: { value: Section; label: string; desc: string; icon: string; badge?: string }[] = [
   { value: "overview", label: "运行总览", desc: "系统健康与关键指标", icon: "Odometer" },
@@ -390,7 +393,35 @@ const integrations = computed(() => admin.value?.integrations ?? []);
 async function refreshSystem() { await store.refresh(); ElMessage.success("系统状态已刷新"); }
 function handleEvent(event: any) { ElMessage.info(`正在查看：${event.title}`); }
 async function toggleCrawler(crawler: any) { await store.toggleCrawler(crawler.id); ElMessage.success(`${crawler.name}状态已更新`); }
-async function runCrawler(crawler: any) { await store.runCrawler(crawler.id); ElMessage.success(`${crawler.name}采集任务已启动`); }
+async function runCrawler(crawler: any) {
+  await store.runCrawler(crawler.id);
+  ElMessage.success(`${crawler.name}采集任务已启动`);
+  // 自动轮询进度（每 2 秒刷新）
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const res: any = await store.pollCrawler(crawler.id);
+      if (res?.done) {
+        // 爬虫已结束（成功或失败）
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        const result = res.result;
+        if (result?.returncode !== 0) {
+          // 失败：展示 stderr 里的错误
+          const errMsg = result?.stderr || result?.stdout || "未知错误";
+          ElMessage.error(`${crawler.name}采集失败：${errMsg.slice(0, 200)}`);
+        } else {
+          ElMessage.success(`${crawler.name}采集完成，共 ${result?.records_count ?? 0} 条`);
+        }
+        await store.load(true);
+      } else {
+        // 仍在运行，刷新进度
+        await store.load(true);
+      }
+    } catch {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+  }, 2000);
+}
 function editCrawler(crawler: any) { ElMessage.info(`正在配置：${crawler.name}`); }
 function viewCrawlerLog(crawler: any) { activeSection.value = "monitor"; logKeyword.value = crawler.name; }
 function createSource() { ElMessage.info("添加数据源表单待后端数据源协议确定后接入"); }
