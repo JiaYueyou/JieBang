@@ -11,6 +11,7 @@ const router = useRouter()
 const resumeStore = useResumeStore()
 
 const loading = ref(false)
+const loadError = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
 
@@ -43,7 +44,14 @@ onMounted(async () => {
     const data = resumeStore.currentResume
     if (data) Object.assign(resume, JSON.parse(JSON.stringify(data)))
   } catch {
-    ElMessage.warning('加载简历失败，使用离线数据')
+    // API 失败时尝试从本地 store 列表中查找（兼容离线 mock 数据场景）
+    const local = resumeStore.resumes.find((r) => r.id === id)
+    if (local) {
+      Object.assign(resume, JSON.parse(JSON.stringify(local)))
+      ElMessage.success('已加载本地缓存数据')
+    } else {
+      loadError.value = true
+    }
   } finally {
     loading.value = false
   }
@@ -114,6 +122,11 @@ const handleSave = async () => {
     <div v-if="loading" class="editor-loading">
       <el-icon class="loading-spin" :size="32"><Loading /></el-icon>
       <span>加载中...</span>
+    </div>
+
+    <div v-else-if="loadError" class="editor-loading">
+      <span>无法加载该简历，请返回后重试</span>
+      <el-button @click="router.back()" style="margin-top: 12px">返回</el-button>
     </div>
 
     <div v-else class="editor-body">
@@ -262,8 +275,8 @@ const handleSave = async () => {
       <div class="editor-preview">
         <div class="preview-paper">
           <div class="preview-header">
-            <h2>{{ resume.personalInfo?.name || '姓名' }}</h2>
-            <p>{{ resume.personalInfo?.email }} | {{ resume.personalInfo?.phone }}</p>
+            <h2>{{ resume.personalInfo?.name || resume.name || '' }}</h2>
+            <p v-if="resume.personalInfo?.email || resume.personalInfo?.phone">{{ resume.personalInfo?.email }}<template v-if="resume.personalInfo?.email && resume.personalInfo?.phone"> | </template>{{ resume.personalInfo?.phone }}</p>
           </div>
           <div class="preview-section" v-if="resume.education?.length">
             <h4>教育经历</h4>
