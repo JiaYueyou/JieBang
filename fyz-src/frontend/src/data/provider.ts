@@ -73,6 +73,7 @@ export interface DataProvider {
     getOverview(): Promise<AdminOverview>;
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
+    pollCrawler(id: number): Promise<any>;
     toggleUser(id: number): Promise<void>;
     saveSettings(settings: Record<string, any>): Promise<void>;
   };

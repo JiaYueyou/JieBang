@@ -27,6 +27,7 @@ const hybridDataProvider: DataProvider = {
   internalTransfer: httpDataProvider.internalTransfer,
   graph: httpDataProvider.graph,
   trends: httpDataProvider.trends,
+  admin: httpDataProvider.admin,
 };
 
 export const dataProvider: DataProvider =

@@ -63,6 +63,9 @@ class BaseSpider:
     default_config: dict = {}     # 默认配置（会被 YAML 配置覆盖）
 
     def __init__(self):
+        # ---------- 输出目录（可通过 CLI --output-dir 设置） ----------
+        self.save_output_dir: str | None = None
+
         # ---------- 限速 ----------
         self.request_interval = self.default_config.get("request_interval", 1.0)
         self._last_request_time = 0.0
@@ -163,20 +166,20 @@ class BaseSpider:
 
     def save(self, output_dir: Optional[str] = None) -> str:
         """
-        保存数据到 JSON 文件（自动编号）
+        保存数据到 JSON 文件（自动编号，条数相同时跳过）
 
         参数：
           output_dir: 输出目录，默认当前目录
 
-        返回：文件路径
+        返回：文件路径（跳过时返回空字符串）
         """
-        # 字段整理
         data = self.total_data
         if not data:
             logger.warning("⚠️ 没有数据可保存")
             return ""
 
-        output_dir = output_dir or os.getcwd()
+        output_dir = output_dir or self.save_output_dir or os.getcwd()
+        new_count = len(data)
 
         # 自动编号
         pattern = re.compile(rf"^{re.escape(self.name)}_(\d+)\.json$")
@@ -187,6 +190,20 @@ class BaseSpider:
                 num = int(m.group(1))
                 if num > max_num:
                     max_num = num
+
+        # 检查最新文件条数是否相同，相同则跳过
+        if max_num > 0:
+            latest_path = os.path.join(output_dir, f"{self.name}_{max_num}.json")
+            try:
+                with open(latest_path, "r", encoding="utf-8") as f:
+                    existing_count = len(json.load(f))
+                if existing_count == new_count:
+                    logger.info("数据无变化 (%d 条)，跳过保存（与 %s 一致）",
+                                new_count, f"{self.name}_{max_num}.json")
+                    return ""
+            except (json.JSONDecodeError, OSError):
+                pass  # 文件损坏则正常保存
+
         filename = f"{self.name}_{max_num + 1}.json"
         filepath = os.path.join(output_dir, filename)
 
@@ -197,7 +214,7 @@ class BaseSpider:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
         logger.info("已保存: %s (%d 条, %d 字段)",
-                    filepath, len(data), len(data[0]) if data else 0)
+                    filepath, new_count, len(data[0]) if data else 0)
         return filepath
 
     def print_stats(self):

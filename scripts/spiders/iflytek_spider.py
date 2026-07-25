@@ -211,7 +211,15 @@ class IflytekSpider(BaseSpider):
 # 主入口
 # ============================================================
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="科大讯飞爬虫")
+    parser.add_argument("--output-dir", default=None, help="输出目录（默认当前目录）")
+    args = parser.parse_args()
+
     spider = IflytekSpider()
+    if args.output_dir:
+        spider.save_output_dir = args.output_dir
     filepath = spider.run()
 
     # 输出后自动校验 Schema

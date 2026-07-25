@@ -258,6 +258,7 @@ export const httpDataProvider: DataProvider = {
     getOverview:()=>get("/admin/overview"),
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
+    pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),
     toggleUser:async(id)=>{await request.put(`/admin/users/${id}/status`,{});},
     saveSettings:async(settings)=>{await request.put("/admin/settings",settings);},
   },
