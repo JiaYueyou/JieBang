@@ -24,6 +24,14 @@ import csv
 from datetime import datetime
 from collections import Counter, defaultdict
 
+# ── 技能词典：统一引用 backend 权威源 ──
+import sys
+from pathlib import Path
+_BACKEND_DIR = Path(__file__).resolve().parent.parent / "fyz-src" / "backend"
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+from app.domain.skill_dictionary import SKILL_DICT, SKILL_ALIASES, normalize_skill
+
 # ================================================================
 # 全局配置
 # ================================================================
@@ -694,133 +702,74 @@ def _calc_confidence(raw_title, std_title):
 
 
 # ================================================================
-# 技能提取与标准化能力描述
+# 技能提取 —— 统一引用 backend 权威词典动态生成
 # ================================================================
 
-# 技能类别 → 标准名 → 正则模式
-SKILL_PATTERNS = {
-    '编程语言': {
-        'Python': [r'\bPython\b'],
-        'Java': [r'\bJava\b'],
-        'C++': [r'\bC\+\+\b'],
-        'C': [r'(?<!\w)C(?![\w+])'],
-        'Go': [r'\bGo\b(?!lang)'],
-        'SQL': [r'\bSQL\b'],
-        'Shell': [r'\bShell\b', r'\bBash\b'],
-        'JavaScript': [r'\bJavaScript\b', r'\bJS\b(?!ON)'],
-        'TypeScript': [r'\bTypeScript\b'],
-        'Scala': [r'\bScala\b'],
-        'Rust': [r'\bRust\b'],
-        'MATLAB': [r'\bMATLAB\b'],
-        'Ruby': [r'\bRuby\b'],
-        'Lua': [r'\bLua\b'],
-    },
-    '后端框架': {
-        'Spring Boot': [r'\bSpring[\s-]*Boot\b'],
-        'Spring Cloud': [r'\bSpring[\s-]*Cloud\b'],
-        'Spring MVC': [r'\bSpring[\s-]*MVC\b'],
-        'Spring': [r'\bSpring\b(?![\s-]*(Boot|Cloud|MVC))'],
-        'MyBatis': [r'\bMyBatis\b'],
-        'Netty': [r'\bNetty\b'],
-        'Nginx': [r'\bNginx\b'],
-        'Tomcat': [r'\bTomcat\b'],
-        'Django': [r'\bDjango\b'],
-        'Flask': [r'\bFlask\b'],
-        'FastAPI': [r'\bFastAPI\b'],
-    },
-    '数据库': {
-        'MySQL': [r'\bMySQL\b'],
-        'PostgreSQL': [r'\bPostgreSQL\b', r'\bPostgres\b'],
-        'Oracle': [r'\bOracle\b'],
-        'Redis': [r'\bRedis\b'],
-        'MongoDB': [r'\bMongoDB\b'],
-        'Elasticsearch': [r'\bElasticsearch\b', r'\bES\b'],
-        'HBase': [r'\bHBase\b'],
-        'Hive': [r'\bHive\b'],
-        'ClickHouse': [r'\bClickHouse\b'],
-    },
-    '中间件/消息队列': {
-        'Kafka': [r'\bKafka\b'],
-        'RabbitMQ': [r'\bRabbitMQ\b'],
-        'RocketMQ': [r'\bRocketMQ\b'],
-        'ZooKeeper': [r'\bZooKeeper\b', r'\bZK\b'],
-        'Nacos': [r'\bNacos\b'],
-    },
-    '大数据技术': {
-        'Hadoop': [r'\bHadoop\b'],
-        'Spark': [r'\bSpark\b'],
-        'Flink': [r'\bFlink\b'],
-        'HDFS': [r'\bHDFS\b'],
-        'Kafka': [r'\bKafka\b'],
-        'ETL': [r'\bETL\b'],
-        '数据仓库': [r'数据仓库', r'数仓'],
-    },
-    'DevOps/云工具': {
-        'Docker': [r'\bDocker\b'],
-        'Kubernetes': [r'\bKubernetes\b', r'\bK8s\b', r'\bk8s\b'],
-        'Jenkins': [r'\bJenkins\b'],
-        'Git': [r'\bGit\b'],
-        'Maven': [r'\bMaven\b'],
-        'Gradle': [r'\bGradle\b'],
-        'Linux': [r'\bLinux\b'],
-        'CI/CD': [r'\bCI/CD\b'],
-    },
-    'AI/ML框架': {
-        'PyTorch': [r'\bPyTorch\b'],
-        'TensorFlow': [r'\bTensorFlow\b'],
-        'scikit-learn': [r'\bsklearn\b', r'\bscikit[\s-]learn\b'],
-        'XGBoost': [r'\bXGBoost\b'],
-        'LightGBM': [r'\bLightGBM\b'],
-        'ONNX': [r'\bONNX\b'],
-        'TensorRT': [r'\bTensorRT\b'],
-    },
-    'AI方向': {
-        'NLP': [r'\bNLP\b', r'自然语言处理'],
-        '计算机视觉': [r'计算机视觉', r'\bCV\b'],
-        '语音识别': [r'语音识别', r'语音'],
-        '多模态': [r'多模态'],
-        '大模型(LLM)': [r'大模型', r'\bLLM\b'],
-        'RAG': [r'\bRAG\b'],
-        'Agent': [r'\bAgent\b'],
-        '深度学习': [r'深度学习'],
-        '机器学习': [r'机器学习'],
-        '强化学习': [r'强化学习'],
-        '知识图谱': [r'知识图谱'],
-        '推荐系统': [r'推荐系统'],
-        '数据挖掘': [r'数据挖掘'],
-        '异常检测': [r'异常检测', r'缺陷检测'],
-    },
-    '硬件/嵌入式': {
-        'ARM': [r'\bARM\b'],
-        'FPGA': [r'\bFPGA\b'],
-        'GPU': [r'\bGPU\b'],
-        'CUDA': [r'\bCUDA\b'],
-        '嵌入式': [r'嵌入式'],
-        '物联网': [r'物联网', r'\bIoT\b'],
-        'Android': [r'\bAndroid\b'],
-        'iOS': [r'\biOS\b'],
-    },
-    '工程能力': {
-        '微服务': [r'微服务'],
-        '分布式系统': [r'分布式'],
-        '高并发': [r'高并发'],
-        '高可用': [r'高可用'],
-        '架构设计': [r'架构设计'],
-        '性能优化': [r'性能优化', r'性能调优'],
-        '设计模式': [r'设计模式'],
-    },
+# 权威分类 → D 管线分类 映射
+_CATEGORY_MAP = {
+    'programming_language': '编程语言',
+    'framework': '后端框架',
+    'database': '数据库',
+    'tool': 'DevOps/云工具',
+    'cloud': 'DevOps/云工具',
+    'ai_ml': 'AI/ML框架',
+    'domain_knowledge': '大数据技术',
+    'soft_skill': '工程能力',
 }
 
-# 编译正则
-_COMPILED_SKILLS = {}
-for cat_name, cat_dict in SKILL_PATTERNS.items():
-    _COMPILED_SKILLS[cat_name] = {}
-    for skill_name, patterns in cat_dict.items():
-        merged = '|'.join(f'(?:{p})' for p in patterns)
-        try:
-            _COMPILED_SKILLS[cat_name][skill_name] = re.compile(merged, re.IGNORECASE)
-        except re.error:
-            pass
+# 从权威源动态生成编译正则
+_COMPILED_SKILLS: dict[str, dict[str, re.Pattern]] = {}
+for skill_name, cat in SKILL_DICT.items():
+    d_cat = _CATEGORY_MAP.get(cat, '工程能力')
+    if d_cat not in _COMPILED_SKILLS:
+        _COMPILED_SKILLS[d_cat] = {}
+    # 生成技能名正则（使用 ASCII-only 边界，避免 Python 将中文识别为 \\w）
+    escaped = re.escape(skill_name)
+    if skill_name.isascii():
+        pattern = rf'(?<![a-zA-Z0-9]){skill_name}(?![a-zA-Z0-9])'
+    else:
+        pattern = escaped
+    _COMPILED_SKILLS[d_cat][skill_name] = re.compile(pattern, re.IGNORECASE)
+
+# 从别名补充额外匹配模式（别名指向技能，本身不重复注册）
+for alias, canonical in SKILL_ALIASES.items():
+    # 找到该别名对应技能所属的 D 分类
+    d_cat = None
+    for d_skill, d_regex in _COMPILED_SKILLS.get('编程语言', {}).items():
+        if d_skill == canonical:
+            d_cat = '编程语言'
+            break
+    if not d_cat:
+        for d_skill, d_regex in _COMPILED_SKILLS.get('后端框架', {}).items():
+            if d_skill == canonical:
+                d_cat = '后端框架'
+                break
+    if not d_cat:
+        for d_skill, d_regex in _COMPILED_SKILLS.get('数据库', {}).items():
+            if d_skill == canonical:
+                d_cat = '数据库'
+                break
+    if not d_cat:
+        for d_skill, d_regex in _COMPILED_SKILLS.get('DevOps/云工具', {}).items():
+            if d_skill == canonical:
+                d_cat = 'DevOps/云工具'
+                break
+    if not d_cat:
+        for d_skill, d_regex in _COMPILED_SKILLS.get('AI/ML框架', {}).items():
+            if d_skill == canonical:
+                d_cat = 'AI/ML框架'
+                break
+    if not d_cat:
+        for d_skill, d_regex in _COMPILED_SKILLS.get('大数据技术', {}).items():
+            if d_skill == canonical:
+                d_cat = '大数据技术'
+                break
+    if d_cat and alias not in _COMPILED_SKILLS[d_cat]:
+        if alias.isascii():
+            alias_pattern = rf'(?<![a-zA-Z0-9]){alias}(?![a-zA-Z0-9])'
+        else:
+            alias_pattern = re.escape(alias)
+        _COMPILED_SKILLS[d_cat][alias] = re.compile(alias_pattern, re.IGNORECASE)
 
 
 def _extract_skills_from_text(text):
