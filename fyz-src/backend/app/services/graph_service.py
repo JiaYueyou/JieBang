@@ -1134,8 +1134,7 @@ class GraphService:
 
     async def search(self, query: str, node_type: str | None, limit: int) -> GraphSubgraph:
         rows = await asyncio.to_thread(
-            self.graph.query_nodes, keyword=query, node_type=node_type, limit=limit,
-            include_auxiliary=True,
+            self.graph.search_nodes, query=query, node_type=node_type, limit=limit,
         )
         edges = await asyncio.to_thread(self.graph.query_edges, [row["id"] for row in rows])
         return self._subgraph(rows, edges)

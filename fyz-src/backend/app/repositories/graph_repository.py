@@ -62,6 +62,7 @@ class Neo4jGraphRepository:
     namespace = "jiebang"
 
     def ensure_schema(self) -> None:
+        # ── 唯一约束 ──
         for label in GRAPH_LABELS:
             run_write(
                 f"CREATE CONSTRAINT {label.lower()}_jiebang_id IF NOT EXISTS "
@@ -75,6 +76,23 @@ class Neo4jGraphRepository:
             "CREATE INDEX job_jiebang_filter IF NOT EXISTS "
             "FOR (n:Job) ON (n.namespace, n.stack, n.level)"
         )
+
+        # ── 全文搜索索引（加速 CONTAINS 搜索）──
+        run_write(
+            "CREATE FULLTEXT INDEX graph_name_search IF NOT EXISTS "
+            "FOR (n:Job|SkillArea|TechStack|TechPoint|KnowledgePoint) "
+            "ON EACH [n.name, n.description]"
+        )
+
+        # ── 属性过滤索引（加速过滤与排序）──
+        # Job: stack/level 用于岗位筛选
+        run_write("CREATE RANGE INDEX idx_job_stack IF NOT EXISTS FOR (n:Job) ON (n.stack)")
+        run_write("CREATE RANGE INDEX idx_job_level IF NOT EXISTS FOR (n:Job) ON (n.level)")
+        # TechStack: frequency 用于技能排序
+        run_write("CREATE RANGE INDEX idx_techstack_freq IF NOT EXISTS FOR (n:TechStack) ON (n.frequency)")
+        # TechPoint/KnowledgePoint: importance 用于节点排序
+        run_write("CREATE RANGE INDEX idx_techpoint_imp IF NOT EXISTS FOR (n:TechPoint) ON (n.importance)")
+        run_write("CREATE RANGE INDEX idx_knowledgepoint_imp IF NOT EXISTS FOR (n:KnowledgePoint) ON (n.importance)")
 
     def merge_nodes(self, label: str, rows: list[dict], version: str) -> None:
         if label not in GRAPH_LABELS or not rows:
@@ -171,6 +189,31 @@ class Neo4jGraphRepository:
                 "level": level, "node_type": node_type, "limit": limit,
                 "include_auxiliary": include_auxiliary,
                 "allowed_labels": sorted(GRAPH_LABELS),
+            },
+        )
+
+    def search_nodes(
+        self, *, query: str, node_type: str | None = None,
+        stack: str | None = None, level: str | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        """使用全文索引搜索节点，支持附加过滤条件"""
+        return run_read(
+            "CALL db.index.fulltext.queryNodes('graph_name_search', $query) "
+            "YIELD node, score "
+            "WHERE node.namespace = $namespace "
+            "AND ($stack IS NULL OR node.stack=$stack) "
+            "AND ($level IS NULL OR node.level=$level) "
+            "AND ($node_type IS NULL OR $node_type IN labels(node)) "
+            "AND NOT ('SourceDocument' IN labels(node) OR 'GraphSnapshot' IN labels(node)) "
+            "RETURN node.id AS id, labels(node)[0] AS type, "
+            "properties(node) AS properties, score "
+            "ORDER BY score DESC, node.frequency DESC "
+            "LIMIT $limit",
+            {
+                "namespace": self.namespace, "query": query,
+                "stack": stack, "level": level,
+                "node_type": node_type, "limit": limit,
             },
         )
 
