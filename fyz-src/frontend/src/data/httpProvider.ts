@@ -315,7 +315,5 @@ export const httpDataProvider: DataProvider = {
     importCrawlerOutput:async(filename)=>waitForTask(
       await post<AsyncTask<JobImportResult>>("/data-imports/jobs",{files:[filename]}),
     ),
-    toggleUser:async(id)=>{await request.put(`/admin/users/${id}/status`,{});},
-    saveSettings:async(settings)=>{await request.put("/admin/settings",settings);},
   },
 };

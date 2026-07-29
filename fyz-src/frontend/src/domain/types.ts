@@ -562,17 +562,6 @@ export interface PipelineSummary {
   overallQuality: number;
 }
 
-export interface SystemUser {
-  id: EntityId;
-  name: string;
-  email: string;
-  department: string;
-  role: string;
-  roleTone: string;
-  status: "active" | "disabled";
-  lastLogin: string;
-}
-
 export interface AdminOverview {
   metrics: any[];
   services: any[];
@@ -585,12 +574,7 @@ export interface AdminOverview {
   crawlerPolicy: { concurrency: number; retries: number; interval: number; deduplicate: boolean };
   performanceCards: any[];
   endpoints: any[];
-  alertRules: any[];
   logs: any[];
-  users: SystemUser[];
-  roles: any[];
-  settings: Record<string, any>;
-  integrations: any[];
 }
 
 export interface MockDatabase {
@@ -603,5 +587,4 @@ export interface MockDatabase {
   favorites: FavoriteRecord[];
   history: HistoryRecord[];
   graph: GraphSubgraph;
-  admin: AdminOverview;
 }

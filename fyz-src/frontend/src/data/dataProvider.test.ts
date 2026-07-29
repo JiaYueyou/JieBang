@@ -87,6 +87,27 @@ describe("unified mock data provider", () => {
     expect(getSpy).not.toHaveBeenCalled();
   });
 
+  it("always loads admin monitoring from the real backend even in mock mode", async () => {
+    const overview = {
+      metrics: [], services: [], resources: [], recentTasks: [], systemEvents: [],
+      crawlers: [], pipelineSummary: {
+        totalJobs: 0, todayImported: 0, sourceCount: 0, validRecords: 0,
+        validRate: 0, failedTasks: 0, processedToday: 0, duplicatesToday: 0,
+        verifiedFacts: 0, unverifiedFacts: 0, overallQuality: 0,
+      },
+      qualities: [], crawlerPolicy: {
+        concurrency: 4, retries: 3, interval: 5, deduplicate: true,
+      },
+      performanceCards: [], endpoints: [], logs: [],
+    };
+    const getSpy = vi.spyOn(request, "get").mockResolvedValue({
+      data: { code: 200, message: "success", data: overview, meta: null },
+    } as never);
+
+    await expect(dataProvider.admin.getOverview()).resolves.toEqual(overview);
+    expect(getSpy).toHaveBeenCalledWith("/admin/overview", { params: undefined });
+  });
+
   it("tracks loading, loaded, refresh, and duplicate load behavior", async () => {
     const store = useDashboardStore();
     const spy = vi.spyOn(dataProvider.dashboard, "getOverview");

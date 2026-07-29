@@ -14,10 +14,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AsyncTask, JobSkillFact, RawJobRecord, SourceDocument
+from app.models import AsyncTask, JobSkillFact, RawJobRecord, Skill, SourceDocument, User
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +178,7 @@ class CrawlerService:
         """构造 AdminOverview 字典，与前端 AdminOverview 结构对齐"""
         crawlers = self._list_crawlers()
         pipeline_summary, qualities = await self._get_pipeline_summary(db)
+        monitoring = await self._get_monitoring(db)
         return {
             "metrics": self._get_metrics(pipeline_summary),
             "services": self._get_services(),
@@ -188,14 +189,7 @@ class CrawlerService:
             "pipelineSummary": pipeline_summary,
             "qualities": qualities,
             "crawlerPolicy": self._get_policy(),
-            "performanceCards": self._get_performance_cards(),
-            "endpoints": [],
-            "alertRules": self._get_alert_rules(),
-            "logs": self._get_recent_logs(),
-            "users": self._get_users(),
-            "roles": self._get_roles(),
-            "settings": self._get_settings(),
-            "integrations": self._get_integrations(),
+            **monitoring,
         }
 
     # ------------------------------------------------------------------
@@ -458,7 +452,7 @@ class CrawlerService:
             )
         ).scalars().all()
         verified = sum(1 for status in fact_rows if status == "verified")
-        unverified = sum(1 for status in fact_rows if status != "verified")
+        unverified = sum(1 for status in fact_rows if status == "unverified")
 
         valid_rate = round(valid * 100 / total, 1) if total else 0.0
         completeness_rate = round(complete * 100 / total, 1) if total else 0.0
@@ -536,65 +530,105 @@ class CrawlerService:
     def _get_policy(self) -> dict:
         return {"concurrency": 4, "retries": 3, "interval": 5, "deduplicate": True}
 
-    def _get_performance_cards(self) -> list[dict]:
-        return [
-            {"label": "平均响应", "value": "42ms", "note": "较昨日 -8%", "tone": "green", "bars": [30, 45, 38, 52, 41, 37, 42]},
-            {"label": "采集成功率", "value": "97.3%", "note": "47 次请求", "tone": "green", "bars": [95, 97, 96, 98, 97, 97, 97]},
-            {"label": "API 错误率", "value": "0.8%", "note": "较昨日 -0.3%", "tone": "green", "bars": [2, 1, 2, 1, 1, 1, 1]},
-            {"label": "采集吞吐", "value": "186条/分", "note": "峰值 240 条/分", "tone": "brand", "bars": [120, 160, 140, 200, 170, 186, 180]},
-        ]
+    async def _get_monitoring(self, db: AsyncSession) -> dict:
+        """从事实表和异步任务审计表构造监控数据，不返回演示型指标。"""
+        status_rows = (
+            await db.execute(
+                select(
+                    JobSkillFact.verification_status,
+                    func.count(JobSkillFact.id),
+                ).group_by(JobSkillFact.verification_status)
+            )
+        ).all()
+        status_counts = {status: int(count) for status, count in status_rows}
+        verified = status_counts.get("verified", 0)
+        unverified = status_counts.get("unverified", 0)
+        rejected = status_counts.get("rejected", 0)
+        total = sum(status_counts.values())
+        reviewed = verified + rejected
+        verified_rate = round(verified * 100 / total, 1) if total else 0.0
 
-    def _get_alert_rules(self) -> list[dict]:
-        return [
-            {"name": "采集超时", "condition": "单次采集 > 300s", "icon": "Clock", "tone": "amber", "enabled": True},
-            {"name": "空数据", "condition": "返回结果 = 0 条", "icon": "Warning", "tone": "rose", "enabled": True},
-            {"name": "成功率下降", "condition": "成功率 < 80%", "icon": "TrendCharts", "tone": "brand", "enabled": False},
-            {"name": "磁盘告警", "condition": "使用率 > 85%", "icon": "Monitor", "tone": "green", "enabled": True},
-        ]
+        task_rows = (
+            await db.execute(
+                select(AsyncTask).order_by(AsyncTask.created_at.desc()).limit(20)
+            )
+        ).scalars().all()
+        succeeded_tasks = sum(1 for task in task_rows if task.status == "succeeded")
+        failed_tasks = sum(1 for task in task_rows if task.status == "failed")
 
-    def _get_recent_logs(self) -> list[dict]:
-        return [
-            {"id": 1, "time": "14:32:18", "level": "INFO", "service": "crawler", "message": "智联招聘 — 第 3/5 页采集完成，本页 15 条"},
-            {"id": 2, "time": "14:32:05", "level": "INFO", "service": "crawler", "message": "科大讯飞 — 请求第 4/5 页"},
-            {"id": 3, "time": "14:31:50", "level": "INFO", "service": "crawler", "message": "系统启动完成，所有服务正常"},
-            {"id": 4, "time": "14:31:45", "level": "WARN", "service": "crawler", "message": "智联招聘 — 第 2 页加载稍慢 (3.2s)"},
-            {"id": 5, "time": "14:31:30", "level": "INFO", "service": "crawler", "message": "开始例行采集任务调度"},
-        ]
+        reviewed_rows = (
+            await db.execute(
+                select(JobSkillFact, Skill.name, User.username)
+                .join(Skill, JobSkillFact.skill_id == Skill.id)
+                .outerjoin(User, JobSkillFact.reviewed_by == User.id)
+                .where(JobSkillFact.reviewed_at.is_not(None))
+                .order_by(JobSkillFact.reviewed_at.desc())
+                .limit(20)
+            )
+        ).all()
 
-    def _get_users(self) -> list[dict]:
-        return [
-            {"id": 1, "name": "张明", "email": "zhangming@jiebang.cn", "department": "技术部", "role": "系统管理员", "roleTone": "rose", "status": "active", "lastLogin": "2026-07-23 09:15"},
-            {"id": 2, "name": "李雪", "email": "lixue@jiebang.cn", "department": "数据部", "role": "数据分析师", "roleTone": "brand", "status": "active", "lastLogin": "2026-07-22 16:30"},
-            {"id": 3, "name": "王磊", "email": "wanglei@jiebang.cn", "department": "运营部", "role": "运营专员", "roleTone": "violet", "status": "active", "lastLogin": "2026-07-21 11:00"},
-            {"id": 4, "name": "赵丽", "email": "zhaoli@jiebang.cn", "department": "技术部", "role": "开发工程师", "roleTone": "green", "status": "disabled", "lastLogin": "2026-06-30 10:20"},
-            {"id": 5, "name": "刘洋", "email": "liuyang@jiebang.cn", "department": "产品部", "role": "产品经理", "roleTone": "amber", "status": "active", "lastLogin": "2026-07-23 08:45"},
-        ]
+        logs: list[dict] = []
+        for task in task_rows:
+            result = task.result or {}
+            if task.status == "failed":
+                level = "ERROR"
+                detail = task.error_message or task.error_code or "任务执行失败"
+            elif task.status == "succeeded":
+                level = "INFO"
+                detail = (
+                    f"处理 {int(result.get('total', 0))} 条，"
+                    f"入库 {int(result.get('imported', 0))} 条，"
+                    f"重复 {int(result.get('duplicates', 0))} 条"
+                )
+            else:
+                level = "WARN"
+                detail = f"进度 {task.progress}%"
+            logs.append({
+                "id": f"task-{task.id}",
+                "timestamp": task.finished_at or task.started_at or task.created_at,
+                "time": self._format_event_time(task.finished_at or task.started_at or task.created_at),
+                "level": level,
+                "service": f"task.{task.task_type}",
+                "message": f"{task.status} · {detail}",
+            })
 
-    def _get_roles(self) -> list[dict]:
-        return [
-            {"name": "系统管理员", "members": 1, "icon": "UserFilled", "tone": "rose", "desc": "拥有全部系统权限，可管理用户、爬虫和系统设置。", "permissions": ["管理用户", "管理爬虫", "系统设置", "导出数据", "查看日志"]},
-            {"name": "数据分析师", "members": 1, "icon": "DataAnalysis", "tone": "brand", "desc": "可查看数据、管理爬虫和导出分析报告。", "permissions": ["管理爬虫", "导出数据", "查看日志"]},
-            {"name": "运营专员", "members": 1, "icon": "TrendCharts", "tone": "violet", "desc": "可查看数据和运行报表，无法管理系统设置。", "permissions": ["查看日志"]},
-            {"name": "开发工程师", "members": 1, "icon": "Tools", "tone": "green", "desc": "可查看日志和配置外部服务连接。", "permissions": ["查看日志"]},
-        ]
+        for fact, skill_name, reviewer_name in reviewed_rows:
+            decision = "确认" if fact.verification_status == "verified" else "驳回"
+            logs.append({
+                "id": f"fact-{fact.id}",
+                "timestamp": fact.reviewed_at,
+                "time": self._format_event_time(fact.reviewed_at),
+                "level": "INFO" if fact.verification_status == "verified" else "WARN",
+                "service": "skill.fact.review",
+                "message": (
+                    f"{reviewer_name or '管理员'}{decision}事实 #{fact.id} "
+                    f"{skill_name} · {fact.review_note or '未填写备注'}"
+                ),
+            })
 
-    def _get_settings(self) -> dict:
+        logs.sort(
+            key=lambda item: item["timestamp"].timestamp() if item["timestamp"] else 0,
+            reverse=True,
+        )
+        for item in logs:
+            item.pop("timestamp", None)
+
         return {
-            "platformName": "智联职引",
-            "timezone": "Asia/Shanghai",
-            "language": "zh-CN",
-            "autoCleanLogs": True,
-            "logRetention": 30,
-            "snapshotCycle": "weekly",
-            "strongPassword": True,
-            "adminMfa": False,
-            "sessionHours": 8,
+            "performanceCards": [
+                {"label": "技能事实总量", "value": str(total), "note": "MySQL 实时统计", "tone": "brand", "bars": [min(total, 100)]},
+                {"label": "事实确认率", "value": f"{verified_rate:.1f}%", "note": f"{verified} 条已确认", "tone": "green", "bars": [verified_rate]},
+                {"label": "待审核事实", "value": str(unverified), "note": "等待管理员处理", "tone": "amber", "bars": [min(unverified, 100)]},
+                {"label": "已驳回事实", "value": str(rejected), "note": "保留审核证据", "tone": "rose", "bars": [min(rejected, 100)]},
+            ],
+            "endpoints": [
+                {"method": "GET", "path": "/api/v1/skills/facts/reviews", "value": f"{total} 条", "percent": 100 if total else 0},
+                {"method": "PATCH", "path": "/api/v1/skills/facts/{id}/review", "value": f"{reviewed} 条", "percent": round(reviewed * 100 / total) if total else 0},
+                {"method": "POST", "path": "/api/v1/data-imports/jobs", "value": f"{len(task_rows)} 次", "percent": round(succeeded_tasks * 100 / len(task_rows)) if task_rows else 0},
+                {"method": "GET", "path": "/api/v1/tasks/{id}", "value": f"{failed_tasks} 次失败", "percent": round(failed_tasks * 100 / len(task_rows)) if task_rows else 0},
+            ],
+            "logs": logs[:30],
         }
 
-    def _get_integrations(self) -> list[dict]:
-        return [
-            {"name": "MySQL", "endpoint": "localhost:3306/jiebang", "status": "healthy"},
-            {"name": "Neo4j", "endpoint": "localhost:7687", "status": "healthy"},
-            {"name": "Redis", "endpoint": "localhost:6379", "status": "healthy"},
-            {"name": "DeepSeek Agent", "endpoint": "api.deepseek.com/v1", "status": "healthy"},
-        ]
+    @staticmethod
+    def _format_event_time(value: datetime.datetime | None) -> str:
+        return value.strftime("%m-%d %H:%M:%S") if value else "时间未知"

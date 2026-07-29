@@ -89,7 +89,5 @@ export interface DataProvider {
     runCrawler(id: number): Promise<void>;
     pollCrawler(id: number): Promise<any>;
     importCrawlerOutput(filename: string): Promise<JobImportResult>;
-    toggleUser(id: number): Promise<void>;
-    saveSettings(settings: Record<string, any>): Promise<void>;
   };
 }

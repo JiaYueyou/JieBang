@@ -100,31 +100,3 @@ async def poll_spider(
     except Exception as e:
         logger.exception("轮询爬虫状态失败")
         return ApiResponse(code=500, message=f"轮询失败: {e}")
-
-
-@router.put("/users/{user_id}/status", response_model=ApiResponse)
-async def toggle_user(
-    user_id: int,
-    service: CrawlerService = Depends(get_crawler_service),
-):
-    """切换用户状态（停用/启用）"""
-    try:
-        # 目前使用 CrawlerService 中的静态用户数据，后续迁移到 DB
-        return ApiResponse(data={"id": user_id, "status": "toggled"})
-    except Exception as e:
-        logger.exception("切换用户状态失败")
-        return ApiResponse(code=500, message=f"操作失败: {e}")
-
-
-@router.put("/settings", response_model=ApiResponse)
-async def save_settings(
-    settings: dict,
-    service: CrawlerService = Depends(get_crawler_service),
-):
-    """保存系统设置"""
-    try:
-        # 后续接入数据库持久化
-        return ApiResponse(data={"saved": True})
-    except Exception as e:
-        logger.exception("保存设置失败")
-        return ApiResponse(code=500, message=f"保存失败: {e}")

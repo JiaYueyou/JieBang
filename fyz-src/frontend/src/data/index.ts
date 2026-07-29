@@ -18,6 +18,7 @@ const mockBackedDataProvider: DataProvider = {
   internalTransfer: httpDataProvider.internalTransfer,
   skillReviews: httpDataProvider.skillReviews,
   trends: httpDataProvider.trends,
+  admin: httpDataProvider.admin,
 };
 
 const hybridDataProvider: DataProvider = {

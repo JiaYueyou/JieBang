@@ -45,12 +45,7 @@ class AdminOverview(BaseModel):
     crawler_policy: CrawlerPolicy = Field(default_factory=CrawlerPolicy)
     performance_cards: list[dict[str, Any]] = []
     endpoints: list[dict[str, Any]] = []
-    alert_rules: list[dict[str, Any]] = []
     logs: list[dict[str, Any]] = []
-    users: list[dict[str, Any]] = []
-    roles: list[dict[str, Any]] = []
-    settings: dict[str, Any] = {}
-    integrations: list[dict[str, Any]] = []
 
 
 class CrawlerRunResult(BaseModel):
