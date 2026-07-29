@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillExtractionAgent
-from app.core.exceptions import ResourceNotFoundError
+from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
 from app.models import AgentRun, JobSkillFact
 from app.providers import DeepSeekProvider, LLMProvider
@@ -22,7 +22,11 @@ from app.schemas.skill import (
     JobExtractionResult,
     SkillExtractionOutput,
     SkillFactResponse,
+    SkillFactReviewItem,
+    SkillFactReviewList,
+    SkillFactReviewSummary,
     SkillSummary,
+    VerificationStatus,
 )
 from app.services.job_service import JobService
 from app.services.skill_extractor import RuleSkillExtractor, normalize_text
@@ -105,6 +109,59 @@ class SkillService:
             self._fact_response(fact)
             for fact in await self.skills.list_job_facts(job_id)
         ]
+
+    async def list_fact_reviews(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        status: VerificationStatus | None,
+        keyword: str | None,
+    ):
+        rows, total, counts = await self.skills.list_fact_reviews(
+            page=page,
+            page_size=page_size,
+            status=status.value if status else None,
+            keyword=keyword,
+        )
+        summary = SkillFactReviewSummary(
+            all=sum(counts.values()),
+            unverified=counts.get("unverified", 0),
+            verified=counts.get("verified", 0),
+            rejected=counts.get("rejected", 0),
+        )
+        return SkillFactReviewList(
+            items=[self._review_item(row) for row in rows],
+            summary=summary,
+        ), PageMeta(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=ceil(total / page_size) if total else 0,
+        )
+
+    async def review_fact(
+        self,
+        fact_id: int,
+        *,
+        decision: VerificationStatus,
+        note: str | None,
+        reviewer_id: int,
+    ) -> SkillFactReviewItem:
+        fact = await self.skills.get_fact_for_update(fact_id)
+        if not fact:
+            raise ResourceNotFoundError("技能事实不存在")
+        if fact.verification_status != VerificationStatus.unverified.value:
+            raise InvalidParameterError("仅待审核事实可以确认或驳回")
+        fact.verification_status = decision.value
+        fact.reviewed_by = reviewer_id
+        fact.reviewed_at = datetime.now(timezone.utc)
+        fact.review_note = note
+        await self.db.commit()
+        row = await self.skills.get_fact_review(fact_id)
+        if not row:
+            raise ResourceNotFoundError("技能事实不存在")
+        return self._review_item(row)
 
     async def extract_text(
         self,
@@ -229,4 +286,33 @@ class SkillService:
             confidence=fact.confidence, evidence_text=fact.evidence_text,
             verification_status=fact.verification_status,
             extraction_method=fact.extraction_method, source_count=fact.source_count,
+        )
+
+    @staticmethod
+    def _review_item(row) -> SkillFactReviewItem:
+        fact, skill, raw_job, source_document, job, reviewer_name = row
+        return SkillFactReviewItem(
+            id=fact.id,
+            skill_id=fact.skill_id,
+            skill_name=skill.name,
+            category=skill.category,
+            kind=fact.kind,
+            importance=fact.importance,
+            frequency=fact.frequency,
+            confidence=fact.confidence,
+            evidence_text=fact.evidence_text,
+            verification_status=fact.verification_status,
+            extraction_method=fact.extraction_method,
+            source_count=fact.source_count,
+            job_id=fact.job_id,
+            raw_job_record_id=fact.raw_job_record_id,
+            job_title=raw_job.title if raw_job else (job.title if job else "未知岗位"),
+            company=raw_job.company if raw_job else (job.company if job else None),
+            source=source_document.source if source_document else "内部岗位",
+            source_url=source_document.url if source_document else None,
+            reviewed_by=fact.reviewed_by,
+            reviewer_name=reviewer_name,
+            reviewed_at=fact.reviewed_at,
+            review_note=fact.review_note,
+            created_at=fact.created_at,
         )

@@ -38,6 +38,15 @@ class AuthenticationError(BusinessException):
         )
 
 
+class AuthorizationError(BusinessException):
+    def __init__(self, message: str = "当前账号无权执行此操作") -> None:
+        super().__init__(
+            status_code=403,
+            code=40300,
+            message=message,
+        )
+
+
 class ResourceNotFoundError(BusinessException):
     def __init__(self, message: str = "请求的资源不存在") -> None:
         super().__init__(

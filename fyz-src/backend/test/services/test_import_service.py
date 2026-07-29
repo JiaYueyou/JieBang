@@ -53,6 +53,12 @@ async def test_import_is_idempotent_and_cross_validates_sources(monkeypatch):
             )).scalars().all()
             assert all(fact.source_count == 2 for fact in facts)
             assert all(fact.verification_status == "verified" for fact in facts)
+            facts[0].verification_status = "rejected"
+            facts[0].review_note = "人工判定证据不足"
+            await db.flush()
+            await service._cross_validate_facts([])
+            assert facts[0].verification_status == "rejected"
+            assert facts[0].review_note == "人工判定证据不足"
             first_raw = (
                 await db.execute(
                     select(RawJobRecord).where(RawJobRecord.title == "Java 开发")

@@ -502,6 +502,52 @@ export interface JobImportResult {
   validation: JobImportValidation[];
 }
 
+export type SkillFactVerificationStatus = "unverified" | "verified" | "rejected";
+
+export interface SkillFactReviewItem {
+  id: EntityId;
+  skill_id: EntityId;
+  skill_name: string;
+  category: string;
+  kind: "required" | "preferred";
+  importance: number;
+  frequency: number;
+  confidence: number;
+  evidence_text: string;
+  verification_status: SkillFactVerificationStatus;
+  extraction_method: string;
+  source_count: number;
+  job_id: EntityId | null;
+  raw_job_record_id: EntityId | null;
+  job_title: string;
+  company: string | null;
+  source: string;
+  source_url: string | null;
+  reviewed_by: EntityId | null;
+  reviewer_name: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+}
+
+export interface SkillFactReviewSummary {
+  all: number;
+  unverified: number;
+  verified: number;
+  rejected: number;
+}
+
+export interface SkillFactReviewPage {
+  items: SkillFactReviewItem[];
+  summary: SkillFactReviewSummary;
+  meta: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
 export interface PipelineSummary {
   totalJobs: number;
   todayImported: number;

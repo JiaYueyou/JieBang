@@ -87,3 +87,84 @@ async def test_import_rejects_unknown_file(client, auth_headers):
     )
     assert response.status_code == 422
     assert response.json()["code"] == 40003
+
+
+async def test_admin_reviews_skill_facts_with_audit_trail(client, auth_headers):
+    job = await _create_job(client, auth_headers)
+    extracted = await client.post(
+        f"/api/v1/jobs/{job['id']}/extract-skills",
+        headers=auth_headers,
+    )
+    facts = extracted.json()["data"]["facts"]
+    assert len(facts) >= 2
+
+    queue = await client.get(
+        "/api/v1/skills/facts/reviews",
+        headers=auth_headers,
+        params={"status": "unverified", "page_size": 100},
+    )
+    assert queue.status_code == 200
+    queue_data = queue.json()
+    assert queue_data["meta"]["total"] == len(facts)
+    assert queue_data["data"]["summary"]["unverified"] == len(facts)
+    assert queue_data["data"]["items"][0]["source"] == "内部岗位"
+
+    normal_login = await client.post(
+        "/api/v1/auth/login",
+        json={"username": "normal", "password": "user123"},
+    )
+    normal_headers = {
+        "Authorization": f"Bearer {normal_login.json()['data']['access_token']}"
+    }
+    forbidden = await client.patch(
+        f"/api/v1/skills/facts/{facts[0]['id']}/review",
+        headers=normal_headers,
+        json={"decision": "verified", "note": "证据充分"},
+    )
+    assert forbidden.status_code == 403
+    assert forbidden.json()["code"] == 40300
+
+    verified = await client.patch(
+        f"/api/v1/skills/facts/{facts[0]['id']}/review",
+        headers=auth_headers,
+        json={"decision": "verified", "note": "岗位原文直接要求"},
+    )
+    assert verified.status_code == 200
+    verified_data = verified.json()["data"]
+    assert verified_data["verification_status"] == "verified"
+    assert verified_data["reviewer_name"] == "admin"
+    assert verified_data["review_note"] == "岗位原文直接要求"
+    assert verified_data["reviewed_at"]
+
+    rejected_without_note = await client.patch(
+        f"/api/v1/skills/facts/{facts[1]['id']}/review",
+        headers=auth_headers,
+        json={"decision": "rejected"},
+    )
+    assert rejected_without_note.status_code == 422
+
+    rejected = await client.patch(
+        f"/api/v1/skills/facts/{facts[1]['id']}/review",
+        headers=auth_headers,
+        json={"decision": "rejected", "note": "证据只描述业务场景"},
+    )
+    assert rejected.status_code == 200
+    assert rejected.json()["data"]["verification_status"] == "rejected"
+
+    repeated = await client.patch(
+        f"/api/v1/skills/facts/{facts[0]['id']}/review",
+        headers=auth_headers,
+        json={"decision": "rejected", "note": "重复决策"},
+    )
+    assert repeated.status_code == 422
+    assert repeated.json()["code"] == 40003
+
+    reviewed = await client.get(
+        "/api/v1/skills/facts/reviews",
+        headers=auth_headers,
+        params={"status": "verified", "keyword": verified_data["skill_name"]},
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.json()["data"]["items"][0]["id"] == facts[0]["id"]
+    assert reviewed.json()["data"]["summary"]["verified"] == 1
+    assert reviewed.json()["data"]["summary"]["rejected"] == 1

@@ -202,6 +202,58 @@ describe("HTTP job and JD Agent provider contract", () => {
     await expect(httpDataProvider.talents.explain(3)).rejects.toThrow("模型服务限流，请稍后重试");
   });
 
+  it("loads and reviews skill facts through the real review endpoints", async () => {
+    const fact = {
+      id: 31, skill_id: 8, skill_name: "Python", category: "programming",
+      kind: "required", importance: 0.9, frequency: 1, confidence: 0.88,
+      evidence_text: "熟练使用 Python", verification_status: "unverified",
+      extraction_method: "rule", source_count: 1, job_id: null,
+      raw_job_record_id: 12, job_title: "AI 工程师", company: "示例企业",
+      source: "智联招聘", source_url: "https://example.com/job/1",
+      reviewed_by: null, reviewer_name: null, reviewed_at: null,
+      review_note: null, created_at: "2026-07-29T10:00:00",
+    };
+    const get = vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200, message: "success",
+        data: {
+          items: [fact],
+          summary: { all: 1, unverified: 1, verified: 0, rejected: 0 },
+        },
+        meta: { page: 1, page_size: 12, total: 1, total_pages: 1 },
+      },
+    } as never);
+    const patch = vi.spyOn(request, "patch").mockResolvedValue(response({
+      ...fact,
+      verification_status: "verified",
+      reviewed_by: 1,
+      reviewer_name: "admin",
+      reviewed_at: "2026-07-29T11:00:00Z",
+      review_note: "证据充分",
+    }) as never);
+
+    await expect(httpDataProvider.skillReviews.list({
+      page: 1,
+      pageSize: 12,
+      status: "unverified",
+      keyword: "Python",
+    })).resolves.toEqual(expect.objectContaining({
+      items: [fact],
+      meta: { page: 1, page_size: 12, total: 1, total_pages: 1 },
+    }));
+    await expect(
+      httpDataProvider.skillReviews.review(31, "verified", "证据充分"),
+    ).resolves.toEqual(expect.objectContaining({ verification_status: "verified" }));
+
+    expect(get).toHaveBeenCalledWith("/skills/facts/reviews", {
+      params: { page: 1, page_size: 12, status: "unverified", keyword: "Python" },
+    });
+    expect(patch).toHaveBeenCalledWith(
+      "/skills/facts/31/review",
+      { decision: "verified", note: "证据充分" },
+    );
+  });
+
   it("reports a completed Agent task without a result as an invalid response", async () => {
     vi.spyOn(request, "post").mockResolvedValue(response({
       task: { task_id: "career-task", status: "succeeded", progress: 100, result: null, error_message: null },

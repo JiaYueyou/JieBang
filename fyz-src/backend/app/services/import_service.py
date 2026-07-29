@@ -160,6 +160,8 @@ class ImportService:
             )
         ).scalars()
         for fact in facts:
+            if fact.verification_status == "rejected":
+                continue
             fact.source_count = int(source_counts.get(fact.skill_id, 1))
             fact.verification_status = (
                 "verified"

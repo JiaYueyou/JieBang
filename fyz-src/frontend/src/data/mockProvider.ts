@@ -58,7 +58,7 @@ function favoriteFromEntity(type: FavoriteTargetType, targetId: number, title?: 
   };
 }
 
-export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer"> = {
+export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer" | "skillReviews"> = {
   dashboard: {
     async getOverview() {
       const data = db();

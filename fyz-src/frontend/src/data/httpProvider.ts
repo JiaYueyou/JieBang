@@ -8,6 +8,10 @@ import type {
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
+  SkillFactReviewItem,
+  SkillFactReviewPage,
+  SkillFactReviewSummary,
+  SkillFactVerificationStatus,
   TrendOverview,
 } from "@/domain/types";
 
@@ -133,6 +137,12 @@ async function put<T>(url: string, data?: unknown): Promise<T> {
   return response.data.data;
 }
 
+async function patch<T>(url: string, data?: unknown): Promise<T> {
+  const response = await request.patch<ApiResponse<T>>(url, data);
+  if (response.data.data === null) throw new Error(`接口 ${url} 未返回数据`);
+  return response.data.data;
+}
+
 export const httpDataProvider: DataProvider = {
   dashboard: { getOverview: () => get("/dashboard/overview") },
   jobs: {
@@ -254,6 +264,36 @@ export const httpDataProvider: DataProvider = {
     getOverview: async (query) => mapTrendOverview(
       await get<AnalysisOverviewResponse>("/analysis/overview", query),
     ),
+  },
+  skillReviews: {
+    list: async ({ page, pageSize, status, keyword }) => {
+      const response = await request.get<ApiResponse<{
+        items: SkillFactReviewItem[];
+        summary: SkillFactReviewSummary;
+      }>>("/skills/facts/reviews", {
+        params: {
+          page,
+          page_size: pageSize,
+          status: status || undefined,
+          keyword: keyword || undefined,
+        },
+      });
+      if (response.data.data === null) throw new Error("技能事实审核接口未返回数据");
+      return {
+        ...response.data.data,
+        meta: response.data.meta ?? {
+          page,
+          page_size: pageSize,
+          total: response.data.data.items.length,
+          total_pages: response.data.data.items.length ? 1 : 0,
+        },
+      } satisfies SkillFactReviewPage;
+    },
+    review: (
+      factId: number,
+      decision: Exclude<SkillFactVerificationStatus, "unverified">,
+      note?: string,
+    ) => patch(`/skills/facts/${factId}/review`, { decision, note }),
   },
   favorites: {
     list:()=>get("/favorites"),

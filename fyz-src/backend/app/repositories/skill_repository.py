@@ -8,7 +8,16 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import AgentRun, AsyncTask, JobSkillFact, RawJobRecord, Skill, SourceDocument
+from app.models import (
+    AgentRun,
+    AsyncTask,
+    JobPosting,
+    JobSkillFact,
+    RawJobRecord,
+    Skill,
+    SourceDocument,
+    User,
+)
 
 
 class SkillRepository:
@@ -81,6 +90,93 @@ class SkillRepository:
             .where(JobSkillFact.job_id == job_id).order_by(JobSkillFact.confidence.desc())
         )
         return list(rows.scalars())
+
+    @staticmethod
+    def _review_query():
+        return (
+            select(
+                JobSkillFact,
+                Skill,
+                RawJobRecord,
+                SourceDocument,
+                JobPosting,
+                User.username,
+            )
+            .join(Skill, Skill.id == JobSkillFact.skill_id)
+            .outerjoin(RawJobRecord, RawJobRecord.id == JobSkillFact.raw_job_record_id)
+            .outerjoin(
+                SourceDocument,
+                SourceDocument.id == RawJobRecord.source_document_id,
+            )
+            .outerjoin(JobPosting, JobPosting.id == JobSkillFact.job_id)
+            .outerjoin(User, User.id == JobSkillFact.reviewed_by)
+        )
+
+    async def list_fact_reviews(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        status: str | None,
+        keyword: str | None,
+    ):
+        filters = []
+        if status:
+            filters.append(JobSkillFact.verification_status == status)
+        if keyword:
+            pattern = f"%{keyword.strip()}%"
+            filters.append(
+                or_(
+                    Skill.name.like(pattern),
+                    JobSkillFact.evidence_text.like(pattern),
+                    RawJobRecord.title.like(pattern),
+                    JobPosting.title.like(pattern),
+                )
+            )
+        total = await self.db.scalar(
+            select(func.count(JobSkillFact.id))
+            .select_from(JobSkillFact)
+            .join(Skill, Skill.id == JobSkillFact.skill_id)
+            .outerjoin(RawJobRecord, RawJobRecord.id == JobSkillFact.raw_job_record_id)
+            .outerjoin(JobPosting, JobPosting.id == JobSkillFact.job_id)
+            .where(*filters)
+        )
+        rows = await self.db.execute(
+            self._review_query()
+            .where(*filters)
+            .order_by(JobSkillFact.created_at.desc(), JobSkillFact.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        summary_rows = await self.db.execute(
+            select(
+                JobSkillFact.verification_status,
+                func.count(JobSkillFact.id),
+            ).group_by(JobSkillFact.verification_status)
+        )
+        return rows.all(), int(total or 0), {
+            str(status_value): int(count)
+            for status_value, count in summary_rows.all()
+        }
+
+    async def get_fact_review(self, fact_id: int):
+        return (
+            await self.db.execute(
+                self._review_query().where(JobSkillFact.id == fact_id)
+            )
+        ).one_or_none()
+
+    async def get_fact(self, fact_id: int) -> JobSkillFact | None:
+        return await self.db.get(JobSkillFact, fact_id)
+
+    async def get_fact_for_update(self, fact_id: int) -> JobSkillFact | None:
+        return (
+            await self.db.execute(
+                select(JobSkillFact)
+                .where(JobSkillFact.id == fact_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
 
     async def add_agent_run(self, run: AgentRun) -> None:
         self.db.add(run)
