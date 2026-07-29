@@ -47,6 +47,20 @@ class TestAdminModule:
         assert body["code"] == 200
         assert "metrics" in body["data"]
         assert "crawlers" in body["data"]
+        assert body["data"]["pipelineSummary"] == {
+            "totalJobs": 0,
+            "todayImported": 0,
+            "sourceCount": 0,
+            "validRecords": 0,
+            "validRate": 0.0,
+            "failedTasks": 0,
+            "processedToday": 0,
+            "duplicatesToday": 0,
+            "verifiedFacts": 0,
+            "unverifiedFacts": 0,
+            "overallQuality": 0.0,
+        }
+        assert body["data"]["crawlers"][1]["endpoint"] == "iflytek.com"
 
     async def test_overview_blocked_without_auth(self, client):
         resp = await client.get("/api/v1/admin/overview")

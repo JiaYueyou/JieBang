@@ -7,6 +7,7 @@ import type {
   EmergingJob,
   GeneratedJDDraft,
   JDInputSuggestion,
+  JobImportResult,
   TrendOverview,
 } from "@/domain/types";
 
@@ -112,6 +113,18 @@ async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
   if (task.status !== "succeeded") throw new Error("AI 任务未在预期时间内完成，请稍后刷新重试");
   if (task.result === null) throw new Error("AI 任务已完成，但未返回可用结果");
   return task.result;
+}
+
+async function waitForTask<T>(task: AsyncTask<T>): Promise<T> {
+  let current = task;
+  for (let attempt = 0; attempt < AGENT_MAX_POLLS && current.status !== "succeeded" && current.status !== "failed"; attempt += 1) {
+    if (attempt > 0) await sleep(AGENT_POLL_INTERVAL_MS);
+    current = await get<AsyncTask<T>>(`/tasks/${current.task_id}`);
+  }
+  if (current.status === "failed") throw new Error(current.error_message || "导入任务执行失败");
+  if (current.status !== "succeeded") throw new Error("导入任务未在预期时间内完成，请稍后重试");
+  if (current.result === null) throw new Error("导入任务已完成，但未返回结果");
+  return current.result;
 }
 
 async function put<T>(url: string, data?: unknown): Promise<T> {
@@ -259,6 +272,9 @@ export const httpDataProvider: DataProvider = {
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),
+    importCrawlerOutput:async(filename)=>waitForTask(
+      await post<AsyncTask<JobImportResult>>("/data-imports/jobs",{files:[filename]}),
+    ),
     toggleUser:async(id)=>{await request.put(`/admin/users/${id}/status`,{});},
     saveSettings:async(settings)=>{await request.put("/admin/settings",settings);},
   },

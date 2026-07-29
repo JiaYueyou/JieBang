@@ -146,6 +146,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async toggleCrawler(id){const data=db();const item=data.admin.crawlers.find((value)=>value.id===id);if(item)item.enabled=!item.enabled;persist(data);},
     async runCrawler(id){const data=db();const item=data.admin.crawlers.find((value)=>value.id===id);if(item){item.running=true;item.progress=8;item.nextRun="运行中";}persist(data);},
     async pollCrawler(){return {done:true,result:null};},
+    async importCrawlerOutput(filename){return delay({files:[filename],total:0,imported:0,duplicates:0,skill_facts:0,verified_skill_facts:0,unverified_skill_facts:0,validation:[{file:filename,total:0,passed:0,failed:0,errors:[],warning_count:0,warnings:[]}]});},
     async toggleUser(id){const data=db();const user=data.admin.users.find((value)=>value.id===id);if(user)user.status=user.status==="active"?"disabled":"active";persist(data);},
     async saveSettings(settings){const data=db();data.admin.settings={...settings};persist(data);},
   },

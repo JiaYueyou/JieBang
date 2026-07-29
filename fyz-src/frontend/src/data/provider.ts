@@ -1,5 +1,5 @@
 import type {
-  AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview,
+  AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
@@ -74,6 +74,7 @@ export interface DataProvider {
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
     pollCrawler(id: number): Promise<any>;
+    importCrawlerOutput(filename: string): Promise<JobImportResult>;
     toggleUser(id: number): Promise<void>;
     saveSettings(settings: Record<string, any>): Promise<void>;
   };

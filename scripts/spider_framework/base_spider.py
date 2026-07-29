@@ -166,12 +166,12 @@ class BaseSpider:
 
     def save(self, output_dir: Optional[str] = None) -> str:
         """
-        保存数据到 JSON 文件（自动编号，条数相同时跳过）
+        保存数据到 JSON 文件（自动编号，业务内容相同时复用最新快照）
 
         参数：
           output_dir: 输出目录，默认当前目录
 
-        返回：文件路径（跳过时返回空字符串）
+        返回：本次可用的文件路径
         """
         data = self.total_data
         if not data:
@@ -180,6 +180,7 @@ class BaseSpider:
 
         output_dir = output_dir or self.save_output_dir or os.getcwd()
         new_count = len(data)
+        new_digest = self._content_digest(data)
 
         # 自动编号
         pattern = re.compile(rf"^{re.escape(self.name)}_(\d+)\.json$")
@@ -191,16 +192,17 @@ class BaseSpider:
                 if num > max_num:
                     max_num = num
 
-        # 检查最新文件条数是否相同，相同则跳过
+        # 比较业务内容而不是记录数，避免“数量相同但岗位内容变化”被漏掉。
+        # crawled_at 属于本次运行元数据，不参与业务内容指纹。
         if max_num > 0:
             latest_path = os.path.join(output_dir, f"{self.name}_{max_num}.json")
             try:
                 with open(latest_path, "r", encoding="utf-8") as f:
-                    existing_count = len(json.load(f))
-                if existing_count == new_count:
-                    logger.info("数据无变化 (%d 条)，跳过保存（与 %s 一致）",
+                    existing_data = json.load(f)
+                if self._content_digest(existing_data) == new_digest:
+                    logger.info("业务内容无变化 (%d 条)，复用快照 %s",
                                 new_count, f"{self.name}_{max_num}.json")
-                    return ""
+                    return latest_path
             except (json.JSONDecodeError, OSError):
                 pass  # 文件损坏则正常保存
 
@@ -208,7 +210,10 @@ class BaseSpider:
         filepath = os.path.join(output_dir, filename)
 
         # 按发布时间从新到旧排序
-        data.sort(key=lambda x: x.get("post_date", "") or "", reverse=True)
+        data.sort(
+            key=lambda x: x.get("posted_at") or x.get("post_date") or "",
+            reverse=True,
+        )
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
@@ -278,3 +283,25 @@ class BaseSpider:
         title = (record.get("title") or "").strip()
         raw = f"{url}|{title}"
         return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _content_digest(records: list[dict]) -> str:
+        """生成与顺序、抓取时间无关的业务内容指纹。"""
+        normalized = []
+        for record in records:
+            item = {key: value for key, value in record.items() if key != "crawled_at"}
+            normalized.append(item)
+        normalized.sort(
+            key=lambda item: (
+                str(item.get("url") or ""),
+                str(item.get("title") or ""),
+                json.dumps(item, ensure_ascii=False, sort_keys=True),
+            )
+        )
+        payload = json.dumps(
+            normalized,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()

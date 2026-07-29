@@ -14,6 +14,11 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import AsyncTask, JobSkillFact, RawJobRecord, SourceDocument
+
 logger = logging.getLogger(__name__)
 
 # 项目根目录（JieBang/）
@@ -122,7 +127,7 @@ class SpiderMeta:
 # 已注册的爬虫
 REGISTERED_SPIDERS = [
     SpiderMeta(1, "zhaopin_spider", "智联招聘", "ZL", "zhaopin.com", "brand"),
-    SpiderMeta(2, "iflytek_spider", "科大讯飞", "XF", "zhaopin.com", "violet"),
+    SpiderMeta(2, "iflytek_spider", "科大讯飞", "XF", "iflytek.com", "violet"),
 ]
 
 
@@ -137,6 +142,7 @@ class CrawlerService:
         self._stderr: dict[int, list[str]] = {}
         self._stdout: dict[int, list[str]] = {}
         self._enabled: dict[int, bool] = {1: True, 2: True}  # 爬虫启停状态
+        self._last_runs: dict[int, dict] = {}
 
     # ------------------------------------------------------------------
     # 后台线程：读取子进程输出
@@ -168,20 +174,19 @@ class CrawlerService:
     # 数据总览
     # ------------------------------------------------------------------
 
-    async def get_overview(self) -> dict:
+    async def get_overview(self, db: AsyncSession) -> dict:
         """构造 AdminOverview 字典，与前端 AdminOverview 结构对齐"""
         crawlers = self._list_crawlers()
-        today_total = sum(
-            int(c["today"]) for c in crawlers if c["today"].isdigit()
-        )
+        pipeline_summary, qualities = await self._get_pipeline_summary(db)
         return {
-            "metrics": self._get_metrics(today_total),
+            "metrics": self._get_metrics(pipeline_summary),
             "services": self._get_services(),
             "resources": self._get_resources(),
             "recentTasks": self._get_recent_tasks(),
             "systemEvents": [],
             "crawlers": crawlers,
-            "qualities": self._get_qualities(),
+            "pipelineSummary": pipeline_summary,
+            "qualities": qualities,
             "crawlerPolicy": self._get_policy(),
             "performanceCards": self._get_performance_cards(),
             "endpoints": [],
@@ -300,12 +305,23 @@ class CrawlerService:
                     records_count = len(json.load(f))
             except (json.JSONDecodeError, OSError):
                 pass
+        output_changed = bool(
+            latest and latest.stat().st_mtime >= started - 1
+        )
+        self._last_runs[spider_id] = {
+            "date": datetime.date.today().isoformat(),
+            "records_count": records_count,
+            "elapsed": round(elapsed, 1),
+            "returncode": proc_obj.returncode,
+        }
 
         return {
             "spider_id": spider_id,
             "name": meta.name,
             "records_count": records_count,
             "filepath": str(latest) if latest else "",
+            "filename": latest.name if latest else "",
+            "output_changed": output_changed,
             "elapsed": round(elapsed, 1),
             "returncode": proc_obj.returncode,
             "stdout": stdout_text[-500:] if stdout_text else "",
@@ -340,6 +356,11 @@ class CrawlerService:
                     elapsed = time.time() - self._running_since.get(meta.id, time.time())
                     progress = min(int(elapsed / 120 * 100), 20)
             item = meta.to_dict(running=running, progress=progress, enabled=enabled)
+            last_run = self._last_runs.get(meta.id)
+            if last_run and last_run["date"] == datetime.date.today().isoformat():
+                item["today"] = str(last_run["records_count"])
+                item["success"] = 100.0 if last_run["returncode"] == 0 else 0.0
+                item["duration"] = f"{last_run['elapsed']}s"
             if progress_info:
                 item["progress_info"] = progress_info
             result.append(item)
@@ -357,13 +378,121 @@ class CrawlerService:
     # 这些方法返回与前端 AdminOverview 结构匹配的静态数据，
     # 后续可逐步替换为来自数据库/监控系统的真实数据。
 
-    def _get_metrics(self, today_total: int) -> list[dict]:
+    def _get_metrics(self, summary: dict) -> list[dict]:
         return [
-            {"label": "总岗位数", "value": str(today_total + 487), "trend": f"+{today_total} 今日新增", "trendTone": "positive", "icon": "Document", "tone": "brand", "bars": [35, 65, 45, 80, 55, 90, 70]},
-            {"label": "数据源", "value": str(len(REGISTERED_SPIDERS)), "trend": "全部在线", "trendTone": "positive", "icon": "Connection", "tone": "green", "bars": [60, 40, 70, 50, 80, 45, 65]},
-            {"label": "今日采集", "value": str(today_total), "trend": "较昨日 +12.3%", "trendTone": "positive", "icon": "Download", "tone": "violet", "bars": [40, 55, 35, 70, 50, 85, today_total % 100]},
-            {"label": "系统负载", "value": "23%", "trend": "运行正常", "trendTone": "positive", "icon": "Monitor", "tone": "amber", "bars": [25, 30, 22, 35, 28, 32, 23]},
+            {"label": "总岗位数", "value": str(summary["totalJobs"]), "trend": f"+{summary['todayImported']} 今日入库", "trendTone": "positive", "icon": "Document", "tone": "brand", "bars": [summary["totalJobs"] % 100]},
+            {"label": "数据源", "value": str(summary["sourceCount"]), "trend": "来自真实入库记录", "trendTone": "positive", "icon": "Connection", "tone": "green", "bars": [summary["sourceCount"] * 20]},
+            {"label": "有效数据率", "value": f"{summary['validRate']:.1f}%", "trend": f"{summary['validRecords']} / {summary['totalJobs']} 条正文有效", "trendTone": "positive", "icon": "Download", "tone": "violet", "bars": [summary["validRate"]]},
+            {"label": "待验证事实", "value": str(summary["unverifiedFacts"]), "trend": f"{summary['verifiedFacts']} 条已验证", "trendTone": "warning" if summary["unverifiedFacts"] else "positive", "icon": "Monitor", "tone": "amber", "bars": [min(summary["unverifiedFacts"], 100)]},
         ]
+
+    async def _get_pipeline_summary(
+        self, db: AsyncSession
+    ) -> tuple[dict, list[dict]]:
+        today = datetime.date.today()
+        today_start = datetime.datetime.combine(today, datetime.time.min)
+        tomorrow_start = today_start + datetime.timedelta(days=1)
+
+        rows = (
+            await db.execute(
+                select(
+                    RawJobRecord.title,
+                    RawJobRecord.company,
+                    RawJobRecord.jd_text,
+                    RawJobRecord.crawled_at_text,
+                    SourceDocument.source,
+                    SourceDocument.url,
+                    SourceDocument.created_at,
+                ).join(
+                    SourceDocument,
+                    RawJobRecord.source_document_id == SourceDocument.id,
+                )
+            )
+        ).all()
+        total = len(rows)
+        valid = sum(1 for row in rows if len((row.jd_text or "").strip()) >= 10)
+        complete = sum(
+            1
+            for row in rows
+            if all(
+                str(value or "").strip()
+                for value in (
+                    row.title,
+                    row.company,
+                    row.jd_text,
+                    row.crawled_at_text,
+                    row.source,
+                    row.url,
+                )
+            )
+        )
+        today_imported = sum(
+            1
+            for row in rows
+            if row.created_at and today_start <= row.created_at < tomorrow_start
+        )
+        source_count = len({row.source for row in rows if row.source})
+
+        task_rows = (
+            await db.execute(
+                select(AsyncTask).where(
+                    AsyncTask.task_type == "job_data_import",
+                    AsyncTask.created_at >= today_start,
+                    AsyncTask.created_at < tomorrow_start,
+                )
+            )
+        ).scalars().all()
+        failed_tasks = sum(1 for task in task_rows if task.status == "failed")
+        processed = duplicates = 0
+        for task in task_rows:
+            if task.status != "succeeded" or not task.result:
+                continue
+            processed += int(task.result.get("total", 0))
+            duplicates += int(task.result.get("duplicates", 0))
+
+        fact_rows = (
+            await db.execute(
+                select(JobSkillFact.verification_status).where(
+                    JobSkillFact.raw_job_record_id.is_not(None)
+                )
+            )
+        ).scalars().all()
+        verified = sum(1 for status in fact_rows if status == "verified")
+        unverified = sum(1 for status in fact_rows if status != "verified")
+
+        valid_rate = round(valid * 100 / total, 1) if total else 0.0
+        completeness_rate = round(complete * 100 / total, 1) if total else 0.0
+        duplicate_rate = round(duplicates * 100 / processed, 1) if processed else 0.0
+        dedup_valid_rate = round(100 - duplicate_rate, 1) if processed else 0.0
+        overall_quality = (
+            round(
+                (valid_rate + completeness_rate + dedup_valid_rate + 100.0) / 4,
+                1,
+            )
+            if total
+            else 0.0
+        )
+
+        summary = {
+            "totalJobs": total,
+            "todayImported": today_imported,
+            "sourceCount": source_count,
+            "validRecords": valid,
+            "validRate": valid_rate,
+            "failedTasks": failed_tasks,
+            "processedToday": processed,
+            "duplicatesToday": duplicates,
+            "verifiedFacts": verified,
+            "unverifiedFacts": unverified,
+            "overallQuality": overall_quality,
+        }
+        qualities = [
+            {"label": "字段完整性", "value": f"{completeness_rate:.1f}%", "percent": round(completeness_rate), "color": "#34b37e", "note": f"{complete} / {total} 条核心字段完整"},
+            {"label": "去重有效率", "value": f"{dedup_valid_rate:.1f}%", "percent": round(dedup_valid_rate), "color": "#4f6ef6", "note": f"今日识别重复 {duplicates} 条"},
+            {"label": "文本有效", "value": f"{valid_rate:.1f}%", "percent": round(valid_rate), "color": "#34b37e", "note": f"{valid} / {total} 条 JD 正文有效"},
+            {"label": "格式规范", "value": "100.0%" if total else "0.0%", "percent": 100 if total else 0, "color": "#34b37e", "note": "入库记录均已通过 job-v1"},
+        ]
+        return summary, qualities
 
     def _get_services(self) -> list[dict]:
         return [
@@ -403,14 +532,6 @@ class CrawlerService:
                 "icon": "VideoPlay" if meta.id in self._running_tasks else "CircleCheck",
             })
         return tasks
-
-    def _get_qualities(self) -> list[dict]:
-        return [
-            {"label": "字段完整性", "value": "98.2%", "percent": 98, "color": "#34b37e", "note": "必填字段缺失率 1.8%"},
-            {"label": "重复率", "value": "3.1%", "percent": 97, "color": "#4f6ef6", "note": "去重后比例"},
-            {"label": "文本有效", "value": "96.8%", "percent": 97, "color": "#34b37e", "note": "含有效 JD 文本"},
-            {"label": "格式规范", "value": "99.5%", "percent": 99, "color": "#34b37e", "note": "符合 Schema 标准"},
-        ]
 
     def _get_policy(self) -> dict:
         return {"concurrency": 4, "retries": 3, "interval": 5, "deduplicate": True}

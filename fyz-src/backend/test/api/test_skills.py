@@ -56,6 +56,8 @@ async def test_import_task_eager_mode_and_status(client, auth_headers, monkeypat
     payload = [{
         "title": "测试工程师", "company": "测试公司", "source": "测试来源",
         "url": "https://test/1", "jd_text": "熟悉 Python、pytest 和 MySQL",
+        "posted_at": "2026-07-20", "crawled_at": "2026-07-29T10:00:00",
+        "keywords": ["Python", "pytest", "MySQL"],
     }]
     with tempfile.TemporaryDirectory(dir="test") as directory:
         test_dir = Path(directory)

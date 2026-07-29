@@ -481,6 +481,41 @@ export interface DataSource {
   nextRun: string;
 }
 
+export interface JobImportValidation {
+  file: string;
+  total: number;
+  passed: number;
+  failed: number;
+  errors: Array<{ index: number | null; title: string; errors: string[] }>;
+  warning_count: number;
+  warnings: Array<{ index: number; title: string; warnings: string[] }>;
+}
+
+export interface JobImportResult {
+  files: string[];
+  total: number;
+  imported: number;
+  duplicates: number;
+  skill_facts: number;
+  verified_skill_facts: number;
+  unverified_skill_facts: number;
+  validation: JobImportValidation[];
+}
+
+export interface PipelineSummary {
+  totalJobs: number;
+  todayImported: number;
+  sourceCount: number;
+  validRecords: number;
+  validRate: number;
+  failedTasks: number;
+  processedToday: number;
+  duplicatesToday: number;
+  verifiedFacts: number;
+  unverifiedFacts: number;
+  overallQuality: number;
+}
+
 export interface SystemUser {
   id: EntityId;
   name: string;
@@ -499,6 +534,7 @@ export interface AdminOverview {
   recentTasks: any[];
   systemEvents: any[];
   crawlers: DataSource[];
+  pipelineSummary: PipelineSummary;
   qualities: any[];
   crawlerPolicy: { concurrency: number; retries: number; interval: number; deduplicate: boolean };
   performanceCards: any[];

@@ -13,6 +13,7 @@ from app.core.config import DATA_DIR
 from app.core.exceptions import InvalidParameterError
 from app.models import JobSkillFact, RawJobRecord, SourceDocument
 from app.repositories import SkillRepository
+from app.services.job_import_schema import normalize_and_validate_records
 from app.services.skill_extractor import content_fingerprint, normalize_text
 from app.services.skill_service import SkillService
 
@@ -21,6 +22,10 @@ ALLOWED_FILES = {
     "jd_crawl_ifly_full.json", "jd_crawl_ifly_merged.json",
     "jd_crawl_zl_new.json",
 }
+ALLOWED_FILE_PATTERNS = (
+    re.compile(r"iflytek_\d+\.json"),
+    re.compile(r"zhaopin_\d+\.json"),
+)
 
 
 def standardize_title(title: str) -> str:
@@ -40,7 +45,10 @@ class ImportService:
         root = Path(DATA_DIR).resolve()
         paths = []
         for name in files:
-            if name not in ALLOWED_FILES:
+            is_allowed = name in ALLOWED_FILES or any(
+                pattern.fullmatch(name) for pattern in ALLOWED_FILE_PATTERNS
+            )
+            if Path(name).name != name or not is_allowed:
                 raise InvalidParameterError(f"不允许导入文件：{name}")
             path = (root / name).resolve()
             if root not in path.parents or not path.is_file():
@@ -51,6 +59,7 @@ class ImportService:
     async def import_files(self, files: list[str], *, progress_callback=None) -> dict:
         paths = self.resolve_files(files)
         records: list[dict] = []
+        validation: list[dict] = []
         for path in paths:
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))
@@ -58,9 +67,20 @@ class ImportService:
                 raise InvalidParameterError(f"无法解析数据文件：{path.name}") from exc
             if not isinstance(payload, list):
                 raise InvalidParameterError(f"数据文件必须是数组：{path.name}")
-            records.extend(payload)
+            normalized, report = normalize_and_validate_records(
+                payload, filename=path.name
+            )
+            validation.append(report)
+            if report["failed"]:
+                first_error = report["errors"][0]
+                details = "；".join(first_error["errors"])
+                raise InvalidParameterError(
+                    f"job-v1 校验失败：{path.name} 第 {first_error['index']} 条，{details}"
+                )
+            records.extend(normalized)
         total = len(records)
         imported = duplicates = facts = 0
+        imported_raw_ids: list[int] = []
         for index, record in enumerate(records, start=1):
             fingerprint = content_fingerprint(record)
             if await self.repository.get_source_by_fingerprint(fingerprint):
@@ -106,20 +126,23 @@ class ImportService:
                 facts += await self.skill_service.persist_raw_facts(
                     raw_job_record_id=raw.id, output=output
                 )
+                imported_raw_ids.append(raw.id)
                 imported += 1
             if index % 10 == 0:
                 await self.db.commit()
             if progress_callback:
                 await progress_callback(int(index * 100 / max(total, 1)))
         await self.db.commit()
-        await self._cross_validate_facts()
+        verification = await self._cross_validate_facts(imported_raw_ids)
         await self.db.commit()
         return {
             "files": files, "total": total, "imported": imported,
             "duplicates": duplicates, "skill_facts": facts,
+            "validation": validation,
+            **verification,
         }
 
-    async def _cross_validate_facts(self) -> None:
+    async def _cross_validate_facts(self, imported_raw_ids: list[int]) -> dict[str, int]:
         rows = await self.db.execute(
             select(
                 JobSkillFact.skill_id,
@@ -143,3 +166,22 @@ class ImportService:
                 if fact.source_count >= 2 and fact.confidence >= 0.75
                 else "unverified"
             )
+        await self.db.flush()
+        if not imported_raw_ids:
+            return {"verified_skill_facts": 0, "unverified_skill_facts": 0}
+        verified = await self.db.scalar(
+            select(func.count(JobSkillFact.id)).where(
+                JobSkillFact.raw_job_record_id.in_(imported_raw_ids),
+                JobSkillFact.verification_status == "verified",
+            )
+        )
+        unverified = await self.db.scalar(
+            select(func.count(JobSkillFact.id)).where(
+                JobSkillFact.raw_job_record_id.in_(imported_raw_ids),
+                JobSkillFact.verification_status == "unverified",
+            )
+        )
+        return {
+            "verified_skill_facts": int(verified or 0),
+            "unverified_skill_facts": int(unverified or 0),
+        }
