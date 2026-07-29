@@ -11,7 +11,6 @@ from app.core.config import CELERY_TASK_ALWAYS_EAGER
 from app.models import AsyncTask
 from app.repositories import TaskRepository
 from app.schemas.skill import TaskStatusResponse
-from app.tasks.skill_import import _process, process_job_files
 
 
 class TaskService:
@@ -20,6 +19,10 @@ class TaskService:
         self.tasks = TaskRepository(db)
 
     async def create_import(self, *, files: list[str], user_id: int) -> TaskStatusResponse:
+        # Import lazily so Celery can discover app.tasks.skill_import without
+        # task_service importing that same, partially initialized module.
+        from app.tasks.skill_import import _process, process_job_files
+
         task = AsyncTask(
             id=str(uuid.uuid4()),
             task_type="job_data_import",

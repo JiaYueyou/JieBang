@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { dataProvider } from "@/data";
 import type {
+  AnalysisBaseline,
   AnalysisDataQuality,
   CapabilityChange,
   EmergingJob,
@@ -13,6 +14,8 @@ import type {
   JobSummary,
   InternalPosition,
   InternalPositionCreate,
+  ObservedJobDetail,
+  ObservedJobSummary,
 } from "@/domain/types";
 
 export const useJobStore = defineStore("jobs", () => {
@@ -21,11 +24,16 @@ export const useJobStore = defineStore("jobs", () => {
   const emergingJobs = ref<EmergingJob[]>([]);
   const capabilityChanges = ref<CapabilityChange[]>([]);
   const insightQuality = ref<AnalysisDataQuality | null>(null);
+  const insightBaseline = ref<AnalysisBaseline | null>(null);
   const insightLoading = ref(false);
   const insightError = ref("");
   const loading = ref(false);
   const loaded = ref(false);
   const error = ref("");
+  const observedJobs = ref<ObservedJobSummary[]>([]);
+  const observedTotal = ref(0);
+  const observedLoading = ref(false);
+  const observedError = ref("");
 
   async function load(force = false) {
     if (loaded.value && !force) return;
@@ -57,11 +65,38 @@ export const useJobStore = defineStore("jobs", () => {
       emergingJobs.value = result.emergingJobs;
       capabilityChanges.value = result.capabilityChanges;
       insightQuality.value = result.dataQuality;
+      insightBaseline.value = result.baseline;
     } catch (exception) {
       insightError.value = exception instanceof Error ? exception.message : "洞察加载失败";
     } finally {
       insightLoading.value = false;
     }
+  }
+
+  async function loadObserved(query: {
+    page: number;
+    pageSize: number;
+    keyword?: string;
+    city?: string;
+    source?: string;
+  }) {
+    observedLoading.value = true;
+    observedError.value = "";
+    try {
+      const result = await dataProvider.jobs.listObserved(query);
+      observedJobs.value = result.items;
+      observedTotal.value = result.total;
+      return result;
+    } catch (exception) {
+      observedError.value = exception instanceof Error ? exception.message : "采集岗位加载失败";
+      throw exception;
+    } finally {
+      observedLoading.value = false;
+    }
+  }
+
+  async function getObserved(id: number): Promise<ObservedJobDetail> {
+    return dataProvider.jobs.getObserved(id);
   }
 
   async function decideInsight(
@@ -123,13 +158,20 @@ export const useJobStore = defineStore("jobs", () => {
     emergingJobs,
     capabilityChanges,
     insightQuality,
+    insightBaseline,
     insightLoading,
     insightError,
     loading,
     loaded,
     error,
+    observedJobs,
+    observedTotal,
+    observedLoading,
+    observedError,
     load,
     loadInsights,
+    loadObserved,
+    getObserved,
     decideInsight,
     refresh: () => load(true),
     suggestJDInput,

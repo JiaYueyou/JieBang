@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 
 from app.core.celery_app import celery_app
-from app.core.database import async_session
+from app.core.database import async_session, engine
 from app.models import AsyncTask
 from app.services.graph_service import GraphService
 
@@ -49,4 +49,12 @@ async def _process_graph_sync(
 def process_graph_sync(
     task_id: str, mode: str, enrich_top_skills: bool, user_id: int | None
 ) -> dict:
-    return asyncio.run(_process_graph_sync(task_id, mode, enrich_top_skills, user_id))
+    async def run() -> dict:
+        try:
+            return await _process_graph_sync(task_id, mode, enrich_top_skills, user_id)
+        finally:
+            # Celery's Windows solo pool creates a fresh loop per asyncio.run().
+            # Drop pooled async connections before that loop is closed.
+            await engine.dispose()
+
+    return asyncio.run(run())

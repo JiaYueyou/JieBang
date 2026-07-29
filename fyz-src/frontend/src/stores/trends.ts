@@ -7,7 +7,7 @@ export const useTrendStore = defineStore("trends", () => {
   const data = ref<TrendOverview | null>(null);
   const loading = ref(false);
   const error = ref("");
-  const lastQuery = ref<TrendQuery>({ months: 12 });
+  const lastQuery = ref<TrendQuery>({ window: "3m" });
 
   async function load(query: TrendQuery = lastQuery.value) {
     loading.value = true;

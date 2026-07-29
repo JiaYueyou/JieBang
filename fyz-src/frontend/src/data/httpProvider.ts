@@ -2,12 +2,15 @@ import request from "@/api/request";
 import type { ApiResponse } from "@/api/types";
 import type { DataProvider } from "./provider";
 import type {
+  AnalysisBaseline,
   AnalysisDataQuality,
   CapabilityChange,
   EmergingJob,
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
+  ObservedJobDetail,
+  ObservedJobPage,
   SkillFactReviewItem,
   SkillFactReviewPage,
   SkillFactReviewSummary,
@@ -56,6 +59,9 @@ interface AgentTaskCreated<T> {
 }
 
 interface AnalysisOverviewResponse {
+  window: TrendOverview["window"];
+  window_label: string;
+  granularity: TrendOverview["granularity"];
   stats: { total_jobs: number; new_skills: number; average_salary_k: number | null; active_cities: number };
   months: string[];
   job_demand: Array<{ name: string; values: number[] }>;
@@ -65,18 +71,23 @@ interface AnalysisOverviewResponse {
   locations: Array<{ city: string; value: number }>;
   emerging_skills: TrendOverview["emergingSkills"];
   data_quality: AnalysisDataQuality;
+  baseline: AnalysisBaseline;
 }
 
 interface JobInsightsResponse {
   emerging_jobs: EmergingJob[];
   capability_changes: CapabilityChange[];
   data_quality: AnalysisDataQuality;
+  baseline: AnalysisBaseline;
 }
 
 const sleep = (milliseconds: number) => new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
 
 function mapTrendOverview(raw: AnalysisOverviewResponse): TrendOverview {
   return {
+    window: raw.window,
+    windowLabel: raw.window_label,
+    granularity: raw.granularity,
     stats: {
       totalJobs: String(raw.stats.total_jobs),
       newSkills: raw.stats.new_skills,
@@ -91,6 +102,7 @@ function mapTrendOverview(raw: AnalysisOverviewResponse): TrendOverview {
     locations: raw.locations,
     emergingSkills: raw.emerging_skills,
     dataQuality: raw.data_quality,
+    baseline: raw.baseline,
   };
 }
 
@@ -147,6 +159,26 @@ export const httpDataProvider: DataProvider = {
   dashboard: { getOverview: () => get("/dashboard/overview") },
   jobs: {
     list: () => get("/jobs"),
+    listObserved: async (query) => {
+      const response = await request.get<ApiResponse<ObservedJobDetail[]>>("/jobs/observed", {
+        params: {
+          page: query.page,
+          page_size: query.pageSize,
+          keyword: query.keyword,
+          city: query.city,
+          source: query.source,
+        },
+      });
+      const meta = response.data.meta;
+      return {
+        items: response.data.data ?? [],
+        page: meta?.page ?? query.page,
+        pageSize: meta?.page_size ?? query.pageSize,
+        total: meta?.total ?? 0,
+        totalPages: meta?.total_pages ?? 0,
+      } satisfies ObservedJobPage;
+    },
+    getObserved: (id) => get(`/jobs/observed/${id}`),
     getInsights: async (skill) => {
       const raw = await get<JobInsightsResponse>("/analysis/job-insights", {
         skill: skill || undefined,
@@ -155,6 +187,7 @@ export const httpDataProvider: DataProvider = {
         emergingJobs: raw.emerging_jobs,
         capabilityChanges: raw.capability_changes,
         dataQuality: raw.data_quality,
+        baseline: raw.baseline,
       };
     },
     decideInsight: async (id, decision, note) => {
@@ -259,6 +292,13 @@ export const httpDataProvider: DataProvider = {
     expand:(nodeId,depth=2)=>get("/graph/expand",{node_id:nodeId,depth}),
     search:(query,type)=>get("/graph/search",{q:query,types:type}),
     path:(fromId,toId)=>get("/graph/path",{from_id:fromId,to_id:toId}),
+    sync: async () => {
+      const task = await post<AsyncTask<{ node_count: number; edge_count: number; fact_count: number }>>(
+        "/graph/sync",
+        { mode: "full", enrich_top_skills: false },
+      );
+      return waitForTask(task);
+    },
   },
   trends: {
     getOverview: async (query) => mapTrendOverview(

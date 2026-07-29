@@ -128,6 +128,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
       const graph=structuredClone(db().graph),ids=new Set([fromId,toId]);
       return delay({nodes:graph.nodes.filter(node=>ids.has(node.id)),edges:graph.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target))});
     },
+    async sync(){throw new Error("图谱同步仅支持后端数据模式");},
   },
   favorites: {
     async list(){return delay(db().favorites);},

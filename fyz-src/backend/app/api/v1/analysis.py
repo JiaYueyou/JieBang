@@ -10,6 +10,7 @@ from app.schemas.analysis import (
     InsightDecisionRequest,
     InsightDecisionResponse,
     JobInsightsResponse,
+    TrendWindow,
 )
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
@@ -31,14 +32,14 @@ async def analysis_home(
 
 @router.get("/overview", response_model=ApiResponse[AnalysisOverview])
 async def overview(
-    months: int = Query(default=12, ge=2, le=24),
+    window: TrendWindow = Query(default=TrendWindow.months_3),
     keyword: str | None = Query(default=None, max_length=120),
     city: str | None = Query(default=None, max_length=100),
     _principal: TokenPrincipal = Depends(get_current_user),
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[AnalysisOverview]:
     return ApiResponse(
-        data=await service.overview(months=months, keyword=keyword, city=city)
+        data=await service.overview(window=window, keyword=keyword, city=city)
     )
 
 

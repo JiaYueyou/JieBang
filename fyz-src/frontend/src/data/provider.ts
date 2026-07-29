@@ -1,17 +1,26 @@
 import type {
   AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
-  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
+  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
   SkillDemandSummary, SkillFactReviewItem, SkillFactReviewPage,
   SkillFactVerificationStatus, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
+  ObservedJobDetail, ObservedJobPage,
 } from "@/domain/types";
 
 export interface DataProvider {
   dashboard: { getOverview(): Promise<DashboardOverview> };
   jobs: {
     list(): Promise<JobSummary[]>;
-    getInsights(skill?: string): Promise<{ emergingJobs: EmergingJob[]; capabilityChanges: CapabilityChange[]; dataQuality: AnalysisDataQuality }>;
+    listObserved(query: {
+      page: number;
+      pageSize: number;
+      keyword?: string;
+      city?: string;
+      source?: string;
+    }): Promise<ObservedJobPage>;
+    getObserved(id: number): Promise<ObservedJobDetail>;
+    getInsights(skill?: string): Promise<{ emergingJobs: EmergingJob[]; capabilityChanges: CapabilityChange[]; dataQuality: AnalysisDataQuality; baseline: AnalysisBaseline }>;
     decideInsight(id: number, decision: "confirmed" | "ignored" | "planned", note?: string): Promise<void>;
     suggestJDInput(input: JDInputSuggestionRequest): Promise<JDInputSuggestion>;
     generateJD(input: GenerateJDRequest): Promise<GeneratedJDDraft>;
@@ -56,6 +65,7 @@ export interface DataProvider {
     expand(nodeId: string, depth?: number): Promise<GraphSubgraph>;
     search(query: string, type?: string): Promise<GraphSubgraph>;
     path(fromId: string, toId: string): Promise<GraphSubgraph>;
+    sync(): Promise<{ node_count: number; edge_count: number; fact_count: number }>;
   };
   trends: { getOverview(query: TrendQuery): Promise<TrendOverview> };
   skillReviews: {

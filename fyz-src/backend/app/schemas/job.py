@@ -156,3 +156,41 @@ class JobVersionResponse(BaseModel):
     change_reason: str
     created_by: int
     created_at: datetime
+
+
+class ObservedJobSummary(BaseModel):
+    id: int
+    title: str
+    standardized_title: str | None
+    company: str | None
+    city: str | None
+    salary_text: str | None
+    experience_text: str | None
+    education_text: str | None
+    source: str
+    source_url: str | None
+    posted_at: str | None
+    crawled_at: str | None
+    dedup_status: str
+    verified_skill_count: int
+    pending_skill_count: int
+
+
+class ObservedJobSkillEvidence(BaseModel):
+    fact_id: int
+    skill_id: int
+    skill_name: str
+    category: str
+    kind: str
+    confidence: float
+    evidence_text: str
+    verification_status: str
+    extraction_method: str
+    source_count: int
+
+
+class ObservedJobDetail(ObservedJobSummary):
+    jd_text: str
+    responsibilities: str
+    requirements: str
+    skills: list[ObservedJobSkillEvidence] = Field(default_factory=list)

@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 
 from app.core.celery_app import celery_app
-from app.core.database import async_session
+from app.core.database import async_session, engine
 from app.models import AsyncTask
 from app.services.import_service import ImportService
 
@@ -45,4 +45,12 @@ async def _process(task_id: str, files: list[str]) -> dict:
 
 @celery_app.task(name="skill_import.process_job_files")
 def process_job_files(task_id: str, files: list[str]) -> dict:
-    return asyncio.run(_process(task_id, files))
+    async def run() -> dict:
+        try:
+            return await _process(task_id, files)
+        finally:
+            # Avoid reusing aiomysql connections bound to a closed event loop
+            # when the Windows solo worker executes the next task.
+            await engine.dispose()
+
+    return asyncio.run(run())
