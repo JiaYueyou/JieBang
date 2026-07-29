@@ -26,6 +26,52 @@ export interface JobSummary {
   urgent?: boolean;
 }
 
+export interface ObservedJobSummary {
+  id: number;
+  title: string;
+  standardized_title: string | null;
+  company: string | null;
+  city: string | null;
+  salary_text: string | null;
+  experience_text: string | null;
+  education_text: string | null;
+  source: string;
+  source_url: string | null;
+  posted_at: string | null;
+  crawled_at: string | null;
+  dedup_status: string;
+  verified_skill_count: number;
+  pending_skill_count: number;
+}
+
+export interface ObservedJobSkillEvidence {
+  fact_id: number;
+  skill_id: number;
+  skill_name: string;
+  category: string;
+  kind: string;
+  confidence: number;
+  evidence_text: string;
+  verification_status: "verified" | "unverified" | "rejected";
+  extraction_method: string;
+  source_count: number;
+}
+
+export interface ObservedJobDetail extends ObservedJobSummary {
+  jd_text: string;
+  responsibilities: string;
+  requirements: string;
+  skills: ObservedJobSkillEvidence[];
+}
+
+export interface ObservedJobPage {
+  items: ObservedJobSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export type JDGenerationMode = "requirements" | "profile";
 export type JDGenerationTarget = "public" | "internal";
 
@@ -243,6 +289,41 @@ export interface CapabilityChange {
   removed: string[];
 }
 
+export interface TechnologyStackBaseline {
+  key: string;
+  label: string;
+  standard_job_count: number;
+  source_count: number;
+  top_skills: string[];
+}
+
+export interface JobReferenceStandard {
+  id: EntityId;
+  name: string;
+  stack: string;
+  stack_label: string;
+  level: string;
+  aliases: string[];
+  core_skills: string[];
+  source_count: number;
+  description: string;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+export interface AnalysisBaseline {
+  version: string;
+  source_note: string;
+  minimum_source_count: number;
+  standard_job_count: number;
+  technology_stack_count: number;
+  verified_skill_count: number;
+  verified_fact_count: number;
+  baseline_at: string | null;
+  technology_stacks: TechnologyStackBaseline[];
+  job_standards: JobReferenceStandard[];
+}
+
 export interface TalentSummary {
   id: EntityId;
   resume_id: EntityId;
@@ -396,11 +477,17 @@ export interface HeatmapPoint {
 
 export interface AnalysisDataQuality {
   total_records: number;
+  deduplicated_records: number;
+  duplicate_records: number;
+  independent_job_clusters: number;
+  independent_companies: number;
   valid_time_records: number;
   fallback_time_records: number;
   valid_salary_records: number;
   verified_skill_facts: number;
   observed_months: number;
+  observed_periods: number;
+  period_unit: "day" | "month";
   coverage_start: string | null;
   coverage_end: string | null;
   insufficient_data: boolean;
@@ -408,12 +495,15 @@ export interface AnalysisDataQuality {
 }
 
 export interface TrendQuery {
-  months: number;
+  window: "15d" | "1m" | "3m" | "6m";
   keyword?: string;
   city?: string;
 }
 
 export interface TrendOverview {
+  window: TrendQuery["window"];
+  windowLabel: string;
+  granularity: "day" | "month";
   stats: { totalJobs: string; newSkills: number; avgSalary: string; activeCities: number };
   months: string[];
   jobDemand: TrendSeries[];
@@ -421,8 +511,21 @@ export interface TrendOverview {
   heatmapSkills: string[];
   heatmap: HeatmapPoint[];
   locations: Array<{ city: string; value: number }>;
-  emergingSkills: Array<{ id: EntityId; skill: string; category: string; growth: number; stage: string; sparkline: number[] }>;
+  emergingSkills: Array<{
+    id: EntityId;
+    skill: string;
+    category: string;
+    growth: number | null;
+    stage: string;
+    sparkline: number[];
+    current_count: number;
+    previous_count: number;
+    current_companies: number;
+    previous_companies: number;
+    evidence_note: string;
+  }>;
   dataQuality: AnalysisDataQuality;
+  baseline: AnalysisBaseline;
 }
 
 export interface FavoriteRecord {

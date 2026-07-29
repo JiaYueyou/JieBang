@@ -16,8 +16,19 @@
         <span>{{ nodeCount }} 节点</span>
         <span>{{ edgeCount }} 边</span>
         <span>{{ activeNode?.frequency ?? activeNode?.importance ?? "-" }} 热度</span>
+        <el-button size="small" type="primary" plain :loading="syncing" @click="syncGraph">
+          <el-icon><Refresh /></el-icon>同步真实图谱
+        </el-button>
       </div>
     </section>
+    <el-alert
+      v-if="syncMessage"
+      class="graph-sync-alert"
+      type="success"
+      :closable="false"
+      show-icon
+      :title="syncMessage"
+    />
 
     <section class="graph-layout anim-fade-up anim-delay-3">
       <aside class="graph-side-card">
@@ -119,11 +130,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
-import { Search, View, HelpFilled } from "@element-plus/icons-vue";
+import { Search, View, HelpFilled, Refresh } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import Graph from "graphology";
 import Graph3DCanvas from "@/components/graph/Graph3DCanvas.vue";
 import { buildGraphFromBackend } from "@/data/graphBuilder";
 import DataState from "@/components/common/DataState.vue";
+import { dataProvider } from "@/data";
 import type { GraphNode, GraphType } from "@/domain/types";
 
 type FilterType = GraphType | "all";
@@ -141,6 +154,8 @@ const activeNode = ref<GraphNode | null>(null);
 const highlightedPath = ref<string[]>([]);
 const pinnedNodeIds = ref<string[]>([]);
 const graphCanvasRef = ref<InstanceType<typeof Graph3DCanvas> | null>(null);
+const syncing = ref(false);
+const syncMessage = ref("");
 
 onMounted(async () => {
   await loadGraph();
@@ -159,6 +174,20 @@ async function loadGraph() {
     currentGraph.value = null;
   } finally {
     loading.value = false;
+  }
+}
+
+async function syncGraph() {
+  syncing.value = true;
+  syncMessage.value = "";
+  try {
+    const result = await dataProvider.graph.sync();
+    syncMessage.value = `同步完成：${result.node_count} 个节点、${result.edge_count} 条关系，使用 ${result.fact_count} 条已确认事实`;
+    await loadGraph();
+  } catch (exception) {
+    ElMessage.error(exception instanceof Error ? exception.message : "图谱同步失败");
+  } finally {
+    syncing.value = false;
   }
 }
 
@@ -277,6 +306,11 @@ watch([keyword, selectedStack, selectedLevel, selectedType], () => {
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.graph-sync-alert {
+  margin: -4px 0 16px;
+  border-radius: 12px;
 }
 
 .graph-search {

@@ -14,9 +14,11 @@ from app.schemas.job import (
     JobSummary,
     JobUpdate,
     JobVersionResponse,
+    ObservedJobDetail,
+    ObservedJobSummary,
 )
 from app.schemas.skill import JobExtractionResult, SkillFactResponse
-from app.services import JobService, SkillService
+from app.services import JobService, ObservedJobService, SkillService
 
 router = APIRouter(prefix="/jobs", tags=["岗位管理"])
 
@@ -27,6 +29,12 @@ def get_job_service(db: AsyncSession = Depends(get_db)) -> JobService:
 
 def get_skill_service(db: AsyncSession = Depends(get_db)) -> SkillService:
     return SkillService(db)
+
+
+def get_observed_job_service(
+    db: AsyncSession = Depends(get_db),
+) -> ObservedJobService:
+    return ObservedJobService(db)
 
 
 common_errors = {
@@ -70,6 +78,43 @@ async def create_job(
         message="岗位创建成功",
         data=await service.create(payload, user_id=principal.user_id),
     )
+
+
+@router.get(
+    "/observed",
+    response_model=ApiResponse[list[ObservedJobSummary]],
+    responses=common_errors,
+)
+async def list_observed_jobs(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    keyword: str | None = Query(default=None, max_length=120),
+    city: str | None = Query(default=None, max_length=100),
+    source: str | None = Query(default=None, max_length=100),
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: ObservedJobService = Depends(get_observed_job_service),
+) -> ApiResponse[list[ObservedJobSummary]]:
+    rows, meta = await service.list(
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        city=city,
+        source=source,
+    )
+    return ApiResponse(data=rows, meta=meta)
+
+
+@router.get(
+    "/observed/{raw_job_id}",
+    response_model=ApiResponse[ObservedJobDetail],
+    responses=common_errors,
+)
+async def get_observed_job(
+    raw_job_id: int,
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: ObservedJobService = Depends(get_observed_job_service),
+) -> ApiResponse[ObservedJobDetail]:
+    return ApiResponse(data=await service.get(raw_job_id))
 
 
 @router.get(

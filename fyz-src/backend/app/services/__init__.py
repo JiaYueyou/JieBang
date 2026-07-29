@@ -8,8 +8,10 @@ from app.services.task_service import TaskService
 from app.services.graph_service import GraphService, GraphTaskService
 from app.services.jd_generation_service import JDGenerationService
 from app.services.analysis_service import AnalysisService
+from app.services.observed_job_service import ObservedJobService
 
 __all__ = [
     "AuthService", "JobService", "SkillService", "ImportService", "TaskService",
     "GraphService", "GraphTaskService", "JDGenerationService", "AnalysisService",
+    "ObservedJobService",
 ]

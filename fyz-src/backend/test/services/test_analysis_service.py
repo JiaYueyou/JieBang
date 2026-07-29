@@ -11,6 +11,7 @@ from app.models import (
 )
 from app.services.analysis_service import AnalysisService
 from app.schemas.analysis import InsightDecision
+from app.schemas.analysis import TrendWindow
 
 
 async def seed_analysis_data(db):
@@ -125,21 +126,31 @@ async def test_overview_builds_real_trends_and_emerging_skills():
     async with async_session() as db:
         await seed_analysis_data(db)
         overview = await AnalysisService(db).overview(
-            months=3, keyword="Java", city=None
+            window=TrendWindow.months_3, keyword="Java", city=None
         )
 
         assert overview.months == ["2026-01", "2026-02", "2026-03"]
-        assert overview.stats.total_jobs == 12
+        assert overview.window == TrendWindow.months_3
+        assert overview.window_label == "近 3 个月"
+        assert overview.granularity == "month"
+        assert overview.stats.total_jobs == 6
         assert overview.stats.average_salary_k == 25
         assert overview.stats.active_cities == 2
-        assert overview.data_quality.insufficient_data is False
+        assert overview.data_quality.insufficient_data is True
         assert overview.data_quality.valid_salary_records == 12
-        assert overview.job_demand[0].values == [4, 4, 4]
+        assert overview.job_demand[0].values == [2, 2, 2]
         assert overview.locations[0].city == "杭州"
-        assert overview.locations[0].value == 9
+        assert overview.locations[0].value == 3
         assert [item.skill for item in overview.emerging_skills] == ["Rust"]
-        assert overview.emerging_skills[0].growth == 100
-        assert any(point.value == 4 for point in overview.heatmap)
+        assert overview.emerging_skills[0].growth is None
+        assert overview.emerging_skills[0].stage == "新出现"
+        assert any(point.value == 2 for point in overview.heatmap)
+        assert overview.data_quality.duplicate_records == 6
+        assert overview.data_quality.independent_job_clusters == 1
+        assert overview.data_quality.independent_companies == 1
+        assert overview.baseline.standard_job_count == 1
+        assert overview.baseline.technology_stacks[0].label == "后端开发"
+        assert overview.baseline.job_standards[0].core_skills == ["Java", "Rust"]
 
 
 async def test_job_insights_use_standard_job_sources_and_verified_facts():
@@ -155,7 +166,52 @@ async def test_job_insights_use_standard_job_sources_and_verified_facts():
         assert len(insights.capability_changes) == 1
         assert insights.capability_changes[0].job_id == standard.id
         assert insights.capability_changes[0].added == ["Rust"]
-        assert insights.data_quality.insufficient_data is False
+        assert insights.data_quality.insufficient_data is True
+        assert insights.baseline.standard_job_count == 1
+        assert insights.baseline.job_standards[0].name == standard.name
+
+
+def test_capability_changes_require_same_job_evidence_in_both_periods():
+    standard = StandardJob(
+        id=99,
+        name="Python开发工程师",
+        canonical_key="python开发工程师",
+        aliases=[],
+        stack="backend",
+        source_count=2,
+        status="active",
+    )
+    python = Skill(
+        id=88,
+        name="Python",
+        canonical_name="Python",
+        canonical_key="python",
+        category="programming_language",
+        aliases=[],
+    )
+    current_only_fact = JobSkillFact(
+        raw_job_record_id=2,
+        skill_id=python.id,
+        kind="required",
+        importance=0.9,
+        frequency=1,
+        confidence=0.95,
+        evidence_text="Python",
+        verification_status="verified",
+        extraction_method="rule",
+        source_count=2,
+    )
+
+    changes = AnalysisService._capability_changes(
+        standard_jobs=[standard],
+        source_ids={standard.id: {2}},
+        facts=[(current_only_fact, python)],
+        record_month={1: "2026-05", 2: "2026-06"},
+        skill_filter="",
+        limit=10,
+    )
+
+    assert changes == []
 
 
 async def test_emerging_job_decision_is_upserted_and_returned_in_insights():
@@ -193,7 +249,7 @@ async def test_unverified_skills_are_excluded():
         await db.commit()
 
         overview = await AnalysisService(db).overview(
-            months=3, keyword=None, city=None
+            window=TrendWindow.months_3, keyword=None, city=None
         )
         assert all(item.skill != "Rust" for item in overview.emerging_skills)
         assert "Rust" not in overview.heatmap_skills

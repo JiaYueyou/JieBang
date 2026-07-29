@@ -30,24 +30,75 @@ class LocationDemand(BaseModel):
     value: int
 
 
+class TrendWindow(str, Enum):
+    days_15 = "15d"
+    month_1 = "1m"
+    months_3 = "3m"
+    months_6 = "6m"
+
+
+class TechnologyStackBaseline(BaseModel):
+    key: str
+    label: str
+    standard_job_count: int
+    source_count: int
+    top_skills: list[str]
+
+
+class JobReferenceStandard(BaseModel):
+    id: int
+    name: str
+    stack: str
+    stack_label: str
+    level: str
+    aliases: list[str]
+    core_skills: list[str]
+    source_count: int
+    description: str
+    first_seen_at: datetime
+    last_seen_at: datetime
+
+
+class AnalysisBaseline(BaseModel):
+    version: str
+    source_note: str
+    minimum_source_count: int
+    standard_job_count: int
+    technology_stack_count: int
+    verified_skill_count: int
+    verified_fact_count: int
+    baseline_at: datetime | None
+    technology_stacks: list[TechnologyStackBaseline]
+    job_standards: list[JobReferenceStandard]
+
+
 class EmergingSkill(BaseModel):
     id: int
     skill: str
     category: str
-    growth: float
+    growth: float | None = None
     stage: str
     sparkline: list[int]
     current_count: int
     previous_count: int
+    current_companies: int
+    previous_companies: int
+    evidence_note: str
 
 
 class AnalysisDataQuality(BaseModel):
     total_records: int
+    deduplicated_records: int
+    duplicate_records: int
+    independent_job_clusters: int
+    independent_companies: int
     valid_time_records: int
     fallback_time_records: int
     valid_salary_records: int
     verified_skill_facts: int
     observed_months: int
+    observed_periods: int
+    period_unit: str
     coverage_start: datetime | None
     coverage_end: datetime | None
     insufficient_data: bool
@@ -55,6 +106,9 @@ class AnalysisDataQuality(BaseModel):
 
 
 class AnalysisOverview(BaseModel):
+    window: TrendWindow
+    window_label: str
+    granularity: str
     stats: AnalysisStats
     months: list[str]
     job_demand: list[TrendSeries]
@@ -64,6 +118,7 @@ class AnalysisOverview(BaseModel):
     locations: list[LocationDemand]
     emerging_skills: list[EmergingSkill]
     data_quality: AnalysisDataQuality
+    baseline: AnalysisBaseline
 
 
 class EmergingJobInsight(BaseModel):
@@ -113,3 +168,4 @@ class JobInsightsResponse(BaseModel):
     emerging_jobs: list[EmergingJobInsight]
     capability_changes: list[CapabilityChangeInsight]
     data_quality: AnalysisDataQuality
+    baseline: AnalysisBaseline
