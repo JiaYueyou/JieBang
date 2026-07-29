@@ -100,6 +100,9 @@ class JobSkillFact(Base):
     extraction_method: Mapped[str] = mapped_column(String(20), nullable=False)
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     agent_run_id: Mapped[str | None] = mapped_column(ForeignKey("agent_run.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_note: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 

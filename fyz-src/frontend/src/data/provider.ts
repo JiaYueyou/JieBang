@@ -1,9 +1,10 @@
 import type {
-  AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview,
+  AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
-  SkillDemandSummary, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
+  SkillDemandSummary, SkillFactReviewItem, SkillFactReviewPage,
+  SkillFactVerificationStatus, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
 } from "@/domain/types";
 
 export interface DataProvider {
@@ -57,6 +58,19 @@ export interface DataProvider {
     path(fromId: string, toId: string): Promise<GraphSubgraph>;
   };
   trends: { getOverview(query: TrendQuery): Promise<TrendOverview> };
+  skillReviews: {
+    list(query: {
+      page: number;
+      pageSize: number;
+      status?: SkillFactVerificationStatus;
+      keyword?: string;
+    }): Promise<SkillFactReviewPage>;
+    review(
+      factId: number,
+      decision: Exclude<SkillFactVerificationStatus, "unverified">,
+      note?: string,
+    ): Promise<SkillFactReviewItem>;
+  };
   favorites: {
     list(): Promise<FavoriteRecord[]>;
     toggle(type: FavoriteTargetType, targetId: number, title?: string): Promise<boolean>;
@@ -74,7 +88,6 @@ export interface DataProvider {
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
     pollCrawler(id: number): Promise<any>;
-    toggleUser(id: number): Promise<void>;
-    saveSettings(settings: Record<string, any>): Promise<void>;
+    importCrawlerOutput(filename: string): Promise<JobImportResult>;
   };
 }

@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.core.agent_runtime import LLMDiscoveredSkill, LLMDiscoveredSkills
 
@@ -16,6 +16,7 @@ class SkillKind(str, Enum):
 class VerificationStatus(str, Enum):
     verified = "verified"
     unverified = "unverified"
+    rejected = "rejected"
 
 
 class ExtractedSkill(BaseModel):
@@ -57,6 +58,47 @@ class SkillFactResponse(BaseModel):
     verification_status: VerificationStatus
     extraction_method: str
     source_count: int
+
+
+class SkillFactReviewItem(SkillFactResponse):
+    job_id: int | None
+    raw_job_record_id: int | None
+    job_title: str
+    company: str | None
+    source: str
+    source_url: str | None
+    reviewed_by: int | None
+    reviewer_name: str | None
+    reviewed_at: datetime | None
+    review_note: str | None
+    created_at: datetime
+
+
+class SkillFactReviewSummary(BaseModel):
+    all: int
+    unverified: int
+    verified: int
+    rejected: int
+
+
+class SkillFactReviewList(BaseModel):
+    items: list[SkillFactReviewItem]
+    summary: SkillFactReviewSummary
+
+
+class SkillFactReviewRequest(BaseModel):
+    decision: VerificationStatus
+    note: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def validate_decision(self):
+        if self.decision == VerificationStatus.unverified:
+            raise ValueError("审核决定只能是 verified 或 rejected")
+        if self.decision == VerificationStatus.rejected and not (self.note or "").strip():
+            raise ValueError("驳回时必须填写原因")
+        if self.note is not None:
+            self.note = self.note.strip() or None
+        return self
 
 
 class JobExtractionResult(BaseModel):

@@ -7,6 +7,11 @@ import type {
   EmergingJob,
   GeneratedJDDraft,
   JDInputSuggestion,
+  JobImportResult,
+  SkillFactReviewItem,
+  SkillFactReviewPage,
+  SkillFactReviewSummary,
+  SkillFactVerificationStatus,
   TrendOverview,
 } from "@/domain/types";
 
@@ -114,8 +119,26 @@ async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
   return task.result;
 }
 
+async function waitForTask<T>(task: AsyncTask<T>): Promise<T> {
+  let current = task;
+  for (let attempt = 0; attempt < AGENT_MAX_POLLS && current.status !== "succeeded" && current.status !== "failed"; attempt += 1) {
+    if (attempt > 0) await sleep(AGENT_POLL_INTERVAL_MS);
+    current = await get<AsyncTask<T>>(`/tasks/${current.task_id}`);
+  }
+  if (current.status === "failed") throw new Error(current.error_message || "导入任务执行失败");
+  if (current.status !== "succeeded") throw new Error("导入任务未在预期时间内完成，请稍后重试");
+  if (current.result === null) throw new Error("导入任务已完成，但未返回结果");
+  return current.result;
+}
+
 async function put<T>(url: string, data?: unknown): Promise<T> {
   const response = await request.put<ApiResponse<T>>(url, data);
+  if (response.data.data === null) throw new Error(`接口 ${url} 未返回数据`);
+  return response.data.data;
+}
+
+async function patch<T>(url: string, data?: unknown): Promise<T> {
+  const response = await request.patch<ApiResponse<T>>(url, data);
   if (response.data.data === null) throw new Error(`接口 ${url} 未返回数据`);
   return response.data.data;
 }
@@ -242,6 +265,36 @@ export const httpDataProvider: DataProvider = {
       await get<AnalysisOverviewResponse>("/analysis/overview", query),
     ),
   },
+  skillReviews: {
+    list: async ({ page, pageSize, status, keyword }) => {
+      const response = await request.get<ApiResponse<{
+        items: SkillFactReviewItem[];
+        summary: SkillFactReviewSummary;
+      }>>("/skills/facts/reviews", {
+        params: {
+          page,
+          page_size: pageSize,
+          status: status || undefined,
+          keyword: keyword || undefined,
+        },
+      });
+      if (response.data.data === null) throw new Error("技能事实审核接口未返回数据");
+      return {
+        ...response.data.data,
+        meta: response.data.meta ?? {
+          page,
+          page_size: pageSize,
+          total: response.data.data.items.length,
+          total_pages: response.data.data.items.length ? 1 : 0,
+        },
+      } satisfies SkillFactReviewPage;
+    },
+    review: (
+      factId: number,
+      decision: Exclude<SkillFactVerificationStatus, "unverified">,
+      note?: string,
+    ) => patch(`/skills/facts/${factId}/review`, { decision, note }),
+  },
   favorites: {
     list:()=>get("/favorites"),
     toggle:async(type,targetId)=>{await post("/favorites",{target_type:type,target_id:targetId});return true;},
@@ -259,7 +312,8 @@ export const httpDataProvider: DataProvider = {
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),
-    toggleUser:async(id)=>{await request.put(`/admin/users/${id}/status`,{});},
-    saveSettings:async(settings)=>{await request.put("/admin/settings",settings);},
+    importCrawlerOutput:async(filename)=>waitForTask(
+      await post<AsyncTask<JobImportResult>>("/data-imports/jobs",{files:[filename]}),
+    ),
   },
 };

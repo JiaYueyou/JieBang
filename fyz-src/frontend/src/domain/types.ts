@@ -481,15 +481,85 @@ export interface DataSource {
   nextRun: string;
 }
 
-export interface SystemUser {
+export interface JobImportValidation {
+  file: string;
+  total: number;
+  passed: number;
+  failed: number;
+  errors: Array<{ index: number | null; title: string; errors: string[] }>;
+  warning_count: number;
+  warnings: Array<{ index: number; title: string; warnings: string[] }>;
+}
+
+export interface JobImportResult {
+  files: string[];
+  total: number;
+  imported: number;
+  duplicates: number;
+  skill_facts: number;
+  verified_skill_facts: number;
+  unverified_skill_facts: number;
+  validation: JobImportValidation[];
+}
+
+export type SkillFactVerificationStatus = "unverified" | "verified" | "rejected";
+
+export interface SkillFactReviewItem {
   id: EntityId;
-  name: string;
-  email: string;
-  department: string;
-  role: string;
-  roleTone: string;
-  status: "active" | "disabled";
-  lastLogin: string;
+  skill_id: EntityId;
+  skill_name: string;
+  category: string;
+  kind: "required" | "preferred";
+  importance: number;
+  frequency: number;
+  confidence: number;
+  evidence_text: string;
+  verification_status: SkillFactVerificationStatus;
+  extraction_method: string;
+  source_count: number;
+  job_id: EntityId | null;
+  raw_job_record_id: EntityId | null;
+  job_title: string;
+  company: string | null;
+  source: string;
+  source_url: string | null;
+  reviewed_by: EntityId | null;
+  reviewer_name: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+}
+
+export interface SkillFactReviewSummary {
+  all: number;
+  unverified: number;
+  verified: number;
+  rejected: number;
+}
+
+export interface SkillFactReviewPage {
+  items: SkillFactReviewItem[];
+  summary: SkillFactReviewSummary;
+  meta: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export interface PipelineSummary {
+  totalJobs: number;
+  todayImported: number;
+  sourceCount: number;
+  validRecords: number;
+  validRate: number;
+  failedTasks: number;
+  processedToday: number;
+  duplicatesToday: number;
+  verifiedFacts: number;
+  unverifiedFacts: number;
+  overallQuality: number;
 }
 
 export interface AdminOverview {
@@ -499,16 +569,12 @@ export interface AdminOverview {
   recentTasks: any[];
   systemEvents: any[];
   crawlers: DataSource[];
+  pipelineSummary: PipelineSummary;
   qualities: any[];
   crawlerPolicy: { concurrency: number; retries: number; interval: number; deduplicate: boolean };
   performanceCards: any[];
   endpoints: any[];
-  alertRules: any[];
   logs: any[];
-  users: SystemUser[];
-  roles: any[];
-  settings: Record<string, any>;
-  integrations: any[];
 }
 
 export interface MockDatabase {
@@ -521,5 +587,4 @@ export interface MockDatabase {
   favorites: FavoriteRecord[];
   history: HistoryRecord[];
   graph: GraphSubgraph;
-  admin: AdminOverview;
 }

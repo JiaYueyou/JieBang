@@ -58,7 +58,7 @@ function favoriteFromEntity(type: FavoriteTargetType, targetId: number, title?: 
   };
 }
 
-export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer"> = {
+export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer" | "skillReviews" | "admin"> = {
   dashboard: {
     async getOverview() {
       const data = db();
@@ -140,13 +140,5 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async remove(id){const data=db();data.history=data.history.filter((item)=>item.id!==id);persist(data);},
     async clear(){const data=db();data.history=[];persist(data);},
     async getInsights(){const data=db();return delay({focusStats:[{label:"AI / 大模型",percent:88,count:12},{label:"后端开发",percent:72,count:9},{label:"云原生",percent:48,count:6}],frequentRecords:data.history.slice(0,3).map((item,index)=>({history_id:item.id,count:5-index}))});},
-  },
-  admin: {
-    async getOverview(){return delay(db().admin);},
-    async toggleCrawler(id){const data=db();const item=data.admin.crawlers.find((value)=>value.id===id);if(item)item.enabled=!item.enabled;persist(data);},
-    async runCrawler(id){const data=db();const item=data.admin.crawlers.find((value)=>value.id===id);if(item){item.running=true;item.progress=8;item.nextRun="运行中";}persist(data);},
-    async pollCrawler(){return {done:true,result:null};},
-    async toggleUser(id){const data=db();const user=data.admin.users.find((value)=>value.id===id);if(user)user.status=user.status==="active"?"disabled":"active";persist(data);},
-    async saveSettings(settings){const data=db();data.admin.settings={...settings};persist(data);},
   },
 };

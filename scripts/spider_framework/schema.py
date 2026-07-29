@@ -13,10 +13,10 @@ job-v1 Schema 校验器
   experience   — 经验要求（必填）
   education    — 学历要求（必填）
   jd_text      — JD 全文（必填，≥10字符）
-  duty         — 工作职责（可空）
-  require      — 任职要求（可空）
+  responsibilities — 工作职责（可空）
+  requirements — 任职要求（可空）
   keywords     — 关键词列表（必填，列表）
-  post_date    — 发布时间（必填）
+  posted_at    — 发布时间（源站未提供时允许为空）
   url          — 岗位链接（必填）
   source       — 数据来源（必填）
   crawled_at   — 爬取时间（必填）
@@ -29,8 +29,8 @@ logger = logging.getLogger("schema")
 
 REQUIRED_FIELDS = [
     "title", "company", "city", "salary", "experience",
-    "education", "jd_text", "duty", "require", "keywords",
-    "post_date", "url", "source", "crawled_at",
+    "education", "jd_text", "responsibilities", "requirements", "keywords",
+    "posted_at", "url", "source", "crawled_at",
 ]
 
 TEXT_FIELDS_NONEMPTY = ["title", "company", "jd_text", "source"]
@@ -79,12 +79,7 @@ def validate_job_schema(record: dict, verbose: bool = True) -> list[str]:
     if not url.strip():
         errors.append("url 不能为空")
 
-    # 6. post_date 不能为空
-    pd = record.get("post_date", "") or ""
-    if not pd.strip():
-        errors.append("post_date 不能为空")
-
-    # 7. source 不能为空
+    # 6. source 不能为空
     src = record.get("source", "") or ""
     if not src.strip():
         errors.append("source 不能为空")

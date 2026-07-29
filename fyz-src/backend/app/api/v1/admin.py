@@ -3,7 +3,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.common import ApiResponse
 from app.services.crawler_service import CrawlerService
@@ -30,10 +32,11 @@ def get_crawler_service() -> CrawlerService:
 @router.get("/overview", response_model=ApiResponse)
 async def get_overview(
     service: CrawlerService = Depends(get_crawler_service),
+    db: AsyncSession = Depends(get_db),
 ):
     """获取系统管理总览数据（含爬虫状态、系统指标等）"""
     try:
-        data = await service.get_overview()
+        data = await service.get_overview(db)
         return ApiResponse(data=data)
     except Exception as e:
         logger.exception("获取系统总览失败")
@@ -97,31 +100,3 @@ async def poll_spider(
     except Exception as e:
         logger.exception("轮询爬虫状态失败")
         return ApiResponse(code=500, message=f"轮询失败: {e}")
-
-
-@router.put("/users/{user_id}/status", response_model=ApiResponse)
-async def toggle_user(
-    user_id: int,
-    service: CrawlerService = Depends(get_crawler_service),
-):
-    """切换用户状态（停用/启用）"""
-    try:
-        # 目前使用 CrawlerService 中的静态用户数据，后续迁移到 DB
-        return ApiResponse(data={"id": user_id, "status": "toggled"})
-    except Exception as e:
-        logger.exception("切换用户状态失败")
-        return ApiResponse(code=500, message=f"操作失败: {e}")
-
-
-@router.put("/settings", response_model=ApiResponse)
-async def save_settings(
-    settings: dict,
-    service: CrawlerService = Depends(get_crawler_service),
-):
-    """保存系统设置"""
-    try:
-        # 后续接入数据库持久化
-        return ApiResponse(data={"saved": True})
-    except Exception as e:
-        logger.exception("保存设置失败")
-        return ApiResponse(code=500, message=f"保存失败: {e}")

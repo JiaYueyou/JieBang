@@ -9,7 +9,6 @@ export const useAdminStore=defineStore("admin",()=>{
   async function toggleCrawler(id:number){await dataProvider.admin.toggleCrawler(id);await load(true);}
   async function runCrawler(id:number){await dataProvider.admin.runCrawler(id);await load(true);}
   async function pollCrawler(id:number){return dataProvider.admin.pollCrawler(id);}
-  async function toggleUser(id:number){await dataProvider.admin.toggleUser(id);await load(true);}
-  async function saveSettings(settings:Record<string,any>){await dataProvider.admin.saveSettings(settings);await load(true);}
-  return {data,loading,loaded,error,load,refresh:()=>load(true),toggleCrawler,runCrawler,pollCrawler,toggleUser,saveSettings};
+  async function importCrawlerOutput(filename:string){return dataProvider.admin.importCrawlerOutput(filename);}
+  return {data,loading,loaded,error,load,refresh:()=>load(true),toggleCrawler,runCrawler,pollCrawler,importCrawlerOutput};
 });

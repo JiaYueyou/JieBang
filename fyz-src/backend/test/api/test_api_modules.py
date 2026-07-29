@@ -41,12 +41,68 @@ class TestAdminModule:
     """系统管理 — 真实路由测试"""
 
     async def test_overview_returns_200(self, client, auth_headers):
+        job_response = await client.post(
+            "/api/v1/jobs",
+            headers=auth_headers,
+            json={
+                "title": "监控数据测试工程师",
+                "department": "数据平台",
+                "level": "mid",
+                "responsibilities": ["开发 Python 服务"],
+                "requirements": ["熟悉 FastAPI 和 MySQL"],
+                "jd_text": "使用 Python、FastAPI 和 MySQL 开发数据服务",
+                "status": "open",
+            },
+        )
+        job_id = job_response.json()["data"]["id"]
+        facts_response = await client.post(
+            f"/api/v1/jobs/{job_id}/extract-skills",
+            headers=auth_headers,
+        )
+        facts = facts_response.json()["data"]["facts"]
+        await client.patch(
+            f"/api/v1/skills/facts/{facts[0]['id']}/review",
+            headers=auth_headers,
+            json={"decision": "verified", "note": "监控接口测试确认"},
+        )
+
         resp = await client.get("/api/v1/admin/overview", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["code"] == 200
         assert "metrics" in body["data"]
         assert "crawlers" in body["data"]
+        assert body["data"]["pipelineSummary"] == {
+            "totalJobs": 0,
+            "todayImported": 0,
+            "sourceCount": 0,
+            "validRecords": 0,
+            "validRate": 0.0,
+            "failedTasks": 0,
+            "processedToday": 0,
+            "duplicatesToday": 0,
+            "verifiedFacts": 0,
+            "unverifiedFacts": 0,
+            "overallQuality": 0.0,
+        }
+        assert body["data"]["crawlers"][1]["endpoint"] == "iflytek.com"
+        cards = {card["label"]: card for card in body["data"]["performanceCards"]}
+        assert cards["技能事实总量"]["value"] == str(len(facts))
+        assert cards["事实确认率"]["value"] != "0.0%"
+        assert body["data"]["endpoints"][0] == {
+            "method": "GET",
+            "path": "/api/v1/skills/facts/reviews",
+            "value": f"{len(facts)} 条",
+            "percent": 100,
+        }
+        assert any(
+            log["service"] == "skill.fact.review"
+            and "监控接口测试确认" in log["message"]
+            for log in body["data"]["logs"]
+        )
+        assert "users" not in body["data"]
+        assert "settings" not in body["data"]
+        assert "alertRules" not in body["data"]
 
     async def test_overview_blocked_without_auth(self, client):
         resp = await client.get("/api/v1/admin/overview")
@@ -58,3 +114,15 @@ class TestAdminModule:
         body = resp.json()
         assert body["code"] == 200
         assert "name" in body["data"]
+
+    async def test_removed_placeholder_admin_routes_return_404(
+        self, client, auth_headers
+    ):
+        user_response = await client.put(
+            "/api/v1/admin/users/1/status", headers=auth_headers
+        )
+        settings_response = await client.put(
+            "/api/v1/admin/settings", headers=auth_headers, json={}
+        )
+        assert user_response.status_code == 404
+        assert settings_response.status_code == 404
