@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.core.agent_runtime import (
     GenerateJDRequest,
@@ -14,6 +14,8 @@ from app.core.agent_runtime import (
     LLMGeneratedJDDraft,
     LLMJDInputSuggestion,
 )
+from app.core.time import as_utc
+from app.domain.agent_status import AgentRunStatus
 from app.schemas.skill import TaskStatusResponse
 
 
@@ -40,13 +42,21 @@ class AgentRunResponse(BaseModel):
     prompt_version: str
     input_summary: str
     structured_output: dict | None
-    status: str
+    status: AgentRunStatus
     duration_ms: int | None
+    prompt_tokens: int | None
+    completion_tokens: int | None
     retry_count: int
     error_code: str | None
     error_message: str | None
+    created_by: int | None
     created_at: datetime
+    started_at: datetime | None
     finished_at: datetime | None
+
+    _utc_times = field_validator(
+        "created_at", "started_at", "finished_at", mode="before"
+    )(as_utc)
 
 
 __all__ = [

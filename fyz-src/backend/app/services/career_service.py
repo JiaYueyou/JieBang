@@ -4,7 +4,6 @@ import io
 import re
 import time
 import uuid
-from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -15,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.agent_runtime import CareerPlanCandidate, CareerPlanningAgent
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import InvalidParameterError
+from app.core.time import utc_now
+from app.domain.agent_status import AgentRunStatus
 from app.domain.skill_dictionary import canonical_key
 from app.models import AgentRun, InternalPosition
 from app.providers import DeepSeekProvider, LLMProvider
@@ -90,13 +91,15 @@ class CareerService:
                 model=self.llm.model_name,
                 prompt_version=self.agent.prompt_version,
                 input_summary=f"skills={len(skills)} candidates={len(candidates)}",
-                status="running",
+                status=AgentRunStatus.running,
+                started_at=utc_now(),
                 retry_count=0,
                 created_by=user_id,
             )
             self.db.add(run)
         else:
-            run.status = "running"
+            run.status = AgentRunStatus.running
+            run.started_at = run.started_at or utc_now()
         await self.db.flush()
         started = time.perf_counter()
         try:
@@ -107,18 +110,22 @@ class CareerService:
                 candidates=candidates,
                 time_budget_weeks=request.time_budget_weeks,
             )
-            run.status = "degraded" if not bool(getattr(self.llm, "enabled", True)) else "succeeded"
+            run.status = (
+                AgentRunStatus.degraded
+                if not bool(getattr(self.llm, "enabled", True))
+                else AgentRunStatus.succeeded
+            )
         except Exception as exc:
             output = self.agent.template_output(skills, candidates, request.time_budget_weeks)
             output = output.model_copy(update={
                 "warnings": ["AI 增强暂未完成，已返回可继续使用的确定性学习路径。"]
             })
-            run.status = "degraded"
+            run.status = AgentRunStatus.degraded
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
         run.structured_output = output.model_dump(mode="json")
         run.duration_ms = int((time.perf_counter() - started) * 1000)
-        run.finished_at = datetime.utcnow()
+        run.finished_at = utc_now()
         await self.db.commit()
         return CareerAnalysisResponse(
             **output.model_dump(), agent_run_id=run_id, agent_status=run.status

@@ -81,8 +81,8 @@ class TestAdminModule:
             "failedTasks": 0,
             "processedToday": 0,
             "duplicatesToday": 0,
-            "verifiedFacts": 0,
-            "unverifiedFacts": 0,
+            "verifiedFacts": 1,
+            "unverifiedFacts": len(facts) - 1,
             "overallQuality": 0.0,
         }
         assert body["data"]["crawlers"][1]["endpoint"] == "iflytek.com"
@@ -95,6 +95,28 @@ class TestAdminModule:
             "value": f"{len(facts)} 条",
             "percent": 100,
         }
+        assert body["data"]["generatedAt"]
+        assert set(body["data"]["traffic"]) == {
+            "inbound",
+            "outbound",
+            "receivedTotal",
+            "sentTotal",
+        }
+        assert {item["label"] for item in body["data"]["resources"]} == {
+            "CPU",
+            "内存",
+            "磁盘",
+        }
+        assert all(
+            0 <= float(item["value"]) <= 100
+            for item in body["data"]["resources"]
+        )
+        services = {item["name"]: item for item in body["data"]["services"]}
+        assert set(services) == {"MySQL", "Neo4j", "Agent", "Crawler"}
+        assert services["MySQL"]["status"] == "healthy"
+        assert services["Neo4j"]["statusLabel"] == "测试环境未连接"
+        assert "Redis" not in services
+        assert "crawlerPolicy" not in body["data"]
         assert any(
             log["service"] == "skill.fact.review"
             and "监控接口测试确认" in log["message"]

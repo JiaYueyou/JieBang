@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import json
 import logging
@@ -14,10 +15,21 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import func, select
+import psutil
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AsyncTask, JobSkillFact, RawJobRecord, Skill, SourceDocument, User
+from app.core.config import DEEPSEEK_API_KEY, TESTING
+from app.core.neo4j import health_check as neo4j_health_check
+from app.models import (
+    AgentRun,
+    AsyncTask,
+    JobSkillFact,
+    RawJobRecord,
+    Skill,
+    SourceDocument,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +47,7 @@ class SpiderMeta:
 
     def __init__(self, spider_id: int, module_name: str, name: str,
                  short: str, endpoint: str, tone: str = "brand",
-                 schedule: str = "每小时"):
+                 schedule: str = "手动触发"):
         self.id = spider_id
         self.module_name = module_name  # e.g. "zhaopin_spider"
         self.name = name
@@ -68,24 +80,24 @@ class SpiderMeta:
             "duration": duration,
             "progress": progress,
             "schedule": self.schedule,
-            "nextRun": "运行中" if running else self._guess_next_run(),
+            "nextRun": "运行中" if running else "等待手动触发",
         }
 
-    def _collect_stats(self) -> tuple[str, float, str]:
+    def _collect_stats(self) -> tuple[str, float | None, str]:
         """从最新输出文件统计今日数据量和成功率"""
         latest = self._latest_output()
         if not latest:
-            return "0", 100.0, "—"
+            return "0", None, "—"
 
         try:
             with open(latest, "r", encoding="utf-8") as f:
                 records = json.load(f)
         except (json.JSONDecodeError, OSError):
-            return "0", 100.0, "—"
+            return "0", None, "—"
 
         total = len(records)
         if total == 0:
-            return "0", 100.0, "—"
+            return "0", None, "—"
 
         # 计算今日入库数
         today = datetime.date.today().isoformat()
@@ -117,13 +129,6 @@ class SpiderMeta:
         candidates.sort(key=lambda x: x[1], reverse=True)
         return candidates[0][0]
 
-    @staticmethod
-    def _guess_next_run() -> str:
-        now = datetime.datetime.now()
-        next_hour = now.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
-        return next_hour.strftime("%H:%M")
-
-
 # 已注册的爬虫
 REGISTERED_SPIDERS = [
     SpiderMeta(1, "zhaopin_spider", "智联招聘", "ZL", "zhaopin.com", "brand"),
@@ -143,6 +148,7 @@ class CrawlerService:
         self._stdout: dict[int, list[str]] = {}
         self._enabled: dict[int, bool] = {1: True, 2: True}  # 爬虫启停状态
         self._last_runs: dict[int, dict] = {}
+        self._network_sample: tuple[float, int, int] | None = None
 
     # ------------------------------------------------------------------
     # 后台线程：读取子进程输出
@@ -179,16 +185,25 @@ class CrawlerService:
         crawlers = self._list_crawlers()
         pipeline_summary, qualities = await self._get_pipeline_summary(db)
         monitoring = await self._get_monitoring(db)
+        services = await self._get_services(db)
+        resources, traffic = await asyncio.to_thread(self._get_resources)
+        recent_tasks = await self._get_recent_tasks(db)
+        system_events = await self._get_system_events(
+            db,
+            services=services,
+            unverified_facts=pipeline_summary["unverifiedFacts"],
+        )
         return {
             "metrics": self._get_metrics(pipeline_summary),
-            "services": self._get_services(),
-            "resources": self._get_resources(),
-            "recentTasks": self._get_recent_tasks(),
-            "systemEvents": [],
+            "services": services,
+            "resources": resources,
+            "traffic": traffic,
+            "recentTasks": recent_tasks,
+            "systemEvents": system_events,
             "crawlers": crawlers,
             "pipelineSummary": pipeline_summary,
             "qualities": qualities,
-            "crawlerPolicy": self._get_policy(),
+            "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             **monitoring,
         }
 
@@ -366,12 +381,6 @@ class CrawlerService:
                 return meta
         return None
 
-    # ------------------------------------------------------------------
-    # 各模块的 Mock/静态数据（后续可替换为真实查询）
-    # ------------------------------------------------------------------
-    # 这些方法返回与前端 AdminOverview 结构匹配的静态数据，
-    # 后续可逐步替换为来自数据库/监控系统的真实数据。
-
     def _get_metrics(self, summary: dict) -> list[dict]:
         return [
             {"label": "总岗位数", "value": str(summary["totalJobs"]), "trend": f"+{summary['todayImported']} 今日入库", "trendTone": "positive", "icon": "Document", "tone": "brand", "bars": [summary["totalJobs"] % 100]},
@@ -446,9 +455,7 @@ class CrawlerService:
 
         fact_rows = (
             await db.execute(
-                select(JobSkillFact.verification_status).where(
-                    JobSkillFact.raw_job_record_id.is_not(None)
-                )
+                select(JobSkillFact.verification_status)
             )
         ).scalars().all()
         verified = sum(1 for status in fact_rows if status == "verified")
@@ -457,15 +464,11 @@ class CrawlerService:
         valid_rate = round(valid * 100 / total, 1) if total else 0.0
         completeness_rate = round(complete * 100 / total, 1) if total else 0.0
         duplicate_rate = round(duplicates * 100 / processed, 1) if processed else 0.0
-        dedup_valid_rate = round(100 - duplicate_rate, 1) if processed else 0.0
-        overall_quality = (
-            round(
-                (valid_rate + completeness_rate + dedup_valid_rate + 100.0) / 4,
-                1,
-            )
-            if total
-            else 0.0
-        )
+        dedup_valid_rate = round(100 - duplicate_rate, 1) if processed else None
+        quality_values = [valid_rate, completeness_rate, 100.0]
+        if dedup_valid_rate is not None:
+            quality_values.append(dedup_valid_rate)
+        overall_quality = round(sum(quality_values) / len(quality_values), 1) if total else 0.0
 
         summary = {
             "totalJobs": total,
@@ -482,53 +485,296 @@ class CrawlerService:
         }
         qualities = [
             {"label": "字段完整性", "value": f"{completeness_rate:.1f}%", "percent": round(completeness_rate), "color": "#34b37e", "note": f"{complete} / {total} 条核心字段完整"},
-            {"label": "去重有效率", "value": f"{dedup_valid_rate:.1f}%", "percent": round(dedup_valid_rate), "color": "#4f6ef6", "note": f"今日识别重复 {duplicates} 条"},
+            {
+                "label": "去重有效率",
+                "value": f"{dedup_valid_rate:.1f}%" if dedup_valid_rate is not None else "—",
+                "percent": round(dedup_valid_rate) if dedup_valid_rate is not None else 0,
+                "color": "#4f6ef6",
+                "note": (
+                    f"今日识别重复 {duplicates} 条"
+                    if processed
+                    else "今日暂无岗位导入任务"
+                ),
+            },
             {"label": "文本有效", "value": f"{valid_rate:.1f}%", "percent": round(valid_rate), "color": "#34b37e", "note": f"{valid} / {total} 条 JD 正文有效"},
             {"label": "格式规范", "value": "100.0%" if total else "0.0%", "percent": 100 if total else 0, "color": "#34b37e", "note": "入库记录均已通过 job-v1"},
         ]
         return summary, qualities
 
-    def _get_services(self) -> list[dict]:
-        return [
-            {"name": "MySQL", "desc": "主数据库", "icon": "Coin", "tone": "brand", "latency": "3ms"},
-            {"name": "Neo4j", "desc": "技能图谱", "icon": "Share", "tone": "violet", "latency": "5ms"},
-            {"name": "Redis", "desc": "缓存服务", "icon": "Clock", "tone": "amber", "latency": "1ms"},
-            {"name": "Agent", "desc": "AI 任务引擎", "icon": "MagicStick", "tone": "green", "latency": "45ms"},
-            {"name": "Crawler", "desc": "数据采集服务", "icon": "Download", "tone": "brand", "latency": "—"},
-        ]
+    async def _get_services(self, db: AsyncSession) -> list[dict]:
+        """实时探测实际依赖；不调用付费模型，仅读取 Agent 配置与最近运行。"""
+        services: list[dict] = []
 
-    def _get_resources(self) -> list[dict]:
-        return [
-            {"label": "CPU", "value": 23, "color": "#4f6ef6", "detail": "2.1 GHz"},
-            {"label": "内存", "value": 47, "color": "#34b37e", "detail": "3.8 / 8 GB"},
-            {"label": "磁盘", "value": 32, "color": "#f59e4b", "detail": "64 / 200 GB"},
-        ]
+        mysql_started = time.perf_counter()
+        try:
+            await db.execute(text("SELECT 1"))
+            mysql_status = "healthy"
+            mysql_label = "正常"
+        except Exception:
+            mysql_status = "unavailable"
+            mysql_label = "不可用"
+        mysql_latency = round((time.perf_counter() - mysql_started) * 1000)
+        services.append({
+            "name": "MySQL",
+            "desc": "业务事实数据库",
+            "icon": "Coin",
+            "tone": "brand",
+            "latency": f"{mysql_latency}ms",
+            "status": mysql_status,
+            "statusLabel": mysql_label,
+        })
 
-    def _get_recent_tasks(self) -> list[dict]:
-        now = datetime.datetime.now()
-        tasks = []
-        for meta in REGISTERED_SPIDERS:
-            latest = meta._latest_output()
-            count = 0
-            if latest:
-                try:
-                    with open(latest, "r", encoding="utf-8") as f:
-                        count = len(json.load(f))
-                except (json.JSONDecodeError, OSError):
-                    pass
-            tasks.append({
-                "name": meta.name,
-                "source": meta.endpoint,
-                "time": "刚刚" if meta.id in self._running_tasks else "上次运行",
-                "count": f"{count} 条",
-                "status": "running" if meta.id in self._running_tasks and self._running_tasks[meta.id].poll() is None else "success",
-                "statusLabel": "采集中" if meta.id in self._running_tasks and self._running_tasks[meta.id].poll() is None else "已完成",
-                "icon": "VideoPlay" if meta.id in self._running_tasks else "CircleCheck",
+        if TESTING:
+            neo4j_ok = False
+            neo4j_latency = None
+            neo4j_label = "测试环境未连接"
+        else:
+            neo4j_started = time.perf_counter()
+            neo4j_ok = await asyncio.to_thread(neo4j_health_check)
+            neo4j_latency = round((time.perf_counter() - neo4j_started) * 1000)
+            neo4j_label = "正常" if neo4j_ok else "不可用"
+        services.append({
+            "name": "Neo4j",
+            "desc": "技能图谱读模型",
+            "icon": "Share",
+            "tone": "violet",
+            "latency": f"{neo4j_latency}ms" if neo4j_latency is not None else "—",
+            "status": "healthy" if neo4j_ok else "unavailable",
+            "statusLabel": neo4j_label,
+        })
+
+        latest_agent = (
+            await db.execute(
+                select(AgentRun).order_by(AgentRun.created_at.desc()).limit(1)
+            )
+        ).scalar_one_or_none()
+        agent_configured = bool(DEEPSEEK_API_KEY)
+        if latest_agent and latest_agent.status == "failed":
+            agent_status = "degraded"
+            agent_label = "最近运行失败"
+        elif agent_configured:
+            agent_status = "healthy"
+            agent_label = "已配置"
+        else:
+            agent_status = "degraded"
+            agent_label = "模板降级模式"
+        services.append({
+            "name": "Agent",
+            "desc": (
+                f"最近运行：{latest_agent.agent_type}"
+                if latest_agent
+                else "尚无运行记录"
+            ),
+            "icon": "MagicStick",
+            "tone": "green",
+            "latency": (
+                f"{latest_agent.duration_ms}ms"
+                if latest_agent and latest_agent.duration_ms is not None
+                else "—"
+            ),
+            "status": agent_status,
+            "statusLabel": agent_label,
+        })
+
+        available_spiders = sum(1 for meta in REGISTERED_SPIDERS if meta.exists())
+        running_spiders = sum(
+            1
+            for meta in REGISTERED_SPIDERS
+            if meta.id in self._running_tasks
+            and self._running_tasks[meta.id].poll() is None
+        )
+        crawler_ok = available_spiders == len(REGISTERED_SPIDERS)
+        services.append({
+            "name": "Crawler",
+            "desc": f"{available_spiders}/{len(REGISTERED_SPIDERS)} 个采集脚本可用",
+            "icon": "Download",
+            "tone": "brand",
+            "latency": f"{running_spiders} 个运行中",
+            "status": "healthy" if crawler_ok else "unavailable",
+            "statusLabel": "正常" if crawler_ok else "脚本缺失",
+        })
+        return services
+
+    def _get_resources(self) -> tuple[list[dict], dict]:
+        """读取当前宿主机 CPU、内存、磁盘和网络吞吐。"""
+        cpu_value = round(psutil.cpu_percent(interval=0.05), 1)
+        cpu_freq = psutil.cpu_freq()
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage(str(PROJECT_ROOT.anchor or PROJECT_ROOT))
+        counters = psutil.net_io_counters()
+        now = time.monotonic()
+
+        inbound = outbound = 0.0
+        if self._network_sample is not None:
+            previous_at, previous_recv, previous_sent = self._network_sample
+            elapsed = max(now - previous_at, 0.001)
+            inbound = max(counters.bytes_recv - previous_recv, 0) / elapsed
+            outbound = max(counters.bytes_sent - previous_sent, 0) / elapsed
+        self._network_sample = (now, counters.bytes_recv, counters.bytes_sent)
+
+        resources = [
+            {
+                "label": "CPU",
+                "value": cpu_value,
+                "color": "#4f6ef6",
+                "detail": (
+                    f"{cpu_freq.current / 1000:.2f} GHz · {psutil.cpu_count()} 线程"
+                    if cpu_freq
+                    else f"{psutil.cpu_count()} 线程"
+                ),
+            },
+            {
+                "label": "内存",
+                "value": round(memory.percent, 1),
+                "color": "#34b37e",
+                "detail": (
+                    f"{self._format_bytes(memory.used)} / "
+                    f"{self._format_bytes(memory.total)}"
+                ),
+            },
+            {
+                "label": "磁盘",
+                "value": round(disk.percent, 1),
+                "color": "#f59e4b",
+                "detail": (
+                    f"{self._format_bytes(disk.used)} / "
+                    f"{self._format_bytes(disk.total)}"
+                ),
+            },
+        ]
+        traffic = {
+            "inbound": self._format_rate(inbound),
+            "outbound": self._format_rate(outbound),
+            "receivedTotal": self._format_bytes(counters.bytes_recv),
+            "sentTotal": self._format_bytes(counters.bytes_sent),
+        }
+        return resources, traffic
+
+    async def _get_recent_tasks(self, db: AsyncSession) -> list[dict]:
+        task_rows = (
+            await db.execute(
+                select(AsyncTask)
+                .where(AsyncTask.task_type == "job_data_import")
+                .order_by(AsyncTask.created_at.desc())
+                .limit(5)
+            )
+        ).scalars().all()
+        result: list[dict] = []
+        for task in task_rows:
+            task_result = task.result or {}
+            files = (task.request_data or {}).get("files") or []
+            source = "、".join(str(item) for item in files) or "数据库导入"
+            status = {
+                "queued": "warning",
+                "running": "running",
+                "succeeded": "success",
+                "degraded": "warning",
+                "failed": "warning",
+                "cancelled": "warning",
+            }.get(task.status, "warning")
+            status_label = {
+                "queued": "排队中",
+                "running": "运行中",
+                "succeeded": "已完成",
+                "degraded": "降级完成",
+                "failed": "失败",
+                "cancelled": "已取消",
+            }.get(task.status, task.status)
+            result.append({
+                "id": task.id,
+                "name": "岗位数据导入",
+                "source": source,
+                "time": self._format_event_time(
+                    task.finished_at or task.started_at or task.created_at
+                ),
+                "count": f"{int(task_result.get('total', 0))} 条",
+                "status": status,
+                "statusLabel": status_label,
+                "icon": "CircleCheck" if task.status == "succeeded" else "Warning",
             })
-        return tasks
+        return result
 
-    def _get_policy(self) -> dict:
-        return {"concurrency": 4, "retries": 3, "interval": 5, "deduplicate": True}
+    async def _get_system_events(
+        self,
+        db: AsyncSession,
+        *,
+        services: list[dict],
+        unverified_facts: int,
+    ) -> list[dict]:
+        """根据服务探测、待审核事实和任务状态生成需要关注的真实事件。"""
+        events: list[dict] = []
+        for service in services:
+            if service["status"] == "healthy":
+                continue
+            events.append({
+                "title": f"{service['name']}：{service['statusLabel']}",
+                "desc": service["desc"],
+                "time": "本次巡检",
+                "level": (
+                    "danger"
+                    if service["status"] == "unavailable"
+                    else "warning"
+                ),
+                "icon": "Warning",
+                "target": "overview",
+            })
+
+        if unverified_facts:
+            events.append({
+                "title": f"{unverified_facts} 条技能事实待审核",
+                "desc": "审核后才会进入正式技能图谱",
+                "time": "数据库实时统计",
+                "level": "warning",
+                "icon": "DocumentChecked",
+                "target": "review",
+            })
+
+        active_tasks = (
+            await db.execute(
+                select(func.count(AsyncTask.id)).where(
+                    AsyncTask.status.in_(("queued", "running"))
+                )
+            )
+        ).scalar_one()
+        failed_tasks = (
+            await db.execute(
+                select(func.count(AsyncTask.id)).where(
+                    AsyncTask.status == "failed"
+                )
+            )
+        ).scalar_one()
+        if active_tasks:
+            events.append({
+                "title": f"{int(active_tasks)} 个异步任务处理中",
+                "desc": "可在日志与性能中查看实时状态",
+                "time": "数据库实时统计",
+                "level": "info",
+                "icon": "Clock",
+                "target": "monitor",
+            })
+        if failed_tasks:
+            events.append({
+                "title": f"{int(failed_tasks)} 个异步任务失败",
+                "desc": "请在应用事件流中检查错误信息",
+                "time": "数据库累计统计",
+                "level": "danger",
+                "icon": "Warning",
+                "target": "monitor",
+            })
+        return events[:6]
+
+    @staticmethod
+    def _format_bytes(value: float) -> str:
+        size = float(value)
+        for unit in ("B", "KB", "MB", "GB", "TB"):
+            if size < 1024 or unit == "TB":
+                return f"{size:.1f} {unit}"
+            size /= 1024
+        return f"{size:.1f} TB"
+
+    @classmethod
+    def _format_rate(cls, value: float) -> str:
+        return f"{cls._format_bytes(value)}/s"
 
     async def _get_monitoring(self, db: AsyncSession) -> dict:
         """从事实表和异步任务审计表构造监控数据，不返回演示型指标。"""

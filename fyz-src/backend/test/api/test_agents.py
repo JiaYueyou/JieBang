@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 
 async def wait_for_task(client, headers, task_id):
@@ -27,6 +28,32 @@ async def test_jd_input_suggestion_requires_authentication(client):
     assert response.status_code == 401
 
 
+async def test_normal_user_cannot_create_management_agents_or_list_runs(client):
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"username": "normal", "password": "user123"},
+    )
+    headers = {
+        "Authorization": f"Bearer {login.json()['data']['access_token']}"
+    }
+
+    jd = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=headers,
+        json={"title": "Java 开发工程师"},
+    )
+    career = await client.post(
+        "/api/v1/agents/career-plannings",
+        headers=headers,
+        json={"skill_text": "Python"},
+    )
+    runs = await client.get("/api/v1/agents/runs", headers=headers)
+
+    assert jd.status_code == 403
+    assert career.status_code == 403
+    assert runs.status_code == 403
+
+
 async def test_jd_generation_task_returns_editable_template_and_agent_audit(client, auth_headers):
     response = await client.post(
         "/api/v1/agents/jd-generations",
@@ -53,6 +80,59 @@ async def test_jd_generation_task_returns_editable_template_and_agent_audit(clie
     assert run.status_code == 200
     assert run.json()["data"]["agent_type"] == "jd_generation"
     assert run.json()["data"]["status"] == "degraded"
+
+
+async def test_admin_agent_run_list_is_paginated_and_uses_monotonic_utc_times(
+    client, auth_headers
+):
+    created = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=auth_headers,
+        json={"title": "Python 开发工程师"},
+    )
+    payload = created.json()["data"]
+    await wait_for_task(client, auth_headers, payload["task"]["task_id"])
+
+    response = await client.get(
+        "/api/v1/agents/runs",
+        headers=auth_headers,
+        params={"agent_type": "jd_generation", "page": 1, "page_size": 10},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 1
+    run = body["data"][0]
+    assert run["started_at"].endswith("Z")
+    assert run["finished_at"].endswith("Z")
+    created_at = datetime.fromisoformat(run["created_at"].replace("Z", "+00:00"))
+    started_at = datetime.fromisoformat(run["started_at"].replace("Z", "+00:00"))
+    finished_at = datetime.fromisoformat(run["finished_at"].replace("Z", "+00:00"))
+    assert created_at <= started_at <= finished_at
+
+
+async def test_jd_generation_idempotency_key_reuses_same_task(client, auth_headers):
+    headers = {**auth_headers, "Idempotency-Key": "jd-form-001"}
+    first = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=headers,
+        json={"title": "Python 开发工程师"},
+    )
+    second = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=headers,
+        json={"title": "Python 开发工程师"},
+    )
+    conflict = await client.post(
+        "/api/v1/agents/jd-generations",
+        headers=headers,
+        json={"title": "Java 开发工程师"},
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["data"]["task"]["task_id"] == second.json()["data"]["task"]["task_id"]
+    assert first.json()["data"]["agent_run_id"] == second.json()["data"]["agent_run_id"]
+    assert conflict.status_code == 422
 
 
 async def test_internal_jd_generation_returns_private_transfer_draft(client, auth_headers):

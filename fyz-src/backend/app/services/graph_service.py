@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import ResourceNotFoundError
+from app.core.time import utc_now
 from app.domain.job_standardizer import CATEGORY_STACK, infer_job_stack, standardize_job_title
 from app.models import (
     AgentRun,
@@ -367,6 +368,7 @@ class GraphService:
             prompt_version=self.enrichment_agent.prompt_version,
             input_summary=f"{skill.name}: {len(evidence_rows)} evidence rows",
             status="running",
+            started_at=utc_now(),
             retry_count=0,
             created_by=user_id,
         )
@@ -410,7 +412,7 @@ class GraphService:
             logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
-            run.finished_at = datetime.utcnow()
+            run.finished_at = utc_now()
 
     @staticmethod
     def _filter_verified_completion(

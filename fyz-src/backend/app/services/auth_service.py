@@ -24,9 +24,11 @@ class AuthService:
             raise InvalidCredentialsError()
 
         token = create_access_token(
-            {"user_id": user.id, "username": user.username}
+            {"user_id": user.id, "username": user.username, "role": user.role}
         )
-        return TokenResponse(access_token=token, username=user.username)
+        return TokenResponse(
+            access_token=token, username=user.username, role=user.role
+        )
 
     async def register(self, request: RegisterRequest) -> None:
         if await self.users.get_by_username(request.username):

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime
-
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.agent_runtime import JDGenerationAgent
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import ResourceNotFoundError
+from app.core.time import utc_now
+from app.domain.agent_status import AgentRunStatus, AsyncTaskStatus
 from app.models import AgentRun, AsyncTask
 from app.providers import DeepSeekProvider, LLMProvider
 from app.repositories import SkillRepository, TaskRepository
@@ -38,17 +39,22 @@ class JDGenerationService:
         self.agent_runs = SkillRepository(db)
         self.tasks = TaskRepository(db)
 
-    async def create_task(self, request: GenerateJDRequest, *, user_id: int) -> JDGenerationTaskResponse:
+    async def create_task(
+        self, request: GenerateJDRequest, *, user_id: int,
+        idempotency_key: str | None = None,
+    ) -> JDGenerationTaskResponse:
         return await self._create_task(
             request=request,
             user_id=user_id,
             task_type=self.agent_type,
             prompt_version=self.prompt_version,
             input_summary=self._input_summary(request),
+            idempotency_key=idempotency_key,
         )
 
     async def create_suggestion_task(
-        self, request: JDInputSuggestionRequest, *, user_id: int
+        self, request: JDInputSuggestionRequest, *, user_id: int,
+        idempotency_key: str | None = None,
     ) -> JDGenerationTaskResponse:
         return await self._create_task(
             request=request,
@@ -56,6 +62,7 @@ class JDGenerationService:
             task_type=self.agent.suggestion_task_type,
             prompt_version=self.agent.suggestion_prompt_version,
             input_summary=f"input_suggestion/{request.target.value}/{request.mode.value}: {request.title}"[:500],
+            idempotency_key=idempotency_key,
         )
 
     async def _create_task(
@@ -66,7 +73,26 @@ class JDGenerationService:
         task_type: str,
         prompt_version: str,
         input_summary: str,
+        idempotency_key: str | None,
     ) -> JDGenerationTaskResponse:
+        payload = request.model_dump(mode="json")
+        idempotency_key = idempotency_key.strip() if idempotency_key else None
+        if idempotency_key:
+            existing = await self.db.scalar(
+                select(AsyncTask).where(
+                    AsyncTask.created_by == user_id,
+                    AsyncTask.task_type == task_type,
+                    AsyncTask.idempotency_key == idempotency_key,
+                )
+            )
+            if existing:
+                if existing.request_data.get("payload") != payload:
+                    from app.core.exceptions import InvalidParameterError
+                    raise InvalidParameterError("幂等键已用于不同的 Agent 输入")
+                return JDGenerationTaskResponse(
+                    task=TaskService.to_response(existing),
+                    agent_run_id=str(existing.request_data["agent_run_id"]),
+                )
         run_id = str(uuid.uuid4())
         run = AgentRun(
             id=run_id,
@@ -75,17 +101,18 @@ class JDGenerationService:
             model=self.llm.model_name,
             prompt_version=prompt_version,
             input_summary=input_summary,
-            status="queued",
+            status=AgentRunStatus.queued,
             retry_count=0,
             created_by=user_id,
         )
         task = AsyncTask(
             id=str(uuid.uuid4()),
             task_type=task_type,
-            status="queued",
+            status=AsyncTaskStatus.queued,
             progress=0,
-            request_data={"agent_run_id": run_id, "payload": request.model_dump(mode="json")},
+            request_data={"agent_run_id": run_id, "payload": payload},
             created_by=user_id,
+            idempotency_key=idempotency_key,
         )
         await self.agent_runs.add_agent_run(run)
         await self.tasks.create(task)
@@ -100,35 +127,45 @@ class JDGenerationService:
 
     async def generate(self, request: GenerateJDRequest, *, agent_run_id: str) -> GeneratedJDDraft:
         run = await self.get_run_model(agent_run_id)
-        run.status = "running"
+        run.status = AgentRunStatus.running
+        run.started_at = run.started_at or utc_now()
         started = time.perf_counter()
         try:
             draft = await self.agent.generate(request)
-            run.status = "degraded" if draft.generation_mode == "template" else "succeeded"
+            run.status = (
+                AgentRunStatus.degraded
+                if draft.generation_mode == "template"
+                else AgentRunStatus.succeeded
+            )
             run.structured_output = draft.model_dump(mode="json")
             return draft
         except Exception as exc:
             draft = JDGenerationAgent.template_draft(
                 request, "AI 增强暂未完成，已生成可继续编辑的规则草稿。"
             )
-            run.status = "degraded"
+            run.status = AgentRunStatus.degraded
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
             run.structured_output = draft.model_dump(mode="json")
             return draft
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
-            run.finished_at = datetime.utcnow()
+            run.finished_at = utc_now()
 
     async def suggest_input(
         self, request: JDInputSuggestionRequest, *, agent_run_id: str
     ) -> JDInputSuggestion:
         run = await self.get_run_model(agent_run_id)
-        run.status = "running"
+        run.status = AgentRunStatus.running
+        run.started_at = run.started_at or utc_now()
         started = time.perf_counter()
         try:
             suggestion = await self.agent.suggest_input(request)
-            run.status = "degraded" if suggestion.generation_mode == "template" else "succeeded"
+            run.status = (
+                AgentRunStatus.degraded
+                if suggestion.generation_mode == "template"
+                else AgentRunStatus.succeeded
+            )
             run.structured_output = suggestion.model_dump(mode="json")
             return suggestion
         except Exception as exc:
@@ -136,14 +173,14 @@ class JDGenerationService:
                 request,
                 "AI 增强暂未完成，当前内容由岗位规则模板生成，请人工核对。",
             )
-            run.status = "degraded"
+            run.status = AgentRunStatus.degraded
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
             run.structured_output = suggestion.model_dump(mode="json")
             return suggestion
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
-            run.finished_at = datetime.utcnow()
+            run.finished_at = utc_now()
 
     async def get_run(
         self, agent_run_id: str, *, user_id: int | None = None
@@ -171,10 +208,14 @@ class JDGenerationService:
             structured_output=run.structured_output,
             status=run.status,
             duration_ms=run.duration_ms,
+            prompt_tokens=run.prompt_tokens,
+            completion_tokens=run.completion_tokens,
             retry_count=run.retry_count,
             error_code=run.error_code,
             error_message=run.error_message,
+            created_by=run.created_by,
             created_at=run.created_at,
+            started_at=run.started_at,
             finished_at=run.finished_at,
         )
 
