@@ -319,7 +319,7 @@
           <div class="dash-card-header"><span class="dash-card-title">新兴岗位发现</span><span class="dash-card-badge">AI 驱动</span></div>
           <div class="dash-card-body">
             <div class="insight-list">
-              <div class="insight-card" v-for="(job,i) in emergingJobs" :key="i" :class="{ collapsed: !emergingExpanded && i >= 3 }">
+              <div class="insight-card" v-for="job in paginatedEmergingJobs" :key="job.id">
                 <div class="insight-card-top">
                   <div class="insight-dot"></div>
                   <span class="insight-name">{{ job.name }}</span>
@@ -337,10 +337,17 @@
               </div>
               <el-empty v-if="!insightLoading && emergingJobs.length === 0" description="暂无满足来源阈值的新兴岗位" />
             </div>
-            <button v-if="emergingJobs.length > 3" class="expand-btn" @click="emergingExpanded = !emergingExpanded">
-              {{ emergingExpanded ? '收起' : `展开全部 (${emergingJobs.length} 个)` }}
-              <el-icon :class="{ rotated: emergingExpanded }"><ArrowDown /></el-icon>
-            </button>
+            <div v-if="emergingJobs.length > insightPageSize" class="insight-pagination">
+              <span>共 {{ emergingJobs.length }} 个岗位</span>
+              <el-pagination
+                v-model:current-page="emergingPage"
+                size="small"
+                background
+                layout="prev, pager, next"
+                :page-size="insightPageSize"
+                :total="emergingJobs.length"
+              />
+            </div>
           </div>
         </div>
 
@@ -348,7 +355,7 @@
           <div class="dash-card-header"><span class="dash-card-title">能力动态更新</span><span class="dash-card-badge">近期变化</span></div>
           <div class="dash-card-body">
             <div class="insight-list">
-              <div class="insight-card" v-for="(ch,i) in capabilityChanges" :key="i">
+              <div class="insight-card" v-for="ch in paginatedCapabilityChanges" :key="ch.job">
                 <div class="insight-card-top">
                   <span class="insight-name">{{ ch.job }}</span><span class="insight-period">{{ ch.period }}</span>
                 </div>
@@ -364,6 +371,17 @@
                 </div>
               </div>
               <el-empty v-if="!insightLoading && capabilityChanges.length === 0" description="当前时间窗口暂无可确认的能力变化" />
+            </div>
+            <div v-if="capabilityChanges.length > insightPageSize" class="insight-pagination">
+              <span>共 {{ capabilityChanges.length }} 项变化</span>
+              <el-pagination
+                v-model:current-page="capabilityPage"
+                size="small"
+                background
+                layout="prev, pager, next"
+                :page-size="insightPageSize"
+                :total="capabilityChanges.length"
+              />
             </div>
           </div>
         </div>
@@ -493,10 +511,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete, Refresh, Promotion, OfficeBuilding } from "@element-plus/icons-vue";
+import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, View, Edit, Delete, Refresh, Promotion, OfficeBuilding } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import { useJobStore } from "@/stores/jobs";
+import { useHistoryStore } from "@/stores/history";
 import DataState from "@/components/common/DataState.vue";
 import ReferenceBaseline from "@/components/analysis/ReferenceBaseline.vue";
 import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
@@ -528,6 +547,7 @@ let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
 let suggestionRequestId = 0;
 let lastSuggestionKey = "";
 const store = useJobStore();
+const historyStore = useHistoryStore();
 const router = useRouter();
 const route = useRoute();
 const {
@@ -583,6 +603,19 @@ async function openObservedDetail(id: number) {
   observedDetail.value = null;
   try {
     observedDetail.value = await store.getObserved(id);
+    try {
+      await historyStore.record({
+        type: "job",
+        targetId: observedDetail.value.id,
+        title: observedDetail.value.title,
+        description: `${observedDetail.value.company || "企业待确认"} · ${observedDetail.value.city || "地点待确认"}`,
+        source: observedDetail.value.source,
+        tags: observedDetail.value.skills.slice(0, 5).map((skill) => skill.skill_name),
+        url: `/jobs?tab=observed&record=${observedDetail.value.id}`,
+      });
+    } catch {
+      ElMessage.warning("岗位详情已打开，但浏览足迹记录失败");
+    }
   } catch (exception) {
     observedDetailError.value = exception instanceof Error ? exception.message : "岗位证据加载失败";
   } finally {
@@ -609,7 +642,15 @@ const filteredInternalPositions = computed(() => {
 });
 const previewTarget = computed(() => generatedDraft.value?.target || demandTarget.value);
 onMounted(async () => {
-  await Promise.all([store.load(), store.loadInsights()]);
+  const requestedTab = route.query.tab;
+  if (requestedTab === "insight" || requestedTab === "observed") tab.value = requestedTab;
+  if (typeof route.query.skill === "string") skillPreference.value = route.query.skill;
+  await Promise.all([store.load(), store.loadInsights(skillPreference.value || undefined)]);
+  if (requestedTab === "observed") {
+    await loadObservedJobs();
+    const recordId = Number(route.query.record);
+    if (Number.isInteger(recordId) && recordId > 0) await openObservedDetail(recordId);
+  }
   if (route.query.scope === "internal") {
     await nextTick();
     document.getElementById("position-ledger")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -903,9 +944,36 @@ async function deleteDetail() {
 
 // ── Tab B ──
 const skillPreference = ref("");
-const emergingExpanded = ref(false);
+const insightPageSize = 3;
+const emergingPage = ref(1);
+const capabilityPage = ref(1);
+const paginatedEmergingJobs = computed(() => {
+  const start = (emergingPage.value - 1) * insightPageSize;
+  return emergingJobs.value.slice(start, start + insightPageSize);
+});
+const paginatedCapabilityChanges = computed(() => {
+  const start = (capabilityPage.value - 1) * insightPageSize;
+  return capabilityChanges.value.slice(start, start + insightPageSize);
+});
 async function searchInsight() {
-  await store.loadInsights(skillPreference.value.trim());
+  const keyword = skillPreference.value.trim();
+  emergingPage.value = 1;
+  capabilityPage.value = 1;
+  await store.loadInsights(keyword);
+  if (!keyword) return;
+  try {
+    await historyStore.record({
+      type: "search",
+      targetId: keyword,
+      title: `岗位洞察：${keyword}`,
+      description: `查看与“${keyword}”相关的新兴岗位和能力变化`,
+      source: "岗位管理",
+      tags: [keyword, "岗位洞察"],
+      url: `/jobs?tab=insight&skill=${encodeURIComponent(keyword)}`,
+    });
+  } catch {
+    ElMessage.warning("洞察结果已更新，但浏览足迹记录失败");
+  }
 }
 
 async function confirmEmergingJob(job: EmergingJob) {
@@ -950,6 +1018,10 @@ function viewChangeTrend(change: CapabilityChange) {
   margin-top: 12px;
   border-radius: 12px;
 }
+.insight-pagination { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-top:8px;padding:10px 2px 0;border-top:1px solid var(--border-color); }
+.insight-pagination>span { color:var(--text-muted);font-size:12px;white-space:nowrap; }
+.insight-pagination :deep(.el-pagination) { margin-left:auto; }
+.insight-pagination :deep(.btn-prev),.insight-pagination :deep(.btn-next),.insight-pagination :deep(.number) { border-radius:8px!important; }
 .suggestion-field { margin-bottom: 18px; }
 .suggestion-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px; }
 .suggestion-heading>div { display:flex;flex-direction:column; }

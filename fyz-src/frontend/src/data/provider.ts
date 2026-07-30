@@ -34,6 +34,7 @@ export interface DataProvider {
     get(resumeId: number): Promise<TalentSummary | null>;
     upload(input: import("@/domain/types").ResumeUploadPayload): Promise<void>;
     download(resumeId: number, filename: string): Promise<void>;
+    recalculate(): Promise<{ resumes_processed: number; matches_upserted: number }>;
     explain(matchId: number): Promise<import("@/domain/types").MatchExplanation>;
   };
   career: { analyze(input: {
@@ -92,6 +93,7 @@ export interface DataProvider {
   };
   history: {
     list(): Promise<HistoryRecord[]>;
+    record(input: Omit<HistoryRecord, "id" | "dateKey" | "date" | "time" | "badge">): Promise<HistoryRecord>;
     remove(id: number): Promise<void>;
     clear(): Promise<void>;
     getInsights(): Promise<HistoryInsights>;

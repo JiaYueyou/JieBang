@@ -71,7 +71,7 @@
 
       <div class="favorites-grid" :class="{ 'list-mode': viewMode === 'list' }">
         <article
-          v-for="item in filteredFavorites"
+          v-for="item in pagedFavorites"
           :key="`${item.target_type}-${item.id}`"
           class="favorite-card"
           :class="[
@@ -150,9 +150,20 @@
                 {{ item.target_type === "job" ? "查看画像" : "发起匹配" }}
               </button>
             </div>
-            <span class="saved-time"><el-icon><Clock /></el-icon>{{ item.savedAt }} 收藏</span>
+            <span class="saved-time"><el-icon><Clock /></el-icon>{{ formatSavedAt(item.savedAt) }} 收藏</span>
           </div>
         </article>
+      </div>
+      <div v-if="filteredFavorites.length > pageSize" class="favorites-pagination">
+        <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+        <el-pagination
+          v-model:current-page="currentPage"
+          size="small"
+          background
+          layout="prev, pager, next"
+          :page-size="pageSize"
+          :total="filteredFavorites.length"
+        />
       </div>
     </div>
 
@@ -170,7 +181,7 @@
       <template #header>
         <div v-if="selectedItem" class="drawer-title">
           <span>{{ selectedItem.target_type === "job" ? "岗位收藏详情" : "候选人收藏详情" }}</span>
-          <small>收藏于 {{ selectedItem.savedAt }}</small>
+          <small>收藏于 {{ formatSavedAt(selectedItem.savedAt) }}</small>
         </div>
       </template>
 
@@ -255,6 +266,8 @@ const activeType = ref<FilterType>("all");
 const keyword = ref("");
 const sortBy = ref("recent");
 const viewMode = ref<ViewMode>("grid");
+const currentPage = ref(1);
+const pageSize = 8;
 const selectedIds = ref<number[]>([]);
 const drawerVisible = ref(false);
 const selectedItem = ref<FavoriteRecord | null>(null);
@@ -262,7 +275,12 @@ const drawerSize = computed(() => (window.innerWidth < 768 ? "100%" : "520px"));
 onMounted(() => store.load());
 watch(drawerVisible, async (visible) => {
   if (!visible && selectedItem.value) {
-    await store.updateNote(selectedItem.value.id, selectedItem.value.note);
+    try {
+      await store.updateNote(selectedItem.value.id, selectedItem.value.note);
+      ElMessage.success("收藏备注已保存");
+    } catch (error) {
+      ElMessage.error(error instanceof Error ? error.message : "收藏备注保存失败");
+    }
   }
 });
 
@@ -290,16 +308,38 @@ const filteredFavorites = computed(() => {
   });
 });
 
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize)));
+const pagedFavorites = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredFavorites.value.slice(start, start + pageSize);
+});
+
 const allVisibleSelected = computed(
   () =>
-    filteredFavorites.value.length > 0 &&
-    filteredFavorites.value.every((item) => selectedIds.value.includes(item.id)),
+    pagedFavorites.value.length > 0 &&
+    pagedFavorites.value.every((item) => selectedIds.value.includes(item.id)),
 );
+
+watch([activeType, keyword, sortBy], () => {
+  currentPage.value = 1;
+});
 
 function scoreTone(score: number) {
   if (score >= 90) return "excellent";
   if (score >= 85) return "good";
   return "steady";
+}
+
+function formatSavedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 function toggleSelect(id: number) {
@@ -309,7 +349,7 @@ function toggleSelect(id: number) {
 }
 
 function toggleSelectAll() {
-  const visibleIds = filteredFavorites.value.map((item) => item.id);
+  const visibleIds = pagedFavorites.value.map((item) => item.id);
   if (allVisibleSelected.value) {
     selectedIds.value = selectedIds.value.filter((id) => !visibleIds.includes(id));
     return;
@@ -331,6 +371,7 @@ async function removeFavorite(item: FavoriteRecord) {
     });
     await store.removeMany([item.id]);
     selectedIds.value = selectedIds.value.filter((id) => id !== item.id);
+    currentPage.value = Math.min(currentPage.value, totalPages.value);
     drawerVisible.value = false;
     ElMessage.success("已取消收藏");
   } catch {
@@ -347,6 +388,7 @@ async function removeSelected() {
     });
     await store.removeMany(selectedIds.value);
     selectedIds.value = [];
+    currentPage.value = Math.min(currentPage.value, totalPages.value);
     ElMessage.success("已批量取消收藏");
   } catch {
     // User cancelled the operation.
@@ -617,6 +659,24 @@ function handlePrimaryAction(item: FavoriteRecord) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
+}
+
+.favorites-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.favorites-pagination :deep(.el-pager li.is-active) {
+  background: var(--color-brand);
 }
 
 .favorites-grid.list-mode {

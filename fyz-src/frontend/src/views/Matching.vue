@@ -38,9 +38,9 @@
     <div class="match-grid anim-fade-up anim-delay-2">
       <div
         class="match-card"
-        v-for="item in filteredList"
+        v-for="item in pagedList"
         :key="item.id"
-        @click="$router.push(`/matching/${item.id}`)"
+        @click="openTalent(item)"
       >
         <div class="mc-top">
           <div class="mc-avatar">{{ item.name.charAt(0) }}</div>
@@ -67,6 +67,17 @@
           <el-button text type="primary" size="small">查看详情 →</el-button>
         </div>
       </div>
+    </div>
+    <div v-if="filteredList.length > pageSize" class="matching-pagination">
+      <span>共 {{ filteredList.length }} 位人才</span>
+      <el-pagination
+        v-model:current-page="currentPage"
+        size="small"
+        background
+        layout="prev, pager, next"
+        :page-size="pageSize"
+        :total="filteredList.length"
+      />
     </div>
 
     <!-- Empty state -->
@@ -104,6 +115,8 @@ import { Search, Upload } from "@element-plus/icons-vue";
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import DataState from "@/components/common/DataState.vue";
 import { useTalentStore } from "@/stores/talents";
+import { useHistoryStore } from "@/stores/history";
+import { useRouter } from "vue-router";
 import type { TalentSummary } from "@/domain/types";
 import { dataProvider } from "@/data";
 
@@ -112,11 +125,15 @@ const filterPosition = ref("");
 const filterDept = ref("");
 const filterScore = ref("");
 const sortBy = ref("score");
+const currentPage = ref(1);
+const pageSize = 12;
 const uploadVisible = ref(false);
 const uploading = ref(false);
 const uploadFile = ref<File | null>(null);
 const uploadForm = reactive({ name: "", currentPosition: "", experience: "", education: "", department: "" });
 const store = useTalentStore();
+const historyStore = useHistoryStore();
+const router = useRouter();
 const { talents, loading, error } = storeToRefs(store);
 onMounted(() => store.load());
 
@@ -138,11 +155,34 @@ const filteredList = computed(() => {
   if (filterScore.value) list = list.filter(t => t.score >= Number(filterScore.value));
   return sortList(list);
 });
+const pagedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredList.value.slice(start, start + pageSize);
+});
 
 const urgentCount = computed(() => talents.value.filter(t => t.urgent).length);
 const highMatchCount = computed(() => talents.value.filter(t => t.score >= 90).length);
 
-function applyFilter() {}
+function applyFilter() {
+  currentPage.value = 1;
+}
+
+async function openTalent(item: TalentSummary) {
+  try {
+    await historyStore.record({
+      type: "resume",
+      targetId: item.resume_id,
+      title: item.name,
+      description: `${item.position} · ${item.department}`,
+      source: "人才匹配",
+      tags: [...item.matched, ...item.missing].slice(0, 5),
+      url: `/matching/${item.resume_id}`,
+    });
+  } catch {
+    ElMessage.warning("人才详情已打开，但浏览足迹记录失败");
+  }
+  await router.push(`/matching/${item.resume_id}`);
+}
 
 function onFileChange(file: UploadFile) { uploadFile.value = file.raw || null; }
 function onFileRemove() { uploadFile.value = null; }

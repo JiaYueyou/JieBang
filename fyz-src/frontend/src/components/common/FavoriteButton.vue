@@ -6,6 +6,7 @@
       type="button"
       :aria-label="active ? `取消收藏${title}` : `收藏${title}`"
       :aria-pressed="active"
+      :disabled="pending"
       @click.stop="handleToggle"
     >
       <el-icon>
@@ -18,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { Star, StarFilled } from "@element-plus/icons-vue";
 import { useFavoriteStore } from "@/stores/favorites";
@@ -38,17 +39,26 @@ const props = withDefaults(
 const emit = defineEmits<{ change: [active: boolean] }>();
 const favoriteStore = useFavoriteStore();
 const active = computed(() => favoriteStore.isFavorite(props.type, props.targetId));
+const pending = ref(false);
 
 onMounted(() => favoriteStore.load());
 
 async function handleToggle() {
-  const nextState = await favoriteStore.toggle(props.type, props.targetId, props.title);
-  ElMessage({
-    type: "success",
-    message: nextState ? `已收藏“${props.title}”` : `已取消收藏“${props.title}”`,
-    duration: 1600,
-  });
-  emit("change", nextState);
+  if (pending.value) return;
+  pending.value = true;
+  try {
+    const nextState = await favoriteStore.toggle(props.type, props.targetId, props.title);
+    ElMessage({
+      type: "success",
+      message: nextState ? `已收藏“${props.title}”` : `已取消收藏“${props.title}”`,
+      duration: 1600,
+    });
+    emit("change", nextState);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "收藏操作失败，请稍后重试");
+  } finally {
+    pending.value = false;
+  }
 }
 </script>
 
@@ -95,5 +105,11 @@ async function handleToggle() {
 .favorite-toggle.active:hover {
   border-color: var(--color-warning);
   box-shadow: 0 3px 10px rgba(245, 158, 75, 0.14);
+}
+
+.favorite-toggle:disabled {
+  cursor: wait;
+  opacity: 0.62;
+  transform: none;
 }
 </style>

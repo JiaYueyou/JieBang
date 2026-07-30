@@ -30,6 +30,7 @@ from app.models.internal_transfer import (
     TransferDecision,
     TransferRuleSet,
 )
+from app.models.user_activity import UserBrowseHistory, UserFavorite
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
@@ -40,4 +41,5 @@ __all__ = [
     "AnalysisInsightDecision",
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
+    "UserFavorite", "UserBrowseHistory",
 ]
