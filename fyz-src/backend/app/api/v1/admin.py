@@ -2,13 +2,18 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import require_admin
+from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
+from app.schemas.data_quality import DataQualityDecisionRequest, DataQualityList, RawJobQualityItem
 from app.services.crawler_service import CrawlerService
+from app.services.data_quality_service import DataQualityService
 
 logger = logging.getLogger(__name__)
 
@@ -100,3 +105,56 @@ async def poll_spider(
     except Exception as e:
         logger.exception("轮询爬虫状态失败")
         return ApiResponse(code=500, message=f"轮询失败: {e}")
+
+
+@router.get(
+    "/data-quality/records",
+    response_model=ApiResponse[DataQualityList],
+)
+async def list_data_quality_records(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    source: str | None = Query(default=None, max_length=100),
+    quality_status: str | None = Query(default=None, pattern="^(accepted|warning|rejected|pending)$"),
+    quality_flag: str | None = Query(default=None, max_length=100),
+    near_duplicate_group_id: str | None = Query(default=None, max_length=40),
+    posted_from: datetime | None = Query(default=None),
+    posted_to: datetime | None = Query(default=None),
+    excluded: bool | None = Query(default=None),
+    _principal: TokenPrincipal = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[DataQualityList]:
+    data, meta = await DataQualityService(db).list_records(
+        page=page,
+        page_size=page_size,
+        source=source,
+        quality_status=quality_status,
+        quality_flag=quality_flag,
+        near_duplicate_group_id=near_duplicate_group_id,
+        posted_from=posted_from,
+        posted_to=posted_to,
+        excluded=excluded,
+    )
+    return ApiResponse(data=data, meta=meta)
+
+
+@router.patch(
+    "/data-quality/records/{record_id}",
+    response_model=ApiResponse[RawJobQualityItem],
+)
+async def decide_data_quality_record(
+    record_id: int,
+    payload: DataQualityDecisionRequest,
+    principal: TokenPrincipal = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[RawJobQualityItem]:
+    data = await DataQualityService(db).decide(
+        record_id,
+        action=payload.action,
+        reason=payload.reason,
+        user_id=principal.user_id,
+    )
+    return ApiResponse(
+        message="记录已排除" if payload.action == "exclude" else "记录已恢复",
+        data=data,
+    )

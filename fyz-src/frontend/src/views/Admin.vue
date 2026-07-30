@@ -125,6 +125,9 @@
           <div><span>质量警告</span><strong>{{ validationWarnings }}</strong></div>
           <div><span>成功入库</span><strong>{{ lastImportResult.imported }}</strong></div>
           <div><span>重复跳过</span><strong>{{ lastImportResult.duplicates }}</strong></div>
+          <div><span>近重复标记</span><strong>{{ lastImportResult.near_duplicates }}</strong></div>
+          <div><span>时间异常</span><strong>{{ lastImportResult.time_anomalies }}</strong></div>
+          <div><span>低质量记录</span><strong>{{ lastImportResult.low_quality }}</strong></div>
           <div><span>技能事实</span><strong>{{ lastImportResult.skill_facts }}</strong></div>
           <div><span>已验证事实</span><strong>{{ lastImportResult.verified_skill_facts }}</strong></div>
           <div><span>待验证事实</span><strong>{{ lastImportResult.unverified_skill_facts }}</strong></div>
@@ -173,6 +176,107 @@
             <small>{{ quality.note }}</small>
           </div>
         </div>
+      </article>
+
+      <article class="admin-card quality-review-panel">
+        <div class="card-heading">
+          <div><span>QUALITY REVIEW</span><h2>原始岗位质量审核</h2></div>
+          <span class="healthy-chip">
+            平均质量 {{ ((qualityPage?.summary.average_quality_score ?? 0) * 100).toFixed(1) }}%
+          </span>
+        </div>
+        <div class="quality-review-summary">
+          <div><span>通过</span><strong>{{ qualityPage?.summary.accepted ?? 0 }}</strong></div>
+          <div><span>警告</span><strong>{{ qualityPage?.summary.warning ?? 0 }}</strong></div>
+          <div><span>拒绝</span><strong>{{ qualityPage?.summary.rejected ?? 0 }}</strong></div>
+          <div><span>近重复</span><strong>{{ qualityPage?.summary.near_duplicates ?? 0 }}</strong></div>
+          <div><span>已排除</span><strong>{{ qualityPage?.summary.excluded ?? 0 }}</strong></div>
+        </div>
+        <div class="quality-review-toolbar">
+          <el-select v-model="qualityStatus" clearable placeholder="全部质量状态" @change="refreshQuality(1)">
+            <el-option label="通过" value="accepted" />
+            <el-option label="警告" value="warning" />
+            <el-option label="拒绝" value="rejected" />
+            <el-option label="待评估" value="pending" />
+          </el-select>
+          <el-input
+            v-model="qualitySource"
+            clearable
+            placeholder="按数据源精确筛选"
+            @keyup.enter="refreshQuality(1)"
+            @clear="refreshQuality(1)"
+          />
+          <el-select v-model="qualityExcluded" clearable placeholder="全部处置状态" @change="refreshQuality(1)">
+            <el-option label="正常保留" :value="false" />
+            <el-option label="已排除" :value="true" />
+          </el-select>
+          <el-button :loading="qualityLoading" @click="refreshQuality(1)">刷新</el-button>
+        </div>
+        <el-alert v-if="qualityError" :title="qualityError" type="error" :closable="false" show-icon />
+        <el-table
+          v-loading="qualityLoading"
+          :data="qualityPage?.items ?? []"
+          empty-text="没有符合条件的质量记录"
+          row-key="id"
+        >
+          <el-table-column label="岗位与来源" min-width="230">
+            <template #default="{ row }">
+              <div class="quality-job">
+                <strong>{{ row.title }}</strong>
+                <span>{{ row.source }} · {{ row.company || "公司未标注" }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="发布时间" min-width="145">
+            <template #default="{ row }">
+              <span class="mono">{{ formatQualityDate(row.posted_at, row.posted_at_text) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="质量分" width="105">
+            <template #default="{ row }">
+              <strong class="mono">{{ (row.quality_score * 100).toFixed(1) }}</strong>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="qualityStatusType(row.quality_status)" effect="light">
+                {{ qualityStatusLabel(row.quality_status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="质量标记" min-width="220">
+            <template #default="{ row }">
+              <div class="quality-flags">
+                <el-tag v-for="flag in row.quality_flags" :key="flag" size="small" type="warning">
+                  {{ qualityFlagLabel(flag) }}
+                </el-tag>
+                <span v-if="!row.quality_flags.length">无异常标记</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="处置" width="116" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                v-if="!row.is_excluded"
+                link
+                type="danger"
+                @click="excludeQualityRecord(row)"
+              >
+                排除
+              </el-button>
+              <el-button v-else link type="success" @click="restoreQualityRecord(row)">恢复</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination
+          class="quality-pagination"
+          background
+          layout="prev, pager, next, total"
+          :current-page="qualityPage?.meta.page ?? 1"
+          :page-size="qualityPage?.meta.page_size ?? 20"
+          :total="qualityPage?.meta.total ?? 0"
+          @current-change="refreshQuality"
+        />
       </article>
     </section>
 
@@ -405,9 +509,11 @@ import { useAdminStore } from "@/stores/admin";
 import { useSkillReviewsStore } from "@/stores/skillReviews";
 import DataState from "@/components/common/DataState.vue";
 import type {
+  DataQualityStatus,
   JobImportResult,
   AgentRunAudit,
   AgentRunStatus,
+  RawJobQualityItem,
   SkillFactReviewItem,
   SkillFactReviewSummary,
   SkillFactVerificationStatus,
@@ -422,8 +528,10 @@ const logKeyword = ref("");
 const autoScroll = ref(true);
 const lastImportResult = ref<JobImportResult | null>(null);
 const store = useAdminStore();
-const { data: admin, loading, error } = storeToRefs(store);
 const {
+  data: admin,
+  loading,
+  error,
   agentRuns,
   agentRunsLoading,
   agentRunsTotal,
@@ -431,12 +539,18 @@ const {
   agentRunPageSize,
   agentRunStatus,
   agentRunType,
+  qualityPage,
+  qualityLoading,
+  qualityError,
 } = storeToRefs(store);
 const selectedAgentRun = ref<AgentRunAudit | null>(null);
 const agentRunDrawerVisible = computed({
   get: () => selectedAgentRun.value !== null,
   set: (value) => { if (!value) selectedAgentRun.value = null; },
 });
+const qualityStatus = ref<DataQualityStatus | "">("");
+const qualitySource = ref("");
+const qualityExcluded = ref<boolean | "">("");
 const reviewStore = useSkillReviewsStore();
 const {
   items: reviewItems,
@@ -530,6 +644,7 @@ const filteredLogs = computed(() => logs.value.filter((log) => (!logLevel.value 
 async function refreshSystem() { await store.refresh(); ElMessage.success("系统状态已刷新"); }
 async function selectSection(section: Section) {
   activeSection.value = section;
+  if (section === "crawler") await refreshQuality(1);
   if (section === "review") await reviewStore.load(true);
   if (section === "monitor") await Promise.all([store.load(true), store.loadAgentRuns()]);
 }
@@ -604,6 +719,81 @@ async function runCrawler(crawler: any) {
   }, 2000);
 }
 function viewCrawlerLog(crawler: any) { activeSection.value = "monitor"; logKeyword.value = crawler.name; }
+function createSource() { ElMessage.info("添加数据源表单待后端数据源协议确定后接入"); }
+async function refreshQuality(page = qualityPage.value?.meta.page ?? 1) {
+  await store.loadQuality({
+    page,
+    pageSize: qualityPage.value?.meta.page_size ?? 20,
+    source: qualitySource.value.trim() || undefined,
+    qualityStatus: qualityStatus.value || undefined,
+    excluded: qualityExcluded.value === "" ? undefined : qualityExcluded.value,
+  });
+}
+async function excludeQualityRecord(row: RawJobQualityItem) {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      `排除“${row.title}”后，其技能事实将退出正式图谱。请输入审核原因。`,
+      "排除低质量记录",
+      {
+        confirmButtonText: "确认排除",
+        cancelButtonText: "取消",
+        inputPlaceholder: "例如：发布时间异常且正文不完整",
+        inputValidator: (value: string) => value.trim().length > 0 || "必须填写排除原因",
+        type: "warning",
+      },
+    );
+    await store.decideQuality(Number(row.id), "exclude", value.trim());
+    await refreshQuality();
+    ElMessage.success("记录已排除，关联事实已降级为待验证");
+  } catch (value) {
+    if (value !== "cancel" && value !== "close") {
+      ElMessage.error(errorMessage(value, "排除操作失败"));
+    }
+  }
+}
+async function restoreQualityRecord(row: RawJobQualityItem) {
+  try {
+    await ElMessageBox.confirm(
+      `恢复“${row.title}”并重新执行跨来源事实认证？`,
+      "恢复质量记录",
+      { confirmButtonText: "确认恢复", cancelButtonText: "取消", type: "success" },
+    );
+    await store.decideQuality(Number(row.id), "restore");
+    await refreshQuality();
+    ElMessage.success("记录已恢复，并已重新计算事实认证状态");
+  } catch (value) {
+    if (value !== "cancel" && value !== "close") {
+      ElMessage.error(errorMessage(value, "恢复操作失败"));
+    }
+  }
+}
+function qualityStatusLabel(value: DataQualityStatus) {
+  return { accepted: "通过", warning: "警告", rejected: "拒绝", pending: "待评估" }[value];
+}
+function qualityStatusType(value: DataQualityStatus) {
+  return {
+    accepted: "success",
+    warning: "warning",
+    rejected: "danger",
+    pending: "info",
+  }[value] as "success" | "warning" | "danger" | "info";
+}
+function qualityFlagLabel(value: string) {
+  return {
+    near_duplicate: "近重复",
+    stale: "数据陈旧",
+    missing_posted_at: "缺少发布时间",
+    invalid_posted_at: "发布时间无效",
+    future_posted_at: "发布时间在未来",
+    missing_or_invalid_crawled_at: "采集时间无效",
+    thin_content: "正文过短",
+  }[value] ?? value;
+}
+function formatQualityDate(value: string | null, fallback: string | null) {
+  if (!value) return fallback || "未记录";
+  return new Date(value).toLocaleDateString("zh-CN");
+}
+function saveCrawlerPolicy() { showCrawlerSettings.value = false; ElMessage.success("全局采集策略已保存"); }
 function exportLogs() {
   const content = filteredLogs.value
     .map((log) => [log.time, log.level, log.service, log.message].join("\t"))
@@ -689,10 +879,13 @@ function formatReviewDate(value: string | null) {
 .admin-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:13px}.metric-card{display:flex;align-items:center;gap:11px;min-width:0;padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.metric-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:11px;font-size:17px}.brand{background:var(--color-brand-light);color:var(--color-brand)}.green{background:var(--color-success-light);color:var(--color-success)}.amber{background:var(--color-warning-light);color:var(--color-warning)}.rose{background:var(--color-danger-light);color:var(--color-danger)}.violet{background:#f0edff;color:#7c6ff7}.blue{background:var(--color-info-light);color:var(--color-info)}.metric-copy{display:flex;min-width:0;flex:1;flex-direction:column}.metric-copy span{font-size:14px;color:var(--text-muted)}.metric-copy strong{font:700 22px var(--font-mono);letter-spacing:-.04em}.metric-copy small{font-size:14px}.positive,.green{color:var(--color-success)}.warning,.amber{color:var(--color-warning)}.metric-bars,.spark-bars{display:flex;align-items:flex-end;gap:2px;height:38px}.metric-bars i,.spark-bars i{width:3px;min-height:4px;border-radius:2px;background:var(--color-brand);opacity:.55}.overview-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:13px}.admin-card{border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.card-heading{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 11px}.card-heading>div{display:flex;flex-direction:column}.card-heading span,.section-heading>div>span{font:700 14px var(--font-mono);letter-spacing:.09em;color:var(--text-muted);text-transform:uppercase}.card-heading h2{font-size:14px;margin-top:2px}.healthy-chip,.event-count{padding:4px 8px;border-radius:999px;background:var(--color-success-light);color:var(--color-success)!important;font:700 14px var(--font-sans)!important;letter-spacing:0!important}.service-list,.task-list,.event-list{padding:0 18px 12px}.service-row,.task-row{display:flex;align-items:center;gap:10px;padding:10px 0}.service-row+.service-row,.task-row+.task-row{border-top:1px solid var(--color-border-light)}.service-logo,.task-state{display:grid;width:31px;height:31px;flex:0 0 31px;place-items:center;border-radius:9px}.service-name,.task-row>div{display:flex;min-width:0;flex:1;flex-direction:column}.service-name strong,.task-row strong{font-size:14px}.service-name small,.task-row small{font-size:14px;color:var(--text-muted)}.latency{display:flex;flex-direction:column;align-items:flex-end}.latency strong{font:600 14px var(--font-mono)}.latency small{font-size:14px;color:var(--text-muted)}.service-state{display:flex;align-items:center;gap:4px;color:var(--color-success);font-size:14px;font-weight:600}.service-state i,.live-label i{width:6px;height:6px;border-radius:50%;background:currentColor}.resource-card{padding-bottom:14px}.live-label{display:flex;align-items:center;gap:5px;color:var(--color-success)!important;font:700 14px var(--font-mono)!important}.resource-rings{display:flex;justify-content:space-around;padding:12px 15px 16px}.resource-item{display:flex;align-items:center;flex-direction:column}.resource-ring{display:grid;width:76px;height:76px;place-items:center;border-radius:50%;background:conic-gradient(var(--ring-color) calc(var(--value)*1%),var(--color-bg-muted) 0);position:relative}.resource-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}.resource-ring span{z-index:1;font:700 17px var(--font-mono)}.resource-ring small{font-size:14px}.resource-item>strong{font-size:14px;margin-top:7px}.resource-item>small{font-size:14px;color:var(--text-muted)}.traffic-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px}.traffic-strip div{display:flex;align-items:center;gap:6px;padding:9px;border-radius:8px;background:var(--color-bg-muted);font-size:14px}.traffic-strip strong{margin-left:auto;font:600 14px var(--font-mono)}.task-state.success{background:var(--color-success-light);color:var(--color-success)}.task-state.running{background:var(--color-brand-light);color:var(--color-brand)}.task-state.warning{background:var(--color-warning-light);color:var(--color-warning)}.task-count{font:600 14px var(--font-mono);color:var(--text-secondary)}.task-status{min-width:48px;text-align:right;font-size:14px;font-weight:700}.task-status.success{color:var(--color-success)}.task-status.running{color:var(--color-brand)}.task-status.warning{color:var(--color-warning)}.event-card .event-count{background:var(--color-danger-light);color:var(--color-danger)!important}.event-list button{display:flex;align-items:center;gap:9px;width:100%;padding:10px 0;border:0;border-top:1px solid var(--color-border-light);background:transparent;text-align:left;cursor:pointer}.event-level{display:grid;width:29px;height:29px;place-items:center;border-radius:8px}.event-level.warning{background:var(--color-warning-light)}.event-level.danger{background:var(--color-danger-light);color:var(--color-danger)}.event-level.info{background:var(--color-info-light);color:var(--color-info)}.event-list button>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column}.event-list strong{font-size:14px}.event-list small{font-size:14px;color:var(--text-muted)}.event-list time{font:500 14px var(--font-mono);color:var(--text-muted)}
 .section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:8px 2px 16px}.section-heading h2{font-size:20px;letter-spacing:-.03em}.section-heading p{font-size:14px;color:var(--text-muted);margin-top:3px}.section-actions{display:flex;gap:8px}.crawler-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.crawler-summary>div{display:flex;flex-direction:column;padding:14px 16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.crawler-summary span{font-size:14px;color:var(--text-muted)}.crawler-summary strong{font:700 20px var(--font-mono)}.crawler-summary small{font-size:14px;color:var(--text-muted)}.crawler-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:13px}.crawler-card{padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff;transition:.2s}.crawler-card.paused{opacity:.72;background:var(--color-bg-muted)}.crawler-head{display:flex;align-items:center;gap:10px}.source-logo{display:grid;width:39px;height:39px;place-items:center;border-radius:11px;background:var(--color-brand-light);color:var(--color-brand);font-weight:700}.crawler-head>div{min-width:0;flex:1}.crawler-head h3{font-size:14px}.crawler-head p{font-size:14px;color:var(--text-muted)}.crawler-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.crawler-stats div{display:flex;flex-direction:column;padding:8px;border-radius:8px;background:var(--color-bg-muted)}.crawler-stats span,.crawler-progress span,.crawler-meta{font-size:14px;color:var(--text-muted)}.crawler-stats strong{font:600 14px var(--font-mono)}.crawler-progress>div{display:flex;justify-content:space-between;margin-bottom:5px}.crawler-progress strong{font:600 14px var(--font-mono)}.crawler-meta{display:flex;justify-content:space-between;margin-top:9px}.crawler-meta span{display:flex;align-items:center;gap:4px}.crawler-card footer{display:flex;gap:5px;padding-top:11px;margin-top:11px;border-top:1px solid var(--color-border-light)}.crawler-card footer button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;height:29px;border:1px solid var(--color-border);border-radius:7px;background:#fff;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.crawler-card footer button:first-child{border-color:var(--color-brand);color:var(--color-brand)}.crawler-card footer button:disabled{opacity:.5;cursor:not-allowed}.quality-panel{padding-bottom:16px}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 18px}.quality-grid>div{padding:12px;border-radius:9px;background:var(--color-bg-muted)}.quality-grid span{font-size:14px;color:var(--text-muted)}.quality-grid strong{display:block;font:700 17px var(--font-mono);margin:2px 0 7px}.quality-grid small{font-size:14px;color:var(--text-muted)}
 .import-result{padding:16px;margin-bottom:13px;border:1px solid color-mix(in srgb,var(--color-success) 35%,var(--color-border));border-radius:var(--radius-lg);background:color-mix(in srgb,var(--color-success) 5%,#fff)}.import-result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.import-result-head>div{display:flex;flex-direction:column}.import-result-head span{font-size:13px;color:var(--text-muted)}.import-result-head strong{font-size:14px}.import-result-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.import-result-grid>div{padding:9px 10px;border-radius:8px;background:#fff}.import-result-grid span{display:block;font-size:12px;color:var(--text-muted)}.import-result-grid strong{font:700 16px var(--font-mono)}
+.quality-review-panel{margin-top:13px;overflow:hidden}.quality-review-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 18px 12px}.quality-review-summary>div{padding:10px 12px;border-radius:8px;background:var(--color-bg-muted)}.quality-review-summary span{display:block;font-size:12px;color:var(--text-muted)}.quality-review-summary strong{font:700 17px var(--font-mono)}.quality-review-toolbar{display:flex;gap:8px;padding:0 18px 14px}.quality-review-toolbar .el-select{width:150px}.quality-review-toolbar .el-input{max-width:260px}.quality-job{display:flex;min-width:0;flex-direction:column}.quality-job strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quality-job span,.quality-flags>span{font-size:12px;color:var(--text-muted)}.quality-flags{display:flex;flex-wrap:wrap;gap:4px}.mono{font-family:var(--font-mono)}.quality-pagination{justify-content:center;padding:15px 18px}
 .review-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:11px;padding:6px;border:1px solid var(--color-border);border-radius:12px;background:#fff}.review-summary button{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);font:600 13px var(--font-sans);cursor:pointer}.review-summary button.active{background:var(--color-brand-light);color:var(--color-brand)}.review-summary strong{padding:2px 7px;border-radius:999px;background:#fff;font:700 12px var(--font-mono)}.review-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}.review-toolbar .el-input{max-width:480px}.review-toolbar>span{margin-left:auto;font:600 12px var(--font-mono);color:var(--text-muted)}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.review-card{position:relative;overflow:hidden;padding:17px 17px 14px 21px;border:1px solid var(--color-border);border-radius:13px;background:#fff;box-shadow:0 4px 14px rgba(32,36,55,.04)}.review-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--color-warning)}.review-card.review-verified:before{background:var(--color-success)}.review-card.review-rejected:before{background:var(--color-danger)}.review-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.review-card header small{font:600 11px var(--font-mono);letter-spacing:.08em;color:var(--text-muted)}.review-card h3{margin-top:2px;font-size:20px}.review-card header>span{padding:4px 8px;border-radius:999px;background:var(--color-warning-light);color:var(--color-warning);font-size:12px;font-weight:700}.review-card header>span.verified{background:var(--color-success-light);color:var(--color-success)}.review-card header>span.rejected{background:var(--color-danger-light);color:var(--color-danger)}.review-job{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 10px;padding:9px 11px;border-radius:8px;background:var(--color-bg-muted)}.review-job>div{display:flex;min-width:0;flex-direction:column}.review-job small,.review-job>div>span{font-size:12px;color:var(--text-muted)}.review-job strong{overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.review-job>a,.review-job>span{flex:0 0 auto;color:var(--color-brand);font-size:12px;font-weight:700;text-decoration:none}.review-card blockquote{margin:0;padding:11px 12px;border:1px solid #e7eaf4;border-radius:9px;background:#fbfbfd}.review-card blockquote small{font:700 11px var(--font-mono);letter-spacing:.07em;color:var(--text-muted)}.review-card blockquote p{margin-top:5px;color:#34394a;font-size:13px;line-height:1.65}.review-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}.review-signals span{padding:7px;border-radius:7px;background:var(--color-bg-muted);font-size:11px;color:var(--text-muted)}.review-signals strong{display:block;margin-top:2px;font:700 12px var(--font-mono);color:var(--text-secondary)}.review-audit{margin-top:10px;padding:9px 11px;border-left:3px solid var(--color-border);background:var(--color-bg-muted)}.review-audit small{font:600 11px var(--font-mono);color:var(--text-muted)}.review-audit p{margin-top:3px;font-size:13px;color:var(--text-secondary)}.review-card footer{display:flex;justify-content:flex-end;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border-light)}.review-pagination{justify-content:center;margin-top:16px}.reject-fact-context{margin-bottom:12px;padding:11px;border-radius:9px;background:var(--color-bg-muted)}.reject-fact-context span{display:block;font:700 12px var(--font-mono);color:var(--color-danger)}.reject-fact-context strong{display:block;margin:3px 0;font-size:14px}.reject-fact-context p{font-size:13px;color:var(--text-muted)}
 .performance-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.performance-card{position:relative;overflow:hidden;padding:15px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.performance-card>span{font-size:14px;color:var(--text-muted)}.performance-card>strong{display:block;font:700 20px var(--font-mono)}.performance-card>small{font-size:14px}.spark-bars{position:absolute;right:13px;bottom:13px;height:33px}.monitor-grid{margin-bottom:13px}.endpoint-list{padding:0 18px 14px}.endpoint-list>div{display:grid;grid-template-columns:54px 1.2fr 1fr 90px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--color-border-light)}.method{padding:2px 4px;border-radius:4px;font:700 12px var(--font-mono);text-align:center}.method.get{background:var(--color-success-light);color:var(--color-success)}.method.post{background:var(--color-brand-light);color:var(--color-brand)}.method.patch{background:var(--color-warning-light);color:var(--color-warning)}.endpoint-list code{overflow:hidden;font-size:14px;text-overflow:ellipsis}.endpoint-bar{height:4px;border-radius:999px;background:var(--color-bg-muted)}.endpoint-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--color-brand),var(--color-success))}.endpoint-list strong{font:600 14px var(--font-mono);text-align:right}.log-panel{overflow:hidden}.log-toolbar{display:flex;align-items:center;justify-content:space-between;padding:14px 17px}.log-toolbar>div:first-child{display:flex;flex-direction:column}.log-toolbar span{font:700 14px var(--font-mono);color:var(--text-muted)}.log-toolbar h2{font-size:14px}.log-toolbar>div:last-child{display:flex;align-items:center;gap:7px}.log-console{max-height:340px;overflow:auto;padding:8px 12px 12px;background:#1d2130;color:#cfd5e6;font:14px/1.8 var(--font-mono)}.log-line{display:grid;grid-template-columns:118px 48px 150px 1fr;gap:8px;padding:3px 5px;border-radius:4px}.log-line:hover{background:rgba(255,255,255,.04)}.log-line time{color:#747d94}.log-level{font-weight:700}.log-level.info{color:#68b4ff}.log-level.warn{color:#f6b85d}.log-level.error{color:#ff7474}.log-service{overflow:hidden;color:#8e9abb;text-overflow:ellipsis;white-space:nowrap}.log-line code{color:#d8deec;white-space:normal}
 @media(max-width:1200px){.admin-nav{flex-wrap:wrap}.admin-nav-items{grid-template-columns:repeat(2,1fr);flex-basis:100%}.admin-status{width:100%;justify-content:flex-end;border-top:1px solid var(--color-border-light);border-left:0;border-radius:0 0 9px 9px}.admin-metrics,.crawler-summary,.performance-grid{grid-template-columns:repeat(2,1fr)}.import-result-grid{grid-template-columns:repeat(3,1fr)}.overview-grid{grid-template-columns:1fr}}@media(max-width:900px){.review-grid{grid-template-columns:1fr}}@media(max-width:768px){.section-heading{align-items:stretch;flex-direction:column}.admin-nav-items{grid-template-columns:1fr 1fr}.crawler-grid{grid-template-columns:1fr}.quality-grid{grid-template-columns:1fr 1fr}.review-summary{grid-template-columns:1fr 1fr}.review-toolbar{align-items:stretch;flex-wrap:wrap}.review-toolbar .el-input{max-width:none;flex-basis:100%}.review-toolbar>span{display:none}.log-toolbar{align-items:stretch;flex-direction:column;gap:10px}.log-toolbar>div:last-child{flex-wrap:wrap}.resource-rings{gap:8px}.resource-ring{width:65px;height:65px}.endpoint-list>div{grid-template-columns:54px 1fr 90px}.endpoint-bar{display:none}.log-line{grid-template-columns:105px 44px 1fr}.log-line code{grid-column:1/-1}}@media(max-width:540px){.admin-metrics,.crawler-summary,.performance-grid,.quality-grid,.import-result-grid{grid-template-columns:1fr}.admin-nav small{display:none}.admin-status{justify-content:flex-start}.metric-card{min-height:80px}.review-signals{grid-template-columns:1fr 1fr}.review-job{align-items:flex-start;flex-direction:column}}
 .agent-run-panel{overflow:hidden;margin-bottom:13px}.agent-run-pagination{justify-content:flex-end;padding:14px 17px}.agent-output{margin-top:18px}.agent-output>strong{display:block;margin-bottom:8px}.agent-output pre{max-height:360px;overflow:auto;padding:12px;border-radius:9px;background:#1d2130;color:#d8deec;font:12px/1.6 var(--font-mono);white-space:pre-wrap;word-break:break-word}
 .admin-status.degraded{background:var(--color-warning-light)}.admin-status.degraded .status-pulse{background:var(--color-warning)}.admin-status.unavailable{background:var(--color-danger-light)}.admin-status.unavailable .status-pulse{background:var(--color-danger)}.service-state.degraded{color:var(--color-warning)}.service-state.unavailable{color:var(--color-danger)}.traffic-strip div{flex-wrap:wrap}.traffic-strip small{flex-basis:100%;padding-left:22px;color:var(--text-muted)}.event-list .el-empty,.task-list .el-empty{padding:18px 0}
+@media(max-width:768px){.quality-review-summary{grid-template-columns:repeat(2,1fr)}.quality-review-toolbar{align-items:stretch;flex-wrap:wrap}.quality-review-toolbar .el-input{max-width:none;flex:1 1 100%}}
+@media(max-width:540px){.quality-review-summary{grid-template-columns:1fr}}
 }
 </style>

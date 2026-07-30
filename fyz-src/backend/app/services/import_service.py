@@ -11,7 +11,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import DATA_DIR
 from app.core.exceptions import InvalidParameterError
-from app.models import JobSkillFact, RawJobRecord, SourceDocument
+from app.core.time import utc_now
+from app.domain.data_quality import (
+    QualityPolicy,
+    apply_near_duplicate_penalty,
+    evaluate_job_quality,
+    near_duplicate_group_id,
+    simhash_similarity,
+)
+from app.domain.job_standardizer import infer_job_stack, standardize_job_title
+from app.models import (
+    JobSkillFact,
+    RawJobRecord,
+    Skill,
+    SourceDocument,
+    SourceTrustPolicy,
+    StandardJob,
+    StandardJobSource,
+)
 from app.repositories import SkillRepository
 from app.services.job_import_schema import normalize_and_validate_records
 from app.services.skill_extractor import content_fingerprint, normalize_text
@@ -80,15 +97,33 @@ class ImportService:
             records.extend(normalized)
         total = len(records)
         imported = duplicates = facts = 0
+        near_duplicates = low_quality = time_anomalies = 0
+        quality_status_counts = {"accepted": 0, "warning": 0, "rejected": 0}
         imported_raw_ids: list[int] = []
         for index, record in enumerate(records, start=1):
             fingerprint = content_fingerprint(record)
-            if await self.repository.get_source_by_fingerprint(fingerprint):
+            source_name = normalize_text(record.get("source")) or "unknown"
+            external_id = normalize_text(record.get("external_id")) or None
+            identity_match = (
+                await self.repository.get_source_by_identity(
+                    source=source_name,
+                    external_id=external_id,
+                )
+                if external_id
+                else None
+            )
+            if identity_match or await self.repository.get_source_by_fingerprint(fingerprint):
                 duplicates += 1
             else:
+                policy = await self._quality_policy(source_name)
+                evaluation = evaluate_job_quality(
+                    record,
+                    policy=policy,
+                    evaluated_at=utc_now(),
+                )
                 source = SourceDocument(
-                    source=normalize_text(record.get("source")) or "unknown",
-                    external_id=None,
+                    source=source_name,
+                    external_id=external_id,
                     url=normalize_text(record.get("url")) or None,
                     title=normalize_text(record.get("title"))[:255],
                     company=normalize_text(record.get("company"))[:255] or None,
@@ -114,10 +149,40 @@ class ImportService:
                     keywords=normalize_text(record.get("keywords") or record.get("keyword")),
                     posted_at_text=normalize_text(record.get("posted_at"))[:100] or None,
                     crawled_at_text=normalize_text(record.get("crawled_at"))[:100] or None,
+                    posted_at=evaluation.posted_at,
+                    crawled_at=evaluation.crawled_at,
                     dedup_status="unique",
-                    normalized_data={"source_file_schema": "job-v1"},
+                    quality_score=evaluation.quality_score,
+                    freshness_score=evaluation.freshness_score,
+                    source_trust_score=evaluation.source_trust_score,
+                    quality_status=evaluation.quality_status,
+                    quality_flags=list(evaluation.quality_flags),
+                    content_simhash=evaluation.content_simhash,
+                    quality_policy_version=evaluation.policy_version,
+                    quality_evaluated_at=evaluation.evaluated_at,
+                    normalized_data={
+                        "source_file_schema": "job-v1",
+                        "quality_policy_version": evaluation.policy_version,
+                    },
                 )
                 await self.repository.add_source_and_raw(source=source, raw=raw)
+                await self._ensure_standard_job(raw)
+                if await self._mark_near_duplicate(
+                    raw,
+                    fingerprint=fingerprint,
+                    threshold=policy.near_duplicate_threshold,
+                ):
+                    near_duplicates += 1
+                quality_status_counts[raw.quality_status] += 1
+                if raw.quality_status == "rejected":
+                    low_quality += 1
+                if {
+                    "missing_posted_at",
+                    "invalid_posted_at",
+                    "future_posted_at",
+                    "missing_or_invalid_crawled_at",
+                }.intersection(raw.quality_flags or []):
+                    time_anomalies += 1
                 output = await self.skill_service.extract_text(
                     jd_text=raw.jd_text,
                     responsibilities=raw.responsibilities,
@@ -138,34 +203,198 @@ class ImportService:
         return {
             "files": files, "total": total, "imported": imported,
             "duplicates": duplicates, "skill_facts": facts,
+            "near_duplicates": near_duplicates,
+            "low_quality": low_quality,
+            "time_anomalies": time_anomalies,
+            "quality_status_counts": quality_status_counts,
+            "cross_source_verified": verification["verified_skill_facts"],
             "validation": validation,
             **verification,
         }
 
+    async def _quality_policy(self, source: str) -> QualityPolicy:
+        row = await self.db.scalar(
+            select(SourceTrustPolicy).where(
+                SourceTrustPolicy.source == source,
+                SourceTrustPolicy.enabled.is_(True),
+            )
+        )
+        if row is not None:
+            return QualityPolicy(
+                source_trust_score=row.trust_score,
+                freshness_window_days=row.freshness_window_days,
+                policy_version=row.policy_version,
+            )
+        lowered = source.casefold()
+        trust = 0.95 if "讯飞" in source or "ifly" in lowered else 0.85 if "智联" in source or "zhaopin" in lowered else 0.7
+        row = SourceTrustPolicy(
+            source=source,
+            trust_score=trust,
+            freshness_window_days=90,
+            enabled=True,
+            policy_version="phase1-v1",
+        )
+        self.db.add(row)
+        await self.db.flush()
+        return QualityPolicy(
+            source_trust_score=row.trust_score,
+            freshness_window_days=row.freshness_window_days,
+            policy_version=row.policy_version,
+        )
+
+    async def _ensure_standard_job(self, raw: RawJobRecord) -> StandardJob:
+        name, key, level, confidence = standardize_job_title(
+            raw.standardized_title or raw.title
+        )
+        standard = await self.db.scalar(
+            select(StandardJob).where(StandardJob.canonical_key == key)
+        )
+        if standard is None:
+            standard = StandardJob(
+                name=name,
+                canonical_key=key,
+                aliases=[],
+                stack=infer_job_stack(name),
+                level=level,
+                description=f"由多来源岗位数据聚合形成的{name}能力模型。",
+                source_count=0,
+            )
+            self.db.add(standard)
+            await self.db.flush()
+        aliases = set(standard.aliases or [])
+        if raw.title != standard.name:
+            aliases.add(raw.title)
+        standard.aliases = sorted(aliases)
+        raw.standardized_title = standard.name
+        raw.standard_job_id = standard.id
+        link = await self.db.scalar(
+            select(StandardJobSource).where(
+                StandardJobSource.source_type == "raw",
+                StandardJobSource.source_id == raw.id,
+            )
+        )
+        if link is None:
+            self.db.add(
+                StandardJobSource(
+                    standard_job_id=standard.id,
+                    source_type="raw",
+                    source_id=raw.id,
+                    original_title=raw.title,
+                    confidence=confidence,
+                )
+            )
+            standard.source_count += 1
+        await self.db.flush()
+        return standard
+
+    async def _mark_near_duplicate(
+        self,
+        raw: RawJobRecord,
+        *,
+        fingerprint: str,
+        threshold: float,
+    ) -> bool:
+        if raw.standard_job_id is None or not raw.content_simhash:
+            return False
+        rows = (
+            await self.db.execute(
+                select(RawJobRecord, SourceDocument.content_fingerprint)
+                .join(
+                    SourceDocument,
+                    SourceDocument.id == RawJobRecord.source_document_id,
+                )
+                .where(
+                    RawJobRecord.id != raw.id,
+                    RawJobRecord.standard_job_id == raw.standard_job_id,
+                    RawJobRecord.content_simhash.is_not(None),
+                )
+            )
+        ).all()
+        best: tuple[RawJobRecord, str, float] | None = None
+        for candidate, candidate_fingerprint in rows:
+            similarity = simhash_similarity(
+                raw.content_simhash,
+                candidate.content_simhash,
+            )
+            if best is None or similarity > best[2]:
+                best = (candidate, candidate_fingerprint, similarity)
+        if best is None or best[2] < threshold:
+            return False
+        candidate, candidate_fingerprint, similarity = best
+        group_id = (
+            candidate.near_duplicate_group_id
+            or near_duplicate_group_id(fingerprint, candidate_fingerprint)
+        )
+        for item in (candidate, raw):
+            item.dedup_status = "near_duplicate"
+            item.near_duplicate_group_id = group_id
+            item.near_duplicate_score = max(
+                float(item.near_duplicate_score or 0),
+                similarity,
+            )
+            flags = set(item.quality_flags or [])
+            flags.add("near_duplicate")
+            item.quality_flags = sorted(flags)
+            item.quality_score = apply_near_duplicate_penalty(
+                float(item.quality_score or 0),
+                similarity,
+            )
+        await self.db.flush()
+        return True
+
     async def _cross_validate_facts(self, imported_raw_ids: list[int]) -> dict[str, int]:
         rows = await self.db.execute(
             select(
+                RawJobRecord.standard_job_id,
                 JobSkillFact.skill_id,
                 func.count(distinct(SourceDocument.source)),
             )
             .join(RawJobRecord, JobSkillFact.raw_job_record_id == RawJobRecord.id)
             .join(SourceDocument, RawJobRecord.source_document_id == SourceDocument.id)
-            .where(JobSkillFact.raw_job_record_id.is_not(None))
-            .group_by(JobSkillFact.skill_id)
+            .join(Skill, Skill.id == JobSkillFact.skill_id)
+            .where(
+                JobSkillFact.raw_job_record_id.is_not(None),
+                RawJobRecord.standard_job_id.is_not(None),
+                RawJobRecord.quality_status.in_(("accepted", "warning")),
+                RawJobRecord.is_excluded.is_(False),
+                Skill.validation_status == "approved",
+            )
+            .group_by(RawJobRecord.standard_job_id, JobSkillFact.skill_id)
         )
-        source_counts = dict(rows.all())
+        source_counts = {
+            (standard_job_id, skill_id): int(count)
+            for standard_job_id, skill_id, count in rows
+        }
         facts = (
             await self.db.execute(
-                select(JobSkillFact).where(JobSkillFact.raw_job_record_id.is_not(None))
+                select(
+                    JobSkillFact,
+                    RawJobRecord.standard_job_id,
+                    RawJobRecord.quality_status,
+                    RawJobRecord.is_excluded,
+                    Skill.validation_status,
+                )
+                .join(RawJobRecord, JobSkillFact.raw_job_record_id == RawJobRecord.id)
+                .join(Skill, Skill.id == JobSkillFact.skill_id)
+                .where(JobSkillFact.raw_job_record_id.is_not(None))
             )
-        ).scalars()
-        for fact in facts:
+        ).all()
+        for fact, standard_job_id, quality_status, is_excluded, skill_status in facts:
             if fact.verification_status == "rejected":
                 continue
-            fact.source_count = int(source_counts.get(fact.skill_id, 1))
+            fact.source_count = source_counts.get(
+                (standard_job_id, fact.skill_id),
+                1,
+            )
             fact.verification_status = (
                 "verified"
-                if fact.source_count >= 2 and fact.confidence >= 0.75
+                if (
+                    fact.source_count >= 2
+                    and fact.confidence >= 0.75
+                    and quality_status in {"accepted", "warning"}
+                    and not is_excluded
+                    and skill_status == "approved"
+                )
                 else "unverified"
             )
         await self.db.flush()

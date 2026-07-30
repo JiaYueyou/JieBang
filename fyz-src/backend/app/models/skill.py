@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -30,6 +31,9 @@ class Skill(Base):
     canonical_key: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     aliases: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    validation_status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="approved", index=True
+    )
     graph_node_id: Mapped[str | None] = mapped_column(String(120), unique=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
@@ -59,6 +63,9 @@ class RawJobRecord(Base):
     source_document_id: Mapped[int] = mapped_column(
         ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False, unique=True
     )
+    standard_job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("standard_job.id"), index=True
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     standardized_title: Mapped[str | None] = mapped_column(String(255), index=True)
     company: Mapped[str | None] = mapped_column(String(255))
@@ -72,11 +79,52 @@ class RawJobRecord(Base):
     keywords: Mapped[str] = mapped_column(Text, nullable=False, default="")
     posted_at_text: Mapped[str | None] = mapped_column(String(100))
     crawled_at_text: Mapped[str | None] = mapped_column(String(100))
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    crawled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     dedup_status: Mapped[str] = mapped_column(String(20), nullable=False, default="unique")
+    quality_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    freshness_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    source_trust_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    quality_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    quality_flags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    content_simhash: Mapped[str | None] = mapped_column(String(16), index=True)
+    near_duplicate_group_id: Mapped[str | None] = mapped_column(String(40), index=True)
+    near_duplicate_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    quality_policy_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="phase1-v1"
+    )
+    quality_evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_excluded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
+    exclusion_reason: Mapped[str | None] = mapped_column(String(500))
+    excluded_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"))
+    excluded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     normalized_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     source_document: Mapped[SourceDocument] = relationship(lazy="selectin")
+
+
+class SourceTrustPolicy(Base):
+    __tablename__ = "source_trust_policy"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    trust_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
+    freshness_window_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    policy_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="phase1-v1"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class JobSkillFact(Base):
@@ -143,19 +191,12 @@ class AsyncTask(Base):
             name="uq_async_task_idempotency",
         ),
     )
-    __table_args__ = (
-        UniqueConstraint(
-            "created_by", "task_type", "idempotency_key",
-            name="uq_async_task_idempotency",
-        ),
-    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     request_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    idempotency_key: Mapped[str | None] = mapped_column(String(64))
     idempotency_key: Mapped[str | None] = mapped_column(String(64))
     result: Mapped[dict | None] = mapped_column(JSON)
     error_code: Mapped[str | None] = mapped_column(String(100))

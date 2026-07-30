@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.time import utc_now_naive
 from app.models import (
     AgentRun,
     AsyncTask,
@@ -41,9 +40,17 @@ class SkillRepository:
     async def get_skill(self, skill_id: int) -> Skill | None:
         return await self.db.get(Skill, skill_id)
 
-    async def get_or_create_skill(self, *, name: str, canonical_key: str, category: str, aliases: list[str]) -> Skill:
+    async def get_or_create_skill(
+        self,
+        *,
+        name: str,
+        canonical_key: str,
+        category: str,
+        aliases: list[str],
+        validation_status: str = "approved",
+    ) -> Skill:
         row = (await self.db.execute(select(Skill).where(Skill.canonical_key == canonical_key))).scalar_one_or_none()
-        now = datetime.utcnow()
+        now = utc_now_naive()
         if row:
             row.last_seen_at = now
             merged = sorted(set(row.aliases or []) | set(aliases))
@@ -52,6 +59,7 @@ class SkillRepository:
         row = Skill(
             name=name, canonical_name=name, canonical_key=canonical_key,
             category=category, aliases=aliases, first_seen_at=now, last_seen_at=now,
+            validation_status=validation_status,
         )
         self.db.add(row)
         await self.db.flush()
@@ -61,6 +69,21 @@ class SkillRepository:
         return (await self.db.execute(
             select(SourceDocument).where(SourceDocument.content_fingerprint == fingerprint)
         )).scalar_one_or_none()
+
+    async def get_source_by_identity(
+        self,
+        *,
+        source: str,
+        external_id: str,
+    ) -> SourceDocument | None:
+        return (
+            await self.db.execute(
+                select(SourceDocument).where(
+                    SourceDocument.source == source,
+                    SourceDocument.external_id == external_id,
+                )
+            )
+        ).scalar_one_or_none()
 
     async def add_source_and_raw(self, *, source: SourceDocument, raw: RawJobRecord) -> RawJobRecord:
         self.db.add(source)

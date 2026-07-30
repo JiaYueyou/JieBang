@@ -52,6 +52,7 @@ async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
                 source_document_id=document.id, title=title, company="A", jd_text="Python Redis",
                 responsibilities="", requirements="", keywords="python",
                 dedup_status="unique", normalized_data={},
+                quality_status="accepted", quality_score=.9,
             )
             db.add(raw)
             await db.flush()
@@ -104,6 +105,7 @@ async def test_top_candidate_is_saved_unverified_without_llm():
                 source_document_id=document.id, title="Python 工程师", jd_text="Python",
                 responsibilities="", requirements="", keywords="python",
                 dedup_status="unique", normalized_data={},
+                quality_status="accepted", quality_score=.9,
             )
             db.add(raw)
             await db.flush()

@@ -1,0 +1,168 @@
+# FYZ 优化 Phase 1 数据质量与事实认证实施记录
+
+> 实施日期：2026-07-30
+>
+> 对应计划：[FYZ 数据链路、图谱、Agent 防幻觉与 RAG 优化计划](./FYZ数据链路图谱Agent防幻觉与RAG优化计划.md)
+>
+> 当前结论：Phase 1 工程开发、真实库迁移与回填、Neo4j 重建、管理端审核闭环和自动化回归已完成。
+
+## 1. 数据安全与迁移
+
+迁移前已完成 `jie_bang` 全库结构与数据备份：
+
+| 项目 | 结果 |
+|---|---|
+| 备份文件 | `E:\Backups\JieBang\mysql\jie_bang-20260730-225931.sql` |
+| 大小 | 1,839,134 字节（约 1.75 MiB） |
+| SHA-256 | `1AB003268E8E6853A2F8AADC4B5DBBCB5C022936E69A301F93E5195AE04662EC` |
+| 表数量核验 | 30 |
+
+数据库从 Alembic `20260730_0012` 升级到 `20260730_0013`。迁移增加：
+
+- 原始岗位的标准岗位外键、结构化发布时间和采集时间。
+- 质量分、时效分、来源信任分、质量状态和问题标记。
+- SimHash、近重复组、相似度和策略版本。
+- 可逆排除、排除原因、操作人和操作时间。
+- 技能 `validation_status`。
+- `source_trust_policy` 来源策略表。
+
+迁移保留旧文本时间和既有事实状态，提供 downgrade，不删除原始数据。
+
+## 2. 数据质量链路
+
+### 2.1 时间与质量评分
+
+新增确定性时间解析和评分规则，覆盖：
+
+- ISO 8601、`Z` 和时区偏移。
+- 中文年月日。
+- 今天、昨天、N 天前。
+- 爬虫文本中的“更新于 6月3日”等日期。
+- 缺失、无效、未来和过期时间标记。
+
+质量分拆分为 `quality_score`、`freshness_score` 和 `source_trust_score`，不能相互替代。当前真实来源策略：
+
+| 来源 | 信任分 | 时效窗口 | 策略版本 |
+|---|---:|---:|---|
+| 科大讯飞招聘 | 0.95 | 90 天 | `phase1-v1` |
+| 智联招聘 | 0.85 | 90 天 | `phase1-v1` |
+
+### 2.2 精确去重与近重复
+
+- 保留 SHA-256 内容指纹幂等检测。
+- 新增 `(source, external_id)` 稳定来源身份去重。
+- 新增正文规范化、常见招聘同义表达归一和 64 位 SimHash。
+- 近重复记录保留来源链，不自动删除；相似记录进入稳定近重复组并在质量评分中降权。
+- 近重复只在同一标准岗位内比较，避免相似模板跨岗位误合并。
+
+### 2.3 事实认证
+
+跨源认证已从全局 `skill_id` 改为：
+
+```text
+(standard_job_id, skill_id) + 独立来源平台
+```
+
+只有质量状态为 `accepted/warning`、未被排除、技能已批准、置信度达标且至少两个独立来源支持的事实，才可标记为 `verified`。LLM 新发现技能默认进入 `pending_review`，不能直接成为正式技能。
+
+图谱聚合只读取通过质量门禁且未排除的原始记录，以及已批准技能和已认证事实。
+
+## 3. 真实数据回填与对账
+
+回填脚本支持默认 dry-run 和显式 `--apply`：
+
+```powershell
+Set-Location E:\Project\JieBang\fyz-src\backend
+& 'E:\Computer_tools\Anaconda\dld\envs\jiebang\python.exe' scripts\backfill_phase1_data_quality.py
+& 'E:\Computer_tools\Anaconda\dld\envs\jiebang\python.exe' scripts\backfill_phase1_data_quality.py --apply
+```
+
+最终回填结果：
+
+| 指标 | 数量 |
+|---|---:|
+| 原始岗位 | 190 |
+| `accepted` | 175 |
+| `warning` | 15 |
+| 近重复标记 | 28 |
+| 过期标记 | 10 |
+| 正文过短标记 | 1 |
+| 原始岗位已认证技能事实 | 38 |
+| 原始岗位待认证技能事实 | 1,101 |
+
+全库事实对账为 `verified=41`、`unverified=1,102`；比原先全局技能聚合得到的 1,000 条已认证事实显著下降。这是认证粒度纠偏结果，不是数据丢失：原始岗位、来源文档和事实总数均保持不变。
+
+历史图谱快照与同步批次曾混用 MySQL 上海本地时间和 UTC-naive 应用时间。回填只修复“创建时间晚于开始/完成时间且差值不超过 12 小时”的记录，共 24 条。最新快照时间为 `2026-07-30T15:50:09Z -> 2026-07-30T15:50:10Z`，顺序正确。
+
+## 4. 图谱重建
+
+按 MySQL 新质量门禁重建 `namespace=jiebang`，未影响其他命名空间：
+
+| 项目 | 结果 |
+|---|---|
+| 快照 ID | `f28d55ac-123a-4f04-9e11-7bd63bbaa2bc` |
+| 版本 | `20260730T155008-f28d55ac` |
+| 标准岗位 | 130 |
+| 节点 | 152 |
+| 关系 | 189 |
+| 聚合岗位技能事实 | 9 |
+
+重建前旧图谱为 360 个节点、1,650 条关系。规模下降来自严格的同岗位跨来源认证和质量门禁；Neo4j 仍是可从 MySQL 重建的读模型。
+
+## 5. Admin 审核闭环
+
+新增管理员 API：
+
+```text
+GET   /api/v1/admin/data-quality/records
+PATCH /api/v1/admin/data-quality/records/{id}
+```
+
+支持按来源、质量状态、质量标记、近重复组、时间范围和排除状态筛选。管理端采集中心已接入真实 API，展示：
+
+- 通过、警告、拒绝、近重复和已排除统计。
+- 岗位来源、发布时间、质量分、质量状态和异常标记。
+- 导入后的时间异常、近重复、低质量和跨源认证数量。
+- 必须填写原因的排除操作。
+- 恢复后重新执行跨来源事实认证。
+
+排除不会删除原始数据，只会使关联事实退出正式认证；恢复操作可逆。
+
+## 6. 评测种子审核与可执行评测
+
+100 条种子集已完成用户授权的工程语义审核：
+
+- `approved=100`
+- `rejected=0`
+- `release_gate=true`
+- `human_domain_gold=false`
+
+可执行报告：
+
+- [Phase 1 数据质量评测报告](../../fyz-src/backend/evaluation/phase1_data_quality_report.md)
+- [机器可读 JSON](../../fyz-src/backend/evaluation/phase1_data_quality_report.json)
+
+当前结果：
+
+| 指标 | 结果 |
+|---|---:|
+| 精确身份/近重复类型分类准确率 | 100%（20/20） |
+| 时效分类准确率 | 100%（15/15） |
+| 近重复阈值 | 0.9 |
+
+解释边界：重复样本覆盖精确与近重复正样本，但没有大规模生产负样本，因此不能据此宣称生产精确率；评测集是工程审核种子集，不是业务专家人工领域金标。
+
+## 7. 验证记录
+
+- 后端完整回归：`164 passed`。
+- 独立 Agent 包：`11 passed`；仅存在既有 `.pytest_cache` Windows 权限警告。
+- FYZ 前端 Vitest：`29 passed`。
+- FYZ 前端 `vue-tsc --noEmit`：通过。
+- Vite production build：通过，输出到独立临时目录；仅保留既有大 chunk 提示。
+- Alembic 当前版本：`20260730_0013 (head)`。
+- MySQL 与 Neo4j 最新图谱数量一致：152 个节点、189 条关系。
+- `git diff --check`：无空白错误，仅有 Windows LF/CRLF 转换提示。
+
+## 8. 后续边界
+
+Phase 1 没有实现 RAG Evidence Chunk、Embedding、混合 Retriever 或 Agent 引用协议，这些属于 Phase 2/3。进入 Phase 2 前建议补充包含“非重复相似文本”的业务专家负样本，以测量近重复误报率，并确认是否继续使用当前 Neo4j 向量索引试点。

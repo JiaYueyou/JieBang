@@ -1,0 +1,258 @@
+{
+  "schema_version": "phase1-data-quality-eval-v1",
+  "generated_at": "2026-07-30T15:49:35.490485Z",
+  "golden_set": "evaluation\\phase0_golden_set.json",
+  "review_summary": {
+    "review_type": "codex_engineering_semantic_review",
+    "human_domain_gold": false,
+    "reviewer": "codex-engineering-review",
+    "reviewed_at": "2026-07-30T15:13:32.608941Z",
+    "authorization": "user-authorized-phase1-2026-07-30",
+    "approved": 100,
+    "rejected": 0,
+    "total": 100
+  },
+  "near_duplicate_threshold": 0.9,
+  "metrics": {
+    "duplicate_type_accuracy": 1.0,
+    "freshness_accuracy": 1.0
+  },
+  "duplicate_cases": [
+    {
+      "id": "DUP-001",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-002",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-003",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-004",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-005",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-006",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-007",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-008",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-009",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-010",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-011",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-012",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-013",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-014",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-015",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-016",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-017",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-018",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-019",
+      "expected": "exact_identity",
+      "predicted": "exact_identity",
+      "similarity": 1.0,
+      "passed": true
+    },
+    {
+      "id": "DUP-020",
+      "expected": "near_duplicate",
+      "predicted": "near_duplicate",
+      "similarity": 1.0,
+      "passed": true
+    }
+  ],
+  "freshness_cases": [
+    {
+      "id": "FRESH-001",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-002",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-003",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-004",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-005",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-006",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-007",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-008",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-009",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-010",
+      "expected": "expired",
+      "predicted": "expired",
+      "passed": true
+    },
+    {
+      "id": "FRESH-011",
+      "expected": "current",
+      "predicted": "current",
+      "passed": true
+    },
+    {
+      "id": "FRESH-012",
+      "expected": "current",
+      "predicted": "current",
+      "passed": true
+    },
+    {
+      "id": "FRESH-013",
+      "expected": "current",
+      "predicted": "current",
+      "passed": true
+    },
+    {
+      "id": "FRESH-014",
+      "expected": "current",
+      "predicted": "current",
+      "passed": true
+    },
+    {
+      "id": "FRESH-015",
+      "expected": "current",
+      "predicted": "current",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "The duplicate seed set contains exact and near-duplicate positives but no broad negative corpus.",
+    "The set was transparently engineering-reviewed and is not human domain gold."
+  ]
+}

@@ -12,6 +12,7 @@ from app.models.skill import (
     RawJobRecord,
     Skill,
     SourceDocument,
+    SourceTrustPolicy,
 )
 from app.models.graph import (
     GraphEnrichmentCandidate,
@@ -34,7 +35,7 @@ from app.models.user_activity import UserBrowseHistory, UserFavorite
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
-    "Skill", "SourceDocument", "RawJobRecord", "JobSkillFact",
+    "Skill", "SourceDocument", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
     "AgentRun", "AsyncTask", "StandardJob", "StandardJobSource",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
     "DataSource",

@@ -569,4 +569,89 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", { params: { keyword: "15018", limit: 10 } });
     expect(post).toHaveBeenCalledWith("/internal-transfer/talents/from-directory/18", {});
   });
+
+  it("maps the admin data-quality list and reversible decision contracts", async () => {
+    const item = {
+      id: 31,
+      title: "Java 平台工程师",
+      standard_job_id: 8,
+      standardized_title: "Java 工程师",
+      company: "示例科技",
+      source: "zhaopin",
+      source_url: "https://example.test/jobs/31",
+      posted_at: "2026-07-20T00:00:00Z",
+      crawled_at: "2026-07-21T00:00:00Z",
+      posted_at_text: "2026-07-20",
+      crawled_at_text: "2026-07-21",
+      quality_score: 0.71,
+      freshness_score: 0.9,
+      source_trust_score: 0.85,
+      quality_status: "warning" as const,
+      quality_flags: ["near_duplicate"],
+      dedup_status: "near_duplicate",
+      near_duplicate_group_id: "ndg-123",
+      near_duplicate_score: 0.94,
+      is_excluded: false,
+      exclusion_reason: null,
+      quality_evaluated_at: "2026-07-30T00:00:00Z",
+    };
+    const get = vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: {
+          items: [item],
+          summary: {
+            total: 1,
+            accepted: 0,
+            warning: 1,
+            rejected: 0,
+            pending: 0,
+            near_duplicates: 1,
+            excluded: 0,
+            average_quality_score: 0.71,
+            flag_counts: { near_duplicate: 1 },
+          },
+        },
+        meta: { page: 1, page_size: 20, total: 1, total_pages: 1 },
+      },
+    } as never);
+    const patch = vi.spyOn(request, "patch").mockResolvedValue(response({
+      ...item,
+      is_excluded: true,
+      exclusion_reason: "正文与同岗位记录高度重复",
+    }) as never);
+
+    await expect(httpDataProvider.admin.listQuality({
+      page: 1,
+      pageSize: 20,
+      qualityStatus: "warning",
+      source: "zhaopin",
+      excluded: false,
+    })).resolves.toEqual(expect.objectContaining({
+      items: [item],
+      meta: { page: 1, page_size: 20, total: 1, total_pages: 1 },
+    }));
+    await expect(httpDataProvider.admin.decideQuality(
+      31,
+      "exclude",
+      "正文与同岗位记录高度重复",
+    )).resolves.toEqual(expect.objectContaining({ is_excluded: true }));
+
+    expect(get).toHaveBeenCalledWith("/admin/data-quality/records", {
+      params: {
+        page: 1,
+        page_size: 20,
+        source: "zhaopin",
+        quality_status: "warning",
+        quality_flag: undefined,
+        near_duplicate_group_id: undefined,
+        excluded: false,
+      },
+    });
+    expect(patch).toHaveBeenCalledWith("/admin/data-quality/records/31", {
+      action: "exclude",
+      reason: "正文与同岗位记录高度重复",
+    });
+  });
 });

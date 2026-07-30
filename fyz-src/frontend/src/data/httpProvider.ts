@@ -5,12 +5,15 @@ import type {
   AnalysisBaseline,
   AnalysisDataQuality,
   CapabilityChange,
+  DataQualityPage,
+  DataQualityQuery,
   EmergingJob,
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
   ObservedJobDetail,
   ObservedJobPage,
+  RawJobQualityItem,
   SkillFactReviewItem,
   SkillFactReviewPage,
   SkillFactReviewSummary,
@@ -409,6 +412,36 @@ export const httpDataProvider: DataProvider = {
         pageSize,
       };
     },
+    listQuality: async (query: DataQualityQuery) => {
+      const response = await request.get<ApiResponse<Omit<DataQualityPage, "meta">>>(
+        "/admin/data-quality/records",
+        {
+          params: {
+            page: query.page,
+            page_size: query.pageSize,
+            source: query.source || undefined,
+            quality_status: query.qualityStatus || undefined,
+            quality_flag: query.qualityFlag || undefined,
+            near_duplicate_group_id: query.nearDuplicateGroupId || undefined,
+            excluded: query.excluded,
+          },
+        },
+      );
+      if (response.data.data === null) throw new Error("数据质量接口未返回数据");
+      return {
+        ...response.data.data,
+        meta: response.data.meta ?? {
+          page: query.page,
+          page_size: query.pageSize,
+          total: response.data.data.items.length,
+          total_pages: response.data.data.items.length ? 1 : 0,
+        },
+      };
+    },
+    decideQuality: (id, action, reason) => patch<RawJobQualityItem>(
+      `/admin/data-quality/records/${id}`,
+      { action, reason },
+    ),
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),

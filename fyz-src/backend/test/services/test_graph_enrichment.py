@@ -66,6 +66,7 @@ async def _seed_raw_evidence(db, skill: Skill) -> None:
             source_document_id=document.id, title="Python 工程师", jd_text="Python",
             responsibilities="", requirements="", keywords="python",
             dedup_status="unique", normalized_data={},
+            quality_status="accepted", quality_score=.9,
         )
         db.add(raw)
         await db.flush()
@@ -209,6 +210,7 @@ async def test_internal_evidence_is_used_for_enrichment():
             source_document_id=document.id, title="Python 工程师", jd_text="Python",
             responsibilities="", requirements="", keywords="python",
             dedup_status="unique", normalized_data={},
+            quality_status="accepted", quality_score=.9,
         )
         db.add(raw)
         await db.flush()

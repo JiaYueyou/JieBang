@@ -7,7 +7,6 @@ import logging
 import time
 import uuid
 from collections import defaultdict
-from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +16,7 @@ from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import ResourceNotFoundError
 from app.core.time import utc_now
 from app.domain.job_standardizer import CATEGORY_STACK, infer_job_stack, standardize_job_title
+from app.domain.statuses import AgentRunStatus, TaskStatus
 from app.models import (
     AgentRun,
     AsyncTask,
@@ -73,7 +73,16 @@ class GraphService:
         )
 
     async def aggregate_standard_jobs(self) -> int:
-        raw_jobs = list((await self.db.execute(select(RawJobRecord))).scalars())
+        raw_jobs = list(
+            (
+                await self.db.execute(
+                    select(RawJobRecord).where(
+                        RawJobRecord.quality_status.in_(("accepted", "warning")),
+                        RawJobRecord.is_excluded.is_(False),
+                    )
+                )
+            ).scalars()
+        )
         internal_jobs = list((await self.db.execute(
             select(JobPosting).where(JobPosting.deleted_at.is_(None))
         )).scalars())
@@ -98,9 +107,10 @@ class GraphService:
                 if row.title != standard.name:
                     aliases.add(row.title)
                 standard.aliases = sorted(aliases)
-                standard.last_seen_at = datetime.utcnow()
+                standard.last_seen_at = utc_now_naive()
                 if source_type == "raw":
                     row.standardized_title = standard.name
+                    row.standard_job_id = standard.id
                 link = await self.audit.get_source(source_type, row.id)
                 if not link:
                     self.db.add(StandardJobSource(
@@ -130,21 +140,23 @@ class GraphService:
         task_id: str | None = None,
     ) -> dict:
         snapshot_id = str(uuid.uuid4())
-        version = datetime.utcnow().strftime("%Y%m%dT%H%M%S") + "-" + snapshot_id[:8]
+        version = utc_now_naive().strftime("%Y%m%dT%H%M%S") + "-" + snapshot_id[:8]
         snapshot = GraphSnapshot(
             id=snapshot_id,
             version=version,
             snapshot_type=mode,
-            status="running",
+            status=TaskStatus.running.value,
             created_by=user_id,
+            created_at=utc_now_naive(),
         )
         batch = GraphSyncBatch(
             id=str(uuid.uuid4()),
             async_task_id=task_id,
             snapshot_id=snapshot_id,
             sync_mode=mode,
-            status="running",
-            started_at=datetime.utcnow(),
+            status=TaskStatus.running.value,
+            started_at=utc_now_naive(),
+            created_at=utc_now_naive(),
         )
         self.db.add_all([snapshot, batch])
         await self.db.commit()
@@ -180,20 +192,20 @@ class GraphService:
                 skill = await self.db.get(Skill, skill_id)
                 if skill:
                     skill.graph_node_id = row["id"]
-            snapshot.status = "succeeded"
+            snapshot.status = TaskStatus.succeeded.value
             snapshot.node_count = counts["nodes"]
             snapshot.edge_count = counts["edges"]
             snapshot.fact_count = fact_count
-            snapshot.completed_at = datetime.utcnow()
+            snapshot.completed_at = utc_now_naive()
             snapshot.metadata_json = {
                 "standard_jobs": standard_count,
                 "enrichment": enrichment_stats,
             }
-            batch.status = "succeeded"
+            batch.status = TaskStatus.succeeded.value
             batch.progress = 100
             batch.node_count = counts["nodes"]
             batch.edge_count = counts["edges"]
-            batch.finished_at = datetime.utcnow()
+            batch.finished_at = utc_now_naive()
             await self.db.commit()
             return {
                 "snapshot_id": snapshot.id,
@@ -209,11 +221,11 @@ class GraphService:
             batch = (await self.db.execute(
                 select(GraphSyncBatch).where(GraphSyncBatch.snapshot_id == snapshot_id)
             )).scalar_one()
-            snapshot.status = "failed"
-            snapshot.completed_at = datetime.utcnow()
-            batch.status = "failed"
+            snapshot.status = TaskStatus.failed.value
+            snapshot.completed_at = utc_now_naive()
+            batch.status = TaskStatus.failed.value
             batch.error_message = str(exc)[:2000]
-            batch.finished_at = datetime.utcnow()
+            batch.finished_at = utc_now_naive()
             await self.db.commit()
             raise
 
@@ -224,6 +236,7 @@ class GraphService:
             .join(JobSkillFact, JobSkillFact.skill_id == Skill.id)
             .where(
                 JobSkillFact.verification_status == "verified",
+                Skill.validation_status == "approved",
                 Skill.category != "soft_skill",
             )
             .group_by(Skill.id)
@@ -244,6 +257,8 @@ class GraphService:
                 .where(
                     JobSkillFact.skill_id == skill.id,
                     JobSkillFact.verification_status == "verified",
+                    RawJobRecord.quality_status.in_(("accepted", "warning")),
+                    RawJobRecord.is_excluded.is_(False),
                 )
                 .order_by(SourceDocument.source, SourceDocument.id)
                 .limit(8)
@@ -394,7 +409,7 @@ class GraphService:
             candidate.candidate_data = filtered.model_dump(mode="json")
             candidate.confidence = confidence
             candidate.verification_status = "verified" if filtered.tech_points else "unverified"
-            run.status = "succeeded"
+            run.status = AgentRunStatus.succeeded.value
             run.structured_output = output.model_dump(mode="json")
             logger.info(
                 "graph_enrichment: skill=%s run_id=%s tech_points=%d knowledge_points=%d confidence=%.2f",
@@ -406,7 +421,7 @@ class GraphService:
             )
         except Exception as exc:
             candidate.candidate_data = {"reason": "llm_failed", "error": str(exc)[:500]}
-            run.status = "failed"
+            run.status = AgentRunStatus.failed.value
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
             logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
@@ -477,15 +492,26 @@ class GraphService:
         standard_jobs = list((await self.db.execute(select(StandardJob))).scalars())
         sources = list((await self.db.execute(select(StandardJobSource))).scalars())
         source_map = {(row.source_type, row.source_id): row.standard_job_id for row in sources}
-        raw_to_document = dict((await self.db.execute(
-            select(RawJobRecord.id, RawJobRecord.source_document_id)
-        )).all())
+        eligible_raw_rows = (
+            await self.db.execute(
+                select(RawJobRecord).where(
+                    RawJobRecord.quality_status.in_(("accepted", "warning")),
+                    RawJobRecord.is_excluded.is_(False),
+                )
+            )
+        ).scalars().all()
+        raw_to_document = {
+            row.id: row.source_document_id for row in eligible_raw_rows
+        }
         documents = {
             row.id: row for row in (await self.db.execute(select(SourceDocument))).scalars()
         }
         fact_rows = (await self.db.execute(
             select(JobSkillFact, Skill).join(Skill, Skill.id == JobSkillFact.skill_id)
-            .where(JobSkillFact.verification_status == "verified")
+            .where(
+                JobSkillFact.verification_status == "verified",
+                Skill.validation_status == "approved",
+            )
         )).all()
 
         nodes: dict[str, list[dict]] = defaultdict(list)
@@ -502,6 +528,11 @@ class GraphService:
         job_skill_stats: dict[tuple[int, int], dict] = {}
         support_pairs: set[tuple[int, int, int]] = set()
         for fact, skill in fact_rows:
+            if (
+                fact.raw_job_record_id is not None
+                and fact.raw_job_record_id not in raw_to_document
+            ):
+                continue
             source_type = "raw" if fact.raw_job_record_id else "internal"
             source_id = fact.raw_job_record_id or fact.job_id
             standard_job_id = source_map.get((source_type, source_id))
@@ -817,7 +848,7 @@ class GraphTaskService:
         from app.tasks.graph_sync import _process_graph_sync, process_graph_sync
 
         task = AsyncTask(
-            id=str(uuid.uuid4()), task_type="graph_sync", status="queued", progress=0,
+            id=str(uuid.uuid4()), task_type="graph_sync", status=TaskStatus.queued.value, progress=0,
             request_data={"mode": mode, "enrich_top_skills": enrich_top_skills},
             created_by=user_id,
         )

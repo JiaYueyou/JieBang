@@ -20,6 +20,7 @@ from app.models import (
     StandardJobSource,
 )
 from app.core.exceptions import ResourceNotFoundError
+from app.core.time import utc_now_naive
 from app.schemas.analysis import (
     AnalysisBaseline,
     AnalysisDataQuality,
@@ -283,7 +284,7 @@ class AnalysisService:
         else:
             row.decision = decision.value
             row.note = note
-            row.updated_at = datetime.utcnow()
+        row.updated_at = utc_now_naive()
         await self.db.commit()
         await self.db.refresh(row)
         return InsightDecisionResponse(
@@ -593,7 +594,7 @@ class AnalysisService:
         granularity: str,
         length: int,
     ) -> list[str]:
-        anchor = max((item.observed_at for item in observed), default=datetime.utcnow())
+        anchor = max((item.observed_at for item in observed), default=utc_now_naive())
         if granularity == "day":
             return [
                 (anchor - timedelta(days=offset)).strftime("%Y-%m-%d")
