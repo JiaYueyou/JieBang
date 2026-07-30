@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime
 from hashlib import sha256
 
 from sqlalchemy import delete, select
@@ -11,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.agent_runtime import MatchEvidenceInput, MatchExplanationAgent, MatchExplanationRequest
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
+from app.core.time import utc_now
+from app.domain.agent_status import AgentRunStatus
 from app.domain.skill_dictionary import canonical_key
 from app.models import AgentRun, JobPosting, MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.providers import DeepSeekProvider, LLMProvider
@@ -124,24 +125,25 @@ class MatchingService:
         agent = MatchExplanationAgent(self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS)
         run = await self.db.get(AgentRun, agent_run_id) if agent_run_id else None
         if run is None:
-            run = AgentRun(id=agent_run_id or str(uuid.uuid4()), agent_type=agent.agent_type, provider=self.llm.provider_name, model=self.llm.model_name, prompt_version=agent.prompt_version, input_summary=f"match_id={match.id} evidence={len(match.evidence)}", status="running", retry_count=0, created_by=user_id)
+            run = AgentRun(id=agent_run_id or str(uuid.uuid4()), agent_type=agent.agent_type, provider=self.llm.provider_name, model=self.llm.model_name, prompt_version=agent.prompt_version, input_summary=f"match_id={match.id} evidence={len(match.evidence)}", status=AgentRunStatus.running, started_at=utc_now(), retry_count=0, created_by=user_id)
             self.db.add(run)
         else:
-            run.status = "running"
+            run.status = AgentRunStatus.running
+            run.started_at = run.started_at or utc_now()
         await self.db.flush()
         started = time.perf_counter()
         try:
             output = await agent.generate(request)
-            run.status = "degraded" if output.generation_mode == "template" else "succeeded"
+            run.status = AgentRunStatus.degraded if output.generation_mode == "template" else AgentRunStatus.succeeded
         except Exception as exc:
             output = agent.template_output(request)
             output = output.model_copy(update={
                 "warnings": ["AI 增强暂未完成，已返回基于已保存证据的可用匹配解释。"]
             })
-            run.status, run.error_code, run.error_message = "degraded", type(exc).__name__, str(exc)[:2000]
+            run.status, run.error_code, run.error_message = AgentRunStatus.degraded, type(exc).__name__, str(exc)[:2000]
         run.structured_output = output.model_dump(mode="json")
         run.duration_ms = int((time.perf_counter() - started) * 1000)
-        run.finished_at = datetime.utcnow()
+        run.finished_at = utc_now()
         match.explanation_agent_run_id = run.id
         await self.db.commit()
         return MatchExplanationResponse(**output.model_dump(), agent_run_id=run.id)

@@ -6,9 +6,8 @@ import bcrypt
 from jose import JWTError, jwt
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
 from app.core.config import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
-from app.core.exceptions import AuthenticationError
+from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.schemas.auth import TokenPrincipal
 
 security = HTTPBearer(auto_error=False)
@@ -48,7 +47,25 @@ async def get_current_user(
 
     user_id = payload.get("user_id")
     username = payload.get("username")
+    role = payload.get("role", "user")
     if not isinstance(user_id, int) or not isinstance(username, str):
         raise AuthenticationError()
+    if role not in {"user", "recruiter", "admin"}:
+        raise AuthenticationError()
+    return TokenPrincipal(user_id=user_id, username=username, role=role)
 
-    return TokenPrincipal(user_id=user_id, username=username)
+
+async def require_recruiter(
+    principal: TokenPrincipal = Depends(get_current_user),
+) -> TokenPrincipal:
+    if principal.role not in {"recruiter", "admin"}:
+        raise AuthorizationError("该 Agent 能力仅限招聘负责人或管理员")
+    return principal
+
+
+async def require_admin(
+    principal: TokenPrincipal = Depends(get_current_user),
+) -> TokenPrincipal:
+    if principal.role != "admin":
+        raise AuthorizationError("该操作仅限管理员")
+    return principal

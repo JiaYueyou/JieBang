@@ -41,6 +41,7 @@ def dispatch_agent_task(task_id: str, task_type: str) -> None:
 def _task_finished(task_id: str, task: asyncio.Task[dict]) -> None:
     _running_tasks.pop(task_id, None)
     if task.cancelled():
+        logger.warning("In-process Agent task %s was cancelled", task_id)
         return
     error = task.exception()
     if error is not None:

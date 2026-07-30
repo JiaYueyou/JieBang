@@ -1,5 +1,5 @@
 import type {
-  AdminOverview, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
+  AdminOverview, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
@@ -40,9 +40,12 @@ export interface DataProvider {
     skillText: string;
     enterpriseTech: string;
     enterpriseJobs: string[];
+    targetJobIds?: number[];
     resumeFiles?: File[];
     enterpriseFiles?: File[];
-  }): Promise<import("@/domain/types").CareerAnalysisResult> };
+  }): Promise<import("@/domain/types").CareerAnalysisResult>;
+  recover(): Promise<import("@/domain/types").CareerAnalysisResult | null>;
+  };
   internalTransfer: {
     searchEmployeeDirectory(keyword: string): Promise<EnterpriseEmployeeDirectory[]>;
     createTalentFromDirectory(employeeId: number): Promise<EnterpriseTalent>;
@@ -95,6 +98,12 @@ export interface DataProvider {
   };
   admin: {
     getOverview(): Promise<AdminOverview>;
+    listAgentRuns(query: {
+      page: number;
+      pageSize: number;
+      agentType?: string;
+      status?: AgentRunStatus;
+    }): Promise<AgentRunAuditPage>;
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
     pollCrawler(id: number): Promise<any>;

@@ -299,3 +299,41 @@ JTT 与 FYZ 后续可以分别设计接口字段和页面模型，但必须读�
 - 后端完整测试：133 passed，7 skipped。
 - FYZ 前端：28 项测试通过，类型检查和生产构建通过。
 - `git diff --check` 通过。
+
+### 7.4 阶段 5 Agent 核心 MVP 验收（2026-07-30）
+
+本阶段遵循“不新增页面”的约束，仅在现有 `/career` 和 `/admin` 页面中补齐功能。
+
+已完成范围：
+
+1. 统一 `AgentRun` 与 `AsyncTask` 状态为 `queued/running/succeeded/degraded/failed/cancelled`，并通过 Alembic `20260730_0011` 迁移旧 `success` 状态。
+2. Agent 审计时间统一按 UTC 写入，新增开始与结束时间，并增加时间单调性测试。
+3. JWT 携带用户角色；JD 生成、Career Planning 和 Agent 运行列表增加 recruiter/admin 权限，普通用户不能调用管理端能力。
+4. JD 与职业规划异步任务支持 `Idempotency-Key`：相同用户、任务类型、键和值相同的请求复用任务；同键不同输入返回 422。
+5. 现有 `/admin`“日志与性能”区域接入真实 AgentRun 列表、筛选、分页和详情，无新增管理页面。
+6. 现有 `/career` 增加“AI 职业规划”页签，使用企业人才、内部开放岗位和真实 Agent 接口生成建议。
+7. 职业规划明确区分 Agent 建议、规则匹配和人工决策；Agent 不会自动确认转岗。
+8. 未完成任务和已完成结果写入 `sessionStorage`，页面刷新后可恢复。
+
+真实页面验收：
+
+- 使用人才“方耀正”和内部岗位“算法工程师”运行真实 Career Planning Agent。
+- DeepSeek `deepseek-v4-flash` 成功返回能力缺口、学习计划、项目建议和 12 周参考周期。
+- 页面展示审计 ID `8681d58b-f268-4865-bc46-a7b282181f30`；刷新后重新进入“AI 职业规划”页签，结果与审计 ID 均恢复。
+- `/admin`“日志与性能”首行显示该 `career_planning` 运行，状态为成功，Prompt 版本为 `career-planning-v2`，耗时 9469 ms。
+- 详情回显开始时间 `2026/7/30 14:25:55`、结束时间 `2026/7/30 14:26:04`、输入摘要与结构化输出。
+- Playwright 浏览器控制台：0 error、0 warning。
+- 验收截图：`output/playwright/stage5-career-agent-result.png`、`output/playwright/stage5-agent-audit-detail.png`。
+
+验证结果：
+
+- FYZ 后端完整测试：144 passed。
+- Agent 独立包：11 passed。
+- FYZ 前端：28 项测试通过。
+- `vue-tsc --noEmit` 与生产构建通过。
+- Alembic 当前唯一 head：`20260730_0011`，开发数据库已升级。
+
+当前阶段边界：
+
+- 阶段 5 核心 MVP 已完成，可以投入联调和评审。
+- 多 worker 任务租约、取消/重试、图谱候选审批、JD 发布门禁和 Token 成本统计仍属于后续优化，不纳入本次 MVP 完成结论。

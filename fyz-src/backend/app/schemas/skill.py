@@ -3,9 +3,11 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.agent_runtime import LLMDiscoveredSkill, LLMDiscoveredSkills
+from app.core.time import as_utc
+from app.domain.agent_status import AsyncTaskStatus
 
 
 class SkillKind(str, Enum):
@@ -121,7 +123,7 @@ class DataImportRequest(BaseModel):
 class TaskStatusResponse(BaseModel):
     task_id: str
     task_type: str
-    status: str
+    status: AsyncTaskStatus
     progress: int
     result: dict | None
     error_code: str | None
@@ -129,3 +131,7 @@ class TaskStatusResponse(BaseModel):
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
+
+    _utc_times = field_validator(
+        "created_at", "started_at", "finished_at", mode="before"
+    )(as_utc)

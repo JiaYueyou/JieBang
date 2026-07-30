@@ -70,6 +70,58 @@
           </div>
         </el-tab-pane>
 
+        <el-tab-pane label="AI 职业规划" name="agent">
+          <div class="career-agent-layout">
+            <aside class="career-agent-form">
+              <div class="section-heading"><span>AI</span><div><h3>生成可解释的培养建议</h3><p>Agent 建议与规则匹配、管理层决定相互独立，不会自动确认转岗。</p></div></div>
+              <el-form label-position="top">
+                <el-form-item label="选择企业人才">
+                  <el-select v-model="careerTalentId" filterable placeholder="选择人才" style="width:100%">
+                    <el-option v-for="talent in activeTalents" :key="talent.id" :value="Number(talent.id)" :label="`${talent.name} · ${talent.current_position}`" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="目标内部岗位">
+                  <el-select v-model="careerTargetIds" multiple filterable placeholder="可选择多个目标岗位" style="width:100%">
+                    <el-option v-for="position in openPositions" :key="position.id" :value="Number(position.id)" :label="`${position.title} · ${position.department}`" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="补充技能">
+                  <el-input v-model="careerExtraSkills" type="textarea" :rows="3" placeholder="例如：Python、数据分析、项目管理" />
+                </el-form-item>
+                <el-form-item label="企业技术栈背景">
+                  <el-input v-model="careerEnterpriseTech" type="textarea" :rows="3" placeholder="用于约束学习路径，不作为自动决策依据" />
+                </el-form-item>
+              </el-form>
+              <button class="analyze-button" :disabled="careerLoading" @click="runCareerAgent">
+                <el-icon :class="{ 'is-loading': careerLoading }"><Refresh /></el-icon>
+                {{ careerLoading ? "Agent 正在分析" : "生成职业规划建议" }}
+              </button>
+              <p class="career-run-id" v-if="careerAgentRunId">审计 ID：{{ careerAgentRunId }}</p>
+            </aside>
+            <main class="career-agent-results">
+              <el-alert
+                v-if="careerAgentStatus === 'degraded'"
+                title="当前为规则模板降级结果，请人工复核"
+                type="warning"
+                :closable="false"
+                show-icon
+              />
+              <el-alert v-if="careerError" :title="careerError" type="error" :closable="false" show-icon />
+              <div v-if="careerRecommendations.length" class="career-recommendations">
+                <article v-for="item in careerRecommendations" :key="item.job_id" class="career-recommendation">
+                  <header><div><span>#{{ item.rank }} · Agent 建议</span><h3>{{ item.job }}</h3></div><strong>{{ item.recommendScore }}%</strong></header>
+                  <div class="career-score-row"><span>当前匹配 {{ item.currentMatch }}%</span><span>培养后参考 {{ item.afterMatch }}%</span></div>
+                  <div class="career-gap"><small>待补能力</small><el-tag v-for="skill in item.gaps || []" :key="skill" type="warning" effect="plain">{{ skill }}</el-tag><span v-if="!item.gaps?.length">暂无核心缺口</span></div>
+                  <ol><li v-for="step in item.learningPlan" :key="step.skill"><strong>{{ step.skill }}</strong><span>{{ step.time }} · {{ step.difficulty }}</span></li></ol>
+                  <p>{{ item.explanation }}</p>
+                  <footer>建议项目：{{ item.suggestedProject }}；预计 {{ item.totalTime }}</footer>
+                </article>
+              </div>
+              <div v-else class="empty-result"><div class="empty-orbit"><el-icon><Connection /></el-icon></div><h3>尚未生成 Agent 建议</h3><p>选择人才和目标岗位后运行。刷新页面时，未完成任务和已完成结果都会从当前会话恢复。</p></div>
+            </main>
+          </div>
+        </el-tab-pane>
+
         <el-tab-pane label="内部开放岗位" name="positions">
           <div class="tab-toolbar"><div><h3>内部开放岗位</h3><p>这里只展示已通过审批、当前可参与转岗分析的岗位。</p></div><el-button @click="router.push({ path: '/jobs', query: { scope: 'internal' } })">进入岗位管理</el-button></div>
           <el-table :data="openPositions" style="width:100%">
@@ -172,16 +224,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { ArrowRight, Connection, InfoFilled, Plus, Refresh } from "@element-plus/icons-vue";
 import DataState from "@/components/common/DataState.vue";
 import { dataProvider } from "@/data";
+import { useCareerStore } from "@/stores/career";
 import type { EnterpriseEmployeeDirectory, EnterpriseTalent, InternalMatchResult, InternalPosition, SkillDemandSummary, TransferDecision, TransferRuleSet } from "@/domain/types";
 
 const route = useRoute();
 const router = useRouter();
-const availableTabs = new Set(["analysis", "positions", "talents", "demands", "rules", "decisions"]);
+const availableTabs = new Set(["analysis", "agent", "positions", "talents", "demands", "rules", "decisions"]);
 const requestedTab = typeof route.query.tab === "string" ? route.query.tab : "analysis";
 const activeTab = ref(availableTabs.has(requestedTab) ? requestedTab : "analysis");
 const loading = ref(false);
@@ -205,6 +259,18 @@ const selectedEmployee = ref<EnterpriseEmployeeDirectory | null>(null);
 const directoryLoading = ref(false);
 const directorySearched = ref(false);
 const addingTalent = ref(false);
+const careerStore = useCareerStore();
+const {
+  data: careerRecommendations,
+  loading: careerLoading,
+  error: careerError,
+  agentStatus: careerAgentStatus,
+  agentRunId: careerAgentRunId,
+} = storeToRefs(careerStore);
+const careerTalentId = ref<number>();
+const careerTargetIds = ref<number[]>([]);
+const careerExtraSkills = ref("");
+const careerEnterpriseTech = ref("");
 
 const activeTalents = computed(() => talents.value.filter((item) => item.status === "active"));
 const activeRules = computed(() => rules.value.filter((item) => item.status === "active"));
@@ -219,6 +285,7 @@ onMounted(async () => {
   const positionId = Number(route.query.positionId);
   if (Number.isFinite(positionId) && positionId > 0) selectedPositionId.value = positionId;
   await loadAll();
+  await careerStore.restore();
 });
 
 async function loadAll() {
@@ -286,6 +353,24 @@ async function runMatch() {
   }
 }
 
+async function runCareerAgent() {
+  const talent = talents.value.find((item) => Number(item.id) === careerTalentId.value);
+  if (!talent) return ElMessage.warning("请先选择企业人才");
+  const targetIds = careerTargetIds.value.length
+    ? careerTargetIds.value
+    : openPositions.value.map((item) => Number(item.id));
+  const targetJobs = openPositions.value
+    .filter((item) => targetIds.includes(Number(item.id)))
+    .map((item) => item.title);
+  await careerStore.analyze({
+    skillText: [...talent.skills, careerExtraSkills.value].filter(Boolean).join("、"),
+    enterpriseTech: careerEnterpriseTech.value,
+    enterpriseJobs: targetJobs,
+    targetJobIds: targetIds,
+  });
+  if (careerStore.error) ElMessage.error(careerStore.error);
+}
+
 function matchThreshold(row: InternalMatchResult) {
   return rules.value.find((item) => item.id === row.rule_set_id)?.min_match_score ?? 60;
 }
@@ -336,4 +421,5 @@ function formatDate(value: string) { return new Date(value).toLocaleString("zh-C
 <style scoped>
 .transfer-page{display:flex;flex-direction:column;gap:16px}.transfer-hero{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:26px 30px;border-radius:16px;background:linear-gradient(118deg,#172033 0%,#243457 64%,#34314d 100%);color:#fff;box-shadow:0 14px 34px rgba(23,32,51,.16)}.hero-eyebrow{color:#9fb2ff;font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.11em}.transfer-hero h1{margin:7px 0 5px;font-size:27px;letter-spacing:-.03em}.transfer-hero p{max-width:730px;margin:0;color:#cbd3e4;font-size:13px;line-height:1.7}.hero-security{display:flex;align-items:center;gap:11px;min-width:210px;padding:12px 15px;border:1px solid rgba(255,255,255,.13);border-radius:12px;background:rgba(255,255,255,.06);font-size:12px;color:#cbd3e4}.hero-security .el-icon{font-size:22px;color:#f1b963}.hero-security strong{color:#fff}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric-grid article{position:relative;overflow:hidden;padding:18px 20px;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-card)}.metric-grid article:after{position:absolute;right:-15px;bottom:-25px;width:70px;height:70px;border-radius:50%;background:#edf1ff;content:""}.metric-grid article.amber:after{background:#fff0d5}.metric-grid article.green:after{background:#e8f7f0}.metric-label{display:block;color:var(--text-muted);font-size:12px}.metric-grid strong{position:relative;z-index:1;display:block;margin:5px 0 1px;font-size:27px}.metric-grid small{color:var(--text-secondary);font-size:11px}.transfer-workbench{overflow:hidden}.transfer-tabs :deep(.el-tabs__header){margin:0;padding:0 22px;border-bottom:1px solid var(--border-color)}.transfer-tabs :deep(.el-tabs__nav-wrap:after){display:none}.transfer-tabs :deep(.el-tab-pane){padding:0 22px 22px}.analysis-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:0;min-height:560px}.analysis-control{padding:25px 22px 22px 0;border-right:1px solid var(--border-color)}.section-heading{display:flex;gap:12px;margin-bottom:20px}.section-heading>span{display:grid;place-items:center;width:31px;height:31px;border-radius:9px;background:var(--color-brand);color:#fff;font-family:"JetBrains Mono",monospace;font-size:11px}.section-heading h3,.results-head h3,.tab-toolbar h3{margin:0;color:var(--text-primary);font-size:16px}.section-heading p,.tab-toolbar p{margin:4px 0 0;color:var(--text-muted);font-size:12px;line-height:1.55}.mode-switch{display:flex;width:100%;margin-bottom:20px}.mode-switch :deep(.el-radio-button){flex:1}.mode-switch :deep(.el-radio-button__inner){width:100%}.analysis-form{padding:15px;border-radius:12px;background:var(--bg-page)}.analyze-button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:42px;margin-top:14px;border:0;border-radius:10px;background:var(--color-brand);color:#fff;font-weight:600;cursor:pointer}.analyze-button:disabled{opacity:.65;cursor:not-allowed}.policy-note{display:flex;align-items:flex-start;gap:7px;margin-top:13px;color:var(--text-muted);font-size:11px;line-height:1.55}.policy-note .el-icon{margin-top:2px;color:var(--color-brand);flex:0 0 auto}.analysis-results{min-width:0;padding:25px 0 0 22px}.results-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.results-kicker{display:block;margin-bottom:3px;color:var(--color-brand);font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.1em}.result-count{padding:5px 9px;border-radius:8px;background:var(--color-brand-light);color:var(--color-brand);font-family:"JetBrains Mono",monospace;font-size:11px}.empty-result{display:flex;align-items:center;flex-direction:column;justify-content:center;height:430px;border:1px dashed var(--border-color);border-radius:14px;background:linear-gradient(180deg,var(--bg-page),transparent);text-align:center}.empty-orbit{display:grid;place-items:center;width:70px;height:70px;border:1px solid #dce3ff;border-radius:50%;background:#f3f5ff;color:var(--color-brand);font-size:28px;box-shadow:0 0 0 12px rgba(79,110,246,.04)}.empty-result h3{margin:20px 0 6px;font-size:15px}.empty-result p{max-width:410px;margin:0;color:var(--text-muted);font-size:12px;line-height:1.7}.pair-cell{display:flex;flex-direction:column}.pair-cell strong{font-size:13px}.pair-cell small{margin-top:2px;color:var(--text-muted)}.pair-cell span{display:flex;align-items:center;gap:4px;margin-top:7px;color:var(--color-brand);font-size:12px}.reject-reason{display:block;margin-top:6px;color:var(--color-danger);font-size:10px;line-height:1.35}.score-cell strong{display:block;margin-bottom:5px;font-family:"JetBrains Mono",monospace;font-size:18px}.gap-cell{display:flex;gap:4px;flex-wrap:wrap}.gap-cell span{padding:2px 6px;border-radius:5px;background:#fff0ef;color:#c34848;font-size:10px}.gap-cell small{color:var(--color-success)}.gap-cell em{display:block;width:100%;margin-top:4px;color:var(--text-muted);font-size:10px;font-style:normal}.tab-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 0 16px}.tag-list{display:flex;gap:5px;flex-wrap:wrap}.gap-number{font-family:"JetBrains Mono",monospace}.gap-number.critical{color:var(--color-danger)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:1100px){.metric-grid{grid-template-columns:repeat(2,1fr)}.analysis-layout{grid-template-columns:1fr}.analysis-control{padding-right:0;border-right:0;border-bottom:1px solid var(--border-color)}.analysis-results{padding-left:0}}@media(max-width:720px){.transfer-hero{align-items:flex-start;flex-direction:column}.hero-security{width:100%}.metric-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.transfer-tabs :deep(.el-tab-pane){padding:0 12px 16px}.transfer-tabs :deep(.el-tabs__header){padding:0 12px}}
 .metric-card{position:relative;overflow:hidden;padding:17px 19px;border:1px solid var(--border-color);border-radius:13px;background:var(--bg-card);color:var(--text-primary);font:inherit;text-align:left;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.metric-card:after{position:absolute;right:-15px;bottom:-25px;width:70px;height:70px;border-radius:50%;background:#edf1ff;content:""}.metric-card.amber:after{background:#fff0d5}.metric-card.green:after{background:#e8f7f0}.metric-card:hover{z-index:1;border-color:var(--color-brand);box-shadow:0 9px 25px rgba(40,59,112,.1);transform:translateY(-2px)}.metric-card strong{position:relative;z-index:1;display:block;margin:4px 0 1px;font-family:"JetBrains Mono",monospace;font-size:27px}.metric-card small{display:block;color:var(--text-secondary);font-size:11px}.metric-card em{position:relative;z-index:1;display:flex;align-items:center;gap:3px;margin-top:11px;color:var(--color-brand);font-size:11px;font-style:normal;font-weight:600}.directory-search-note{margin-bottom:16px;padding:10px 12px;border-left:3px solid var(--color-brand);background:var(--color-brand-light);color:var(--text-secondary);font-size:12px;line-height:1.6}.employee-option{display:flex;align-items:center;gap:10px;width:100%}.employee-option strong{min-width:72px;color:var(--text-primary);font-family:"JetBrains Mono",monospace}.employee-option span{overflow:hidden;color:var(--text-secondary);text-overflow:ellipsis;white-space:nowrap}.employee-option em{margin-left:auto;color:var(--text-muted);font-size:11px;font-style:normal}.employee-preview{padding:16px;border:1px solid #dce3ff;border-radius:12px;background:linear-gradient(145deg,#fafbff,#f3f6ff)}.employee-preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.employee-preview-head span{font-size:17px;font-weight:700}.employee-preview-head strong{color:var(--color-brand);font-family:"JetBrains Mono",monospace}.employee-preview dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 13px}.employee-preview dl div{padding:9px 10px;border-radius:8px;background:rgba(255,255,255,.72)}.employee-preview dt{color:var(--text-muted);font-size:10px}.employee-preview dd{margin:3px 0 0;color:var(--text-primary);font-size:12px;font-weight:600}
+.career-agent-layout{display:grid;grid-template-columns:330px minmax(0,1fr);min-height:560px}.career-agent-form{padding:25px 22px 22px 0;border-right:1px solid var(--border-color)}.career-agent-results{padding:25px 0 0 22px}.career-run-id{margin-top:10px;color:var(--text-muted);font:10px var(--font-mono);word-break:break-all}.career-recommendations{display:grid;gap:12px;margin-top:12px}.career-recommendation{padding:17px;border:1px solid var(--border-color);border-radius:13px;background:var(--bg-card)}.career-recommendation header{display:flex;align-items:flex-start;justify-content:space-between}.career-recommendation header span{color:var(--color-brand);font-size:10px;font-weight:700}.career-recommendation header h3{margin:3px 0 0}.career-recommendation header>strong{font:700 22px var(--font-mono);color:var(--color-brand)}.career-score-row{display:flex;gap:8px;margin:12px 0}.career-score-row span{padding:5px 8px;border-radius:7px;background:var(--color-brand-light);font-size:11px}.career-gap{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.career-gap small{margin-right:4px;color:var(--text-muted)}.career-recommendation ol{display:grid;gap:5px;margin:12px 0;padding-left:22px}.career-recommendation li span{margin-left:8px;color:var(--text-muted);font-size:11px}.career-recommendation p,.career-recommendation footer{color:var(--text-secondary);font-size:12px;line-height:1.6}.career-recommendation footer{margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)}@media(max-width:1100px){.career-agent-layout{grid-template-columns:1fr}.career-agent-form{padding-right:0;border-right:0;border-bottom:1px solid var(--border-color)}.career-agent-results{padding-left:0}}
 </style>

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillExtractionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
+from app.core.time import utc_now
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
 from app.models import AgentRun, JobSkillFact
 from app.providers import DeepSeekProvider, LLMProvider
@@ -189,6 +190,7 @@ class SkillService:
             prompt_version=self.enrichment_agent.prompt_version,
             input_summary=normalize_text(jd_text)[:500],
             status="running",
+            started_at=utc_now(),
             retry_count=0,
             created_by=user_id,
         )
@@ -209,7 +211,7 @@ class SkillService:
             result.skills.extend(additions)
             result.llm_enrichment = bool(additions)
             result.agent_run_id = run_id
-            run.status = "success"
+            run.status = "succeeded"
             run.structured_output = enriched.model_dump(mode="json")
         except Exception as exc:
             run.status = "failed"
@@ -217,7 +219,7 @@ class SkillService:
             run.error_message = str(exc)[:2000]
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
-            run.finished_at = datetime.utcnow()
+            run.finished_at = utc_now()
         return result
 
     async def persist_raw_facts(

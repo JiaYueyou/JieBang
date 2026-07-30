@@ -17,8 +17,10 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     username: str
+    role: str
 
 
 class TokenPrincipal(BaseModel):
     user_id: int
     username: str
+    role: str = "user"

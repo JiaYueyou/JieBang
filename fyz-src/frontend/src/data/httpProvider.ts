@@ -131,6 +131,44 @@ async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
   return task.result;
 }
 
+const CAREER_TASK_STORAGE_KEY = "fyz:career-agent-task:v1";
+
+function mapCareerResult(raw: CareerAnalysisResponse): import("@/domain/types").CareerAnalysisResult {
+  return {
+    recommendations: raw.recommendations.map((item) => ({
+      rank: item.rank,
+      job_id: item.job_id,
+      job: item.job,
+      recommendScore: item.recommend_score,
+      currentMatch: item.current_match,
+      afterMatch: item.after_match,
+      existing: item.existing,
+      gaps: item.gaps,
+      learningPlan: item.learning_plan,
+      suggestedProject: item.suggested_project,
+      totalTime: item.total_time,
+      internal: item.internal,
+      explanation: item.explanation,
+    })),
+    agentRunId: raw.agent_run_id,
+    agentStatus: raw.agent_status,
+    warnings: raw.warnings,
+  };
+}
+
+function saveCareerTask(value: unknown): void {
+  try { sessionStorage.setItem(CAREER_TASK_STORAGE_KEY, JSON.stringify(value)); } catch { /* storage is optional */ }
+}
+
+function readCareerTask(): { created?: AgentTaskCreated<CareerAnalysisResponse>; result?: import("@/domain/types").CareerAnalysisResult } | null {
+  try {
+    const raw = sessionStorage.getItem(CAREER_TASK_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function waitForTask<T>(task: AsyncTask<T>): Promise<T> {
   let current = task;
   for (let attempt = 0; attempt < AGENT_MAX_POLLS && current.status !== "succeeded" && current.status !== "failed"; attempt += 1) {
@@ -244,27 +282,25 @@ export const httpDataProvider: DataProvider = {
       }
       const resumeText = await extractFiles(input.resumeFiles);
       const enterpriseFileText = await extractFiles(input.enterpriseFiles);
-      const raw = await waitForAgentTask(await post<AgentTaskCreated<CareerAnalysisResponse>>("/agents/career-plannings", {
+      const created = await post<AgentTaskCreated<CareerAnalysisResponse>>("/agents/career-plannings", {
         skill_text: input.skillText,
         resume_text: resumeText,
         enterprise_tech: [input.enterpriseTech, enterpriseFileText].filter(Boolean).join("\n"),
         internal_jobs: input.enterpriseJobs,
-      }, 60000));
-      return { recommendations: raw.recommendations.map((item) => ({
-        rank: item.rank,
-        job_id: item.job_id,
-        job: item.job,
-        recommendScore: item.recommend_score,
-        currentMatch: item.current_match,
-        afterMatch: item.after_match,
-        existing: item.existing,
-        gaps: item.gaps,
-        learningPlan: item.learning_plan,
-        suggestedProject: item.suggested_project,
-        totalTime: item.total_time,
-        internal: item.internal,
-        explanation: item.explanation,
-      })), agentRunId: raw.agent_run_id, agentStatus: raw.agent_status, warnings: raw.warnings };
+        target_job_ids: input.targetJobIds ?? [],
+      }, 60000);
+      saveCareerTask({ created });
+      const result = mapCareerResult(await waitForAgentTask(created));
+      saveCareerTask({ result });
+      return result;
+    },
+    recover: async () => {
+      const saved = readCareerTask();
+      if (saved?.result) return saved.result;
+      if (!saved?.created) return null;
+      const result = mapCareerResult(await waitForAgentTask(saved.created));
+      saveCareerTask({ result });
+      return result;
     },
   },
   internalTransfer: {
@@ -349,6 +385,25 @@ export const httpDataProvider: DataProvider = {
   },
   admin: {
     getOverview:()=>get("/admin/overview"),
+    listAgentRuns: async ({ page, pageSize, agentType, status }) => {
+      const response = await request.get<ApiResponse<import("@/domain/types").AgentRunAudit[]>>(
+        "/agents/runs",
+        {
+          params: {
+            page,
+            page_size: pageSize,
+            agent_type: agentType || undefined,
+            status: status || undefined,
+          },
+        },
+      );
+      return {
+        items: response.data.data ?? [],
+        total: response.data.meta?.total ?? 0,
+        page,
+        pageSize,
+      };
+    },
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),

@@ -396,6 +396,42 @@ export interface CareerAnalysisResult {
   warnings: string[];
 }
 
+export type AgentRunStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "degraded"
+  | "failed"
+  | "cancelled";
+
+export interface AgentRunAudit {
+  id: string;
+  agent_type: string;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  input_summary: string;
+  structured_output: Record<string, unknown> | null;
+  status: AgentRunStatus;
+  duration_ms: number | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  retry_count: number;
+  error_code: string | null;
+  error_message: string | null;
+  created_by: number | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface AgentRunAuditPage {
+  items: AgentRunAudit[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface ResumeUploadPayload {
   file: File;
   name?: string;
@@ -576,7 +612,7 @@ export interface DataSource {
   enabled: boolean;
   running: boolean;
   today: string;
-  success: number;
+  success: number | null;
   duration: string;
   progress: number;
   progress_info?: string;
@@ -667,17 +703,36 @@ export interface PipelineSummary {
 
 export interface AdminOverview {
   metrics: any[];
-  services: any[];
-  resources: any[];
+  services: Array<{
+    name: string;
+    desc: string;
+    icon: string;
+    tone: string;
+    latency: string;
+    status: "healthy" | "degraded" | "unavailable";
+    statusLabel: string;
+  }>;
+  resources: Array<{
+    label: string;
+    value: number;
+    color: string;
+    detail: string;
+  }>;
+  traffic: {
+    inbound: string;
+    outbound: string;
+    receivedTotal: string;
+    sentTotal: string;
+  };
   recentTasks: any[];
   systemEvents: any[];
   crawlers: DataSource[];
   pipelineSummary: PipelineSummary;
   qualities: any[];
-  crawlerPolicy: { concurrency: number; retries: number; interval: number; deduplicate: boolean };
   performanceCards: any[];
   endpoints: any[];
   logs: any[];
+  generatedAt: string;
 }
 
 export interface MockDatabase {

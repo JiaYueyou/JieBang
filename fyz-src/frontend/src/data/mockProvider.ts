@@ -97,6 +97,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
         agentRunId: "mock-career-run", agentStatus: "succeeded" as const, warnings: [],
       },300);
     },
+    async recover(){return null;},
   },
   graph: {
     async getPanorama(query){
