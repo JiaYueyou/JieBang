@@ -262,6 +262,7 @@ export const httpDataProvider: DataProvider = {
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click();
       URL.revokeObjectURL(url);
     },
+    recalculate: () => post("/matches/recalculate", {}),
     explain: async (matchId) => waitForAgentTask(
       await post<AgentTaskCreated<import("@/domain/types").MatchExplanation>>(
         "/agents/match-explanations", { match_id: matchId }, 60000,
@@ -373,12 +374,16 @@ export const httpDataProvider: DataProvider = {
   },
   favorites: {
     list:()=>get("/favorites"),
-    toggle:async(type,targetId)=>{await post("/favorites",{target_type:type,target_id:targetId});return true;},
+    toggle:async(type,targetId,title)=>{
+      const result=await post<{active:boolean}>("/favorites",{target_type:type,target_id:targetId,title});
+      return result.active;
+    },
     removeMany:async(ids)=>{await post("/favorites/batch-delete",{ids});},
     updateNote:async(id,note)=>{await request.put(`/favorites/${id}/note`,{note});},
   },
   history: {
     list:()=>get("/history"),
+    record:(input)=>post("/history",input),
     remove:async(id)=>{await request.delete(`/history/${id}`);},
     clear:async()=>{await request.delete("/history");},
     getInsights:()=>get("/history/insights"),

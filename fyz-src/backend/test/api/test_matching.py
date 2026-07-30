@@ -41,6 +41,62 @@ async def test_resume_match_explanation_and_controlled_download(client, auth_hea
     assert denied.status_code == 404
 
 
+async def test_recalculate_matches_covers_jobs_created_after_resume_upload(
+    client,
+    auth_headers,
+):
+    await _create_job(client, auth_headers)
+    uploaded = await client.post(
+        "/api/v1/resumes",
+        headers=auth_headers,
+        data={"name": "待刷新候选人", "current_position": "Python 开发"},
+        files={
+            "file": (
+                "refresh.txt",
+                "拥有 Python 和 MySQL 项目经验".encode(),
+                "text/plain",
+            )
+        },
+    )
+    assert uploaded.status_code == 200
+    assert len(uploaded.json()["data"]["matches"]) == 1
+
+    second_job = await client.post(
+        "/api/v1/jobs",
+        headers=auth_headers,
+        json={
+            "title": "数据平台工程师",
+            "level": "mid",
+            "department": "数据平台组",
+            "responsibilities": ["建设数据服务"],
+            "requirements": ["熟悉 SQL"],
+            "skills": ["SQL"],
+            "bonus_skills": [],
+            "jd_text": "SQL 数据服务",
+            "status": "open",
+        },
+    )
+    assert second_job.status_code == 200
+
+    refreshed = await client.post(
+        "/api/v1/matches/recalculate",
+        headers=auth_headers,
+    )
+    assert refreshed.status_code == 200
+    assert refreshed.json()["data"] == {
+        "resumes_processed": 1,
+        "matches_upserted": 2,
+    }
+
+    talents = (
+        await client.get("/api/v1/talents", headers=auth_headers)
+    ).json()["data"]
+    assert set(talents[0]["targetJobs"]) == {
+        "Python 后端工程师",
+        "数据平台工程师",
+    }
+
+
 async def test_resume_upload_requires_authentication(client):
     response = await client.post("/api/v1/resumes", files={"file": ("resume.txt", b"Python", "text/plain")})
     assert response.status_code == 401

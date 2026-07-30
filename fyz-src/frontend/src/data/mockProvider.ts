@@ -70,7 +70,32 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
           { value: "347", label: "本周新发岗位", change: "-2.1%", up: false, color: "amber", action: "岗位洞察", link: "/jobs" },
           { value: "3", label: "长期未跟进", change: "-1", up: false, color: "rose", action: "联系人才", link: "/matching" },
         ],
-        kanban: openJobs.slice(0, 3).map((job, index) => ({ job_id: job.id, title: job.title, total: [28,14,8][index] || 8, stages: [{ name:"筛选",count:[12,10,5][index]||5},{name:"面试",count:[3,1,0][index]||0},{name:"发放",count:index===0?1:0},{name:"入职",count:0}] })),
+        kanban: openJobs.slice(0, 3).map((job, index) => {
+          const high = [12, 6, 3][index] || 3;
+          const progress = [8, 4, 2][index] || 2;
+          const gap = [5, 2, 1][index] || 1;
+          const pending = [3, 2, 2][index] || 2;
+          const total = high + progress + gap + pending;
+          return {
+            job_id: job.id,
+            title: job.title,
+            department: job.department,
+            location: job.location || "地点待确认",
+            headcount: 2,
+            urgent: Boolean(job.urgent),
+            skills: (job.skills ?? []).slice(0, 5),
+            total,
+            evaluated: total - pending,
+            pending,
+            coverage: Math.round((total - pending) / total * 100),
+            stages: [
+              { name: "高匹配", kind: "high" as const, count: high },
+              { name: "可推进", kind: "progress" as const, count: progress },
+              { name: "待补强", kind: "gap" as const, count: gap },
+              { name: "待评估", kind: "pending" as const, count: pending },
+            ],
+          };
+        }),
         highMatches: [...data.talents].sort((a,b)=>b.score-a.score).slice(0,6),
         hotJobs: data.jobs.slice(0,6).map((job,index)=>({job_id:job.id,title:job.title,demand:[243,156,187,132,108,165][index],city:job.location||"全国",trend:[-5,23,8,18,15,-3][index],spark:[[260,255,250,248,245,243],[30,45,62,85,110,156],[140,148,155,165,175,187],[40,55,68,85,108,132],[35,48,60,75,92,108],[170,172,168,166,164,165]][index]})),
         emergingSkills: [],
@@ -82,6 +107,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
     async upload(){throw new Error("简历上传仅支持后端数据模式");},
     async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async recalculate(){return delay({resumes_processed:db().talents.length,matches_upserted:0});},
     async explain(){throw new Error("匹配解释仅支持后端数据模式");},
   },
   career: {
@@ -139,6 +165,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
   },
   history: {
     async list(){return delay(db().history);},
+    async record(input){const data=db();const now=new Date();const record={...input,id:Math.max(0,...data.history.map(item=>item.id))+1,dateKey:"today" as const,date:now.toISOString().slice(0,10),time:now.toTimeString().slice(0,5)};data.history.unshift(record);persist(data);return delay(record);},
     async remove(id){const data=db();data.history=data.history.filter((item)=>item.id!==id);persist(data);},
     async clear(){const data=db();data.history=[];persist(data);},
     async getInsights(){const data=db();return delay({focusStats:[{label:"AI / 大模型",percent:88,count:12},{label:"后端开发",percent:72,count:9},{label:"云原生",percent:48,count:6}],frequentRecords:data.history.slice(0,3).map((item,index)=>({history_id:item.id,count:5-index}))});},

@@ -220,6 +220,58 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(remove).toHaveBeenCalledWith(`/jobs/${job.id}`);
   });
 
+  it("uses real favorite toggle state and persists browsing history", async () => {
+    const favorite = {
+      id: 4,
+      target_type: "job" as const,
+      target_id: job.id,
+      title: job.title,
+      subtitle: "研发中心 · senior",
+      company: "智联职引",
+      location: "合肥",
+      salary: job.salary_range,
+      experience: "3-5年",
+      education: "本科",
+      skills: job.skills || [],
+      match: 88,
+      savedAt: "2026-07-30T10:00:00",
+      savedOrder: 1785405600,
+      note: "",
+    };
+    const historyInput = {
+      type: "job" as const,
+      targetId: job.id,
+      title: job.title,
+      description: "岗位详情",
+      source: "岗位管理",
+      tags: ["Java"],
+      url: `/jobs?record=${job.id}`,
+    };
+    const history = {
+      ...historyInput,
+      id: 6,
+      dateKey: "today" as const,
+      date: "2026-07-30",
+      time: "10:00",
+    };
+    const post = vi.spyOn(request, "post")
+      .mockResolvedValueOnce(response({ active: true }) as never)
+      .mockResolvedValueOnce(response(history) as never);
+    const get = vi.spyOn(request, "get").mockResolvedValueOnce(response([favorite]) as never);
+
+    await expect(httpDataProvider.favorites.toggle("job", job.id, job.title)).resolves.toBe(true);
+    await expect(httpDataProvider.favorites.list()).resolves.toEqual([favorite]);
+    await expect(httpDataProvider.history.record(historyInput)).resolves.toEqual(history);
+
+    expect(post).toHaveBeenNthCalledWith(1, "/favorites", {
+      target_type: "job",
+      target_id: job.id,
+      title: job.title,
+    });
+    expect(get).toHaveBeenCalledWith("/favorites", { params: undefined });
+    expect(post).toHaveBeenNthCalledWith(2, "/history", historyInput);
+  });
+
   it("uses async Agent tasks and preserves degraded career metadata", async () => {
     const result = {
       recommendations: [{

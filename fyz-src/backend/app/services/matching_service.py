@@ -97,6 +97,31 @@ class MatchingService:
             await self.db.refresh(record, attribute_names=["evidence"])
         return sorted(records, key=lambda item: (-item.score, item.job_id))
 
+    async def recalculate_matches(self, user_id: int) -> dict:
+        resumes = list(
+            (
+                await self.db.execute(
+                    select(Resume)
+                    .where(
+                        Resume.created_by == user_id,
+                        Resume.deleted_at.is_(None),
+                        Resume.status == "active",
+                    )
+                    .order_by(Resume.id)
+                )
+            ).scalars()
+        )
+        match_count = 0
+        for resume in resumes:
+            match_count += len(
+                await self._calculate_matches(resume, user_id=user_id)
+            )
+        await self.db.commit()
+        return {
+            "resumes_processed": len(resumes),
+            "matches_upserted": match_count,
+        }
+
     async def list_talents(self, user_id: int) -> list[TalentResponse]:
         resumes = list((await self.db.execute(select(Resume).where(Resume.created_by == user_id, Resume.deleted_at.is_(None)).order_by(Resume.created_at.desc()))).scalars())
         return [self._talent(resume) for resume in resumes if resume.matches]

@@ -360,7 +360,20 @@ export interface MatchReport {
 
 export interface DashboardOverview {
   heroCards: Array<{ value: string; label: string; change: string; up: boolean; color: string; action: string; link: string }>;
-  kanban: Array<{ job_id: EntityId; title: string; total: number; stages: Array<{ name: string; count: number }> }>;
+  kanban: Array<{
+    job_id: EntityId;
+    title: string;
+    department: string;
+    location: string;
+    headcount: number;
+    urgent: boolean;
+    skills: string[];
+    total: number;
+    evaluated: number;
+    pending: number;
+    coverage: number;
+    stages: Array<{ name: string; kind: "high" | "progress" | "gap" | "pending"; count: number }>;
+  }>;
   highMatches: TalentSummary[];
   hotJobs: Array<{ job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[] }>;
   emergingSkills: Array<{ id: EntityId; name: string; combo: string; growth: number; confidence: number }>;

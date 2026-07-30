@@ -21,6 +21,8 @@ from app.api.v1.career import router as career_router
 from app.api.v1.matching import router as matching_router
 from app.api.v1.internal_transfer import router as internal_transfer_router
 from app.api.v1.admin import router as admin_router
+from app.api.v1.user_activity import router as user_activity_router
+from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
@@ -76,6 +78,8 @@ app.include_router(analysis_router, prefix="/api/v1")
 app.include_router(career_router, prefix="/api/v1")
 app.include_router(internal_transfer_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(user_activity_router, prefix="/api/v1")
+app.include_router(dashboard_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health", response_model=ApiResponse)
