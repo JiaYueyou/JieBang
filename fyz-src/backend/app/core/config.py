@@ -57,6 +57,51 @@ DEEPSEEK_CONNECT_TIMEOUT_SECONDS = int(
     os.getenv("DEEPSEEK_CONNECT_TIMEOUT_SECONDS", "10")
 )
 
+# OpenAI-compatible embedding / retrieval
+RETRIEVAL_EMBEDDING_PROVIDER = os.getenv(
+    "RETRIEVAL_EMBEDDING_PROVIDER",
+    "local_hash" if TESTING else "openai",
+)
+RETRIEVAL_VECTOR_BACKEND = os.getenv(
+    "RETRIEVAL_VECTOR_BACKEND",
+    "local_hash" if TESTING else "chroma",
+)
+RETRIEVAL_RELATIVE_SCORE_WINDOW = float(
+    os.getenv("RETRIEVAL_RELATIVE_SCORE_WINDOW", "0.04")
+)
+if not 0 <= RETRIEVAL_RELATIVE_SCORE_WINDOW <= 1:
+    raise RuntimeError(
+        "RETRIEVAL_RELATIVE_SCORE_WINDOW must be between 0 and 1"
+    )
+RETRIEVAL_SEMANTIC_SCORE_FLOOR = float(
+    os.getenv("RETRIEVAL_SEMANTIC_SCORE_FLOOR", "0.30")
+)
+if not 0 <= RETRIEVAL_SEMANTIC_SCORE_FLOOR <= 1:
+    raise RuntimeError(
+        "RETRIEVAL_SEMANTIC_SCORE_FLOOR must be between 0 and 1"
+    )
+OPENAI_EMBEDDING_API_KEY = os.getenv(
+    "OPENAI_EMBEDDING_API_KEY",
+    os.getenv("OPENAI_API_KEY", ""),
+)
+OPENAI_EMBEDDING_BASE_URL = os.getenv(
+    "OPENAI_EMBEDDING_BASE_URL",
+    "https://api.openai-proxy.org/v1",
+)
+OPENAI_EMBEDDING_MODEL = os.getenv(
+    "OPENAI_EMBEDDING_MODEL",
+    "text-embedding-3-large",
+)
+OPENAI_EMBEDDING_DIMENSIONS = int(
+    os.getenv("OPENAI_EMBEDDING_DIMENSIONS", "3072")
+)
+OPENAI_EMBEDDING_BATCH_SIZE = int(
+    os.getenv("OPENAI_EMBEDDING_BATCH_SIZE", "64")
+)
+OPENAI_EMBEDDING_TIMEOUT_SECONDS = float(
+    os.getenv("OPENAI_EMBEDDING_TIMEOUT_SECONDS", "60")
+)
+
 # Celery / Redis
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
@@ -81,5 +126,16 @@ LOCAL_STORAGE_PATH = os.path.abspath(
     os.getenv(
         "LOCAL_STORAGE_PATH",
         os.path.join(os.path.dirname(__file__), "..", "..", "storage"),
+    )
+)
+
+CHROMA_MODE = os.getenv(
+    "CHROMA_MODE",
+    "ephemeral" if TESTING else "persistent",
+)
+CHROMA_PERSIST_PATH = os.path.abspath(
+    os.getenv(
+        "CHROMA_PERSIST_PATH",
+        os.path.join(LOCAL_STORAGE_PATH, "chroma"),
     )
 )

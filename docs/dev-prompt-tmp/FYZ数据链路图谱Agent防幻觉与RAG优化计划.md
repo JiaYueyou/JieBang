@@ -6,7 +6,7 @@
 >
 > 适用范围：`fyz-src/backend`、`fyz-src/frontend`、`agent-development/src/jiebang_agents` 及其直接相关的数据迁移、测试和说明文档
 >
-> 当前状态：已评审；Phase 0 与 Phase 1 已完成工程交付和真实数据回填，下一阶段为 Phase 2 RAG 证据层
+> 当前状态：已评审；Phase 0/1 已完成；Phase 2/2.1 已完成证据模型、可重建 Chroma 索引、`text-embedding-3-large`、混合检索和跨岗位工程评测闭环。当前覆盖 323 条 Evidence、10 个岗位、78 个技能和 2 个来源，工程发布门禁通过；下一步进入 Phase 3 Agent 防幻觉门禁。
 > 前置文档：[Agent 分析和设计](./Agent分析和设计.md)、[FYZ 端 MVP 开发规划](./FYZ端MVP开发规划.md)、[知识图谱架构](../../fyz-src/docs-plans/GRAPH_ARCHITECTURE.md)
 
 ## 1. 文档目标
@@ -365,6 +365,8 @@ raw
 - 质量不达标记录不会进入正式图谱或 RAG 索引。
 
 ### Phase 2：RAG 证据层与混合检索 MVP
+
+> 实施进度：2026-07-31 已落地迁移 `20260731_0014`、323 个真实 Evidence Chunk、Chroma 可重建向量索引、混合检索 API、170 条工程审核样本和按岗位隔离的可重复评测器。Phase 2.1 使用 `text-embedding-3-large` 3072 维 Provider，覆盖 10 个岗位、78 个技能、2 个来源；最终 Recall@5 97.06%、拒答 100%、P95 95ms，开发/验证/冻结测试门禁均通过。详见 [Phase 2 实施记录](./FYZ优化Phase2证据层与混合检索MVP实施记录.md)、[Embedding 与向量库选型补充](./FYZ优化Phase2.1Embedding与向量数据库选型补充.md) 和 [评测集补充方案](./FYZ优化Phase2评测集补充与审核方案.md)。
 
 #### 目标
 

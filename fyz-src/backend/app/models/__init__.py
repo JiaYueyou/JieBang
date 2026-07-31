@@ -32,6 +32,13 @@ from app.models.internal_transfer import (
     TransferRuleSet,
 )
 from app.models.user_activity import UserBrowseHistory, UserFavorite
+from app.models.retrieval import (
+    AgentClaimCitation,
+    EvidenceChunk,
+    RetrievalIndexEntry,
+    RetrievalIndexVersion,
+    RetrievalQueryLog,
+)
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
@@ -43,4 +50,6 @@ __all__ = [
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
     "UserFavorite", "UserBrowseHistory",
+    "EvidenceChunk", "RetrievalIndexVersion", "RetrievalIndexEntry",
+    "RetrievalQueryLog", "AgentClaimCitation",
 ]
