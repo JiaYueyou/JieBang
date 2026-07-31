@@ -12,6 +12,7 @@ from app.models.skill import (
     RawJobRecord,
     Skill,
     SourceDocument,
+    SourceTrustPolicy,
 )
 from app.models.graph import (
     GraphEnrichmentCandidate,
@@ -31,10 +32,17 @@ from app.models.internal_transfer import (
     TransferRuleSet,
 )
 from app.models.user_activity import UserBrowseHistory, UserFavorite
+from app.models.retrieval import (
+    AgentClaimCitation,
+    EvidenceChunk,
+    RetrievalIndexEntry,
+    RetrievalIndexVersion,
+    RetrievalQueryLog,
+)
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
-    "Skill", "SourceDocument", "RawJobRecord", "JobSkillFact",
+    "Skill", "SourceDocument", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
     "AgentRun", "AsyncTask", "StandardJob", "StandardJobSource",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
     "DataSource",
@@ -42,4 +50,6 @@ __all__ = [
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
     "UserFavorite", "UserBrowseHistory",
+    "EvidenceChunk", "RetrievalIndexVersion", "RetrievalIndexEntry",
+    "RetrievalQueryLog", "AgentClaimCitation",
 ]

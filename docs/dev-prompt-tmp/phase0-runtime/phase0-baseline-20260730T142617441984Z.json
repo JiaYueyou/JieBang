@@ -1,0 +1,180 @@
+{
+  "schema_version": "phase0-baseline-v1",
+  "generated_at": "2026-07-30T14:26:17.441984Z",
+  "git": {
+    "head": "28379574a251b46dcce9a82136e15f0bb8ca388b",
+    "branch": "feat/fyz-job-agent",
+    "dirty": true,
+    "changed_entry_count": 28
+  },
+  "contracts": {
+    "task_statuses": [
+      "queued",
+      "running",
+      "succeeded",
+      "failed",
+      "cancelled"
+    ],
+    "agent_run_statuses": [
+      "queued",
+      "running",
+      "succeeded",
+      "degraded",
+      "failed",
+      "cancelled"
+    ],
+    "trust_stages": [
+      "raw",
+      "extracted",
+      "machine_validated",
+      "human_approved",
+      "published",
+      "rejected",
+      "insufficient_evidence",
+      "expired"
+    ],
+    "timestamp_api": "UTC RFC3339 with Z suffix",
+    "timestamp_database_phase0": "Existing naive DateTime columns receive UTC-naive compatibility values."
+  },
+  "relational": {
+    "connected": true,
+    "dialect": "mysql",
+    "alembic_revision": "20260730_0012",
+    "counts": {
+      "job_posting": 7,
+      "source_document": 190,
+      "raw_job_record": 190,
+      "skill": 107,
+      "job_skill_fact": 1143,
+      "standard_job": 130,
+      "agent_run": 86,
+      "async_task": 85,
+      "graph_snapshot": 11,
+      "graph_sync_batch": 11,
+      "graph_enrichment_candidate": 100
+    },
+    "statuses": {
+      "job_skill_fact": {
+        "unverified": 143,
+        "verified": 1000
+      },
+      "agent_run": {
+        "degraded": 31,
+        "succeeded": 55
+      },
+      "async_task": {
+        "queued": 2,
+        "succeeded": 83
+      },
+      "graph_snapshot": {
+        "succeeded": 11
+      },
+      "graph_sync_batch": {
+        "succeeded": 11
+      },
+      "graph_enrichment_candidate": {
+        "unverified": 100
+      }
+    },
+    "agent_metrics": [
+      {
+        "agent_type": "career_planning",
+        "status": "degraded",
+        "count": 19,
+        "avg_duration_ms": 20942.16,
+        "max_duration_ms": 38975
+      },
+      {
+        "agent_type": "career_planning",
+        "status": "succeeded",
+        "count": 10,
+        "avg_duration_ms": 17506.7,
+        "max_duration_ms": 28537
+      },
+      {
+        "agent_type": "jd_generation",
+        "status": "degraded",
+        "count": 4,
+        "avg_duration_ms": 22242.25,
+        "max_duration_ms": 24778
+      },
+      {
+        "agent_type": "jd_generation",
+        "status": "succeeded",
+        "count": 14,
+        "avg_duration_ms": 9769.36,
+        "max_duration_ms": 19232
+      },
+      {
+        "agent_type": "jd_input_suggestion",
+        "status": "degraded",
+        "count": 3,
+        "avg_duration_ms": 10045.67,
+        "max_duration_ms": 10071
+      },
+      {
+        "agent_type": "jd_input_suggestion",
+        "status": "succeeded",
+        "count": 24,
+        "avg_duration_ms": 3582.92,
+        "max_duration_ms": 5436
+      },
+      {
+        "agent_type": "match_explanation",
+        "status": "degraded",
+        "count": 5,
+        "avg_duration_ms": 16332.4,
+        "max_duration_ms": 26757
+      },
+      {
+        "agent_type": "match_explanation",
+        "status": "succeeded",
+        "count": 7,
+        "avg_duration_ms": 8848.43,
+        "max_duration_ms": 17214
+      }
+    ],
+    "latest_graph_snapshot": {
+      "id": "d8ae2aba-3fb4-4dbf-a4f3-301452cd18ac",
+      "version": "20260729T142220-d8ae2aba",
+      "status": "succeeded",
+      "node_count": 360,
+      "edge_count": 1650,
+      "fact_count": 691,
+      "created_at": "2026-07-29T22:22:20Z",
+      "completed_at": "2026-07-29T14:22:24Z"
+    }
+  },
+  "neo4j": {
+    "connected": true,
+    "server": {
+      "name": "Neo4j Kernel",
+      "versions": [
+        "2026.05.0"
+      ],
+      "edition": "community"
+    },
+    "counts": {
+      "nodes": 360,
+      "edges": 1650
+    },
+    "vector": {
+      "supported": true,
+      "procedures": [
+        "db.index.vector.queryNodes",
+        "db.index.vector.queryRelationships"
+      ],
+      "functions": [
+        "vector.similarity.cosine",
+        "vector.similarity.euclidean"
+      ],
+      "probe_errors": []
+    }
+  },
+  "rag_decision": {
+    "authority": "MySQL stores source, evidence, review and publication metadata.",
+    "index_role": "Vector indexes are derived, rebuildable retrieval read models.",
+    "selected_phase1_backend": "neo4j_vector_index_pilot",
+    "reason": "The connected Neo4j server exposes vector procedures/functions."
+  }
+}

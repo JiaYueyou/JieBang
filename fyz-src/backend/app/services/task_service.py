@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ResourceNotFoundError
 from app.core.config import CELERY_TASK_ALWAYS_EAGER
+from app.domain.statuses import TaskStatus
 from app.models import AsyncTask
 from app.repositories import TaskRepository
 from app.schemas.skill import TaskStatusResponse
@@ -26,7 +27,7 @@ class TaskService:
         task = AsyncTask(
             id=str(uuid.uuid4()),
             task_type="job_data_import",
-            status="queued",
+            status=TaskStatus.queued.value,
             progress=0,
             request_data={"files": files},
             created_by=user_id,

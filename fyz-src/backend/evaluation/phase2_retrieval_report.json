@@ -1,0 +1,4585 @@
+{
+  "schema_version": "phase2-retrieval-eval-v1",
+  "generated_at": "2026-07-30T18:05:56.661017Z",
+  "golden_set": "evaluation\\phase2_retrieval_golden_set.json",
+  "golden_set_sha256": "6a6838ec8f395edb06c9e8958d658708da5c7dbfb1021091ef289c31049d6746",
+  "evaluation_top_k": 10,
+  "retrieval_policy": {
+    "relative_score_window": 0.04,
+    "semantic_score_floor": 0.3
+  },
+  "embedding": {
+    "provider": "openai_compatible",
+    "model": "text-embedding-3-large",
+    "dimension": 3072
+  },
+  "index_versions": [
+    "20260730T180337-b884da9e"
+  ],
+  "backends": [
+    "chroma"
+  ],
+  "coverage": {
+    "evidence_count": 323,
+    "standard_job_count": 10,
+    "skill_count": 78,
+    "source_platform_count": 2
+  },
+  "split_policy": {
+    "strategy": "group_by_standard_job",
+    "labels_frozen": true,
+    "holdout_status": "frozen_after_retriever_tuning",
+    "development": 76,
+    "validation": 22,
+    "test": 22,
+    "standard_job_ids": {
+      "development": [
+        1,
+        2,
+        5,
+        26,
+        29,
+        32
+      ],
+      "validation": [
+        39,
+        64
+      ],
+      "test": [
+        89,
+        123
+      ]
+    },
+    "reason": "已按标准岗位分组形成开发、验证和冻结测试集；同一标准岗位不会跨分区。"
+  },
+  "review_summary": {
+    "review_type": "deterministic_fk_and_boundary_engineering_review",
+    "reviewer": "codex-engineering-review",
+    "approved": 170,
+    "rejected": 0,
+    "total": 170,
+    "human_domain_gold": false,
+    "coverage_release_blocked": false
+  },
+  "metric_definitions": {
+    "recall_at_5": "Macro average of relevant golden evidence IDs returned in the first 5 divided by all expected IDs (at most 5/case).",
+    "mrr_at_10": "Macro mean reciprocal rank of the first expected evidence ID in the first 10 results.",
+    "citation_precision_at_5": "Macro average of first-5 result IDs present in the case's expected evidence IDs.",
+    "no_answer_accuracy": "Share of insufficient-evidence cases returning zero items.",
+    "filter_violation_rate": "Returned items violating any declared structured filter divided by all returned items.",
+    "duplicate_negative_fpr": "Distinct synthetic role pairs classified as near duplicate at SimHash similarity >= 0.9.",
+    "warm_latency_p95_ms": "Nearest-rank P95 of service-reported latency after one unmeasured warm-up query."
+  },
+  "thresholds": {
+    "recall_at_5": 0.85,
+    "mrr_at_10": 0.75,
+    "citation_precision_at_5": 0.95,
+    "top1_expected_accuracy": 0.8,
+    "no_answer_accuracy": 0.9,
+    "filter_violation_rate": 0.0,
+    "duplicate_negative_fpr": 0.05,
+    "warm_latency_p95_ms": 500
+  },
+  "metrics": {
+    "grounded_case_count": 85,
+    "no_answer_case_count": 35,
+    "recall_at_5": 0.970588,
+    "mrr_at_10": 1.0,
+    "citation_precision_at_5": 1.0,
+    "top1_expected_accuracy": 1.0,
+    "no_answer_accuracy": 1.0,
+    "filter_violation_rate": 0.0,
+    "warm_latency_p50_ms": 58,
+    "warm_latency_p95_ms": 95,
+    "warm_latency_max_ms": 105,
+    "duplicate_negative_fpr": 0.0
+  },
+  "threshold_results": {
+    "recall_at_5": true,
+    "mrr_at_10": true,
+    "citation_precision_at_5": true,
+    "top1_expected_accuracy": true,
+    "no_answer_accuracy": true,
+    "filter_violation_rate": true,
+    "duplicate_negative_fpr": true,
+    "warm_latency_p95_ms": true
+  },
+  "split_metrics": {
+    "development": {
+      "grounded_case_count": 53,
+      "no_answer_case_count": 23,
+      "recall_at_5": 0.990566,
+      "mrr_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected_accuracy": 1.0,
+      "no_answer_accuracy": 1.0,
+      "filter_violation_rate": 0.0,
+      "warm_latency_p50_ms": 74,
+      "warm_latency_p95_ms": 102,
+      "warm_latency_max_ms": 105,
+      "duplicate_negative_fpr": 0.0
+    },
+    "validation": {
+      "grounded_case_count": 16,
+      "no_answer_case_count": 6,
+      "recall_at_5": 0.875,
+      "mrr_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected_accuracy": 1.0,
+      "no_answer_accuracy": 1.0,
+      "filter_violation_rate": 0.0,
+      "warm_latency_p50_ms": 53,
+      "warm_latency_p95_ms": 93,
+      "warm_latency_max_ms": 93,
+      "duplicate_negative_fpr": 0.0
+    },
+    "test": {
+      "grounded_case_count": 16,
+      "no_answer_case_count": 6,
+      "recall_at_5": 1.0,
+      "mrr_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected_accuracy": 1.0,
+      "no_answer_accuracy": 1.0,
+      "filter_violation_rate": 0.0,
+      "warm_latency_p50_ms": 36,
+      "warm_latency_p95_ms": 92,
+      "warm_latency_max_ms": 92,
+      "duplicate_negative_fpr": 0.0
+    }
+  },
+  "split_threshold_results": {
+    "development": {
+      "recall_at_5": true,
+      "mrr_at_10": true,
+      "citation_precision_at_5": true,
+      "top1_expected_accuracy": true,
+      "no_answer_accuracy": true,
+      "filter_violation_rate": true,
+      "duplicate_negative_fpr": true,
+      "warm_latency_p95_ms": true
+    },
+    "validation": {
+      "recall_at_5": true,
+      "mrr_at_10": true,
+      "citation_precision_at_5": true,
+      "top1_expected_accuracy": true,
+      "no_answer_accuracy": true,
+      "filter_violation_rate": true,
+      "duplicate_negative_fpr": true,
+      "warm_latency_p95_ms": true
+    },
+    "test": {
+      "recall_at_5": true,
+      "mrr_at_10": true,
+      "citation_precision_at_5": true,
+      "top1_expected_accuracy": true,
+      "no_answer_accuracy": true,
+      "filter_violation_rate": true,
+      "duplicate_negative_fpr": true,
+      "warm_latency_p95_ms": true
+    }
+  },
+  "split_performance_gates": {
+    "development": true,
+    "validation": true,
+    "test": true
+  },
+  "performance_gate": true,
+  "coverage_gate": true,
+  "release_gate": true,
+  "overall_assessment": "ready_to_share",
+  "category_metrics": {
+    "skill_exact": {
+      "case_count": 25,
+      "pass_rate": 1.0,
+      "recall_at_5": 1.0,
+      "mrr_at_10": 1.0,
+      "no_answer_accuracy": null
+    },
+    "responsibility_paraphrase": {
+      "case_count": 25,
+      "pass_rate": 1.0,
+      "recall_at_5": 0.96,
+      "mrr_at_10": 1.0,
+      "no_answer_accuracy": null
+    },
+    "job_skill_filter": {
+      "case_count": 20,
+      "pass_rate": 1.0,
+      "recall_at_5": 0.925,
+      "mrr_at_10": 1.0,
+      "no_answer_accuracy": null
+    },
+    "source_quality_filter": {
+      "case_count": 15,
+      "pass_rate": 1.0,
+      "recall_at_5": 1.0,
+      "mrr_at_10": 1.0,
+      "no_answer_accuracy": null
+    },
+    "conflict_filter_no_answer": {
+      "case_count": 15,
+      "pass_rate": 1.0,
+      "recall_at_5": null,
+      "mrr_at_10": null,
+      "no_answer_accuracy": 1.0
+    },
+    "out_of_scope_no_answer": {
+      "case_count": 20,
+      "pass_rate": 1.0,
+      "recall_at_5": null,
+      "mrr_at_10": null,
+      "no_answer_accuracy": 1.0
+    }
+  },
+  "duplicate_negative_cases": [
+    {
+      "id": "NEG-01-01",
+      "similarity": 0.625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-01-02",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-01-03",
+      "similarity": 0.75,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-01-04",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-01-05",
+      "similarity": 0.640625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-02-01",
+      "similarity": 0.59375,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-02-02",
+      "similarity": 0.703125,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-02-03",
+      "similarity": 0.765625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-02-04",
+      "similarity": 0.609375,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-02-05",
+      "similarity": 0.671875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-03-01",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-03-02",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-03-03",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-03-04",
+      "similarity": 0.671875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-03-05",
+      "similarity": 0.734375,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-04-01",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-04-02",
+      "similarity": 0.625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-04-03",
+      "similarity": 0.625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-04-04",
+      "similarity": 0.703125,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-04-05",
+      "similarity": 0.640625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-05-01",
+      "similarity": 0.640625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-05-02",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-05-03",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-05-04",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-05-05",
+      "similarity": 0.703125,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-06-01",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-06-02",
+      "similarity": 0.734375,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-06-03",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-06-04",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-06-05",
+      "similarity": 0.703125,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-07-01",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-07-02",
+      "similarity": 0.703125,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-07-03",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-07-04",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-07-05",
+      "similarity": 0.765625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-08-01",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-08-02",
+      "similarity": 0.640625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-08-03",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-08-04",
+      "similarity": 0.671875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-08-05",
+      "similarity": 0.671875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-09-01",
+      "similarity": 0.5625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-09-02",
+      "similarity": 0.625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-09-03",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-09-04",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-09-05",
+      "similarity": 0.65625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-10-01",
+      "similarity": 0.734375,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-10-02",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-10-03",
+      "similarity": 0.71875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-10-04",
+      "similarity": 0.640625,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    },
+    {
+      "id": "NEG-10-05",
+      "similarity": 0.6875,
+      "threshold": 0.9,
+      "expected_duplicate": false,
+      "predicted_duplicate": false,
+      "passed": true
+    }
+  ],
+  "retrieval_cases": [
+    {
+      "id": "RET-001",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 1
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_f7d9137238d654d43eea1441677d2deebbeec04f"
+      ],
+      "returned_evidence_ids": [
+        "ev_f7d9137238d654d43eea1441677d2deebbeec04f"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 96,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-002",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69",
+        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90"
+      ],
+      "returned_evidence_ids": [
+        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90",
+        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 80,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-003",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_5eb5f61cddec8115a1503a321ab63de495e7dde5",
+        "ev_ef69fa8d6191f18f5e1bd71952051e35a9e9ab2a"
+      ],
+      "returned_evidence_ids": [
+        "ev_5eb5f61cddec8115a1503a321ab63de495e7dde5",
+        "ev_ef69fa8d6191f18f5e1bd71952051e35a9e9ab2a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 55,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-004",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "Apache",
+      "filters": {
+        "standard_job_id": 26
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "returned_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 87,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-005",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "CSS",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_3ac3e6b3e9df8cb751b616278aacb4052c1f6f76",
+        "ev_dc6342e115ed0906407d9937ebca0b3f289058b3"
+      ],
+      "returned_evidence_ids": [
+        "ev_3ac3e6b3e9df8cb751b616278aacb4052c1f6f76",
+        "ev_dc6342e115ed0906407d9937ebca0b3f289058b3"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 85,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-006",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Django",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_fae70e7d39db57bc0642a7a58fc947b98052bde2"
+      ],
+      "returned_evidence_ids": [
+        "ev_fae70e7d39db57bc0642a7a58fc947b98052bde2"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 72,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-007",
+      "category": "skill_exact",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 39
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_eae6ef741c72a723d1c7bc9a952894af5f416b3b"
+      ],
+      "returned_evidence_ids": [
+        "ev_eae6ef741c72a723d1c7bc9a952894af5f416b3b"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 70,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-008",
+      "category": "skill_exact",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 64
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
+        "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
+      ],
+      "returned_evidence_ids": [
+        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
+        "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 48,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-009",
+      "category": "skill_exact",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 89
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_ddd8aa297553b0e0b6e476ab1d52d3deee55edfa"
+      ],
+      "returned_evidence_ids": [
+        "ev_ddd8aa297553b0e0b6e476ab1d52d3deee55edfa"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 36,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-010",
+      "category": "skill_exact",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 123
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_3554f80e9ca036d2de9f2ef2b35bd43ad7a15219"
+      ],
+      "returned_evidence_ids": [
+        "ev_3554f80e9ca036d2de9f2ef2b35bd43ad7a15219"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 55,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-011",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "C++",
+      "filters": {
+        "standard_job_id": 1
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_fb59dc1f91f939ebd4b4f7e327411c97f5ee50c0"
+      ],
+      "returned_evidence_ids": [
+        "ev_fb59dc1f91f939ebd4b4f7e327411c97f5ee50c0"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 81,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-012",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69",
+        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90"
+      ],
+      "returned_evidence_ids": [
+        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90",
+        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 87,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-013",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_5eb5f61cddec8115a1503a321ab63de495e7dde5",
+        "ev_ef69fa8d6191f18f5e1bd71952051e35a9e9ab2a"
+      ],
+      "returned_evidence_ids": [
+        "ev_5eb5f61cddec8115a1503a321ab63de495e7dde5",
+        "ev_ef69fa8d6191f18f5e1bd71952051e35a9e9ab2a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 54,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-014",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "Apache",
+      "filters": {
+        "standard_job_id": 26
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "returned_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 86,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-015",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "CSS",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_3ac3e6b3e9df8cb751b616278aacb4052c1f6f76",
+        "ev_dc6342e115ed0906407d9937ebca0b3f289058b3"
+      ],
+      "returned_evidence_ids": [
+        "ev_3ac3e6b3e9df8cb751b616278aacb4052c1f6f76",
+        "ev_dc6342e115ed0906407d9937ebca0b3f289058b3"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 75,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-016",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Django",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_fae70e7d39db57bc0642a7a58fc947b98052bde2"
+      ],
+      "returned_evidence_ids": [
+        "ev_fae70e7d39db57bc0642a7a58fc947b98052bde2"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 67,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-017",
+      "category": "skill_exact",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "C++",
+      "filters": {
+        "standard_job_id": 39
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_d380372e89ecca787f472967cc53211976f1be7a"
+      ],
+      "returned_evidence_ids": [
+        "ev_d380372e89ecca787f472967cc53211976f1be7a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 78,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-018",
+      "category": "skill_exact",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 64
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
+        "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
+      ],
+      "returned_evidence_ids": [
+        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
+        "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 61,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-019",
+      "category": "skill_exact",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "IoT",
+      "filters": {
+        "standard_job_id": 89
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_f91c871c84670f8244f965001ddd2df15b518e28"
+      ],
+      "returned_evidence_ids": [
+        "ev_f91c871c84670f8244f965001ddd2df15b518e28"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 37,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-020",
+      "category": "skill_exact",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "C",
+      "filters": {
+        "standard_job_id": 123
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_3554f80e9ca036d2de9f2ef2b35bd43ad7a15219"
+      ],
+      "returned_evidence_ids": [
+        "ev_3554f80e9ca036d2de9f2ef2b35bd43ad7a15219"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 54,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-021",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "CI/CD",
+      "filters": {
+        "standard_job_id": 1
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_7fbf6905c9f3fbac0a60cc3814883f8a8e876ecf",
+        "ev_d61ad612850a7283c6e90657396a9947a2ba1848"
+      ],
+      "returned_evidence_ids": [
+        "ev_7fbf6905c9f3fbac0a60cc3814883f8a8e876ecf",
+        "ev_d61ad612850a7283c6e90657396a9947a2ba1848"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 86,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-022",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "C++",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_7bf6af58013f050ef0c25ccb08075127f0112ab9",
+        "ev_ccb621534be14dd2112fbdd524118a8cc7d03397"
+      ],
+      "returned_evidence_ids": [
+        "ev_7bf6af58013f050ef0c25ccb08075127f0112ab9",
+        "ev_ccb621534be14dd2112fbdd524118a8cc7d03397"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 74,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-023",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "C++",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_656d817c0b845f745ec725102b412afa4a019a0b",
+        "ev_cf7e8c8d0307f6715ab376a0b129563969d4b375"
+      ],
+      "returned_evidence_ids": [
+        "ev_656d817c0b845f745ec725102b412afa4a019a0b",
+        "ev_cf7e8c8d0307f6715ab376a0b129563969d4b375"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 67,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-024",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "Apache",
+      "filters": {
+        "standard_job_id": 26
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "returned_evidence_ids": [
+        "ev_e1b588ef84eb3d44d9f223bff5460101ac00ee1b"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 88,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-025",
+      "category": "skill_exact",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Git",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "returned_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 86,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-026",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "returned_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 102,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-027",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "returned_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 93,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-028",
+      "category": "responsibility_paraphrase",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "算法工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 64
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2",
+        "ev_e6b692442e52a2eecec324a44b4114d55e1ff44b"
+      ],
+      "returned_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2"
+      ],
+      "recall_at_5": 0.5,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 58,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-029",
+      "category": "responsibility_paraphrase",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "物联网工程师通常要求接口说明、研发规范和交付材料编写能力",
+      "filters": {
+        "standard_job_id": 89
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "returned_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 40,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-030",
+      "category": "responsibility_paraphrase",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "AI算法工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 123
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "returned_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 61,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-031",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "软件开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_664048914217d82dcf7ab7e4a1307fe944b9a249"
+      ],
+      "returned_evidence_ids": [
+        "ev_664048914217d82dcf7ab7e4a1307fe944b9a249"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 104,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-032",
+      "category": "responsibility_paraphrase",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "算法工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 64
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2",
+        "ev_e6b692442e52a2eecec324a44b4114d55e1ff44b"
+      ],
+      "returned_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2"
+      ],
+      "recall_at_5": 0.5,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 58,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-033",
+      "category": "responsibility_paraphrase",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "物联网工程师通常要求接口说明、研发规范和交付材料编写能力",
+      "filters": {
+        "standard_job_id": 89
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "returned_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 39,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-034",
+      "category": "responsibility_paraphrase",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "AI算法工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 123
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "returned_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 59,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-035",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "系统测试工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a",
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd"
+      ],
+      "returned_evidence_ids": [
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd",
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 82,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-036",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "returned_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 82,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-037",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "系统测试工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a",
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd"
+      ],
+      "returned_evidence_ids": [
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd",
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 68,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-038",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc"
+      ],
+      "returned_evidence_ids": [
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-039",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "returned_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 84,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-040",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "系统测试工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 5
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a",
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd"
+      ],
+      "returned_evidence_ids": [
+        "ev_5995f633f869d1986ab6060cda10d474a74b39a6",
+        "ev_708d834b7f09dca191ee1a9b1cb48b4f099da4bd",
+        "ev_0f11a8fb294e8a0a2467ba465bf8a83414e6827a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 66,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-041",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc"
+      ],
+      "returned_evidence_ids": [
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 94,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-042",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "returned_evidence_ids": [
+        "ev_4e009c8278212f344e04c3d11c9f175056066846",
+        "ev_a54bcbfe9164ca18a9bd2a8b67f328d9d8a7e683"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 83,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-043",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc"
+      ],
+      "returned_evidence_ids": [
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 94,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-044",
+      "category": "responsibility_paraphrase",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Python工程师通常要求代码版本管理、分支协作与变更追踪能力",
+      "filters": {
+        "standard_job_id": 39
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_9475b00d84e714fe0c0e6618fad02e7862947b12"
+      ],
+      "returned_evidence_ids": [
+        "ev_9475b00d84e714fe0c0e6618fad02e7862947b12"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 83,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-045",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "软件开发工程师通常要求持久层对象映射与数据库访问框架能力",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_0ae22dff77a3aa0b51e03afb187f801f6222500a"
+      ],
+      "returned_evidence_ids": [
+        "ev_0ae22dff77a3aa0b51e03afb187f801f6222500a"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 97,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-046",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc"
+      ],
+      "returned_evidence_ids": [
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 95,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-047",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "软件开发工程师通常要求关系型数据库设计、查询和性能调优能力",
+      "filters": {
+        "standard_job_id": 2
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_8da6a11108ed355e34af497ca83471238c1fb477"
+      ],
+      "returned_evidence_ids": [
+        "ev_8da6a11108ed355e34af497ca83471238c1fb477"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 95,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-048",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 29
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc"
+      ],
+      "returned_evidence_ids": [
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
+        "ev_618e5d0b3ebb78f1fdae20042b72298f0e0771b1",
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_f951ef6c42583268a582326150d0ffc73842948d"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 95,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-049",
+      "category": "responsibility_paraphrase",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师通常要求关系型数据库设计、查询和性能调优能力",
+      "filters": {
+        "standard_job_id": 32
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_5c95958568b243afc6406cd70ac059c7b90e12af"
+      ],
+      "returned_evidence_ids": [
+        "ev_5c95958568b243afc6406cd70ac059c7b90e12af"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 83,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-050",
+      "category": "responsibility_paraphrase",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Python工程师通常要求面向对象的服务端编程语言与工程化能力",
+      "filters": {
+        "standard_job_id": 39
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_78cbe2f7dc526d0c5cc87a86a52aafd2cad7c26c"
+      ],
+      "returned_evidence_ids": [
+        "ev_78cbe2f7dc526d0c5cc87a86a52aafd2cad7c26c"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 83,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-051",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师 FastAPI",
+      "filters": {
+        "standard_job_id": 32,
+        "skill_ids": [
+          91
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_030f0857c2a877acd323ff36a69eb96176b6d152"
+      ],
+      "returned_evidence_ids": [
+        "ev_030f0857c2a877acd323ff36a69eb96176b6d152"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 14,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-052",
+      "category": "job_skill_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Python工程师 CSS",
+      "filters": {
+        "standard_job_id": 39,
+        "skill_ids": [
+          83
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_55623c038d8f29f7b00743e9cece69f77ba173ac"
+      ],
+      "returned_evidence_ids": [
+        "ev_55623c038d8f29f7b00743e9cece69f77ba173ac"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-053",
+      "category": "job_skill_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "算法工程师 C++",
+      "filters": {
+        "standard_job_id": 64,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_f206b33596a28e547e19a876f1d52911c7a7278e",
+        "ev_f2ae86f500697f0ac35285989eb68e9cbbdb1ca6"
+      ],
+      "returned_evidence_ids": [
+        "ev_f206b33596a28e547e19a876f1d52911c7a7278e"
+      ],
+      "recall_at_5": 0.5,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 11,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-054",
+      "category": "job_skill_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "物联网工程师 Python",
+      "filters": {
+        "standard_job_id": 89,
+        "skill_ids": [
+          12
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_7aaa1d68b3b9be1966bff659579bdf088ef39db0"
+      ],
+      "returned_evidence_ids": [
+        "ev_7aaa1d68b3b9be1966bff659579bdf088ef39db0"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-055",
+      "category": "job_skill_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "AI算法工程师 C++",
+      "filters": {
+        "standard_job_id": 123,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_17456cf7d703e465fa7857305fdf123ca24962e1"
+      ],
+      "returned_evidence_ids": [
+        "ev_17456cf7d703e465fa7857305fdf123ca24962e1"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 11,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-056",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "系统架构师 CI/CD",
+      "filters": {
+        "standard_job_id": 1,
+        "skill_ids": [
+          15
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_7fbf6905c9f3fbac0a60cc3814883f8a8e876ecf",
+        "ev_d61ad612850a7283c6e90657396a9947a2ba1848"
+      ],
+      "returned_evidence_ids": [
+        "ev_7fbf6905c9f3fbac0a60cc3814883f8a8e876ecf",
+        "ev_d61ad612850a7283c6e90657396a9947a2ba1848"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-057",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "软件开发工程师 C++",
+      "filters": {
+        "standard_job_id": 2,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_7bf6af58013f050ef0c25ccb08075127f0112ab9",
+        "ev_ccb621534be14dd2112fbdd524118a8cc7d03397"
+      ],
+      "returned_evidence_ids": [
+        "ev_7bf6af58013f050ef0c25ccb08075127f0112ab9",
+        "ev_ccb621534be14dd2112fbdd524118a8cc7d03397"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-058",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "系统测试工程师 C++",
+      "filters": {
+        "standard_job_id": 5,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_656d817c0b845f745ec725102b412afa4a019a0b",
+        "ev_cf7e8c8d0307f6715ab376a0b129563969d4b375"
+      ],
+      "returned_evidence_ids": [
+        "ev_656d817c0b845f745ec725102b412afa4a019a0b",
+        "ev_cf7e8c8d0307f6715ab376a0b129563969d4b375"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-059",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "大数据工程师 HBase",
+      "filters": {
+        "standard_job_id": 26,
+        "skill_ids": [
+          63
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "returned_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 17,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-060",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师 Git",
+      "filters": {
+        "standard_job_id": 29,
+        "skill_ids": [
+          79
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "returned_evidence_ids": [
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-061",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Python开发工程师 FastAPI",
+      "filters": {
+        "standard_job_id": 32,
+        "skill_ids": [
+          91
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_030f0857c2a877acd323ff36a69eb96176b6d152"
+      ],
+      "returned_evidence_ids": [
+        "ev_030f0857c2a877acd323ff36a69eb96176b6d152"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-062",
+      "category": "job_skill_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Python工程师 Django",
+      "filters": {
+        "standard_job_id": 39,
+        "skill_ids": [
+          90
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26",
+        "ev_bf8e8b17e43407ae5fcd6b0a401bb9d3e459c5da"
+      ],
+      "returned_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26",
+        "ev_bf8e8b17e43407ae5fcd6b0a401bb9d3e459c5da"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 16,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-063",
+      "category": "job_skill_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "算法工程师 C++",
+      "filters": {
+        "standard_job_id": 64,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_f206b33596a28e547e19a876f1d52911c7a7278e",
+        "ev_f2ae86f500697f0ac35285989eb68e9cbbdb1ca6"
+      ],
+      "returned_evidence_ids": [
+        "ev_f206b33596a28e547e19a876f1d52911c7a7278e"
+      ],
+      "recall_at_5": 0.5,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 14,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-064",
+      "category": "job_skill_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "物联网工程师 嵌入式",
+      "filters": {
+        "standard_job_id": 89,
+        "skill_ids": [
+          33
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_86e67d310453f429db861ca02da657d95ef54c56"
+      ],
+      "returned_evidence_ids": [
+        "ev_86e67d310453f429db861ca02da657d95ef54c56"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-065",
+      "category": "job_skill_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "AI算法工程师 C++",
+      "filters": {
+        "standard_job_id": 123,
+        "skill_ids": [
+          9
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_17456cf7d703e465fa7857305fdf123ca24962e1"
+      ],
+      "returned_evidence_ids": [
+        "ev_17456cf7d703e465fa7857305fdf123ca24962e1"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-066",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "系统架构师 DevOps",
+      "filters": {
+        "standard_job_id": 1,
+        "skill_ids": [
+          54
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_69032931d4147ba6a5994246367858987f9f1714"
+      ],
+      "returned_evidence_ids": [
+        "ev_69032931d4147ba6a5994246367858987f9f1714"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 11,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-067",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "软件开发工程师 Elasticsearch",
+      "filters": {
+        "standard_job_id": 2,
+        "skill_ids": [
+          19
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_a5d5c4410d8965b25b2df458daf12eba0e318f75"
+      ],
+      "returned_evidence_ids": [
+        "ev_a5d5c4410d8965b25b2df458daf12eba0e318f75"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 9,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-068",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "系统测试工程师 Go",
+      "filters": {
+        "standard_job_id": 5,
+        "skill_ids": [
+          10
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_f4f5c1a931d12723e4d9563766d501e032461969"
+      ],
+      "returned_evidence_ids": [
+        "ev_f4f5c1a931d12723e4d9563766d501e032461969"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-069",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "大数据工程师 HBase",
+      "filters": {
+        "standard_job_id": 26,
+        "skill_ids": [
+          63
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "returned_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 16,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-070",
+      "category": "job_skill_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java开发工程师 HTML",
+      "filters": {
+        "standard_job_id": 29,
+        "skill_ids": [
+          84
+        ]
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_1a51c602422d8e39b907f74b23a291d390398387",
+        "ev_d1688bd53337aa1f7bcf7b5a895855b65e089002"
+      ],
+      "returned_evidence_ids": [
+        "ev_1a51c602422d8e39b907f74b23a291d390398387"
+      ],
+      "recall_at_5": 0.5,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 14,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-071",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Flask",
+      "filters": {
+        "standard_job_id": 32,
+        "skill_ids": [
+          89
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.7166
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_851afca506cc3ae7f0b566395b5ccf5f902917dc"
+      ],
+      "returned_evidence_ids": [
+        "ev_851afca506cc3ae7f0b566395b5ccf5f902917dc"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-072",
+      "category": "source_quality_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Django",
+      "filters": {
+        "standard_job_id": 39,
+        "skill_ids": [
+          90
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.9112
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26"
+      ],
+      "returned_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-073",
+      "category": "source_quality_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 64,
+        "skill_ids": [
+          11
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.9645
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2"
+      ],
+      "returned_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 11,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-074",
+      "category": "source_quality_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "技术文档",
+      "filters": {
+        "standard_job_id": 89,
+        "skill_ids": [
+          51
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.9645
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57"
+      ],
+      "returned_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 11,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-075",
+      "category": "source_quality_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 123,
+        "skill_ids": [
+          11
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.864
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "returned_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-076",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "Docker",
+      "filters": {
+        "standard_job_id": 1,
+        "skill_ids": [
+          18
+        ],
+        "source_platforms": [
+          "科大讯飞招聘"
+        ],
+        "minimum_quality_score": 0.906
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_70c7987b9ba6acb125df6b5862a08640009c319f"
+      ],
+      "returned_evidence_ids": [
+        "ev_70c7987b9ba6acb125df6b5862a08640009c319f"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-077",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 2,
+        "skill_ids": [
+          11
+        ],
+        "source_platforms": [
+          "科大讯飞招聘"
+        ],
+        "minimum_quality_score": 0.9061
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_664048914217d82dcf7ab7e4a1307fe944b9a249"
+      ],
+      "returned_evidence_ids": [
+        "ev_664048914217d82dcf7ab7e4a1307fe944b9a249"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-078",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "JIRA",
+      "filters": {
+        "standard_job_id": 5,
+        "skill_ids": [
+          60
+        ],
+        "source_platforms": [
+          "科大讯飞招聘"
+        ],
+        "minimum_quality_score": 0.9061
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_adc9228b45e1fd73ec1b78e98809a5e0ad96c043"
+      ],
+      "returned_evidence_ids": [
+        "ev_adc9228b45e1fd73ec1b78e98809a5e0ad96c043"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 10,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-079",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "HBase",
+      "filters": {
+        "standard_job_id": 26,
+        "skill_ids": [
+          63
+        ],
+        "source_platforms": [
+          "科大讯飞招聘"
+        ],
+        "minimum_quality_score": 0.6147
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "returned_evidence_ids": [
+        "ev_bcb80fa83df7059ae4e1d655e1044c05bf215e56"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 16,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-080",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "HTML",
+      "filters": {
+        "standard_job_id": 29,
+        "skill_ids": [
+          84
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.6675
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_1a51c602422d8e39b907f74b23a291d390398387",
+        "ev_d1688bd53337aa1f7bcf7b5a895855b65e089002"
+      ],
+      "returned_evidence_ids": [
+        "ev_1a51c602422d8e39b907f74b23a291d390398387",
+        "ev_d1688bd53337aa1f7bcf7b5a895855b65e089002"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-081",
+      "category": "source_quality_filter",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Flask",
+      "filters": {
+        "standard_job_id": 32,
+        "skill_ids": [
+          89
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.6531
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_851afca506cc3ae7f0b566395b5ccf5f902917dc"
+      ],
+      "returned_evidence_ids": [
+        "ev_851afca506cc3ae7f0b566395b5ccf5f902917dc"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-082",
+      "category": "source_quality_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "Django",
+      "filters": {
+        "standard_job_id": 39,
+        "skill_ids": [
+          90
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.8678
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26",
+        "ev_bf8e8b17e43407ae5fcd6b0a401bb9d3e459c5da"
+      ],
+      "returned_evidence_ids": [
+        "ev_1e288bdb4619976f177e3895872657e4e820f2b5",
+        "ev_627fced5775a44f260db43ff7647d5e97f23dd26",
+        "ev_bf8e8b17e43407ae5fcd6b0a401bb9d3e459c5da"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 16,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-083",
+      "category": "source_quality_filter",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 64,
+        "skill_ids": [
+          11
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.7112
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2",
+        "ev_e6b692442e52a2eecec324a44b4114d55e1ff44b"
+      ],
+      "returned_evidence_ids": [
+        "ev_b46cec8877ee3e369e689c12a9dc677b8486dff2",
+        "ev_e6b692442e52a2eecec324a44b4114d55e1ff44b"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-084",
+      "category": "source_quality_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "技术文档",
+      "filters": {
+        "standard_job_id": 89,
+        "skill_ids": [
+          51
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.6675
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "returned_evidence_ids": [
+        "ev_2578dccb90b79a136aa41cfd8afefdcaf80d1e57",
+        "ev_37134fb30aff6e92f8feab91aac95029b8ff2fe4"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 13,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-085",
+      "category": "source_quality_filter",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 123,
+        "skill_ids": [
+          11
+        ],
+        "source_platforms": [
+          "智联招聘"
+        ],
+        "minimum_quality_score": 0.864
+      },
+      "answer_mode": "grounded",
+      "expected_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "returned_evidence_ids": [
+        "ev_aaa8e6f53ccc19a56d0d53b80ec4e5b696d8dca8"
+      ],
+      "recall_at_5": 1.0,
+      "reciprocal_rank_at_10": 1.0,
+      "citation_precision_at_5": 1.0,
+      "top1_expected": true,
+      "no_answer_correct": null,
+      "filter_violations": [],
+      "latency_ms": 12,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": true
+    },
+    {
+      "id": "RET-086",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "Dubbo",
+      "filters": {
+        "standard_job_id": 1,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 8,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-087",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "Kafka",
+      "filters": {
+        "standard_job_id": 2,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-088",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 5,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-089",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "Hadoop",
+      "filters": {
+        "standard_job_id": 26,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-090",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Hibernate",
+      "filters": {
+        "standard_job_id": 29,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 6,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-091",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 32,
+        "standard_job_name": "Python开发工程师"
+      },
+      "query": "Git",
+      "filters": {
+        "standard_job_id": 32,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 6,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-092",
+      "category": "conflict_filter_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 39,
+        "standard_job_name": "Python工程师"
+      },
+      "query": "FastAPI",
+      "filters": {
+        "standard_job_id": 39,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-093",
+      "category": "conflict_filter_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": 64,
+        "standard_job_name": "算法工程师"
+      },
+      "query": "PyTorch",
+      "filters": {
+        "standard_job_id": 64,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-094",
+      "category": "conflict_filter_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 89,
+        "standard_job_name": "物联网工程师"
+      },
+      "query": "沟通能力",
+      "filters": {
+        "standard_job_id": 89,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-095",
+      "category": "conflict_filter_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": 123,
+        "standard_job_name": "AI算法工程师"
+      },
+      "query": "Linux",
+      "filters": {
+        "standard_job_id": 123,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-096",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 1,
+        "standard_job_name": "系统架构师"
+      },
+      "query": "ELK",
+      "filters": {
+        "standard_job_id": 1,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-097",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 2,
+        "standard_job_name": "软件开发工程师"
+      },
+      "query": "LLM",
+      "filters": {
+        "standard_job_id": 2,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-098",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 5,
+        "standard_job_name": "系统测试工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 5,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-099",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 26,
+        "standard_job_name": "大数据工程师"
+      },
+      "query": "Hadoop",
+      "filters": {
+        "standard_job_id": 26,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 6,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-100",
+      "category": "conflict_filter_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": 29,
+        "standard_job_name": "Java开发工程师"
+      },
+      "query": "Java",
+      "filters": {
+        "standard_job_id": 29,
+        "source_platforms": [
+          "不存在的数据源"
+        ]
+      },
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 5,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-101",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "quantum photolithography calibration",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 102,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-102",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "marine coral genome sequencing",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 94,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-103",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "medieval manuscript restoration",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 94,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-104",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "orbital telescope mirror coating",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 91,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-105",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "deep sea submersible ballast",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-106",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "nuclear fusion plasma confinement",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-107",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "archaeological pottery thermoluminescence",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 93,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-108",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "avian migration isotope tracing",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-109",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "volcanic ash mineral classification",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-110",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "satellite attitude control gyroscope",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 105,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-111",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "cryogenic superconducting magnet winding",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-112",
+      "category": "out_of_scope_no_answer",
+      "split": "development",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "paleoclimate ice core drilling",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-113",
+      "category": "out_of_scope_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "ocean salinity buoy calibration",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 93,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-114",
+      "category": "out_of_scope_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "radio telescope interference mitigation",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 91,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-115",
+      "category": "out_of_scope_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "plant pathology spore microscopy",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 93,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-116",
+      "category": "out_of_scope_no_answer",
+      "split": "validation",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "aerospace composite fatigue testing",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 93,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-117",
+      "category": "out_of_scope_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "seismic tomography inversion",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-118",
+      "category": "out_of_scope_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "ancient coin metallurgical analysis",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-119",
+      "category": "out_of_scope_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "glacier mass balance surveying",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 92,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    },
+    {
+      "id": "RET-120",
+      "category": "out_of_scope_no_answer",
+      "split": "test",
+      "evaluation_group": {
+        "standard_job_id": null,
+        "standard_job_name": null
+      },
+      "query": "particle accelerator beam collimation",
+      "filters": {},
+      "answer_mode": "insufficient_evidence",
+      "expected_evidence_ids": [],
+      "returned_evidence_ids": [],
+      "recall_at_5": null,
+      "reciprocal_rank_at_10": null,
+      "citation_precision_at_5": null,
+      "top1_expected": null,
+      "no_answer_correct": true,
+      "filter_violations": [],
+      "latency_ms": 91,
+      "index_version": "20260730T180337-b884da9e",
+      "backend": "chroma",
+      "warnings": [
+        "当前过滤条件下没有足够的已认证证据"
+      ],
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "The retrieval set is deterministically generated from foreign-key-linked MySQL evidence and engineering-reviewed; it is not human domain gold.",
+    "Retrieval cases are grouped by standard job into development, validation and test; the split job IDs are recorded in the report.",
+    "The current embedding is text-embedding-3-large at 3072 dimensions through openai_compatible.",
+    "Only the development jobs were used for the final retriever tuning pass; the replacement validation and test jobs were frozen before their first evaluation."
+  ]
+}

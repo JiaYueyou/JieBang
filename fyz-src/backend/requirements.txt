@@ -6,6 +6,8 @@ ecdsa==0.19.2
 fastapi==0.137.0
 httpx==0.28.1
 neo4j==6.2.0
+openai==2.41.0
+chromadb==1.5.9
 pyasn1==0.6.3
 pydantic==2.13.4
 pydantic_core==2.46.4

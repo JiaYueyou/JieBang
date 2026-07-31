@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
+from app.core.time import utc_now_naive
 from app.models import (
     EnterpriseEmployeeDirectory,
     EnterpriseTalent,
@@ -192,7 +193,7 @@ class InternalTransferService:
             for field, value in values.items():
                 setattr(row, field, value)
             row.synced_by = user_id
-            row.synced_at = datetime.utcnow()
+            row.synced_at = utc_now_naive()
         await self.db.commit()
         await self.db.refresh(row)
         in_pool = await self.db.scalar(select(EnterpriseTalent.id).where(
@@ -285,7 +286,7 @@ class InternalTransferService:
         if status.value not in self.POSITION_TRANSITIONS.get(row.status, set()):
             raise InvalidParameterError(f"内部岗位不能从 {row.status} 直接变更为 {status.value}")
         row.status = status.value
-        row.updated_at = datetime.utcnow()
+        row.updated_at = utc_now_naive()
         await self.db.commit()
         return self.position_summary(row)
 

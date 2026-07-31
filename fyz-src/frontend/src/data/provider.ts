@@ -1,5 +1,6 @@
 import type {
   AdminOverview, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
+  DataQualityPage, DataQualityQuery, RawJobQualityItem,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
@@ -106,6 +107,12 @@ export interface DataProvider {
       agentType?: string;
       status?: AgentRunStatus;
     }): Promise<AgentRunAuditPage>;
+    listQuality(query: DataQualityQuery): Promise<DataQualityPage>;
+    decideQuality(
+      id: number,
+      action: "exclude" | "restore",
+      reason?: string,
+    ): Promise<RawJobQualityItem>;
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
     pollCrawler(id: number): Promise<any>;

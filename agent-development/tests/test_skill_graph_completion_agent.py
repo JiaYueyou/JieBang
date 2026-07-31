@@ -29,8 +29,16 @@ async def test_completion_prompt_contains_l1_to_l3_context():
         skill_area="Framework",
         tech_stack="FastAPI",
         evidence=[
-            {"source_id": 1, "source": "平台A", "text": "熟悉 FastAPI 路由与依赖注入"},
-            {"source_id": 2, "source": "平台B", "text": "掌握 FastAPI 异步接口开发"},
+            {
+                "evidence_id": "evidence-a",
+                "source": "平台A",
+                "text": "熟悉 FastAPI 路由与依赖注入",
+            },
+            {
+                "evidence_id": "evidence-b",
+                "source": "平台B",
+                "text": "掌握 FastAPI 异步接口开发",
+            },
         ],
     )
 
@@ -40,4 +48,6 @@ async def test_completion_prompt_contains_l1_to_l3_context():
     assert "Python 后端开发工程师" in prompt
     assert "Framework" in prompt
     assert "FastAPI" in prompt
+    assert "evidence-a" in prompt
+    assert "evidence-b" in prompt
     assert provider.call["metadata"]["agent_type"] == "skill_graph_completion"

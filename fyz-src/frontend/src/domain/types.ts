@@ -458,9 +458,9 @@ export interface MatchExplanation {
   match_id: EntityId;
   score: number;
   summary: string;
-  strengths: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
-  gaps: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
-  risks: string[];
+  strengths: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
+  gaps: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
+  risks: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
   interview_suggestions: string[];
   generation_mode: "llm" | "template";
   warnings: string[];
@@ -648,10 +648,75 @@ export interface JobImportResult {
   total: number;
   imported: number;
   duplicates: number;
+  near_duplicates: number;
+  low_quality: number;
+  time_anomalies: number;
+  quality_status_counts: Record<DataQualityStatus, number>;
+  cross_source_verified: number;
   skill_facts: number;
   verified_skill_facts: number;
   unverified_skill_facts: number;
   validation: JobImportValidation[];
+}
+
+export type DataQualityStatus = "accepted" | "warning" | "rejected" | "pending";
+
+export interface DataQualitySummary {
+  total: number;
+  accepted: number;
+  warning: number;
+  rejected: number;
+  pending: number;
+  near_duplicates: number;
+  excluded: number;
+  average_quality_score: number;
+  flag_counts: Record<string, number>;
+}
+
+export interface RawJobQualityItem {
+  id: EntityId;
+  title: string;
+  standard_job_id: EntityId | null;
+  standardized_title: string | null;
+  company: string | null;
+  source: string;
+  source_url: string | null;
+  posted_at: string | null;
+  crawled_at: string | null;
+  posted_at_text: string | null;
+  crawled_at_text: string | null;
+  quality_score: number;
+  freshness_score: number;
+  source_trust_score: number;
+  quality_status: DataQualityStatus;
+  quality_flags: string[];
+  dedup_status: string;
+  near_duplicate_group_id: string | null;
+  near_duplicate_score: number;
+  is_excluded: boolean;
+  exclusion_reason: string | null;
+  quality_evaluated_at: string | null;
+}
+
+export interface DataQualityPage {
+  items: RawJobQualityItem[];
+  summary: DataQualitySummary;
+  meta: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export interface DataQualityQuery {
+  page: number;
+  pageSize: number;
+  source?: string;
+  qualityStatus?: DataQualityStatus;
+  qualityFlag?: string;
+  nearDuplicateGroupId?: string;
+  excluded?: boolean;
 }
 
 export type SkillFactVerificationStatus = "unverified" | "verified" | "rejected";

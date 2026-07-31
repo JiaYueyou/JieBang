@@ -7,7 +7,6 @@ import logging
 import time
 import uuid
 from collections import defaultdict
-from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,8 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import ResourceNotFoundError
-from app.core.time import utc_now
+from app.core.time import utc_now, utc_now_naive
 from app.domain.job_standardizer import CATEGORY_STACK, infer_job_stack, standardize_job_title
+from app.domain.statuses import AgentRunStatus, TaskStatus
 from app.models import (
     AgentRun,
     AsyncTask,
@@ -40,20 +40,14 @@ from app.schemas.graph import (
     GraphSnapshotResponse,
     GraphSubgraph,
 )
+from app.schemas.retrieval import RetrievalSearchRequest, RetrievalSearchResponse
 from app.schemas.skill import TaskStatusResponse
-
-# Offset for synthetic source IDs from internal JobPosting evidence,
-# avoiding collision with raw SourceDocument.id values.
-_INTERNAL_SOURCE_ID_OFFSET = 10_000_000
-
-
-class _EvidenceRow:
-    __slots__ = ("id", "source", "evidence_text")
-
-    def __init__(self, id: int, source: str, evidence_text: str) -> None:
-        self.id = id
-        self.source = source
-        self.evidence_text = evidence_text
+from app.services.agent_grounding_service import (
+    AgentGroundingReport,
+    AgentGroundingService,
+    GroundedClaim,
+)
+from app.services.retrieval_service import RetrievalService
 
 
 class GraphService:
@@ -63,6 +57,8 @@ class GraphService:
         *,
         graph_repository: Neo4jGraphRepository | None = None,
         llm_provider: LLMProvider | None = None,
+        retrieval_service: RetrievalService | None = None,
+        grounding_service: AgentGroundingService | None = None,
     ) -> None:
         self.db = db
         self.audit = GraphAuditRepository(db)
@@ -71,9 +67,20 @@ class GraphService:
         self.enrichment_agent = SkillGraphCompletionAgent(
             self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS
         )
+        self.retrieval = retrieval_service or RetrievalService(db)
+        self.grounding = grounding_service or AgentGroundingService(db)
 
     async def aggregate_standard_jobs(self) -> int:
-        raw_jobs = list((await self.db.execute(select(RawJobRecord))).scalars())
+        raw_jobs = list(
+            (
+                await self.db.execute(
+                    select(RawJobRecord).where(
+                        RawJobRecord.quality_status.in_(("accepted", "warning")),
+                        RawJobRecord.is_excluded.is_(False),
+                    )
+                )
+            ).scalars()
+        )
         internal_jobs = list((await self.db.execute(
             select(JobPosting).where(JobPosting.deleted_at.is_(None))
         )).scalars())
@@ -98,9 +105,10 @@ class GraphService:
                 if row.title != standard.name:
                     aliases.add(row.title)
                 standard.aliases = sorted(aliases)
-                standard.last_seen_at = datetime.utcnow()
+                standard.last_seen_at = utc_now_naive()
                 if source_type == "raw":
                     row.standardized_title = standard.name
+                    row.standard_job_id = standard.id
                 link = await self.audit.get_source(source_type, row.id)
                 if not link:
                     self.db.add(StandardJobSource(
@@ -130,21 +138,23 @@ class GraphService:
         task_id: str | None = None,
     ) -> dict:
         snapshot_id = str(uuid.uuid4())
-        version = datetime.utcnow().strftime("%Y%m%dT%H%M%S") + "-" + snapshot_id[:8]
+        version = utc_now_naive().strftime("%Y%m%dT%H%M%S") + "-" + snapshot_id[:8]
         snapshot = GraphSnapshot(
             id=snapshot_id,
             version=version,
             snapshot_type=mode,
-            status="running",
+            status=TaskStatus.running.value,
             created_by=user_id,
+            created_at=utc_now_naive(),
         )
         batch = GraphSyncBatch(
             id=str(uuid.uuid4()),
             async_task_id=task_id,
             snapshot_id=snapshot_id,
             sync_mode=mode,
-            status="running",
-            started_at=datetime.utcnow(),
+            status=TaskStatus.running.value,
+            started_at=utc_now_naive(),
+            created_at=utc_now_naive(),
         )
         self.db.add_all([snapshot, batch])
         await self.db.commit()
@@ -156,6 +166,7 @@ class GraphService:
                 "enabled": bool(getattr(self.llm, "enabled", True)),
                 "candidates_total": 0,
                 "candidates_verified": 0,
+                "candidates_machine_validated": 0,
                 "candidates_failed": 0,
                 "candidates_skipped": 0,
                 "tech_points_written": 0,
@@ -180,20 +191,20 @@ class GraphService:
                 skill = await self.db.get(Skill, skill_id)
                 if skill:
                     skill.graph_node_id = row["id"]
-            snapshot.status = "succeeded"
+            snapshot.status = TaskStatus.succeeded.value
             snapshot.node_count = counts["nodes"]
             snapshot.edge_count = counts["edges"]
             snapshot.fact_count = fact_count
-            snapshot.completed_at = datetime.utcnow()
+            snapshot.completed_at = utc_now_naive()
             snapshot.metadata_json = {
                 "standard_jobs": standard_count,
                 "enrichment": enrichment_stats,
             }
-            batch.status = "succeeded"
+            batch.status = TaskStatus.succeeded.value
             batch.progress = 100
             batch.node_count = counts["nodes"]
             batch.edge_count = counts["edges"]
-            batch.finished_at = datetime.utcnow()
+            batch.finished_at = utc_now_naive()
             await self.db.commit()
             return {
                 "snapshot_id": snapshot.id,
@@ -209,11 +220,11 @@ class GraphService:
             batch = (await self.db.execute(
                 select(GraphSyncBatch).where(GraphSyncBatch.snapshot_id == snapshot_id)
             )).scalar_one()
-            snapshot.status = "failed"
-            snapshot.completed_at = datetime.utcnow()
-            batch.status = "failed"
+            snapshot.status = TaskStatus.failed.value
+            snapshot.completed_at = utc_now_naive()
+            batch.status = TaskStatus.failed.value
             batch.error_message = str(exc)[:2000]
-            batch.finished_at = datetime.utcnow()
+            batch.finished_at = utc_now_naive()
             await self.db.commit()
             raise
 
@@ -224,109 +235,112 @@ class GraphService:
             .join(JobSkillFact, JobSkillFact.skill_id == Skill.id)
             .where(
                 JobSkillFact.verification_status == "verified",
+                Skill.validation_status == "approved",
                 Skill.category != "soft_skill",
             )
             .group_by(Skill.id)
             .order_by(func.count(JobSkillFact.id).desc(), Skill.id)
             .limit(20)
         )).all()
-        stats = {"candidates_total": len(rows), "candidates_verified": 0, "candidates_failed": 0, "candidates_skipped": 0}
+        stats = {
+            "candidates_total": len(rows),
+            "candidates_machine_validated": 0,
+            "candidates_failed": 0,
+            "candidates_skipped": 0,
+        }
         logger.info("graph_enrichment: preparing %d top candidates for snapshot %s", len(rows), snapshot_id)
         for skill, _coverage in rows:
-            raw_evidence_rows = (await self.db.execute(
-                select(
-                    SourceDocument.id,
-                    SourceDocument.source,
-                    JobSkillFact.evidence_text,
-                )
-                .join(RawJobRecord, RawJobRecord.source_document_id == SourceDocument.id)
-                .join(JobSkillFact, JobSkillFact.raw_job_record_id == RawJobRecord.id)
-                .where(
-                    JobSkillFact.skill_id == skill.id,
-                    JobSkillFact.verification_status == "verified",
-                )
-                .order_by(SourceDocument.source, SourceDocument.id)
-                .limit(8)
-            )).all()
-            internal_evidence_rows = (await self.db.execute(
-                select(
-                    JobPosting.id,
-                    JobPosting.company,
-                    JobSkillFact.evidence_text,
-                )
-                .join(JobSkillFact, JobSkillFact.job_id == JobPosting.id)
-                .where(
-                    JobSkillFact.skill_id == skill.id,
-                    JobSkillFact.verification_status == "verified",
-                    JobPosting.deleted_at.is_(None),
-                )
-                .order_by(JobPosting.company, JobPosting.id)
-                .limit(8)
-            )).all()
-            evidence_rows: list[_EvidenceRow] = [
-                _EvidenceRow(int(row.id), str(row.source), str(row.evidence_text))
-                for row in raw_evidence_rows
-            ]
-            evidence_rows.extend([
-                _EvidenceRow(
-                    _INTERNAL_SOURCE_ID_OFFSET + int(row.id),
-                    f"internal:{row.company or 'unknown'}",
-                    str(row.evidence_text),
-                )
-                for row in internal_evidence_rows
-            ])
-            # Preserve order while deduplicating by source_id.
-            seen_ids: set[int] = set()
-            deduped_evidence: list[_EvidenceRow] = []
-            for row in evidence_rows:
-                if row.id not in seen_ids:
-                    seen_ids.add(row.id)
-                    deduped_evidence.append(row)
-            evidence_rows = deduped_evidence
-            source_ids = [row.id for row in evidence_rows]
             candidate = GraphEnrichmentCandidate(
                 snapshot_id=snapshot_id,
                 skill_id=skill.id,
-                evidence_source_ids=source_ids,
+                evidence_source_ids=[],
                 candidate_data={"reason": "llm_disabled", "skill_name": skill.name},
                 confidence=0,
                 verification_status="unverified",
             )
             provider_enabled = bool(getattr(self.llm, "enabled", True))
-            independent_sources = {row.source for row in evidence_rows}
             if not provider_enabled:
                 candidate.candidate_data = {"reason": "llm_disabled", "skill_name": skill.name}
                 stats["candidates_skipped"] += 1
                 logger.info("graph_enrichment: skill=%s skipped (llm disabled)", skill.name)
-            elif len(source_ids) < 2 or len(independent_sources) < 2:
+                await self.audit.add_candidate(candidate)
+                continue
+
+            retrieval_query = f"{skill.name} 技术点 知识点 能力要求"
+            try:
+                retrieval = await self.retrieval.search(
+                    RetrievalSearchRequest(
+                        query=retrieval_query,
+                        skill_ids=[skill.id],
+                        top_k=12,
+                        minimum_quality_score=0.55,
+                        minimum_retrieval_score=0.2,
+                    ),
+                    user_id=user_id or 0,
+                    log_query=user_id is not None,
+                )
+            except Exception as exc:
+                candidate.candidate_data = {
+                    "reason": "retrieval_unavailable",
+                    "skill_name": skill.name,
+                    "error_code": type(exc).__name__,
+                }
+                stats["candidates_skipped"] += 1
+                logger.warning(
+                    "graph_enrichment: skill=%s skipped (retrieval unavailable: %s)",
+                    skill.name,
+                    type(exc).__name__,
+                )
+                await self.audit.add_candidate(candidate)
+                continue
+
+            candidate.evidence_source_ids = [
+                item.evidence_id for item in retrieval.items
+            ]
+            independent_sources = {
+                item.source_platform.strip().casefold()
+                for item in retrieval.items
+            }
+            if len(retrieval.items) < 2 or len(independent_sources) < 2:
                 candidate.candidate_data = {
                     "reason": "insufficient_evidence",
                     "skill_name": skill.name,
                     "sources": sorted(independent_sources),
-                    "source_count": len(source_ids),
+                    "evidence_ids": candidate.evidence_source_ids,
+                    "source_count": len(retrieval.items),
+                    "index_version": retrieval.index_version,
+                    "warnings": retrieval.warnings,
                 }
                 stats["candidates_skipped"] += 1
                 logger.info(
                     "graph_enrichment: skill=%s skipped (insufficient evidence: %d sources, %d platforms)",
-                    skill.name, len(source_ids), len(independent_sources),
+                    skill.name, len(retrieval.items), len(independent_sources),
                 )
             else:
-                await self._enrich_candidate(candidate, skill, evidence_rows, user_id)
+                await self._enrich_candidate(
+                    candidate,
+                    skill,
+                    retrieval,
+                    user_id,
+                )
                 if candidate.candidate_data.get("reason") == "llm_failed":
                     stats["candidates_failed"] += 1
                     logger.warning("graph_enrichment: skill=%s enrichment failed", skill.name)
-                elif candidate.verification_status == "verified":
-                    stats["candidates_verified"] += 1
-                    logger.info("graph_enrichment: skill=%s verified", skill.name)
+                elif candidate.verification_status == "machine_validated":
+                    stats["candidates_machine_validated"] += 1
+                    logger.info(
+                        "graph_enrichment: skill=%s machine validated",
+                        skill.name,
+                    )
                 else:
                     stats["candidates_skipped"] += 1
                     logger.info("graph_enrichment: skill=%s filtered out", skill.name)
             await self.audit.add_candidate(candidate)
         logger.info(
-            "graph_enrichment: snapshot=%s total=%d verified=%d failed=%d skipped=%d",
+            "graph_enrichment: snapshot=%s total=%d machine_validated=%d failed=%d skipped=%d",
             snapshot_id,
             stats["candidates_total"],
-            stats["candidates_verified"],
+            stats["candidates_machine_validated"],
             stats["candidates_failed"],
             stats["candidates_skipped"],
         )
@@ -355,7 +369,13 @@ class GraphService:
         )).scalars()
         return list(dict.fromkeys([*raw_names, *internal_names]))[:20]
 
-    async def _enrich_candidate(self, candidate, skill, evidence_rows, user_id) -> None:
+    async def _enrich_candidate(
+        self,
+        candidate: GraphEnrichmentCandidate,
+        skill: Skill,
+        retrieval: RetrievalSearchResponse,
+        user_id: int | None,
+    ) -> None:
         logger = logging.getLogger(__name__)
         run_id = str(uuid.uuid4())
         started = time.perf_counter()
@@ -366,22 +386,25 @@ class GraphService:
             provider=self.llm.provider_name,
             model=self.llm.model_name,
             prompt_version=self.enrichment_agent.prompt_version,
-            input_summary=f"{skill.name}: {len(evidence_rows)} evidence rows",
-            status="running",
-            started_at=utc_now(),
+            input_summary=(
+                f"{skill.name}: {len(retrieval.items)} evidence rows; "
+                f"index={retrieval.index_version}"
+            ),
+            status=AgentRunStatus.running.value,
             retry_count=0,
             created_by=user_id,
+            started_at=utc_now(),
         )
         self.db.add(run)
         await self.db.flush()
         candidate.agent_run_id = run_id
         evidence = [
             {
-                "source_id": row.id,
-                "source": str(row.source)[:100],
-                "text": str(row.evidence_text)[:2000],
+                "evidence_id": item.evidence_id,
+                "source": item.source_platform[:100],
+                "text": item.chunk_text[:2000],
             }
-            for row in evidence_rows
+            for item in retrieval.items
         ]
         try:
             output = await self.enrichment_agent.enrich(
@@ -390,12 +413,59 @@ class GraphService:
                 skill_area=skill.category.replace("_", " ").title(),
                 job_directions=await self._job_directions_for_skill(skill.id),
             )
-            filtered, confidence = self._filter_verified_completion(output, evidence)
-            candidate.candidate_data = filtered.model_dump(mode="json")
+            claims = self._grounding_claims(output)
+            report = await self.grounding.validate_and_persist(
+                agent_run_id=run_id,
+                claims=claims,
+                evidence=retrieval.items,
+                minimum_sources=2,
+                minimum_quality_score=0.55,
+                maximum_age_days=1095,
+                minimum_semantic_score=0.12,
+            )
+            filtered, confidence = self._filter_grounded_completion(
+                output,
+                report,
+            )
+            candidate.candidate_data = {
+                **filtered.model_dump(mode="json"),
+                "reason": (
+                    None
+                    if filtered.tech_points
+                    else "insufficient_grounding"
+                ),
+                "machine_validation": report.to_dict(),
+            }
             candidate.confidence = confidence
-            candidate.verification_status = "verified" if filtered.tech_points else "unverified"
-            run.status = "succeeded"
-            run.structured_output = output.model_dump(mode="json")
+            candidate.verification_status = (
+                "machine_validated"
+                if filtered.tech_points
+                else "unverified"
+            )
+            run.status = (
+                AgentRunStatus.succeeded.value
+                if filtered.tech_points and report.rejected_count == 0
+                else AgentRunStatus.degraded.value
+            )
+            run.structured_output = {
+                "raw_output": output.model_dump(mode="json"),
+                "validated_output": filtered.model_dump(mode="json"),
+                "retrieval": {
+                    "query_summary": retrieval.query,
+                    "evidence_ids": [
+                        item.evidence_id for item in retrieval.items
+                    ],
+                    "index_version": retrieval.index_version,
+                    "backend": retrieval.backend,
+                    "warnings": retrieval.warnings,
+                },
+                "validation": report.to_dict(),
+                "fallback_reason": (
+                    None
+                    if filtered.tech_points
+                    else "insufficient_grounding"
+                ),
+            }
             logger.info(
                 "graph_enrichment: skill=%s run_id=%s tech_points=%d knowledge_points=%d confidence=%.2f",
                 skill.name,
@@ -406,86 +476,126 @@ class GraphService:
             )
         except Exception as exc:
             candidate.candidate_data = {"reason": "llm_failed", "error": str(exc)[:500]}
-            run.status = "failed"
+            run.status = AgentRunStatus.failed.value
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
+            run.structured_output = {
+                "retrieval": {
+                    "query_summary": retrieval.query,
+                    "evidence_ids": [
+                        item.evidence_id for item in retrieval.items
+                    ],
+                    "index_version": retrieval.index_version,
+                    "backend": retrieval.backend,
+                    "warnings": retrieval.warnings,
+                },
+                "validation": {
+                    "status": "not_run",
+                    "accepted_claim_count": 0,
+                    "rejected_claim_count": 0,
+                    "claims": [],
+                },
+                "fallback_reason": "llm_failed",
+            }
             logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
         finally:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
             run.finished_at = utc_now()
 
     @staticmethod
-    def _filter_verified_completion(
-        output: GraphEnrichmentOutput, evidence: list[dict]
-    ) -> tuple[GraphEnrichmentOutput, float]:
-        logger = logging.getLogger(__name__)
-        source_by_id: dict[int, str] = {}
-        for item in evidence:
-            try:
-                source_by_id[int(item["source_id"])] = str(item["source"])
-            except (TypeError, ValueError):
-                continue
-        drop_reasons: list[dict] = []
-
-        def valid_references(source_ids: list[int]) -> tuple[bool, str]:
-            try:
-                unique_ids = {int(sid) for sid in source_ids}
-            except (TypeError, ValueError):
-                return False, "invalid_source_id"
-            unique_ids = {sid for sid in unique_ids if sid in source_by_id}
-            if len(unique_ids) < 2:
-                return False, "insufficient_sources"
-            platforms = {source_by_id[sid] for sid in unique_ids}
-            if len(platforms) < 2:
-                return False, "single_platform"
-            return True, ""
-
-        accepted_points = []
-        accepted_confidences: list[float] = []
-        for point in output.tech_points:
-            if point.confidence < 0.75:
-                drop_reasons.append({"type": "tech_point", "name": point.name, "reason": "low_confidence"})
-                continue
-            ok, reason = valid_references(point.source_ids)
-            if not ok:
-                drop_reasons.append({"type": "tech_point", "name": point.name, "reason": reason})
-                continue
-            accepted_knowledge = []
-            for item in point.knowledge_points:
-                if item.confidence < 0.75:
-                    drop_reasons.append({"type": "knowledge_point", "name": item.name, "reason": "low_confidence"})
-                    continue
-                ok_k, reason_k = valid_references(item.source_ids)
-                if not ok_k:
-                    drop_reasons.append({"type": "knowledge_point", "name": item.name, "reason": reason_k})
-                    continue
-                accepted_knowledge.append(item)
-            accepted_points.append(point.model_copy(update={"knowledge_points": accepted_knowledge}))
-            accepted_confidences.append(point.confidence)
-            accepted_confidences.extend(item.confidence for item in accepted_knowledge)
-        filtered = output.model_copy(update={"tech_points": accepted_points})
-        confidence = min(accepted_confidences, default=0)
-        if drop_reasons:
-            logger.info(
-                "graph_enrichment: filtered %d points; reasons=%s",
-                len(drop_reasons),
-                drop_reasons,
+    def _grounding_claims(
+        output: GraphEnrichmentOutput,
+    ) -> list[GroundedClaim]:
+        claims: list[GroundedClaim] = []
+        for point_index, point in enumerate(output.tech_points):
+            claims.append(
+                GroundedClaim(
+                    claim_id=f"tech:{point_index}",
+                    claim_type="tech_point",
+                    claim_text=f"{point.name}\n{point.detail}",
+                    anchor_text=point.name,
+                    evidence_ids=tuple(point.evidence_ids),
+                )
             )
-        return filtered, confidence
+            for knowledge_index, item in enumerate(
+                point.knowledge_points
+            ):
+                claims.append(
+                    GroundedClaim(
+                        claim_id=(
+                            f"knowledge:{point_index}:{knowledge_index}"
+                        ),
+                        claim_type="knowledge_point",
+                        claim_text=f"{item.name}\n{item.description}",
+                        anchor_text=item.name,
+                        evidence_ids=tuple(item.evidence_ids),
+                    )
+                )
+        return claims
+
+    @staticmethod
+    def _filter_grounded_completion(
+        output: GraphEnrichmentOutput,
+        report: AgentGroundingReport,
+    ) -> tuple[GraphEnrichmentOutput, float]:
+        accepted = report.accepted_claim_ids
+        accepted_points = []
+        confidences: list[float] = []
+        for point_index, point in enumerate(output.tech_points):
+            if (
+                point.confidence < 0.75
+                or f"tech:{point_index}" not in accepted
+            ):
+                continue
+            accepted_knowledge = [
+                item
+                for knowledge_index, item in enumerate(
+                    point.knowledge_points
+                )
+                if item.confidence >= 0.75
+                and (
+                    f"knowledge:{point_index}:{knowledge_index}"
+                    in accepted
+                )
+            ]
+            accepted_points.append(
+                point.model_copy(
+                    update={"knowledge_points": accepted_knowledge}
+                )
+            )
+            confidences.append(point.confidence)
+            confidences.extend(
+                item.confidence for item in accepted_knowledge
+            )
+        return (
+            output.model_copy(update={"tech_points": accepted_points}),
+            min(confidences, default=0),
+        )
 
     async def _build_payload(self, snapshot: GraphSnapshot) -> tuple[dict, dict, int]:
         standard_jobs = list((await self.db.execute(select(StandardJob))).scalars())
         sources = list((await self.db.execute(select(StandardJobSource))).scalars())
         source_map = {(row.source_type, row.source_id): row.standard_job_id for row in sources}
-        raw_to_document = dict((await self.db.execute(
-            select(RawJobRecord.id, RawJobRecord.source_document_id)
-        )).all())
+        eligible_raw_rows = (
+            await self.db.execute(
+                select(RawJobRecord).where(
+                    RawJobRecord.quality_status.in_(("accepted", "warning")),
+                    RawJobRecord.is_excluded.is_(False),
+                )
+            )
+        ).scalars().all()
+        raw_to_document = {
+            row.id: row.source_document_id for row in eligible_raw_rows
+        }
         documents = {
             row.id: row for row in (await self.db.execute(select(SourceDocument))).scalars()
         }
         fact_rows = (await self.db.execute(
             select(JobSkillFact, Skill).join(Skill, Skill.id == JobSkillFact.skill_id)
-            .where(JobSkillFact.verification_status == "verified")
+            .where(
+                JobSkillFact.verification_status == "verified",
+                Skill.validation_status == "approved",
+            )
         )).all()
 
         nodes: dict[str, list[dict]] = defaultdict(list)
@@ -502,6 +612,11 @@ class GraphService:
         job_skill_stats: dict[tuple[int, int], dict] = {}
         support_pairs: set[tuple[int, int, int]] = set()
         for fact, skill in fact_rows:
+            if (
+                fact.raw_job_record_id is not None
+                and fact.raw_job_record_id not in raw_to_document
+            ):
+                continue
             source_type = "raw" if fact.raw_job_record_id else "internal"
             source_id = fact.raw_job_record_id or fact.job_id
             standard_job_id = source_map.get((source_type, source_id))
@@ -657,11 +772,11 @@ class GraphService:
                 ))
                 edges["REFINES_TO"].append(self._edge(
                     f"skill:{skill.id}", point_id, confidence=point.confidence,
-                    sourceCount=len(set(point.source_ids)),
+                    sourceCount=len(set(point.evidence_ids)),
                 ))
                 tech_points += 1
                 for knowledge_index, knowledge in enumerate(point.knowledge_points):
-                    if knowledge.confidence < 0.75 or len(set(knowledge.source_ids)) < 2:
+                    if knowledge.confidence < 0.75 or len(set(knowledge.evidence_ids)) < 2:
                         continue
                     knowledge_id = f"knowledge:{skill.id}:{point_index}:{knowledge_index}"
                     nodes["KnowledgePoint"].append(self._node(
@@ -672,7 +787,7 @@ class GraphService:
                     ))
                     edges["HAS_KNOWLEDGE"].append(self._edge(
                         point_id, knowledge_id, confidence=knowledge.confidence,
-                        sourceCount=len(set(knowledge.source_ids)),
+                        sourceCount=len(set(knowledge.evidence_ids)),
                     ))
                     knowledge_points += 1
         logger.info(
@@ -817,7 +932,7 @@ class GraphTaskService:
         from app.tasks.graph_sync import _process_graph_sync, process_graph_sync
 
         task = AsyncTask(
-            id=str(uuid.uuid4()), task_type="graph_sync", status="queued", progress=0,
+            id=str(uuid.uuid4()), task_type="graph_sync", status=TaskStatus.queued.value, progress=0,
             request_data={"mode": mode, "enrich_top_skills": enrich_top_skills},
             created_by=user_id,
         )

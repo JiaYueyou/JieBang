@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime, timezone
 from math import ceil
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillExtractionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
-from app.core.time import utc_now
+from app.core.time import utc_now, utc_now_naive
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
 from app.models import AgentRun, JobSkillFact
 from app.providers import DeepSeekProvider, LLMProvider
@@ -83,7 +82,7 @@ class SkillService:
             required = [fact.skill.name for fact in facts if fact.kind == "required"]
             preferred = [fact.skill.name for fact in facts if fact.kind == "preferred"]
             await self.jobs.replace_skills(job, required=required, bonus=preferred)
-            job.updated_at = datetime.utcnow()
+            job.updated_at = utc_now_naive()
             version_no = await self.jobs.next_version_no(job.id)
             await self.jobs.add_version(
                 job_id=job.id,
@@ -156,7 +155,7 @@ class SkillService:
             raise InvalidParameterError("仅待审核事实可以确认或驳回")
         fact.verification_status = decision.value
         fact.reviewed_by = reviewer_id
-        fact.reviewed_at = datetime.now(timezone.utc)
+        fact.reviewed_at = utc_now()
         fact.review_note = note
         await self.db.commit()
         row = await self.skills.get_fact_review(fact_id)
@@ -214,7 +213,7 @@ class SkillService:
             run.status = "succeeded"
             run.structured_output = enriched.model_dump(mode="json")
         except Exception as exc:
-            run.status = "failed"
+            run.status = AgentRunStatus.failed.value
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
         finally:
@@ -249,6 +248,11 @@ class SkillService:
                 canonical_key=canonical_key(item.name),
                 category=item.category,
                 aliases=[],
+                validation_status=(
+                    "pending_review"
+                    if item.extraction_method == "llm"
+                    else "approved"
+                ),
             )
             confidence = item.confidence
             fact = JobSkillFact(

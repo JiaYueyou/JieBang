@@ -64,7 +64,7 @@ class MatchExplanationResponse(BaseModel):
     summary: str
     strengths: list[dict]
     gaps: list[dict]
-    risks: list[str]
+    risks: list[dict]
     interview_suggestions: list[str]
     generation_mode: str
     warnings: list[str]
