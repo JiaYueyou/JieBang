@@ -174,8 +174,9 @@ class AgentClaimCitation(Base):
         UniqueConstraint(
             "agent_run_id",
             "claim_id",
-            "evidence_id",
-            name="uq_agent_claim_citation",
+            "citation_source_type",
+            "citation_ref",
+            name="uq_agent_claim_citation_source",
         ),
     )
 
@@ -188,10 +189,25 @@ class AgentClaimCitation(Base):
     claim_id: Mapped[str] = mapped_column(String(80), nullable=False)
     claim_type: Mapped[str] = mapped_column(String(50), nullable=False)
     claim_text: Mapped[str] = mapped_column(Text, nullable=False)
-    evidence_id: Mapped[str] = mapped_column(
+    evidence_id: Mapped[str | None] = mapped_column(
         ForeignKey("evidence_chunk.id"),
-        nullable=False,
+        nullable=True,
         index=True,
+    )
+    citation_source_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="evidence_chunk",
+        index=True,
+    )
+    citation_ref: Mapped[str] = mapped_column(
+        String(160),
+        nullable=False,
+    )
+    source_metadata: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
     )
     grounding_score: Mapped[float] = mapped_column(Float, nullable=False)
     validation_status: Mapped[str] = mapped_column(

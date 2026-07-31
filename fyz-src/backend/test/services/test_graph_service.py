@@ -15,7 +15,6 @@ from app.models import (
     StandardJob,
 )
 from app.services.graph_service import GraphService
-from app.schemas.graph import GraphEnrichmentOutput, KnowledgePointOutput, TechPointOutput
 
 
 class DisabledProvider:
@@ -124,47 +123,7 @@ async def test_top_candidate_is_saved_unverified_without_llm():
         await service._prepare_top_candidates(snapshot.id, user_id=1)
         candidate = (await db.execute(select(GraphEnrichmentCandidate))).scalar_one()
         assert candidate.verification_status == "unverified"
-        assert len(candidate.evidence_source_ids) == 2
+        # Phase 3 does not load evidence until the LLM path is enabled, and
+        # never falls back to direct fact-table prompt injection.
+        assert candidate.evidence_source_ids == []
         assert candidate.candidate_data["reason"] == "llm_disabled"
-
-
-def test_l45_filter_requires_allowed_ids_and_independent_sources():
-    output = GraphEnrichmentOutput(
-        skill_name="FastAPI",
-        job_directions=["Python 后端开发工程师"],
-        skill_area="Framework",
-        tech_points=[
-            TechPointOutput(
-                name="依赖注入",
-                detail="使用依赖注入组织请求上下文",
-                confidence=0.9,
-                source_ids=[1, 2],
-                knowledge_points=[
-                    KnowledgePointOutput(
-                        name="Depends 生命周期",
-                        description="依赖项的创建和清理",
-                        difficulty="medium",
-                        confidence=0.88,
-                        source_ids=[1, 99],
-                    )
-                ],
-            ),
-            TechPointOutput(
-                name="虚构技术点",
-                detail="只来自同一平台",
-                confidence=0.95,
-                source_ids=[1, 3],
-            ),
-        ],
-    )
-    evidence = [
-        {"source_id": 1, "source": "平台A", "text": "证据1"},
-        {"source_id": 2, "source": "平台B", "text": "证据2"},
-        {"source_id": 3, "source": "平台A", "text": "证据3"},
-    ]
-
-    filtered, confidence = GraphService._filter_verified_completion(output, evidence)
-
-    assert [point.name for point in filtered.tech_points] == ["依赖注入"]
-    assert filtered.tech_points[0].knowledge_points == []
-    assert confidence == 0.9

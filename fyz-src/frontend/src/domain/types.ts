@@ -458,9 +458,9 @@ export interface MatchExplanation {
   match_id: EntityId;
   score: number;
   summary: string;
-  strengths: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
-  gaps: Array<{ title: string; explanation: string; evidence_ids: number[] }>;
-  risks: string[];
+  strengths: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
+  gaps: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
+  risks: Array<{ title: string; explanation: string; evidence_ids: string[] }>;
   interview_suggestions: string[];
   generation_mode: "llm" | "template";
   warnings: string[];

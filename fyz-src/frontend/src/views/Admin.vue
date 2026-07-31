@@ -793,7 +793,6 @@ function formatQualityDate(value: string | null, fallback: string | null) {
   if (!value) return fallback || "未记录";
   return new Date(value).toLocaleDateString("zh-CN");
 }
-function saveCrawlerPolicy() { showCrawlerSettings.value = false; ElMessage.success("全局采集策略已保存"); }
 function exportLogs() {
   const content = filteredLogs.value
     .map((log) => [log.time, log.level, log.service, log.message].join("\t"))

@@ -82,7 +82,9 @@ class GraphEnrichmentCandidate(Base):
     snapshot_id: Mapped[str] = mapped_column(ForeignKey("graph_snapshot.id", ondelete="CASCADE"), nullable=False, index=True)
     skill_id: Mapped[int] = mapped_column(ForeignKey("skill.id"), nullable=False, index=True)
     candidate_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    evidence_source_ids: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list)
+    # Historical column name retained for compatibility; values are stable
+    # Phase 2 EvidenceChunk IDs from Phase 3 onward.
+    evidence_source_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     verification_status: Mapped[str] = mapped_column(String(20), nullable=False, default="unverified", index=True)
     agent_run_id: Mapped[str | None] = mapped_column(ForeignKey("agent_run.id"))

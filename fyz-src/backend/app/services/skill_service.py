@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.agent_runtime import SkillExtractionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
-from app.core.time import utc_now
+from app.core.time import utc_now, utc_now_naive
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
 from app.models import AgentRun, JobSkillFact
 from app.providers import DeepSeekProvider, LLMProvider

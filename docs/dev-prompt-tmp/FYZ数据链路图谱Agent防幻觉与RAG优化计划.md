@@ -1,12 +1,12 @@
 # FYZ 数据链路、图谱、Agent 防幻觉与 RAG 优化计划
 
-> 文档版本：v1.0
+> 文档版本：v1.1
 >
 > 编制日期：2026-07-30
 >
 > 适用范围：`fyz-src/backend`、`fyz-src/frontend`、`agent-development/src/jiebang_agents` 及其直接相关的数据迁移、测试和说明文档
 >
-> 当前状态：已评审；Phase 0/1 已完成；Phase 2/2.1 已完成证据模型、可重建 Chroma 索引、`text-embedding-3-large`、混合检索和跨岗位工程评测闭环。当前覆盖 323 条 Evidence、10 个岗位、78 个技能和 2 个来源，工程发布门禁通过；下一步进入 Phase 3 Agent 防幻觉门禁。
+> 当前状态：已评审；Phase 0/1、Phase 2/2.1 已完成。Phase 3 已完成 Graph Enrichment 与 Match Explanation 两条防幻觉纵向闭环，包括多类型证据引用、生成后门禁、确定性拒答/降级和审计持久化；其余 Agent 将按同一契约逐步接入。
 > 前置文档：[Agent 分析和设计](./Agent分析和设计.md)、[FYZ 端 MVP 开发规划](./FYZ端MVP开发规划.md)、[知识图谱架构](../../fyz-src/docs-plans/GRAPH_ARCHITECTURE.md)
 
 ## 1. 文档目标
@@ -461,6 +461,8 @@ GET  /api/v1/retrieval/evidence/{evidence_id}
 - 索引删除后能够从 MySQL 完整重建。
 
 ### Phase 3：Agent 防幻觉门禁
+
+> 实施进度：2026-07-31 已完成 Graph Enrichment 与 Match Explanation 两条纵向闭环。图谱补全使用 Phase 2 Retriever Top-K 和稳定 Evidence ID；匹配解释使用已保存的简历/岗位匹配快照证据。两者统一经过引用存在性和语义一致度门禁并写入多类型 `agent_claim_citation`；证据不足时拒答或使用确定性模板。图谱候选只进入 `machine_validated`，不会直接进入正式图谱。详见 [Phase 3 实施记录](./FYZ优化Phase3Agent防幻觉门禁实施记录.md)。
 
 #### 目标
 

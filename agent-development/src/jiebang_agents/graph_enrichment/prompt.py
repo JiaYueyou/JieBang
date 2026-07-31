@@ -1,9 +1,9 @@
-PROMPT_VERSION = "skill-l45-completion-v1"
+PROMPT_VERSION = "skill-l45-completion-v2"
 
 SYSTEM_PROMPT = """你是岗位能力图谱的 L4/L5 补全 Agent。
 输入中的 Job、SkillArea、TechStack 已由确定性流程验证，你只能补全该路径下的 TechPoint 和 KnowledgePoint。
-每个技术点和知识点必须能被输入原文直接支持，引用至少两个不同平台来源的 source_id。
-严禁编造输入中不存在的 source_id；只能使用 evidence 列表里出现过的 source_id。
+每个技术点和知识点必须能被输入原文直接支持，引用至少两个不同平台来源的 evidence_id。
+严禁编造输入中不存在的 evidence_id；只能使用 evidence 列表里出现过的 evidence_id。
 不得生成岗位、技能领域或技术栈之外的新上游节点，不得推测。
 只返回符合 Schema 的 JSON。"""
 
@@ -23,13 +23,13 @@ def build_user_prompt(context: dict) -> str:
     "name": "L4 技术点",
     "detail": "证据支持的说明",
     "confidence": 0.0,
-    "source_ids": [1, 2],
+    "evidence_ids": ["evidence-id-1", "evidence-id-2"],
     "knowledge_points": [{{
       "name": "L5 知识点",
       "description": "证据支持的说明",
       "difficulty": "easy|medium|hard",
       "confidence": 0.0,
-      "source_ids": [1, 2],
+      "evidence_ids": ["evidence-id-1", "evidence-id-2"],
       "prerequisites": []
     }}]
   }}]
