@@ -1,4 +1,11 @@
 export type EntityId = number;
+export interface PageResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
 export type FavoriteTargetType = "job" | "resume";
 export type HistoryType = "job" | "resume" | "search" | "graph" | "match";
 export type JobStatus = "draft" | "open" | "paused" | "closed";
@@ -487,6 +494,12 @@ export interface GraphNode {
   category?: string;
   parent_skill?: string;
   parent_tech_point?: string;
+  difficulty?: string;
+  prerequisites?: string[];
+  core_stack?: string[];
+  common_solutions?: Array<{ name: string; purpose: string }>;
+  evidence_ids?: number[];
+  source_count?: number;
 }
 
 export interface GraphEdge {
@@ -503,6 +516,66 @@ export interface GraphSubgraph {
   edge_count?: number;
   snapshot_version?: string | null;
   truncated?: boolean;
+  returned?: number;
+  total_available?: number | null;
+  next_cursor?: string | null;
+  has_more?: boolean;
+  query_scope?: string | null;
+}
+
+export interface GraphEnrichmentCandidate {
+  id: number;
+  snapshot_id: string;
+  skill_id: number;
+  skill_name: string;
+  candidate_data: {
+    tech_points?: Array<{
+      name: string;
+      detail: string;
+      confidence: number;
+      evidence_ids?: string[];
+      knowledge_points?: Array<{ name: string; description: string; confidence: number; evidence_ids?: string[] }>;
+    }>;
+    reason?: string | null;
+    [key: string]: unknown;
+  };
+  evidence_source_ids: string[];
+  confidence: number;
+  machine_validation_status: string;
+  review_status: "pending" | "approved" | "rejected";
+  publication_status: "draft" | "approved" | "published" | "rejected";
+  review_note: string | null;
+  reviewed_at: string | null;
+  published_at: string | null;
+  lock_version: number;
+  agent_run_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GraphEnrichmentCandidatePage {
+  items: GraphEnrichmentCandidate[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GraphTaskResult {
+  node_count?: number;
+  edge_count?: number;
+  fact_count?: number;
+  stage?: string;
+  detail?: string;
+  completed?: number | null;
+  total?: number | null;
+}
+
+export interface GraphAsyncTask {
+  task_id: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  progress: number;
+  result: GraphTaskResult | null;
+  error_message: string | null;
 }
 
 export interface GraphQuery {
@@ -511,6 +584,9 @@ export interface GraphQuery {
   nodeType?: GraphType;
   keyword?: string;
   limit?: number;
+  cursor?: string;
+  pageSize?: number;
+  maxLayer?: 1 | 2 | 3;
 }
 
 export interface TrendSeries {
@@ -808,10 +884,20 @@ export interface AdminOverview {
   pipelineSummary: PipelineSummary;
   qualities: any[];
   performanceCards: any[];
-  endpoints: any[];
+  endpoints: Array<{
+    key: string;
+    title: string;
+    description: string;
+    value: string;
+    percent: number;
+  }>;
   logs: any[];
   generatedAt: string;
 }
+
+export type AdminResourceSnapshot = Pick<AdminOverview, "resources" | "traffic"> & {
+  sampledAt: string;
+};
 
 export interface MockDatabase {
   version: 1;

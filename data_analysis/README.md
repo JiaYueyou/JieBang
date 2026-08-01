@@ -298,12 +298,13 @@ python scripts/verify_outputs.py
 cd fyz-src/backend
 conda activate jiebang
 
-# 导入团队数据库快照（覆盖 MySQL → 重建 Neo4j）
-python scripts/run_database_import.py --replace
+# 导入团队数据库快照（MySQL → ChromaDB → Neo4j → 一致性校验）
+.\scripts\Import-TeamDatabase.ps1 -Replace
 
 # 或分步执行
 python scripts/01_prepare_mysql_schema.py
 python scripts/02_import_mysql_snapshot.py --replace
+python scripts/restore_chroma_from_mysql.py --replace
 python scripts/03_rebuild_neo4j.py
 python scripts/04_verify_database_import.py
 ```

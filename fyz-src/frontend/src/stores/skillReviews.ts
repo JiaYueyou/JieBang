@@ -58,6 +58,22 @@ export const useSkillReviewsStore = defineStore("skill-reviews", () => {
     await load();
   }
 
+  async function reviewBatch(
+    factIds: number[],
+    decision: "verified" | "rejected",
+    note?: string,
+  ) {
+    const result = await dataProvider.skillReviews.reviewBatch(factIds, decision, note);
+    await load();
+    return result;
+  }
+
+  async function approveAll() {
+    const result = await dataProvider.skillReviews.approveAll(keyword.value.trim() || undefined);
+    await load(true);
+    return result;
+  }
+
   function resetFilters() {
     status.value = "unverified";
     keyword.value = "";
@@ -78,6 +94,8 @@ export const useSkillReviewsStore = defineStore("skill-reviews", () => {
     hasFilters,
     load,
     review,
+    reviewBatch,
+    approveAll,
     resetFilters,
   };
 });

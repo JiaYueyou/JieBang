@@ -69,7 +69,11 @@ const userStore = useUserStore();
 
 userStore.restore();
 
-const currentPath = computed(() => route.path);
+const currentPath = computed(() => (
+  (route.meta.activeMenu as string | undefined)
+  || route.matched.find((record) => allMenuItems.some((item) => item.path === record.path))?.path
+  || route.path
+));
 const breadcrumbs = computed(() => {
   const crumbs: { title: string; path: string }[] = [];
   // 如果当前路由 meta 有 parentTitle，先加父级

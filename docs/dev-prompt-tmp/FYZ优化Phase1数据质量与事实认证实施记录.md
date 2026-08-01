@@ -73,8 +73,8 @@
 
 ```powershell
 Set-Location E:\Project\JieBang\fyz-src\backend
-& 'E:\Computer_tools\Anaconda\dld\envs\jiebang\python.exe' scripts\backfill_phase1_data_quality.py
-& 'E:\Computer_tools\Anaconda\dld\envs\jiebang\python.exe' scripts\backfill_phase1_data_quality.py --apply
+# 历史 Phase 1 回填脚本已移除；当前使用团队 SQL 快照或重新执行数据导入任务。
+.\scripts\Import-TeamDatabase.ps1 -Replace
 ```
 
 最终回填结果：

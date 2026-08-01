@@ -7,6 +7,7 @@ import type { GraphNode, GraphType } from '@/domain/types'
 const props = defineProps<{
   graph: Graph | null
   highlightedPath?: string[]
+  highlightedNodeIds?: string[]
   pinnedNodeIds?: string[]
 }>()
 
@@ -32,16 +33,16 @@ const levelSizes: Record<string, number> = {
   'L1': 30,
   'L2': 24,
   'L3': 19,
-  'L4': 14,
-  'L5': 10
+  'L4': 18,
+  'L5': 16
 }
 
 const levelFontSizes: Record<string, number> = {
   'L1': 12,
   'L2': 11,
   'L3': 10,
-  'L4': 8,
-  'L5': 6
+  'L4': 10,
+  'L5': 10
 }
 
 onMounted(async () => {
@@ -59,16 +60,17 @@ async function initChart() {
   
   const option = buildOption()
   chartInstance.setOption(option)
+  enableFullCanvasRoaming()
   
   chartInstance.on('click', (params: any) => {
     if (params.dataType === 'node') {
       const nodeId = params.data.id
-      
+      const nextPinned = !pinnedNodes.value.has(nodeId)
       pinnedNodes.value.clear()
-      pinnedNodes.value.add(nodeId)
+      if (nextPinned) pinnedNodes.value.add(nodeId)
       pinnedNodes.value = new Set(pinnedNodes.value)
       
-      emit('nodePin', nodeId, true)
+      emit('nodePin', nodeId, nextPinned)
       
       const nodeData = params.data
       const graphNode: GraphNode = {
@@ -90,7 +92,13 @@ async function initChart() {
         job_count: nodeData.job_count || 0,
         category: nodeData.category || '',
         parent_skill: nodeData.parent_skill || '',
-        parent_tech_point: nodeData.parent_tech_point || ''
+        parent_tech_point: nodeData.parent_tech_point || '',
+        difficulty: nodeData.difficulty || '',
+        prerequisites: nodeData.prerequisites || [],
+        evidence_ids: nodeData.evidence_ids || [],
+        source_count: nodeData.source_count || 0,
+        core_stack: nodeData.core_stack || [],
+        common_solutions: nodeData.common_solutions || []
       }
       emit('nodeClick', graphNode)
       
@@ -130,6 +138,8 @@ function buildOption(): any {
     'L4': 3,
     'L5': 4
   }
+  const searchMatches = new Set(props.highlightedNodeIds || [])
+  const hasSearchMatches = searchMatches.size > 0
   
   props.graph?.forEachNode((nodeId: string, attrs: any) => {
     const level = attrs.level || 'L3'
@@ -137,6 +147,7 @@ function buildOption(): any {
     const color = attrs.color || levelColors[level] || '#4f6ef6'
     const categoryIndex = levelToCategoryIndex[level] || 2
     const isHighlighted = props.highlightedPath?.includes(nodeId)
+    const isSearchMatch = searchMatches.has(nodeId)
     const isPinned = pinnedNodes.value.has(nodeId)
     const pinnedSize = isPinned ? size * 1.2 : size
     
@@ -155,28 +166,34 @@ function buildOption(): any {
       job_count: attrs.job_count || 0,
       parent_skill: attrs.parent_skill || '',
       parent_tech_point: attrs.parent_tech_point || '',
+      difficulty: attrs.difficulty || '',
+      prerequisites: attrs.prerequisites || [],
+      evidence_ids: attrs.evidence_ids || attrs.evidenceIds || [],
+      source_count: attrs.source_count || attrs.sourceCount || 0,
+      core_stack: attrs.core_stack || [],
+      common_solutions: attrs.common_solutions || [],
       x: attrs.x || (Math.random() - 0.5) * 800,
       y: attrs.y || (Math.random() - 0.5) * 600,
       fixed: isPinned,
       itemStyle: {
-        color: isPinned ? '#f59e4b' : color,
-        borderColor: isPinned ? '#ffffff' : '#ffffff',
-        borderWidth: isPinned ? 4 : 2,
-        opacity: isHighlighted || isPinned ? 1 : 0.9,
-        shadowBlur: isPinned ? 30 : isHighlighted ? 20 : 10,
-        shadowColor: isPinned ? 'rgba(245, 158, 75, 0.8)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
+        color: isPinned || isSearchMatch ? '#f59e4b' : color,
+        borderColor: isSearchMatch ? '#fff7ed' : '#ffffff',
+        borderWidth: isPinned || isSearchMatch ? 4 : 2,
+        opacity: hasSearchMatches && !isSearchMatch ? 0.22 : isHighlighted || isPinned ? 1 : 0.9,
+        shadowBlur: isPinned || isSearchMatch ? 30 : isHighlighted ? 20 : 10,
+        shadowColor: isPinned || isSearchMatch ? 'rgba(245, 158, 75, 0.85)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
         shadowOffsetY: isPinned ? 5 : 3
       },
-      symbolSize: pinnedSize,
+      symbolSize: isSearchMatch ? pinnedSize * 1.45 : pinnedSize,
       label: {
         show: true,
         position: 'bottom',
         distance: isPinned ? 12 : 8,
         fontSize: isPinned ? (levelFontSizes[level] || 12) + 2 : levelFontSizes[level] || 12,
-        color: isPinned ? '#b45309' : '#1a1d28',
+        color: isPinned || isSearchMatch ? '#b45309' : '#1a1d28',
         formatter: (params: any) => params.name,
-        fontWeight: isPinned ? 'bold' : 'bold',
-        opacity: isPinned ? 1 : 0.8
+        fontWeight: 'bold',
+        opacity: hasSearchMatches && !isSearchMatch ? 0.2 : 1
       },
       zlevel: isPinned ? 10 : level === 'L1' ? 5 : level === 'L2' ? 4 : level === 'L3' ? 3 : level === 'L4' ? 2 : 1
     })
@@ -198,7 +215,16 @@ function buildOption(): any {
       }
     })
   })
-  
+
+  const isolatedLayout = links.length === 0
+  if (isolatedLayout && nodes.length) {
+    const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length * 1.6)))
+    nodes.forEach((node, index) => {
+      node.x = (index % columns) * 220
+      node.y = Math.floor(index / columns) * 130
+    })
+  }
+
   return {
     backgroundColor: 'transparent',
     tooltip: {
@@ -218,7 +244,7 @@ function buildOption(): any {
           return `<div style="font-weight: bold; margin-bottom: 8px; color: ${data.itemStyle.color}">${data.name}${isPinned ? ' 🔒' : ''}</div>
                   <div>类型: ${data.type}</div>
                   <div>层级: ${data.level}</div>
-                  <div>${isPinned ? '状态: <span style="color: #f59e4b">已锁定</span>' : '提示: 点击锁定节点'}</div>
+                  <div>${isPinned ? '状态: <span style="color: #f59e4b">已锁定，再次点击可取消</span>' : '提示: 点击锁定节点'}</div>
                   <div>${data.description || ''}</div>`
         } else if (params.dataType === 'edge') {
           return `<div>关系: ${params.data.relation || '关联'}</div>`
@@ -240,7 +266,7 @@ function buildOption(): any {
     },
     series: [{
       type: 'graph',
-      layout: 'force',
+      layout: isolatedLayout ? 'none' : 'force',
       roam: true,
       draggable: true,
       animation: true,
@@ -305,6 +331,24 @@ function updateChart() {
   if (!chartInstance) return
   const option = buildOption()
   chartInstance.setOption(option, { notMerge: false, lazyUpdate: false })
+  enableFullCanvasRoaming()
+}
+
+function enableFullCanvasRoaming() {
+  if (!chartInstance || !containerRef.value) return
+  const seriesModel = (chartInstance as any).getModel()?.getSeriesByIndex(0)
+  const coordinateSystem = seriesModel?.coordinateSystem
+  if (!coordinateSystem) return
+
+  // ECharts' graph roam controller normally checks the transformed node data
+  // bounds, which leaves the sides of a wide canvas inactive. Keep its native
+  // drag/zoom implementation but expand only the hit-test area to the canvas.
+  coordinateSystem.containPoint = ([x, y]: [number, number]) => (
+    x >= 0
+    && y >= 0
+    && x <= containerRef.value!.clientWidth
+    && y <= containerRef.value!.clientHeight
+  )
 }
 
 function handleResize() {
@@ -345,6 +389,17 @@ watch(() => props.highlightedPath, async () => {
   }
 })
 
+watch(() => props.highlightedNodeIds, async () => {
+  await nextTick()
+  updateChart()
+}, { deep: true })
+
+watch(() => props.pinnedNodeIds, async (ids) => {
+  pinnedNodes.value = new Set(ids || [])
+  await nextTick()
+  updateChart()
+}, { deep: true })
+
 
 </script>
 
@@ -356,7 +411,7 @@ watch(() => props.highlightedPath, async () => {
 .graph-3d-container {
   width: 100%;
   height: 100%;
-  min-height: 600px;
+  min-height: 0;
   background:
     radial-gradient(circle at 50% 20%, rgba(79,110,246,.06), transparent 34%),
     linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%);

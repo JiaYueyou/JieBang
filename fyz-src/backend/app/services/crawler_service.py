@@ -650,6 +650,15 @@ class CrawlerService:
         }
         return resources, traffic
 
+    def get_resources_snapshot(self) -> dict:
+        """Return a lightweight host-resource sample for foreground polling."""
+        resources, traffic = self._get_resources()
+        return {
+            "resources": resources,
+            "traffic": traffic,
+            "sampledAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+
     async def _get_recent_tasks(self, db: AsyncSession) -> list[dict]:
         task_rows = (
             await db.execute(
@@ -867,10 +876,10 @@ class CrawlerService:
                 {"label": "已驳回事实", "value": str(rejected), "note": "保留审核证据", "tone": "rose", "bars": [min(rejected, 100)]},
             ],
             "endpoints": [
-                {"method": "GET", "path": "/api/v1/skills/facts/reviews", "value": f"{total} 条", "percent": 100 if total else 0},
-                {"method": "PATCH", "path": "/api/v1/skills/facts/{id}/review", "value": f"{reviewed} 条", "percent": round(reviewed * 100 / total) if total else 0},
-                {"method": "POST", "path": "/api/v1/data-imports/jobs", "value": f"{len(task_rows)} 次", "percent": round(succeeded_tasks * 100 / len(task_rows)) if task_rows else 0},
-                {"method": "GET", "path": "/api/v1/tasks/{id}", "value": f"{failed_tasks} 次失败", "percent": round(failed_tasks * 100 / len(task_rows)) if task_rows else 0},
+                {"key": "skill_facts", "title": "技能事实总量", "description": "系统已沉淀、可追溯的岗位技能事实", "value": f"{total} 条", "percent": 100 if total else 0},
+                {"key": "fact_review", "title": "技能事实审核进度", "description": "已由管理员确认或驳回的事实占比", "value": f"{reviewed} 条", "percent": round(reviewed * 100 / total) if total else 0},
+                {"key": "job_import", "title": "岗位数据导入任务", "description": "最近异步任务窗口内的岗位清洗与入库任务", "value": f"{len(task_rows)} 次", "percent": round(succeeded_tasks * 100 / len(task_rows)) if task_rows else 0},
+                {"key": "task_failure", "title": "异步任务失败", "description": "最近任务窗口内需要排查的失败记录", "value": f"{failed_tasks} 次", "percent": round(failed_tasks * 100 / len(task_rows)) if task_rows else 0},
             ],
             "logs": logs[:30],
         }

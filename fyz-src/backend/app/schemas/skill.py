@@ -103,6 +103,20 @@ class SkillFactReviewRequest(BaseModel):
         return self
 
 
+class SkillFactBatchReviewRequest(SkillFactReviewRequest):
+    fact_ids: list[int] = Field(min_length=1, max_length=100)
+
+
+class SkillFactApproveAllRequest(BaseModel):
+    keyword: str | None = Field(default=None, max_length=100)
+
+
+class SkillFactBatchReviewResult(BaseModel):
+    processed_count: int
+    skipped_count: int
+    fact_ids: list[int]
+
+
 class JobExtractionResult(BaseModel):
     job_id: int
     facts: list[SkillFactResponse]

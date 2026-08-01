@@ -29,11 +29,16 @@ agent-development/
 
 ## L4-L5 智能体模块
 
-`l45_agent/` 是基于 DeepSeek 大模型的 L4-L5 知识图谱补全模块：
+当前运行时位于 `src/jiebang_agents/graph_enrichment/`，由 FastAPI 的异步图谱
+任务编排调用：
 
 - **作用**：为 L3 技能自动生成 TechPoint（L4）和 KnowledgePoint（L5）
-- **集成位置**：`fyz-src/backend/scripts/05_enrich_l45.py`（流水线第 5 步）
-- **详细文档**：[l45_agent/README.md](l45_agent/README.md)
+- **集成位置**：`GraphTaskService`、`GraphService` 与 `/api/v1/graph/enrichment/*`
+- **审核链路**：异步生成候选 → 机器校验 → 人工批准/驳回 → 发布 → Neo4j
+- **测试入口**：`python -m pytest tests -q`
+
+`l45_agent/` 只保留早期设计参考，不再通过后端脚本直接运行。详细迁移说明见
+[l45_agent/README.md](l45_agent/README.md)。
 
 ## 当前能力状态
 

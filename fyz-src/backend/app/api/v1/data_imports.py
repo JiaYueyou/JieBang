@@ -1,5 +1,7 @@
 """数据导入与任务状态 API。"""
 
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +13,7 @@ from app.schemas.skill import DataImportRequest, TaskStatusResponse
 from app.services import ImportService, TaskService
 
 router = APIRouter(tags=["数据导入"])
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -26,6 +29,10 @@ async def import_jobs(
     ImportService.resolve_files(payload.files)
     task = await TaskService(db).create_import(
         files=payload.files, user_id=principal.user_id
+    )
+    logger.info(
+        "job_import_created task_id=%s file_count=%d files=%s user_id=%s",
+        task.task_id, len(payload.files), ",".join(payload.files), principal.user_id,
     )
     return ApiResponse(message="导入任务已创建", data=task)
 

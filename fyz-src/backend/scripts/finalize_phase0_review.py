@@ -25,10 +25,11 @@ def main() -> int:
         type=Path,
         default=BACKEND_ROOT / "evaluation" / "phase0_golden_set.json",
     )
-    parser.add_argument("--reviewer", default="codex-engineering-review")
+    parser.add_argument("--reviewer", default="engineering-review")
     parser.add_argument(
         "--authorization",
-        default="user-authorized-phase1-2026-07-30",
+        required=True,
+        help="Human review authorization or ticket reference.",
     )
     args = parser.parse_args()
 

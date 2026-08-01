@@ -1,27 +1,92 @@
 {
-  "format_version": 1,
-  "generated_at": "2026-07-10T08:28:56.486403+00:00",
+  "format_version": 2,
+  "generated_at": "2026-08-01T13:03:41.533850+00:00",
   "source_database": "jie_bang",
-  "alembic_revision": "20260710_0005",
+  "alembic_revision": "20260801_0017",
+  "schema_source": "alembic",
+  "data_file": "mysql_snapshot.sql",
   "table_counts": {
-    "agent_run": 3,
+    "agent_claim_citation": 468,
+    "agent_run": 193,
     "alembic_version": 1,
-    "analysis_insight_decision": 0,
-    "async_task": 3,
-    "graph_enrichment_candidate": 100,
-    "graph_snapshot": 8,
-    "graph_sync_batch": 8,
-    "job_posting": 2,
-    "job_posting_skill": 15,
-    "job_posting_version": 4,
+    "analysis_insight_decision": 2,
+    "async_task": 115,
+    "data_source": 2,
+    "enterprise_employee_directory": 1,
+    "enterprise_talent": 1,
+    "evidence_chunk": 323,
+    "graph_enrichment_candidate": 227,
+    "graph_snapshot": 34,
+    "graph_sync_batch": 34,
+    "internal_position": 2,
+    "job_duplicate_cluster": 0,
+    "job_posting": 7,
+    "job_posting_skill": 56,
+    "job_posting_version": 22,
     "job_skill_fact": 1143,
+    "match_evidence": 19,
+    "match_record": 2,
     "raw_job_record": 190,
+    "resume": 1,
+    "resume_parse_result": 1,
+    "resume_skill": 15,
+    "retrieval_index_entry": 760,
+    "retrieval_index_version": 7,
+    "retrieval_query_log": 140,
     "skill": 107,
     "source_document": 190,
-    "standard_job": 130,
-    "standard_job_source": 191,
-    "user": 1
+    "source_trust_policy": 2,
+    "standard_job": 268,
+    "standard_job_alias": 145,
+    "standard_job_source": 192,
+    "transfer_decision": 0,
+    "transfer_rule_set": 0,
+    "user": 1,
+    "user_browse_history": 7,
+    "user_favorite": 1
   },
-  "total_rows": 2096,
-  "sha256": "c0d0132544e659a4de95519b6d648d0be8e28871af5a915e48f8649ef83ff7ec"
+  "total_rows": 4679,
+  "chroma": {
+    "materialization": "restore_from_mysql_precomputed_vectors",
+    "indexes": [
+      {
+        "version": "20260730T172129-354bb66e",
+        "embedding_provider": "openai_compatible",
+        "embedding_model": "text-embedding-3-large",
+        "embedding_dimension": 3072,
+        "entry_count": 38
+      },
+      {
+        "version": "20260730T172622-598d6aed",
+        "embedding_provider": "openai_compatible",
+        "embedding_model": "text-embedding-3-large",
+        "embedding_dimension": 3072,
+        "entry_count": 38
+      },
+      {
+        "version": "20260730T175110-6299bf1c",
+        "embedding_provider": "openai_compatible",
+        "embedding_model": "text-embedding-3-large",
+        "embedding_dimension": 3072,
+        "entry_count": 247
+      },
+      {
+        "version": "20260730T180337-b884da9e",
+        "embedding_provider": "openai_compatible",
+        "embedding_model": "text-embedding-3-large",
+        "embedding_dimension": 3072,
+        "entry_count": 323
+      }
+    ],
+    "collection_count": 4,
+    "vector_count": 646
+  },
+  "neo4j": {
+    "materialization": "rebuild_namespace_from_mysql",
+    "latest_snapshot": {
+      "node_count": 474,
+      "edge_count": 817
+    }
+  },
+  "sha256": "85744b6d6874524c9e642392e5134b40405dd589ea6a1056a160dee697127253"
 }

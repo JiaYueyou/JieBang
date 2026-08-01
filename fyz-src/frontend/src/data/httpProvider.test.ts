@@ -60,10 +60,45 @@ describe("HTTP job and JD Agent provider contract", () => {
     vi.restoreAllMocks();
   });
 
-  it("unwraps job list responses", async () => {
-    vi.spyOn(request, "get").mockResolvedValue(response([job]) as never);
-    await expect(httpDataProvider.jobs.list()).resolves.toEqual([job]);
-    expect(request.get).toHaveBeenCalledWith("/jobs", { params: undefined });
+  it("loads public jobs with server pagination metadata", async () => {
+    vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: [job],
+        meta: { page: 2, page_size: 6, total: 13, total_pages: 3 },
+      },
+    } as never);
+    await expect(httpDataProvider.jobs.list({ page: 2, pageSize: 6, status: "open", keyword: "Java" })).resolves.toEqual({
+      items: [job],
+      page: 2,
+      pageSize: 6,
+      total: 13,
+      totalPages: 3,
+    });
+    expect(request.get).toHaveBeenCalledWith("/jobs", {
+      params: { page: 2, page_size: 6, status: "open", keyword: "Java" },
+    });
+  });
+
+  it("loads internal positions with server pagination metadata", async () => {
+    vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: [],
+        meta: { page: 1, page_size: 6, total: 0, total_pages: 0 },
+      },
+    } as never);
+    await expect(httpDataProvider.internalTransfer.listPositionsPage({
+      page: 1,
+      pageSize: 6,
+      status: "draft",
+      keyword: "平台",
+    })).resolves.toEqual({ items: [], page: 1, pageSize: 6, total: 0, totalPages: 0 });
+    expect(request.get).toHaveBeenCalledWith("/internal-transfer/positions", {
+      params: { page: 1, page_size: 6, status: "draft", keyword: "平台" },
+    });
   });
 
   it("loads paged observed jobs and their source evidence", async () => {

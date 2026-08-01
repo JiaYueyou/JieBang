@@ -53,6 +53,30 @@ async def export_snapshot() -> None:
             raise RuntimeError("The source database has no Alembic revision.")
         tables = await list_base_tables(connection)
         counts = await table_counts(connection)
+        async with connection.cursor() as cursor:
+            await cursor.execute(
+                "SELECT version, embedding_provider, embedding_model, "
+                "embedding_dimension, entry_count "
+                "FROM retrieval_index_version "
+                "WHERE backend = 'chroma' AND status = 'ready' "
+                "ORDER BY created_at"
+            )
+            chroma_indexes = [
+                {
+                    "version": str(row[0]),
+                    "embedding_provider": str(row[1]),
+                    "embedding_model": str(row[2]),
+                    "embedding_dimension": int(row[3]),
+                    "entry_count": int(row[4]),
+                }
+                for row in await cursor.fetchall()
+            ]
+            await cursor.execute(
+                "SELECT node_count, edge_count FROM graph_snapshot "
+                "WHERE status = 'succeeded' "
+                "ORDER BY completed_at DESC, created_at DESC LIMIT 1"
+            )
+            graph_row = await cursor.fetchone()
         lines = [
             "-- JieBang complete MySQL data snapshot (schema is managed by Alembic)",
             f"-- Alembic revision: {revision}",
@@ -95,12 +119,33 @@ async def export_snapshot() -> None:
         SNAPSHOT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
         options = mysql_connection_options()
         manifest = {
-            "format_version": 1,
+            "format_version": 2,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "source_database": options["db"],
             "alembic_revision": revision,
+            "schema_source": "alembic",
+            "data_file": SNAPSHOT_PATH.name,
             "table_counts": counts,
             "total_rows": sum(counts.values()),
+            "chroma": {
+                "materialization": "restore_from_mysql_precomputed_vectors",
+                "indexes": chroma_indexes,
+                "collection_count": len(chroma_indexes),
+                "vector_count": sum(
+                    index["entry_count"] for index in chroma_indexes
+                ),
+            },
+            "neo4j": {
+                "materialization": "rebuild_namespace_from_mysql",
+                "latest_snapshot": (
+                    {
+                        "node_count": int(graph_row[0]),
+                        "edge_count": int(graph_row[1]),
+                    }
+                    if graph_row
+                    else None
+                ),
+            },
             "sha256": sha256_file(SNAPSHOT_PATH),
         }
         MANIFEST_PATH.write_text(

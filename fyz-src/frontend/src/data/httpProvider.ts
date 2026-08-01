@@ -11,14 +11,18 @@ import type {
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
+  JobSummary,
+  InternalPosition,
   ObservedJobDetail,
   ObservedJobPage,
+  PageResult,
   RawJobQualityItem,
   SkillFactReviewItem,
   SkillFactReviewPage,
   SkillFactReviewSummary,
   SkillFactVerificationStatus,
   TrendOverview,
+  GraphAsyncTask,
 } from "@/domain/types";
 
 interface AsyncTask<T> {
@@ -172,9 +176,9 @@ function readCareerTask(): { created?: AgentTaskCreated<CareerAnalysisResponse>;
   }
 }
 
-async function waitForTask<T>(task: AsyncTask<T>): Promise<T> {
+async function waitForTask<T>(task: AsyncTask<T>, maxPolls = AGENT_MAX_POLLS): Promise<T> {
   let current = task;
-  for (let attempt = 0; attempt < AGENT_MAX_POLLS && current.status !== "succeeded" && current.status !== "failed"; attempt += 1) {
+  for (let attempt = 0; attempt < maxPolls && current.status !== "succeeded" && current.status !== "failed"; attempt += 1) {
     if (attempt > 0) await sleep(AGENT_POLL_INTERVAL_MS);
     current = await get<AsyncTask<T>>(`/tasks/${current.task_id}`);
   }
@@ -199,7 +203,26 @@ async function patch<T>(url: string, data?: unknown): Promise<T> {
 export const httpDataProvider: DataProvider = {
   dashboard: { getOverview: () => get("/dashboard/overview") },
   jobs: {
-    list: () => get("/jobs"),
+    list: async (query = {}) => {
+      const page = query.page ?? 1;
+      const pageSize = query.pageSize ?? 20;
+      const response = await request.get<ApiResponse<JobSummary[]>>("/jobs", {
+        params: {
+          page,
+          page_size: pageSize,
+          status: query.status || undefined,
+          keyword: query.keyword || undefined,
+        },
+      });
+      const meta = response.data.meta;
+      return {
+        items: response.data.data ?? [],
+        page: meta?.page ?? page,
+        pageSize: meta?.page_size ?? pageSize,
+        total: meta?.total ?? 0,
+        totalPages: meta?.total_pages ?? 0,
+      } satisfies PageResult<JobSummary>;
+    },
     listObserved: async (query) => {
       const response = await request.get<ApiResponse<ObservedJobDetail[]>>("/jobs/observed", {
         params: {
@@ -310,7 +333,27 @@ export const httpDataProvider: DataProvider = {
   internalTransfer: {
     searchEmployeeDirectory: (keyword) => get("/internal-transfer/employee-directory", { keyword, limit: 10 }),
     createTalentFromDirectory: (employeeId) => post(`/internal-transfer/talents/from-directory/${employeeId}`, {}),
-    listPositions: () => get("/internal-transfer/positions"),
+    listPositions: async () => (
+      await httpDataProvider.internalTransfer.listPositionsPage({ page: 1, pageSize: 100 })
+    ).items,
+    listPositionsPage: async (query) => {
+      const response = await request.get<ApiResponse<InternalPosition[]>>("/internal-transfer/positions", {
+        params: {
+          page: query.page,
+          page_size: query.pageSize,
+          status: query.status || undefined,
+          keyword: query.keyword || undefined,
+        },
+      });
+      const meta = response.data.meta;
+      return {
+        items: response.data.data ?? [],
+        page: meta?.page ?? query.page,
+        pageSize: meta?.page_size ?? query.pageSize,
+        total: meta?.total ?? 0,
+        totalPages: meta?.total_pages ?? 0,
+      } satisfies PageResult<InternalPosition>;
+    },
     createPosition: (input) => post("/internal-transfer/positions", input),
     updatePositionStatus: (id, status) => put(`/internal-transfer/positions/${id}/status`, { status }),
     listTalents: () => get("/internal-transfer/talents"),
@@ -324,6 +367,13 @@ export const httpDataProvider: DataProvider = {
     createDecision: (input) => post("/internal-transfer/decisions", input),
   },
   graph: {
+    getOverview:(query)=>get("/graph/overview",query?{
+      stack:query.stack,level:query.level,keyword:query.keyword,
+      cursor:query.cursor,page_size:query.pageSize,max_layer:query.maxLayer,
+    }:undefined),
+    getNeighbors:(nodeId,query)=>get(`/graph/nodes/${encodeURIComponent(nodeId)}/neighbors`,query?{
+      cursor:query.cursor,page_size:query.pageSize,max_layer:query.maxLayer,
+    }:undefined),
     getPanorama:(query)=>get("/graph/panorama",query?{
       stack:query.stack,level:query.level,node_type:query.nodeType,
       keyword:query.keyword,limit:query.limit,
@@ -339,6 +389,28 @@ export const httpDataProvider: DataProvider = {
       );
       return waitForTask(task);
     },
+    startSync: () => post<GraphAsyncTask>(
+      "/graph/sync", { mode: "full", enrich_top_skills: false },
+    ),
+    startEnrichment: () => post<GraphAsyncTask>("/graph/enrichment/generate"),
+    startPublication: (candidateIds = []) => post<GraphAsyncTask>(
+      "/graph/enrichment/publish", { candidate_ids: candidateIds },
+    ),
+    getTask: (taskId) => get<GraphAsyncTask>(`/tasks/${taskId}`),
+    generateEnrichment: async () => waitForTask(
+      await post("/graph/enrichment/generate"),
+      600,
+    ),
+    listEnrichment: (query) => get("/graph/enrichment/candidates", query ? {
+      page: query.page, page_size: query.pageSize, review_status: query.reviewStatus,
+    } : undefined),
+    reviewEnrichment: (candidateId, input) => patch(
+      `/graph/enrichment/candidates/${candidateId}/review`,
+      { action: input.action, note: input.note, lock_version: input.lockVersion },
+    ),
+    publishEnrichment: async (candidateIds = []) => waitForTask(await post(
+      "/graph/enrichment/publish", { candidate_ids: candidateIds },
+    )),
   },
   trends: {
     getOverview: async (query) => mapTrendOverview(
@@ -374,6 +446,14 @@ export const httpDataProvider: DataProvider = {
       decision: Exclude<SkillFactVerificationStatus, "unverified">,
       note?: string,
     ) => patch(`/skills/facts/${factId}/review`, { decision, note }),
+    reviewBatch: (factIds, decision, note) => post(
+      "/skills/facts/reviews/batch",
+      { fact_ids: factIds, decision, note },
+    ),
+    approveAll: (keyword) => post(
+      "/skills/facts/reviews/approve-all",
+      { keyword: keyword || undefined },
+    ),
   },
   favorites: {
     list:()=>get("/favorites"),
@@ -393,6 +473,7 @@ export const httpDataProvider: DataProvider = {
   },
   admin: {
     getOverview:()=>get("/admin/overview"),
+    getResources:()=>get("/admin/resources"),
     listAgentRuns: async ({ page, pageSize, agentType, status }) => {
       const response = await request.get<ApiResponse<import("@/domain/types").AgentRunAudit[]>>(
         "/agents/runs",

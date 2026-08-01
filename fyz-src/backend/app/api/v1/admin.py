@@ -48,6 +48,14 @@ async def get_overview(
         return ApiResponse(code=500, message=f"获取系统总览失败: {e}")
 
 
+@router.get("/resources", response_model=ApiResponse)
+async def get_resources(
+    service: CrawlerService = Depends(get_crawler_service),
+):
+    """获取轻量级宿主机资源快照，供管理端短周期轮询。"""
+    return ApiResponse(data=service.get_resources_snapshot())
+
+
 @router.put("/data-sources/{spider_id}", response_model=ApiResponse)
 async def toggle_crawler(
     spider_id: int,

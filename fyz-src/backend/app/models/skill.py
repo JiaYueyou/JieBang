@@ -70,6 +70,25 @@ class RawJobRecord(Base):
     standardized_title: Mapped[str | None] = mapped_column(String(255), index=True)
     company: Mapped[str | None] = mapped_column(String(255))
     city: Mapped[str | None] = mapped_column(String(100))
+    city_code: Mapped[str | None] = mapped_column(String(40), index=True)
+    company_key: Mapped[str | None] = mapped_column(String(160), index=True)
+    work_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="onsite", index=True)
+    employment_type: Mapped[str] = mapped_column(String(20), nullable=False, default="full_time", index=True)
+    normalization_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="job-title-v1", index=True
+    )
+    normalization_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    normalization_confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    duplicate_cluster_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "job_duplicate_cluster.id",
+            name="fk_raw_job_record_duplicate_cluster",
+            use_alter=True,
+        ),
+        index=True,
+    )
     salary_text: Mapped[str | None] = mapped_column(String(100))
     experience_text: Mapped[str | None] = mapped_column(String(100))
     education_text: Mapped[str | None] = mapped_column(String(100))
@@ -106,6 +125,25 @@ class RawJobRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     source_document: Mapped[SourceDocument] = relationship(lazy="selectin")
+
+
+class JobDuplicateCluster(Base):
+    __tablename__ = "job_duplicate_cluster"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    standard_job_id: Mapped[int] = mapped_column(
+        ForeignKey("standard_job.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    representative_raw_job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("raw_job_record.id", ondelete="SET NULL"), index=True
+    )
+    company_key: Mapped[str | None] = mapped_column(String(160), index=True)
+    city_code: Mapped[str | None] = mapped_column(String(40), index=True)
+    member_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class SourceTrustPolicy(Base):

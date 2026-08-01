@@ -126,6 +126,21 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async recover(){return null;},
   },
   graph: {
+    async getOverview(query){
+      const graph=structuredClone(db().graph),text=query?.keyword?.trim().toLowerCase();
+      const nodes=graph.nodes.filter(node=>
+        ["Job","SkillArea","TechStack"].includes(node.type)&&
+        (!query?.stack||node.stack===query.stack)&&(!query?.level||node.level===query.level)&&
+        (!text||`${node.name} ${node.description}`.toLowerCase().includes(text))
+      );
+      const ids=new Set(nodes.map(node=>node.id));
+      return delay({nodes,edges:graph.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target)),has_more:false,next_cursor:null});
+    },
+    async getNeighbors(nodeId){
+      const graph=structuredClone(db().graph),ids=new Set([nodeId]);
+      graph.edges.forEach(edge=>{if(edge.source===nodeId)ids.add(edge.target);if(edge.target===nodeId)ids.add(edge.source);});
+      return delay({nodes:graph.nodes.filter(node=>ids.has(node.id)),edges:graph.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target)),has_more:false,next_cursor:null});
+    },
     async getPanorama(query){
       const graph=structuredClone(db().graph);
       if(!query)return delay(graph);
@@ -156,6 +171,14 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
       return delay({nodes:graph.nodes.filter(node=>ids.has(node.id)),edges:graph.edges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target))});
     },
     async sync(){throw new Error("图谱同步仅支持后端数据模式");},
+    async generateEnrichment(){throw new Error("L4/L5 候选生成仅支持后端数据模式");},
+    async startSync(){throw new Error("图谱同步仅支持后端数据模式");},
+    async startEnrichment(){throw new Error("L4/L5 候选生成仅支持后端数据模式");},
+    async startPublication(){throw new Error("候选发布仅支持后端数据模式");},
+    async getTask(){throw new Error("异步任务查询仅支持后端数据模式");},
+    async listEnrichment(){return delay({items:[],total:0,page:1,page_size:12});},
+    async reviewEnrichment(){throw new Error("候选审核仅支持后端数据模式");},
+    async publishEnrichment(){throw new Error("候选发布仅支持后端数据模式");},
   },
   favorites: {
     async list(){return delay(db().favorites);},

@@ -136,6 +136,31 @@ async def test_internal_position_requires_authentication(client):
     assert response.status_code == 401
 
 
+async def test_internal_positions_support_server_pagination_and_filters(client, auth_headers):
+    for title in ("内部平台工程师", "数据治理工程师", "平台架构师"):
+        response = await client.post(
+            "/api/v1/internal-transfer/positions",
+            headers=auth_headers,
+            json={**position_payload(), "title": title},
+        )
+        assert response.status_code == 200
+
+    first_page = await client.get(
+        "/api/v1/internal-transfer/positions?page=1&page_size=1&keyword=平台&status=draft",
+        headers=auth_headers,
+    )
+    assert first_page.status_code == 200
+    body = first_page.json()
+    assert len(body["data"]) == 1
+    assert "平台" in body["data"][0]["title"]
+    assert body["meta"] == {
+        "page": 1,
+        "page_size": 1,
+        "total": 3,
+        "total_pages": 3,
+    }
+
+
 async def test_employee_number_search_autofills_talent_from_directory(client, auth_headers):
     synced = await client.post(
         "/api/v1/internal-transfer/employee-directory",
