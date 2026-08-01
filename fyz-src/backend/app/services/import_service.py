@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -19,14 +20,16 @@ from app.domain.data_quality import (
     near_duplicate_group_id,
     simhash_similarity,
 )
-from app.domain.job_standardizer import infer_job_stack, standardize_job_title
+from app.domain.job_standardizer import normalize_job_title
 from app.models import (
+    JobDuplicateCluster,
     JobSkillFact,
     RawJobRecord,
     Skill,
     SourceDocument,
     SourceTrustPolicy,
     StandardJob,
+    StandardJobAlias,
     StandardJobSource,
 )
 from app.repositories import SkillRepository
@@ -43,6 +46,7 @@ ALLOWED_FILE_PATTERNS = (
     re.compile(r"iflytek_\d+\.json"),
     re.compile(r"zhaopin_\d+\.json"),
 )
+logger = logging.getLogger(__name__)
 
 
 def standardize_title(title: str) -> str:
@@ -75,6 +79,7 @@ class ImportService:
 
     async def import_files(self, files: list[str], *, progress_callback=None) -> dict:
         paths = self.resolve_files(files)
+        logger.info("job_import_started files=%s", ",".join(path.name for path in paths))
         records: list[dict] = []
         validation: list[dict] = []
         for path in paths:
@@ -96,6 +101,7 @@ class ImportService:
                 )
             records.extend(normalized)
         total = len(records)
+        logger.info("job_import_validated files=%d records=%d", len(paths), total)
         imported = duplicates = facts = 0
         near_duplicates = low_quality = time_anomalies = 0
         quality_status_counts = {"accepted": 0, "warning": 0, "rejected": 0}
@@ -200,7 +206,7 @@ class ImportService:
         await self.db.commit()
         verification = await self._cross_validate_facts(imported_raw_ids)
         await self.db.commit()
-        return {
+        result = {
             "files": files, "total": total, "imported": imported,
             "duplicates": duplicates, "skill_facts": facts,
             "near_duplicates": near_duplicates,
@@ -211,6 +217,11 @@ class ImportService:
             "validation": validation,
             **verification,
         }
+        logger.info(
+            "job_import_completed total=%d imported=%d duplicates=%d skill_facts=%d verified_facts=%d",
+            total, imported, duplicates, facts, verification["verified_skill_facts"],
+        )
+        return result
 
     async def _quality_policy(self, source: str) -> QualityPolicy:
         row = await self.db.scalar(
@@ -243,20 +254,29 @@ class ImportService:
         )
 
     async def _ensure_standard_job(self, raw: RawJobRecord) -> StandardJob:
-        name, key, level, confidence = standardize_job_title(
-            raw.standardized_title or raw.title
+        normalized = normalize_job_title(
+            raw.title,
+            city=raw.city,
+            company=raw.company,
+            jd_text=raw.jd_text,
         )
         standard = await self.db.scalar(
-            select(StandardJob).where(StandardJob.canonical_key == key)
+            select(StandardJob).where(StandardJob.canonical_key == normalized.canonical_key)
         )
         if standard is None:
             standard = StandardJob(
-                name=name,
-                canonical_key=key,
+                name=normalized.name,
+                canonical_key=normalized.canonical_key,
                 aliases=[],
-                stack=infer_job_stack(name),
-                level=level,
-                description=f"由多来源岗位数据聚合形成的{name}能力模型。",
+                stack={"algorithm": "ai", "data": "data", "devops": "devops"}.get(
+                    normalized.role_family, "backend"
+                ),
+                level=normalized.level,
+                role_family=normalized.role_family,
+                specialization_key=normalized.specialization_key,
+                occupation_code=normalized.occupation_code,
+                normalization_version=normalized.version,
+                description=f"由多来源岗位数据聚合形成的{normalized.name}能力模型。",
                 source_count=0,
             )
             self.db.add(standard)
@@ -265,8 +285,44 @@ class ImportService:
         if raw.title != standard.name:
             aliases.add(raw.title)
         standard.aliases = sorted(aliases)
+        alias_key = "".join(ch for ch in raw.title.casefold() if ch.isalnum())
+        alias = await self.db.scalar(
+            select(StandardJobAlias).where(
+                StandardJobAlias.standard_job_id == standard.id,
+                StandardJobAlias.alias_key == alias_key,
+            )
+        )
+        if alias is None:
+            self.db.add(StandardJobAlias(
+                standard_job_id=standard.id,
+                alias=raw.title,
+                alias_key=alias_key,
+                source_type="raw",
+                confidence=normalized.confidence,
+                normalization_version=normalized.version,
+            ))
         raw.standardized_title = standard.name
         raw.standard_job_id = standard.id
+        raw.city_code = normalized.city_code
+        raw.company_key = normalized.company_key
+        raw.work_mode = normalized.work_mode
+        raw.employment_type = normalized.employment_type
+        raw.normalization_version = normalized.version
+        raw.normalization_status = normalized.status
+        raw.normalization_confidence = normalized.confidence
+        raw.normalized_data = {
+            **(raw.normalized_data or {}),
+            "job_title": {
+                "role_family": normalized.role_family,
+                "specialization_key": normalized.specialization_key,
+                "occupation_code": normalized.occupation_code,
+                "level": normalized.level,
+                "city_code": normalized.city_code,
+                "work_mode": normalized.work_mode,
+                "employment_type": normalized.employment_type,
+                "version": normalized.version,
+            },
+        }
         link = await self.db.scalar(
             select(StandardJobSource).where(
                 StandardJobSource.source_type == "raw",
@@ -280,7 +336,7 @@ class ImportService:
                     source_type="raw",
                     source_id=raw.id,
                     original_title=raw.title,
-                    confidence=confidence,
+                    confidence=normalized.confidence,
                 )
             )
             standard.source_count += 1
@@ -339,6 +395,24 @@ class ImportService:
                 float(item.quality_score or 0),
                 similarity,
             )
+            item.duplicate_cluster_id = group_id
+        cluster = await self.db.get(JobDuplicateCluster, group_id)
+        if cluster is None:
+            cluster = JobDuplicateCluster(
+                id=group_id,
+                standard_job_id=raw.standard_job_id,
+                representative_raw_job_id=candidate.id,
+                company_key=raw.company_key if raw.company_key == candidate.company_key else None,
+                city_code=raw.city_code if raw.city_code == candidate.city_code else None,
+                member_count=2,
+            )
+            self.db.add(cluster)
+        else:
+            cluster.member_count = int(await self.db.scalar(
+                select(func.count(RawJobRecord.id)).where(
+                    RawJobRecord.duplicate_cluster_id == group_id
+                )
+            ) or 0)
         await self.db.flush()
         return True
 

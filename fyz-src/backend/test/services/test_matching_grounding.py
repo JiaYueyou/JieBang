@@ -158,6 +158,37 @@ async def test_match_explanation_persists_valid_snapshot_citations(
     }
 
 
+async def test_match_strength_accepts_saved_skill_anchor_for_legacy_excerpt(
+    client,
+    auth_headers,
+):
+    match_id, evidence_ids, _ = await _seed_match(client, auth_headers)
+    async with async_session() as db:
+        evidence = await db.get(MatchEvidence, evidence_ids["Python"])
+        evidence.evidence_text = "参与过后端服务重构项目"
+        await db.commit()
+
+    provider = _Provider(
+        LLMMatchExplanation(
+            summary="技能匹配",
+            strengths=[ExplanationItem(
+                title="匹配技能：Python",
+                explanation="候选人具备岗位要求的 Python 技能。",
+                evidence_ids=[f"match_evidence:{evidence_ids['Python']}"],
+            )],
+            gaps=[],
+            risks=[],
+            interview_suggestions=[],
+        )
+    )
+    async with async_session() as db:
+        result = await MatchingService(db, llm_provider=provider).explain(
+            match_id, user_id=1
+        )
+
+    assert [item["title"] for item in result.strengths] == ["匹配技能：Python"]
+
+
 async def test_unknown_citations_trigger_deterministic_template(
     client,
     auth_headers,

@@ -23,6 +23,63 @@ class DisabledProvider:
     model_name = "disabled"
 
 
+async def test_subgraph_restores_nested_common_solutions_from_json():
+    async with async_session() as db:
+        service = GraphService(db, llm_provider=DisabledProvider())
+        subgraph = service._subgraph(
+            [{
+                "id": "knowledge:1",
+                "type": "KnowledgePoint",
+                "properties": {
+                    "name": "Flask 扩展机制",
+                    "common_solutions": (
+                        '[{"name":"Flask-Migrate","purpose":"数据库迁移"}]'
+                    ),
+                },
+            }],
+            [],
+        )
+
+        assert subgraph.nodes[0].properties["common_solutions"] == [
+            {"name": "Flask-Migrate", "purpose": "数据库迁移"}
+        ]
+
+
+class PagingGraph:
+    def query_overview_jobs(self, **kwargs):
+        assert kwargs["offset"] in {0, 2}
+        rows = [
+            {"id": f"job:{index}", "type": "Job", "properties": {"name": f"岗位{index}"}}
+            for index in range(kwargs["offset"] + 1, kwargs["offset"] + 4)
+        ]
+        return rows
+
+    def query_overview_context(self, job_ids, max_layer):
+        nodes = [
+            {"id": job_id, "type": "Job", "properties": {"name": job_id}}
+            for job_id in job_ids
+        ]
+        nodes.append({"id": "area:backend", "type": "SkillArea", "properties": {"name": "后端"}})
+        edges = [
+            {"source": job_id, "target": "area:backend", "relation": "REQUIRES_AREA", "properties": {}}
+            for job_id in job_ids
+        ]
+        return nodes, edges
+
+
+async def test_overview_uses_cursor_without_fixed_global_truncation():
+    async with async_session() as db:
+        service = GraphService(db, llm_provider=DisabledProvider())
+        service.graph = PagingGraph()
+        first = await service.overview(cursor=None, page_size=2, max_layer=3)
+        assert first.has_more is True
+        assert first.next_cursor
+        assert first.query_scope == "overview:L1-L3"
+        assert {node.id for node in first.nodes} == {"job:1", "job:2", "area:backend"}
+        second = await service.overview(cursor=first.next_cursor, page_size=2, max_layer=3)
+        assert {node.id for node in second.nodes} == {"job:3", "job:4", "area:backend"}
+
+
 async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
     async with async_session() as db:
         python = Skill(
@@ -37,7 +94,7 @@ async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
         await db.flush()
         raws = []
         for index, title in enumerate(
-            ["高级 Python 后端开发工程师（双休）", "Python 后端开发工程师"],
+            ["高级 Python 后端开发工程师（双休）", "资深 Python 后端开发工程师"],
             1,
         ):
             document = SourceDocument(

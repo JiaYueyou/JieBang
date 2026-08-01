@@ -19,6 +19,7 @@ from app.models import (
     Skill,
     SourceDocument,
     StandardJob,
+    User,
 )
 from app.providers import MockLLMProvider
 from app.schemas.graph import GraphEnrichmentOutput, KnowledgePointOutput, TechPointOutput
@@ -123,7 +124,8 @@ async def _seed_raw_evidence(
             importance=.9, frequency=1, confidence=.96,
             evidence_text=(
                 "Python 类型注解 typing.Generic 异步编程 asyncio "
-                "装饰器 @wraps"
+                "装饰器 @wraps Flask 路由 request context Jinja2 "
+                "Flask-SQLAlchemy ORM Flask-Migrate Alembic 数据库迁移"
             ),
             verification_status="verified", extraction_method="rule", source_count=2,
         )
@@ -190,8 +192,9 @@ async def test_enrich_candidate_success_with_mock_llm():
 
         output = _make_output([
             TechPointOutput(
-                name="  类型注解  ",
-                detail="使用类型注解提高代码可维护性",
+                name="  Flask  ",
+                category="framework",
+                detail="Flask 是 Python 轻量级 Web 框架，用于构建接口与 Web 服务",
                 confidence=0.85,
                 evidence_ids=[
                     evidence[0].evidence_id,
@@ -199,13 +202,27 @@ async def test_enrich_candidate_success_with_mock_llm():
                 ],
                 knowledge_points=[
                     KnowledgePointOutput(
-                        name="typing.Generic",
-                        description="泛型类与类型变量",
+                        name="Flask 请求上下文与扩展生态",
+                        description=(
+                            "请求上下文隔离单次请求数据；项目通常结合 Jinja2、"
+                            "Flask-SQLAlchemy 和 Flask-Migrate 完成模板、ORM 与迁移。"
+                        ),
                         difficulty="medium",
                         confidence=0.80,
                         evidence_ids=[
                             evidence[0].evidence_id,
                             evidence[1].evidence_id,
+                        ],
+                        core_stack=["WSGI", "request context", "Jinja2"],
+                        common_solutions=[
+                            {
+                                "name": "Flask-SQLAlchemy",
+                                "purpose": "提供 ORM 数据模型和数据库访问能力",
+                            },
+                            {
+                                "name": "Flask-Migrate",
+                                "purpose": "基于 Alembic 管理数据库结构迁移",
+                            },
                         ],
                     )
                 ],
@@ -254,7 +271,13 @@ async def test_enrich_candidate_success_with_mock_llm():
 
         # Agent 输出已被规范化（去除首尾空格）
         validated = GraphEnrichmentOutput.model_validate(candidate.candidate_data)
-        assert validated.tech_points[0].name == "类型注解"
+        point = validated.tech_points[0]
+        assert point.name == "Flask"
+        assert point.category == "framework"
+        assert point.knowledge_points[0].core_stack == ["WSGI", "request context", "Jinja2"]
+        assert [item.name for item in point.knowledge_points[0].common_solutions] == [
+            "Flask-SQLAlchemy", "Flask-Migrate",
+        ]
 
 
 async def test_enrich_candidate_failure_is_tracked():
@@ -290,6 +313,34 @@ async def test_enrich_candidate_failure_is_tracked():
         agent_run = (await db.execute(select(AgentRun).where(AgentRun.id == candidate.agent_run_id))).scalar_one()
         assert agent_run.status == "failed"
         assert agent_run.error_code == "RuntimeError"
+
+
+async def test_enrich_candidate_timeout_is_retryable_and_explicit():
+    async with async_session() as db:
+        skill = await _seed_python_skill(db)
+        evidence = await _seed_raw_evidence(db, skill)
+        await db.commit()
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="test-timeout", snapshot_type="full", status="running",
+        )
+        db.add(snapshot)
+        await db.flush()
+        service = GraphService(
+            db,
+            llm_provider=_MockProvider(error=RuntimeError("DeepSeek response timed out after 120 seconds")),
+            retrieval_service=_MockRetriever(evidence),
+        )
+
+        stats = await service._prepare_top_candidates(snapshot.id, user_id=1)
+        candidate = (await db.execute(
+            select(GraphEnrichmentCandidate).where(
+                GraphEnrichmentCandidate.snapshot_id == snapshot.id
+            )
+        )).scalar_one()
+
+        assert stats["candidates_failed"] == 1
+        assert candidate.candidate_data["reason"] == "llm_timeout"
+        assert candidate.candidate_data["retryable"] is True
 
 
 async def test_single_skill_failure_does_not_break_sync():
@@ -627,14 +678,17 @@ async def test_append_verified_deep_nodes_counts():
             snapshot_id=snapshot.id,
             skill_id=skill.id,
             verification_status="verified",
+            review_status="approved",
+            publication_status="approved",
             evidence_source_ids=["evidence-a", "evidence-b"],
             candidate_data=_make_output([
                 TechPointOutput(
-                    name="装饰器", detail="函数装饰器", confidence=0.85,
+                    name="Flask", category="framework",
+                    detail="Python 轻量级 Web 框架", confidence=0.85,
                     evidence_ids=["evidence-a", "evidence-b"],
                     knowledge_points=[
                         KnowledgePointOutput(
-                            name="@wraps", description="保留元数据", difficulty="easy",
+                            name="请求上下文", description="隔离单次请求数据", difficulty="medium",
                             confidence=0.80,
                             evidence_ids=["evidence-a", "evidence-b"],
                         ),
@@ -654,13 +708,51 @@ async def test_append_verified_deep_nodes_counts():
         service = GraphService(db, llm_provider=_MockProvider())
         nodes = {"TechPoint": [], "KnowledgePoint": []}
         edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
-        tech_count, knowledge_count = await service._append_verified_deep_nodes(
+        tech_count, knowledge_count, candidate_ids = await service._append_verified_deep_nodes(
             snapshot.id, nodes, edges, {skill.id: skill}
         )
 
         assert tech_count == 1
         assert knowledge_count == 1
+        # 即使中间进度提交，也不能在 Neo4j 写入成功前提前标记 published。
+        await db.commit()
+        await db.refresh(candidate)
+        assert candidate.publication_status == "approved"
+        assert candidate_ids == [candidate.id]
         assert len(nodes["TechPoint"]) == 1
         assert len(nodes["KnowledgePoint"]) == 1
         assert len(edges["REFINES_TO"]) == 1
         assert len(edges["HAS_KNOWLEDGE"]) == 1
+
+
+async def test_machine_validated_candidate_requires_review_before_publication():
+    async with async_session() as db:
+        user = User(username="graph-review-admin", password_hash="x", role="admin")
+        skill = Skill(
+            name="Python", canonical_name="Python", canonical_key="python-review",
+            category="programming_language", aliases=[],
+        )
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="review-v1", snapshot_type="incremental", status="succeeded",
+        )
+        db.add_all([user, skill, snapshot])
+        await db.flush()
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skill.id,
+            candidate_data=_make_output([]).model_dump(mode="json"),
+            evidence_source_ids=[1, 2], confidence=.88,
+            verification_status="machine_validated", machine_validation_status="passed",
+            review_status="pending", publication_status="draft",
+        )
+        db.add(candidate)
+        await db.commit()
+        service = GraphService(db, llm_provider=_MockProvider())
+        reviewed = await service.review_enrichment_candidate(
+            candidate.id, action="approve", note="证据充分",
+            lock_version=0, user_id=user.id,
+        )
+        assert reviewed["review_status"] == "approved"
+        assert reviewed["publication_status"] == "approved"
+        assert reviewed["lock_version"] == 1
+        assert reviewed["evidence_source_ids"] == ["1", "2"]
+        assert await service.prepare_enrichment_publication([candidate.id]) == 1

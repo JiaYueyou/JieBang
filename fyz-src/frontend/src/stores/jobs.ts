@@ -20,7 +20,9 @@ import type {
 
 export const useJobStore = defineStore("jobs", () => {
   const jobs = ref<JobSummary[]>([]);
+  const publicTotal = ref(0);
   const internalPositions = ref<InternalPosition[]>([]);
+  const internalTotal = ref(0);
   const emergingJobs = ref<EmergingJob[]>([]);
   const capabilityChanges = ref<CapabilityChange[]>([]);
   const insightQuality = ref<AnalysisDataQuality | null>(null);
@@ -35,17 +37,39 @@ export const useJobStore = defineStore("jobs", () => {
   const observedLoading = ref(false);
   const observedError = ref("");
 
+  async function loadPublic(query = { page: 1, pageSize: 6 } as {
+    page: number;
+    pageSize: number;
+    status?: JobSummary["status"];
+    keyword?: string;
+  }) {
+    const result = await dataProvider.jobs.list(query);
+    jobs.value = result.items;
+    publicTotal.value = result.total;
+    return result;
+  }
+
+  async function loadInternal(query = { page: 1, pageSize: 6 } as {
+    page: number;
+    pageSize: number;
+    status?: InternalPosition["status"];
+    keyword?: string;
+  }) {
+    const result = await dataProvider.internalTransfer.listPositionsPage(query);
+    internalPositions.value = result.items;
+    internalTotal.value = result.total;
+    return result;
+  }
+
   async function load(force = false) {
     if (loaded.value && !force) return;
     loading.value = true;
     error.value = "";
     try {
       const [publicResult, internalResult] = await Promise.allSettled([
-        dataProvider.jobs.list(),
-        dataProvider.internalTransfer.listPositions(),
+        loadPublic(),
+        loadInternal(),
       ]);
-      if (publicResult.status === "fulfilled") jobs.value = publicResult.value;
-      if (internalResult.status === "fulfilled") internalPositions.value = internalResult.value;
       if (publicResult.status === "rejected" && internalResult.status === "rejected") {
         throw publicResult.reason;
       }
@@ -120,12 +144,14 @@ export const useJobStore = defineStore("jobs", () => {
   async function create(job: JobCreatePayload) {
     const saved = await dataProvider.jobs.create(job);
     jobs.value.unshift(saved);
+    publicTotal.value += 1;
     return saved;
   }
 
   async function createInternalPosition(input: InternalPositionCreate) {
     const saved = await dataProvider.internalTransfer.createPosition(input);
     internalPositions.value.unshift(saved);
+    internalTotal.value += 1;
     return saved;
   }
 
@@ -144,6 +170,7 @@ export const useJobStore = defineStore("jobs", () => {
   async function remove(id: number) {
     await dataProvider.jobs.remove(id);
     jobs.value = jobs.value.filter((job) => job.id !== id);
+    publicTotal.value = Math.max(0, publicTotal.value - 1);
   }
 
   async function updateStatus(id: number, status: JobSummary["status"]) {
@@ -154,7 +181,9 @@ export const useJobStore = defineStore("jobs", () => {
 
   return {
     jobs,
+    publicTotal,
     internalPositions,
+    internalTotal,
     emergingJobs,
     capabilityChanges,
     insightQuality,
@@ -169,6 +198,8 @@ export const useJobStore = defineStore("jobs", () => {
     observedLoading,
     observedError,
     load,
+    loadPublic,
+    loadInternal,
     loadInsights,
     loadObserved,
     getObserved,

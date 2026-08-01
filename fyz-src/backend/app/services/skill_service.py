@@ -163,6 +163,31 @@ class SkillService:
             raise ResourceNotFoundError("技能事实不存在")
         return self._review_item(row)
 
+    async def review_facts(
+        self,
+        *,
+        fact_ids: list[int] | None,
+        keyword: str | None,
+        decision: VerificationStatus,
+        note: str | None,
+        reviewer_id: int,
+    ) -> tuple[list[int], int]:
+        unique_ids = list(dict.fromkeys(fact_ids or []))
+        facts = await self.skills.get_facts_for_review(
+            fact_ids=unique_ids if fact_ids is not None else None,
+            keyword=keyword,
+        )
+        reviewed_at = utc_now()
+        for fact in facts:
+            fact.verification_status = decision.value
+            fact.reviewed_by = reviewer_id
+            fact.reviewed_at = reviewed_at
+            fact.review_note = note
+        await self.db.commit()
+        processed_ids = [fact.id for fact in facts]
+        skipped_count = max(0, len(unique_ids) - len(processed_ids)) if fact_ids is not None else 0
+        return processed_ids, skipped_count
+
     async def extract_text(
         self,
         *,

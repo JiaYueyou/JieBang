@@ -30,6 +30,39 @@ export interface GraphSubgraph {
   edge_count: number;
   snapshot_version: string | null;
   truncated: boolean;
+  returned?: number;
+  total_available?: number | null;
+  next_cursor?: string | null;
+  has_more?: boolean;
+  query_scope?: string | null;
+}
+
+const EMPTY_GRAPH: GraphSubgraph = {
+  nodes: [], edges: [], node_count: 0, edge_count: 0,
+  snapshot_version: null, truncated: false, returned: 0, has_more: false,
+  next_cursor: null,
+};
+
+export async function getOverview(params?: {
+  cursor?: string;
+  page_size?: number;
+  max_layer?: 1 | 2 | 3;
+  stack?: string;
+  level?: string;
+  keyword?: string;
+}): Promise<GraphSubgraph> {
+  const res = await request.get<ApiResponse<GraphSubgraph>>("/graph/overview", { params });
+  return res.data.data || EMPTY_GRAPH;
+}
+
+export async function getNodeNeighbors(
+  nodeId: string,
+  params?: { cursor?: string; page_size?: number; max_layer?: 1 | 2 | 3 | 4 | 5 },
+): Promise<GraphSubgraph> {
+  const res = await request.get<ApiResponse<GraphSubgraph>>(
+    `/graph/nodes/${encodeURIComponent(nodeId)}/neighbors`, { params },
+  );
+  return res.data.data || EMPTY_GRAPH;
 }
 
 export async function getPanorama(

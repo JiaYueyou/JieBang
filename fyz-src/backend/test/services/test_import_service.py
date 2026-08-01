@@ -139,7 +139,7 @@ async def test_same_standard_job_cross_validates_independent_sources(monkeypatch
             "keywords": ["Java", "Spring Boot"],
         },
         {
-            "title": "Java 研发工程师",
+            "title": "高级 Java 研发工程师",
             "company": "B",
             "source": "来源B",
             "url": "https://b/java",
@@ -217,6 +217,8 @@ async def test_near_duplicate_is_retained_and_downweighted(monkeypatch):
             assert all(raw.dedup_status == "near_duplicate" for raw in raws)
             assert len({raw.near_duplicate_group_id for raw in raws}) == 1
             assert all("near_duplicate" in raw.quality_flags for raw in raws)
+            assert len({raw.duplicate_cluster_id for raw in raws}) == 1
+            assert raws[0].normalization_version == "job-title-v2"
 
 
 async def test_import_rejects_invalid_job_v1(monkeypatch):

@@ -278,10 +278,16 @@ class AgentGroundingService:
                 reasons.append("insufficient_independent_sources")
 
             semantic_scores = [
-                semantic_grounding_score(
-                    claim.anchor_text,
-                    claim.claim_text,
-                    item.text,
+                (
+                    1.0
+                    if _compact(str(item.source_metadata.get("skill_name") or ""))
+                    and _compact(str(item.source_metadata.get("skill_name") or ""))
+                    in _compact(claim.anchor_text)
+                    else semantic_grounding_score(
+                        claim.anchor_text,
+                        claim.claim_text,
+                        item.text,
+                    )
                 )
                 for item in cited
             ]

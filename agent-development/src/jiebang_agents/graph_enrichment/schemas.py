@@ -22,6 +22,11 @@ class SkillGraphCompletionInput(BaseModel):
     evidence: list[GraphEvidenceInput] = Field(min_length=2, max_length=20)
 
 
+class CommonSolutionOutput(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    purpose: str = Field(min_length=1, max_length=300)
+
+
 class KnowledgePointOutput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -34,12 +39,15 @@ class KnowledgePointOutput(BaseModel):
         validation_alias=AliasChoices("evidence_ids", "source_ids"),
     )
     prerequisites: list[str] = Field(default_factory=list)
+    core_stack: list[str] = Field(default_factory=list, max_length=8)
+    common_solutions: list[CommonSolutionOutput] = Field(default_factory=list, max_length=8)
 
 
 class TechPointOutput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     name: str
+    category: Literal["framework", "library", "tool", "platform", "component"] = "tool"
     detail: str
     confidence: float = Field(ge=0, le=1)
     evidence_ids: list[str] = Field(

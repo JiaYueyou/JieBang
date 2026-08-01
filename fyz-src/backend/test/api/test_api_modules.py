@@ -68,6 +68,16 @@ class TestAdminModule:
 
         resp = await client.get("/api/v1/admin/overview", headers=auth_headers)
         assert resp.status_code == 200
+
+        resources = await client.get(
+            "/api/v1/admin/resources", headers=auth_headers
+        )
+        assert resources.status_code == 200
+        payload = resources.json()["data"]
+        assert [item["label"] for item in payload["resources"]] == [
+            "CPU", "内存", "磁盘"
+        ]
+        assert payload["sampledAt"]
         body = resp.json()
         assert body["code"] == 200
         assert "metrics" in body["data"]
@@ -90,8 +100,9 @@ class TestAdminModule:
         assert cards["技能事实总量"]["value"] == str(len(facts))
         assert cards["事实确认率"]["value"] != "0.0%"
         assert body["data"]["endpoints"][0] == {
-            "method": "GET",
-            "path": "/api/v1/skills/facts/reviews",
+            "key": "skill_facts",
+            "title": "技能事实总量",
+            "description": "系统已沉淀、可追溯的岗位技能事实",
             "value": f"{len(facts)} 条",
             "percent": 100,
         }

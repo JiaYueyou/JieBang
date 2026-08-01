@@ -1,6 +1,6 @@
 import Graph from 'graphology'
 import type { GraphType } from '@/domain/types'
-import { getPanorama, expandNode, type GraphNode as BackendGraphNode, type GraphEdge as BackendGraphEdge, type GraphSubgraph } from '@/api/graph'
+import { getOverview, type GraphNode as BackendGraphNode, type GraphEdge as BackendGraphEdge, type GraphSubgraph } from '@/api/graph'
 
 
 
@@ -172,19 +172,25 @@ function applySmartLayout(graph: Graph): void {
   }
 }
 
-export async function buildGraphFromBackend(): Promise<Graph> {
-  const graph = new Graph()
+export interface GraphBuildQuery {
+  stack?: string
+  level?: string
+  node_type?: string
+  keyword?: string
+  limit?: number
+  cursor?: string
+  pageSize?: number
+}
 
-  console.log('Starting to build graph from backend...')
-  
-  const subgraph = await getPanorama({ limit: 1000 })
-  
-  console.log('Panorama response:', {
-    nodeCount: subgraph.nodes.length,
-    edgeCount: subgraph.edges.length,
-    truncated: subgraph.truncated,
-    snapshotVersion: subgraph.snapshot_version
+export async function buildGraphFromBackend(query: GraphBuildQuery = {}): Promise<Graph> {
+  const subgraph = await getOverview({
+    stack: query.stack, level: query.level, keyword: query.keyword,
+    cursor: query.cursor, page_size: query.pageSize ?? 24, max_layer: 3,
   })
+  return buildGraphFromSubgraph(subgraph)
+}
+
+export function buildGraphFromSubgraph(subgraph: GraphSubgraph, graph: Graph = new Graph()): Graph {
 
   const typeColors: Record<string, string> = {
     'Job': '#122d6e',
@@ -276,40 +282,7 @@ export async function buildGraphFromBackend(): Promise<Graph> {
   subgraph.nodes.forEach(addNodeToGraph)
   subgraph.edges.forEach(addEdgeToGraph)
 
-  console.log(`After panorama: ${graph.order} nodes, ${graph.size} edges`)
-
-  const jobNodeIds = subgraph.nodes
-    .filter(node => node.type === 'Job')
-    .map(node => node.id)
-
-  console.log(`Found ${jobNodeIds.length} Job nodes`)
-
-  const isolatedJobIds = jobNodeIds.filter(jobId => {
-    return graph.degree(jobId) === 0
-  })
-
-  if (isolatedJobIds.length > 0) {
-    console.log(`Expanding ${isolatedJobIds.length} isolated Job nodes in parallel...`)
-    
-    const expandPromises = isolatedJobIds.map(jobId => {
-      return expandNode(jobId, 3, 200)
-    })
-    
-    const results = await Promise.all(expandPromises)
-    
-    results.forEach((jobSubgraph, index) => {
-      jobSubgraph.nodes.forEach(addNodeToGraph)
-      jobSubgraph.edges.forEach(addEdgeToGraph)
-      console.log(`Expanded Job ${isolatedJobIds[index]}: ${jobSubgraph.nodes.length} nodes, ${jobSubgraph.edges.length} edges`)
-    })
-  }
-
-  console.log(`After expanding isolated jobs: ${graph.order} nodes, ${graph.size} edges`)
-
   applySmartLayout(graph)
-
-  console.log(`图谱从后端构建完成: ${graph.order} 个节点, ${graph.size} 条边`)
-
   return graph
 }
 

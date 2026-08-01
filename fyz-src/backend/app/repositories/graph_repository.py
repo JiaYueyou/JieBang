@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,10 +67,19 @@ class Neo4jGraphRepository:
                 f"CREATE CONSTRAINT {label.lower()}_jiebang_id IF NOT EXISTS "
                 f"FOR (n:{label}) REQUIRE (n.namespace, n.id) IS UNIQUE"
             )
+            run_write(
+                f"CREATE INDEX {label.lower()}_jiebang_name IF NOT EXISTS "
+                f"FOR (n:{label}) ON (n.namespace, n.name)"
+            )
+        run_write(
+            "CREATE INDEX job_jiebang_filter IF NOT EXISTS "
+            "FOR (n:Job) ON (n.namespace, n.stack, n.level)"
+        )
 
     def merge_nodes(self, label: str, rows: list[dict], version: str) -> None:
         if label not in GRAPH_LABELS or not rows:
             return
+        rows = self._serialize_property_rows(rows)
         run_write(
             f"UNWIND $rows AS row "
             f"MERGE (n:{label} {{namespace:$namespace, id:row.id}}) "
@@ -79,6 +90,7 @@ class Neo4jGraphRepository:
     def merge_edges(self, relation: str, rows: list[dict], version: str) -> None:
         if relation not in GRAPH_RELATIONS or not rows:
             return
+        rows = self._serialize_property_rows(rows)
         run_write(
             "UNWIND $rows AS row "
             "MATCH (a {namespace:$namespace, id:row.source}) "
@@ -87,6 +99,27 @@ class Neo4jGraphRepository:
             "SET r += row.properties, r.syncVersion=$version",
             {"rows": rows, "namespace": self.namespace, "version": version},
         )
+
+    @staticmethod
+    def _serialize_property_rows(rows: list[dict]) -> list[dict]:
+        """将 Neo4j 不支持的嵌套属性编码为 JSON，同时保留普通标量数组。"""
+        serialized = []
+        for row in rows:
+            output = dict(row)
+            properties = {}
+            for key, value in (row.get("properties") or {}).items():
+                if isinstance(value, dict) or (
+                    isinstance(value, (list, tuple))
+                    and any(isinstance(item, (dict, list, tuple)) for item in value)
+                ):
+                    properties[key] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                elif isinstance(value, tuple):
+                    properties[key] = list(value)
+                else:
+                    properties[key] = value
+            output["properties"] = properties
+            serialized.append(output)
+        return serialized
 
     def cleanup_stale(self, version: str) -> None:
         run_write(
@@ -118,18 +151,26 @@ class Neo4jGraphRepository:
     ) -> list[dict]:
         return run_read(
             "MATCH (n {namespace:$namespace}) "
-            "WHERE ($keyword IS NULL OR toLower(coalesce(n.name,'')) CONTAINS toLower($keyword)) "
+            "WHERE ($keyword IS NULL OR toLower(coalesce(n.name,'')) CONTAINS toLower($keyword) "
+            "OR toLower(coalesce(n.description,'')) CONTAINS toLower($keyword) "
+            "OR toLower(coalesce(n.parent_skill,'')) CONTAINS toLower($keyword) "
+            "OR toLower(coalesce(n.parent_tech_point,'')) CONTAINS toLower($keyword)) "
             "AND ($stack IS NULL OR n.stack=$stack) "
             "AND ($level IS NULL OR n.level=$level) "
             "AND ($node_type IS NULL OR $node_type IN labels(n)) "
+            "AND n.id IS NOT NULL "
+            "AND any(label IN labels(n) WHERE label IN $allowed_labels) "
             "AND ($include_auxiliary OR NOT "
             "('SourceDocument' IN labels(n) OR 'GraphSnapshot' IN labels(n))) "
-            "RETURN n.id AS id, labels(n)[0] AS type, properties(n) AS properties "
+            "RETURN n.id AS id, "
+            "head([label IN labels(n) WHERE label IN $allowed_labels]) AS type, "
+            "properties(n) AS properties "
             "ORDER BY n.frequency DESC, n.name LIMIT $limit",
             {
                 "namespace": self.namespace, "keyword": keyword, "stack": stack,
                 "level": level, "node_type": node_type, "limit": limit,
                 "include_auxiliary": include_auxiliary,
+                "allowed_labels": sorted(GRAPH_LABELS),
             },
         )
 
@@ -144,6 +185,119 @@ class Neo4jGraphRepository:
             "properties(r) AS properties",
             {"namespace": self.namespace, "ids": node_ids},
         )
+
+    def query_overview_jobs(
+        self, *, offset: int, page_size: int, keyword: str | None = None,
+        stack: str | None = None, level: str | None = None,
+    ) -> list[dict]:
+        """Page deterministic L1 seeds; L2/L3 context is fetched in one follow-up query."""
+        return run_read(
+            "MATCH (job:Job {namespace:$namespace}) "
+            "OPTIONAL MATCH (job)-[:REQUIRES_AREA {namespace:$namespace}]->(area:SkillArea) "
+            "OPTIONAL MATCH (area)-[:CONTAINS {namespace:$namespace}]->(skill:TechStack) "
+            "WITH job, collect(DISTINCT area.name) AS area_names, "
+            "collect(DISTINCT skill.name) AS skill_names "
+            "WHERE ($keyword IS NULL OR toLower(coalesce(job.name,'')) CONTAINS toLower($keyword) "
+            "OR any(name IN area_names WHERE toLower(coalesce(name,'')) CONTAINS toLower($keyword)) "
+            "OR any(name IN skill_names WHERE toLower(coalesce(name,'')) CONTAINS toLower($keyword))) "
+            "AND ($stack IS NULL OR job.stack=$stack) "
+            "AND ($level IS NULL OR job.level=$level) "
+            "RETURN job.id AS id, 'Job' AS type, properties(job) AS properties, "
+            "size(area_names) AS relation_count "
+            "ORDER BY relation_count DESC, coalesce(job.frequency,0) DESC, job.name, job.id "
+            "SKIP $offset LIMIT $limit",
+            {
+                "namespace": self.namespace, "offset": offset,
+                "limit": page_size + 1, "keyword": keyword,
+                "stack": stack, "level": level,
+            },
+        )
+
+    def query_overview_context(
+        self, job_ids: list[str], max_layer: int,
+    ) -> tuple[list[dict], list[dict]]:
+        if not job_ids:
+            return [], []
+        rows = run_read(
+            "MATCH (job:Job {namespace:$namespace}) WHERE job.id IN $job_ids "
+            "OPTIONAL MATCH (job)-[r1:REQUIRES_AREA {namespace:$namespace}]->(area:SkillArea) "
+            "OPTIONAL MATCH (area)-[r2:CONTAINS {namespace:$namespace}]->(skill:TechStack) "
+            "WHERE $max_layer < 3 OR skill IS NULL OR job.id IN coalesce(r2.jobIds, []) "
+            "RETURN job.id AS job_id, properties(job) AS job_properties, "
+            "area.id AS area_id, properties(area) AS area_properties, "
+            "skill.id AS skill_id, properties(skill) AS skill_properties, "
+            "CASE WHEN r1 IS NULL THEN NULL ELSE properties(r1) END AS r1_properties, "
+            "CASE WHEN r2 IS NULL THEN NULL ELSE properties(r2) END AS r2_properties",
+            {"namespace": self.namespace, "job_ids": job_ids, "max_layer": max_layer},
+        )
+        nodes: dict[str, dict] = {}
+        edges: dict[tuple[str, str, str], dict] = {}
+        for row in rows:
+            nodes[row["job_id"]] = {
+                "id": row["job_id"], "type": "Job", "properties": row["job_properties"]
+            }
+            if max_layer >= 2 and row.get("area_id"):
+                nodes[row["area_id"]] = {
+                    "id": row["area_id"], "type": "SkillArea", "properties": row["area_properties"]
+                }
+                edges[(row["job_id"], row["area_id"], "REQUIRES_AREA")] = {
+                    "source": row["job_id"], "target": row["area_id"],
+                    "relation": "REQUIRES_AREA", "properties": row.get("r1_properties") or {},
+                }
+            if max_layer >= 3 and row.get("skill_id") and row.get("area_id"):
+                props = dict(row["skill_properties"] or {})
+                props["has_deep_nodes"] = True
+                nodes[row["skill_id"]] = {
+                    "id": row["skill_id"], "type": "TechStack", "properties": props
+                }
+                edges[(row["area_id"], row["skill_id"], "CONTAINS")] = {
+                    "source": row["area_id"], "target": row["skill_id"],
+                    "relation": "CONTAINS", "properties": row.get("r2_properties") or {},
+                }
+        return list(nodes.values()), list(edges.values())
+
+    def query_neighbors(
+        self, *, node_id: str, offset: int, page_size: int, max_layer: int,
+    ) -> tuple[list[dict], list[dict]]:
+        allowed = ["Job", "SkillArea", "TechStack"]
+        if max_layer >= 4:
+            allowed.append("TechPoint")
+        if max_layer >= 5:
+            allowed.append("KnowledgePoint")
+        rows = run_read(
+            "MATCH (root {namespace:$namespace,id:$node_id}) "
+            "MATCH (root)-[r]-(neighbor {namespace:$namespace}) "
+            "WHERE any(label IN labels(neighbor) WHERE label IN $allowed_labels) "
+            "WITH root, neighbor, r ORDER BY coalesce(neighbor.frequency,0) DESC, neighbor.name, neighbor.id "
+            "SKIP $offset LIMIT $limit "
+            "RETURN root.id AS root_id, "
+            "head([label IN labels(root) WHERE label IN $allowed_labels]) AS root_type, "
+            "properties(root) AS root_properties, neighbor.id AS neighbor_id, "
+            "head([label IN labels(neighbor) WHERE label IN $allowed_labels]) AS neighbor_type, "
+            "properties(neighbor) AS neighbor_properties, startNode(r).id AS source, "
+            "endNode(r).id AS target, type(r) AS relation, properties(r) AS edge_properties",
+            {
+                "namespace": self.namespace, "node_id": node_id,
+                "allowed_labels": allowed, "offset": offset, "limit": page_size + 1,
+            },
+        )
+        if not rows:
+            return [], []
+        nodes = [{
+            "id": rows[0]["root_id"], "type": rows[0]["root_type"],
+            "properties": rows[0]["root_properties"],
+        }]
+        edges = []
+        for row in rows:
+            nodes.append({
+                "id": row["neighbor_id"], "type": row["neighbor_type"],
+                "properties": row["neighbor_properties"],
+            })
+            edges.append({
+                "source": row["source"], "target": row["target"],
+                "relation": row["relation"], "properties": row["edge_properties"],
+            })
+        return nodes, edges
 
     def expand(self, node_id: str, depth: int, limit: int) -> tuple[list[dict], list[dict]]:
         rows = run_read(

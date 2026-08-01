@@ -103,7 +103,21 @@ class MatchingService:
             evidence: list[MatchEvidence] = []
             for name in matched:
                 skill = resume_keys[canonical_key(name)]
-                evidence.append(MatchEvidence(match_id=record.id, evidence_type="resume_skill", skill_name=name, evidence_text=skill.evidence_text or f"简历中识别到 {name}", source_ref={"resume_skill_id": skill.id}))
+                excerpt = (skill.evidence_text or "").strip()
+                evidence.append(MatchEvidence(
+                    match_id=record.id,
+                    evidence_type="resume_skill",
+                    skill_name=name,
+                    evidence_text=(
+                        f"匹配技能：{name}；简历原文：{excerpt}"
+                        if excerpt
+                        else f"简历中识别到匹配技能：{name}"
+                    ),
+                    source_ref={
+                        "resume_skill_id": skill.id,
+                        "canonical_key": skill.canonical_key,
+                    },
+                ))
             for name in missing:
                 evidence.append(MatchEvidence(match_id=record.id, evidence_type="job_requirement", skill_name=name, evidence_text=f"岗位 {job.title} 要求 {name}", source_ref={"job_id": job.id}))
             self.db.add_all(evidence)

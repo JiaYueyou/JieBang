@@ -201,6 +201,33 @@ class SkillRepository:
             )
         ).scalar_one_or_none()
 
+    async def get_facts_for_review(
+        self, *, fact_ids: list[int] | None = None, keyword: str | None = None
+    ) -> list[JobSkillFact]:
+        filters = [JobSkillFact.verification_status == "unverified"]
+        query = (
+            select(JobSkillFact)
+            .join(Skill, Skill.id == JobSkillFact.skill_id)
+            .outerjoin(RawJobRecord, RawJobRecord.id == JobSkillFact.raw_job_record_id)
+            .outerjoin(JobPosting, JobPosting.id == JobSkillFact.job_id)
+        )
+        if fact_ids is not None:
+            filters.append(JobSkillFact.id.in_(fact_ids))
+        if keyword:
+            pattern = f"%{keyword.strip()}%"
+            filters.append(
+                or_(
+                    Skill.name.like(pattern),
+                    JobSkillFact.evidence_text.like(pattern),
+                    RawJobRecord.title.like(pattern),
+                    JobPosting.title.like(pattern),
+                )
+            )
+        rows = await self.db.execute(
+            query.where(*filters).order_by(JobSkillFact.id).with_for_update()
+        )
+        return list(rows.scalars().unique())
+
     async def add_agent_run(self, run: AgentRun) -> None:
         self.db.add(run)
         await self.db.flush()
