@@ -16,7 +16,8 @@
 ## 环境与运行
 
 - [数据库、数据导入与运行指南](database-and-runtime.md)
-- [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)
+- [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)：MySQL SQL、
+  ChromaDB 预计算向量复原、Neo4j 重建与一致性校验。
 - [后端专项说明](../fyz-src/backend/README.md)
 - [离线数据分析配置](../data_analysis/README.md)
 - [AI 助手独立服务（JTT 求职端）](../jtt-src/ai-assistant/README.md)

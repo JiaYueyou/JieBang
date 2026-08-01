@@ -22,15 +22,15 @@ async def rebuild() -> None:
             raise RuntimeError(
                 f"Neo4j is unavailable: {detail}. Check NEO4J_URI/USER/PASSWORD in .env."
             )
-        print(f"[3/4] {detail}")
-        print("[3/4] Rebuilding only the Neo4j namespace 'jiebang' from MySQL facts...")
+        print(f"[4/5] {detail}")
+        print("[4/5] Rebuilding only the Neo4j namespace 'jiebang' from MySQL facts...")
         async with async_session() as session:
             result = await GraphService(session).sync(
                 mode="full",
                 enrich_top_skills=False,
                 user_id=None,
             )
-        print(f"[3/4] Neo4j rebuild succeeded: {result}")
+        print(f"[4/5] Neo4j rebuild succeeded: {result}")
     finally:
         close_driver()
         await engine.dispose()

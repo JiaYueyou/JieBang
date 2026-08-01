@@ -46,13 +46,14 @@ alembic downgrade -1
 alembic revision --autogenerate -m "describe change"
 ```
 
-### ⚠ 数据库版本更新：`20260712_0006_matching`
+### ⚠ 当前数据库版本：`20260801_0017_graph_enrichment_workflow`
 
-本版本新增私有简历、解析结果、简历技能、确定性人岗匹配和匹配证据表：`resume`、`resume_parse_result`、`resume_skill`、`match_record`、`match_evidence`。更新代码后必须执行：
+当前迁移链已经包含私有简历/匹配、来源与质量审核、Agent 审计、RAG Evidence、
+岗位标准化 v2 和 L4/L5 图谱候选工作流。更新代码后必须执行：
 
 ```powershell
 alembic upgrade head
-alembic current  # 应显示 20260712_0006 (head)
+alembic current  # 应显示 20260801_0017 (head)
 ```
 
 迁移完成后重启 Uvicorn，确认 `/api/v1/talents` 已注册。不要以 `alembic stamp head` 代替升级，否则会出现 API 已部署但匹配数据表缺失的问题。
@@ -69,16 +70,17 @@ alembic upgrade head
 
 ## 完整数据库迁移包
 
-需要把一台开发机的全部 MySQL 数据迁移到另一台机器，并从事实库重建
-Neo4j 时，使用 [scripts/DATABASE_TRANSFER.md](scripts/DATABASE_TRANSFER.md)
-中的编号脚本。接收方既可以依次执行 `01` 到 `04`，也可以运行：
+需要把一台开发机的完整 MySQL 事实/审计数据、ChromaDB 预计算向量和 Neo4j
+图谱迁移到另一台机器时，使用
+[scripts/DATABASE_TRANSFER.md](scripts/DATABASE_TRANSFER.md)。推荐执行单入口：
 
 ```powershell
-python scripts/run_database_import.py --replace
+.\scripts\Import-TeamDatabase.ps1 -Replace
 ```
 
-该流程会覆盖目标 MySQL 的现有业务数据；执行前必须确认目标 `.env`。
-Neo4j 只重建 `namespace=jiebang`，不会复制或删除其他命名空间。
+该流程会覆盖目标 MySQL 的现有业务数据，从 MySQL 中保存的预计算向量复原
+`jiebang-evidence-` Chroma collection（不调用外部 Embedding API），并重建
+Neo4j `namespace=jiebang`。执行前必须确认目标 `.env`。
 
 ## 初始管理员
 
