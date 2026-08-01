@@ -183,7 +183,7 @@ const getScoreColor = (score: number) => {
           <div v-if="!resume.education.length" class="empty-hint">暂无教育经历</div>
           <div v-for="(edu, i) in resume.education" :key="i" class="exp-block">
             <div class="exp-block-header">
-              <span>教育 {{ i + 1 }}</span>
+              <span>教育 {{ Number(i) + 1 }}</span>
               <el-button type="danger" text size="small" @click="resume.education.splice(i, 1)">删除</el-button>
             </div>
             <el-row :gutter="12">
@@ -211,7 +211,7 @@ const getScoreColor = (score: number) => {
           <div v-if="!resume.workExperience.length" class="empty-hint">暂无工作经历</div>
           <div v-for="(exp, i) in resume.workExperience" :key="i" class="exp-block">
             <div class="exp-block-header">
-              <span>经历 {{ i + 1 }}</span>
+              <span>经历 {{ Number(i) + 1 }}</span>
               <el-button type="danger" text size="small" @click="resume.workExperience.splice(i, 1)">删除</el-button>
             </div>
             <el-row :gutter="12">
@@ -239,7 +239,7 @@ const getScoreColor = (score: number) => {
           <div v-if="!resume.projects.length" class="empty-hint">暂无项目经历</div>
           <div v-for="(proj, i) in resume.projects" :key="i" class="exp-block">
             <div class="exp-block-header">
-              <span>项目 {{ i + 1 }}</span>
+              <span>项目 {{ Number(i) + 1 }}</span>
               <el-button type="danger" text size="small" @click="resume.projects.splice(i, 1)">删除</el-button>
             </div>
             <el-row :gutter="12">

@@ -29,7 +29,7 @@ const resume = reactive<Partial<ResumeData>>({
 const skillForm = reactive({ name: '', category: '' })
 const addSkill = () => {
   if (!skillForm.name.trim()) return
-  resume.skills!.push({ name: skillForm.name.trim(), category: skillForm.category.trim() })
+  resume.skills!.push({ id: `sk-${Date.now()}`, name: skillForm.name.trim(), level: 'required' as const, category: skillForm.category.trim() })
   skillForm.name = ''
   skillForm.category = ''
 }

@@ -20,7 +20,6 @@ const menuItems: MenuItem[] = [
   { key: 'favorites', label: '我的收藏', icon: 'Star', path: '/favorites' },
   { key: 'diagnosis', label: '简历诊断', icon: 'Document', path: '/diagnosis' },
   { key: 'learning', label: '学习路径', icon: 'Guide', path: '/learning' },
-  { key: 'career', label: '职业发展', icon: 'TrendCharts', path: '/career' },
 ]
 
 const activeKey = computed(() => {
@@ -31,7 +30,6 @@ const activeKey = computed(() => {
   if (['Career'].includes(name)) return 'career'
   if (['Favorites'].includes(name)) return 'favorites'
   if (['DiagnosisIndex', 'DiagnosisDetail'].includes(name)) return 'diagnosis'
-  if (['Career'].includes(name)) return 'career'
   if (['Learning'].includes(name)) return 'learning'
   return 'home'
 })
