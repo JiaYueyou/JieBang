@@ -705,71 +705,66 @@ def _calc_confidence(raw_title, std_title):
 # 技能提取 —— 统一引用 backend 权威词典动态生成
 # ================================================================
 
-# 权威分类 → D 管线分类 映射
-_CATEGORY_MAP = {
-    'programming_language': '编程语言',
-    'framework': '后端框架',
-    'database': '数据库',
-    'tool': 'DevOps/云工具',
-    'cloud': 'DevOps/云工具',
-    'ai_ml': 'AI/ML框架',
-    'domain_knowledge': '大数据技术',
-    'soft_skill': '工程能力',
+# D 管线保留面向展示的细分类，技能名称与别名统一来自 backend 权威词典。
+_AI_FRAMEWORK_SKILLS = {'PyTorch', 'TensorFlow', 'Keras', 'Scikit-learn'}
+_MIDDLEWARE_SKILLS = {
+    'Kafka', 'RabbitMQ', 'ZooKeeper', 'Dubbo', 'gRPC',
+    'RESTful API', 'GraphQL', 'WebSocket',
 }
+_BIG_DATA_SKILLS = {'大数据', 'Hadoop', 'Spark', 'Flink'}
+_HARDWARE_SKILLS = {'物联网', 'IoT', '嵌入式', 'FPGA', 'ROS', '自动驾驶'}
 
-# 从权威源动态生成编译正则
+
+def _display_category(skill_name, authoritative_category):
+    if skill_name in _AI_FRAMEWORK_SKILLS:
+        return 'AI/ML框架'
+    if skill_name in _MIDDLEWARE_SKILLS:
+        return '中间件/消息队列'
+    if skill_name in _BIG_DATA_SKILLS:
+        return '大数据技术'
+    if skill_name in _HARDWARE_SKILLS:
+        return '硬件/嵌入式'
+    return {
+        'programming_language': '编程语言',
+        'framework': '后端框架',
+        'database': '数据库',
+        'tool': 'DevOps/云工具',
+        'cloud': 'DevOps/云工具',
+        'ai_ml': 'AI方向',
+        'domain_knowledge': '工程能力',
+        'soft_skill': '工程能力',
+    }.get(authoritative_category, '工程能力')
+
+
+def _token_pattern(token):
+    escaped = re.escape(token)
+    if not token.isascii():
+        return escaped
+    # +/# 属于技能名的一部分，避免 C 同时命中 C++/C#。
+    return rf'(?<![a-zA-Z0-9+#]){escaped}(?![a-zA-Z0-9+#])'
+
+
+# canonical -> variants；别名只参与匹配，输出始终使用 canonical 名称。
+_SKILL_VARIANTS = {skill_name: [skill_name] for skill_name in SKILL_DICT}
+for alias in SKILL_ALIASES:
+    normalized = normalize_skill(alias)
+    if normalized:
+        canonical, _ = normalized
+        _SKILL_VARIANTS.setdefault(canonical, [canonical]).append(alias)
+
 _COMPILED_SKILLS: dict[str, dict[str, re.Pattern]] = {}
-for skill_name, cat in SKILL_DICT.items():
-    d_cat = _CATEGORY_MAP.get(cat, '工程能力')
-    if d_cat not in _COMPILED_SKILLS:
-        _COMPILED_SKILLS[d_cat] = {}
-    # 生成技能名正则（使用 ASCII-only 边界，避免 Python 将中文识别为 \\w）
-    escaped = re.escape(skill_name)
-    if skill_name.isascii():
-        pattern = rf'(?<![a-zA-Z0-9]){skill_name}(?![a-zA-Z0-9])'
+for skill_name, authoritative_category in SKILL_DICT.items():
+    display_category = _display_category(skill_name, authoritative_category)
+    variants = sorted(set(_SKILL_VARIANTS[skill_name]), key=len, reverse=True)
+    # Spring 由更具体的 Spring Boot/Cloud/MVC 优先表示，避免重复输出。
+    if skill_name == 'Spring':
+        patterns = [r'(?<![a-zA-Z0-9+#])Spring(?![a-zA-Z0-9+#]|[\s-]*(?:Boot|Cloud|MVC))']
     else:
-        pattern = escaped
-    _COMPILED_SKILLS[d_cat][skill_name] = re.compile(pattern, re.IGNORECASE)
-
-# 从别名补充额外匹配模式（别名指向技能，本身不重复注册）
-for alias, canonical in SKILL_ALIASES.items():
-    # 找到该别名对应技能所属的 D 分类
-    d_cat = None
-    for d_skill, d_regex in _COMPILED_SKILLS.get('编程语言', {}).items():
-        if d_skill == canonical:
-            d_cat = '编程语言'
-            break
-    if not d_cat:
-        for d_skill, d_regex in _COMPILED_SKILLS.get('后端框架', {}).items():
-            if d_skill == canonical:
-                d_cat = '后端框架'
-                break
-    if not d_cat:
-        for d_skill, d_regex in _COMPILED_SKILLS.get('数据库', {}).items():
-            if d_skill == canonical:
-                d_cat = '数据库'
-                break
-    if not d_cat:
-        for d_skill, d_regex in _COMPILED_SKILLS.get('DevOps/云工具', {}).items():
-            if d_skill == canonical:
-                d_cat = 'DevOps/云工具'
-                break
-    if not d_cat:
-        for d_skill, d_regex in _COMPILED_SKILLS.get('AI/ML框架', {}).items():
-            if d_skill == canonical:
-                d_cat = 'AI/ML框架'
-                break
-    if not d_cat:
-        for d_skill, d_regex in _COMPILED_SKILLS.get('大数据技术', {}).items():
-            if d_skill == canonical:
-                d_cat = '大数据技术'
-                break
-    if d_cat and alias not in _COMPILED_SKILLS[d_cat]:
-        if alias.isascii():
-            alias_pattern = rf'(?<![a-zA-Z0-9]){alias}(?![a-zA-Z0-9])'
-        else:
-            alias_pattern = re.escape(alias)
-        _COMPILED_SKILLS[d_cat][alias] = re.compile(alias_pattern, re.IGNORECASE)
+        patterns = [_token_pattern(variant) for variant in variants]
+    merged = '|'.join(f'(?:{pattern})' for pattern in patterns)
+    _COMPILED_SKILLS.setdefault(display_category, {})[skill_name] = re.compile(
+        merged, re.IGNORECASE,
+    )
 
 
 def _extract_skills_from_text(text):
