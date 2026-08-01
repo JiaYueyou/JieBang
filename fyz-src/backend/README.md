@@ -82,6 +82,9 @@ alembic upgrade head
 `jiebang-evidence-` Chroma collection（不调用外部 Embedding API），并重建
 Neo4j `namespace=jiebang`。执行前必须确认目标 `.env`。
 
+当前仍受支持的数据维护、迁移和评测脚本清单见
+[scripts/README.md](scripts/README.md)。未列入该清单的历史入口不得继续使用。
+
 ## 初始管理员
 
 迁移完成后，应用启动会执行显式管理员 bootstrap，但不会创建表。

@@ -18,6 +18,8 @@
 - [数据库、数据导入与运行指南](database-and-runtime.md)
 - [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)：MySQL SQL、
   ChromaDB 预计算向量复原、Neo4j 重建与一致性校验。
+- [后端脚本清单](../fyz-src/backend/scripts/README.md)：当前受支持的迁移、维护和
+  工程评测入口，以及已移除旧脚本的替代路径。
 - [后端专项说明](../fyz-src/backend/README.md)
 - [离线数据分析配置](../data_analysis/README.md)
 - [AI 助手独立服务（JTT 求职端）](../jtt-src/ai-assistant/README.md)

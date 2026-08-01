@@ -318,6 +318,7 @@ npm.cmd run build
 | [开发规范](docs/dev-spec.md) | API、数据库、代码和协作规范 |
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
 | [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL、ChromaDB、Neo4j 一键导入与一致性校验 |
+| [后端脚本清单](fyz-src/backend/scripts/README.md) | 当前可用的数据迁移、回填和工程评测脚本 |
 | [API 参考](docs/api-reference.md) | 当前真实接口、请求示例和占位状态 |
 | [Agent 开发工作区](agent-development/README.md) | 独立 Agent 包、契约、Prompt 与测试入口 |
 | [统一文档规范](docs/documentation-standard.md) | 需求、接口、迁移和 Agent 文档格式 |
