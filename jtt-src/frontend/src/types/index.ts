@@ -175,6 +175,7 @@ export interface LearningStep {
   duration: string // 如 "1-2周"
   resources: LearningResource[]
   completed: boolean
+  quizPassed: boolean
 }
 
 export interface LearningResource {

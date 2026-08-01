@@ -302,7 +302,11 @@ class LearningService:
         if step_ids:
             steps = [s for s in steps if s.get("id") in step_ids]
 
-        topics = [s.get("title", "") for s in steps if s.get("completed")]
+        # 传了 step_ids → 用指定步骤出题；没传 → 用已完成步骤（兼容路径级测试）
+        if step_ids:
+            topics = [s.get("title", "") for s in steps]
+        else:
+            topics = [s.get("title", "") for s in steps if s.get("completed")]
         if not topics:
             topics = [s.get("title", "") for s in steps[:2]]
 

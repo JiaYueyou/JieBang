@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useFavoritesStore } from '@/stores/favorites'
 import { learningApi } from '@/api/learning'
@@ -28,10 +28,13 @@ const dialogPathId = ref('')
 // ========== 对话框：学习测试 ==========
 const quizVisible = ref(false)
 const quizPathId = ref('')
+const quizStepTitle = ref('')
 const quizQuestions = ref<any[]>([])
 const quizAnswers = ref<Record<string, number>>({})
 const quizSubmitted = ref(false)
 const quizLoading = ref(false)
+const quizTargetStepIds = ref<string[]>([])
+const quizIsFinal = ref(false)
 
 // ========== AI 助手 ==========
 const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }[]>([])
@@ -39,6 +42,44 @@ const chatInput = ref('')
 const chatLoading = ref(false)
 const chatContainerRef = ref<HTMLDivElement>()
 const flowState = ref<'idle' | 'awaiting_position' | 'awaiting_skill' | 'awaiting_scenario' | 'awaiting_target'>('idle')
+
+// ========== 面板拖拽分隔线 ==========
+const panelWidth = ref(380)
+const dragging = ref(false)
+const MIN_PANEL = 280
+const MAX_RATIO = 0.55
+
+const onDividerDown = (e: MouseEvent) => {
+  e.preventDefault()
+  dragging.value = true
+  document.addEventListener('mousemove', onDividerMove)
+  document.addEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+const onDividerMove = (e: MouseEvent) => {
+  if (!dragging.value) return
+  const container = (e.target as HTMLElement).closest('.learning-platform')
+  const rect = container?.getBoundingClientRect()
+  if (!rect) return
+  const w = e.clientX - rect.left
+  const maxW = rect.width * MAX_RATIO
+  panelWidth.value = Math.min(Math.max(w, MIN_PANEL), maxW)
+}
+
+const onDividerUp = () => {
+  dragging.value = false
+  document.removeEventListener('mousemove', onDividerMove)
+  document.removeEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onDividerMove)
+  document.removeEventListener('mouseup', onDividerUp)
+})
 
 // 预设快捷指令
 const presetCommands = [
@@ -105,14 +146,20 @@ const handleDeletePath = async (id: string, name: string) => {
 }
 
 // ========== 学习测试 ==========
-const openQuiz = async (path: LearningPath) => {
+const openQuiz = async (path: LearningPath, stepIds: string[], isFinal = false) => {
   quizPathId.value = path.id
+  quizTargetStepIds.value = stepIds
+  quizIsFinal.value = isFinal
+  const titles = isFinal
+    ? '综合测试'
+    : path.steps.filter(s => stepIds.includes(s.id)).map(s => s.title).join(' + ') || '当前步骤'
+  quizStepTitle.value = titles
   quizVisible.value = true
   quizSubmitted.value = false
   quizAnswers.value = {}
   quizLoading.value = true
   try {
-    const res: any = await learningApi.quiz({ pathId: path.id })
+    const res: any = await learningApi.quiz({ pathId: path.id, stepIds, questionCount: isFinal ? 5 : 3 })
     quizQuestions.value = res.data?.questions || []
   } catch {
     ElMessage.error('题目加载失败')
@@ -121,10 +168,38 @@ const openQuiz = async (path: LearningPath) => {
   }
 }
 
-const submitQuiz = () => {
+const submitQuiz = async () => {
   quizSubmitted.value = true
-  const correct = quizQuestions.value.filter((q: any, i: number) => quizAnswers.value[q.id] === q.correctAnswer).length
-  ElMessage.success(`测试完成：${correct} / ${quizQuestions.value.length} 正确`)
+  const correct = quizQuestions.value.filter((q: any) => quizAnswers.value[q.id] === q.correctAnswer).length
+  const total = quizQuestions.value.length
+  const passed = total > 0 && correct / total > 0.5
+  ElMessage[passed ? 'success' : 'warning'](
+    passed ? `测试通过：${correct} / ${total} 正确` : `测试未通过：${correct} / ${total} 正确（需正确率 > 50%）`
+  )
+
+  // 步骤测试：通过后标记 quizPassed 并持久化到后端
+  if (!quizIsFinal.value && passed) {
+    const path = learningStore.paths.find(p => p.id === quizPathId.value)
+    if (path) {
+      path.steps.forEach(s => {
+        if (quizTargetStepIds.value.includes(s.id)) s.quizPassed = true
+      })
+      try {
+        await learningApi.update(quizPathId.value, { steps: path.steps })
+      } catch {
+        ElMessage.error('状态保存失败')
+      }
+    }
+  }
+}
+
+const isStepUnlocked = (path: LearningPath, idx: number): boolean => {
+  if (idx === 0) return true
+  return path.steps[idx - 1]?.quizPassed === true
+}
+
+const allStepsPassed = (path: LearningPath): boolean => {
+  return path.steps.length > 0 && path.steps.every(s => s.quizPassed)
 }
 
 const getQuizOptionIcon = (qIdx: number, optIdx: number) => {
@@ -369,7 +444,7 @@ const renderMarkdown = (text: string): string => {
 <template>
   <div class="learning-platform">
     <!-- ========== 左侧 AI 助手面板 ========== -->
-    <aside class="ai-panel">
+    <aside class="ai-panel" :style="{ width: panelWidth + 'px', minWidth: 'unset' }">
       <div class="ai-panel-header">
         <div class="ai-title-row">
           <span class="ai-icon">🤖</span>
@@ -463,6 +538,9 @@ const renderMarkdown = (text: string): string => {
       </div>
     </aside>
 
+    <!-- 拖拽分隔线 -->
+    <div class="panel-divider" @mousedown="onDividerDown"></div>
+
     <!-- ========== 右侧主区域 ========== -->
     <main class="learning-main">
       <div class="page-head">
@@ -526,7 +604,7 @@ const renderMarkdown = (text: string): string => {
             <!-- 步骤详情时间线 -->
             <div class="timeline">
               <div
-                v-for="step in path.steps"
+                v-for="(step, idx) in path.steps"
                 :key="step.id"
                 class="tl-item"
                 :class="{ done: step.completed }"
@@ -538,6 +616,14 @@ const renderMarkdown = (text: string): string => {
                   <div class="tl-header">
                     <span class="tl-title">{{ step.title }}</span>
                     <span class="tl-duration">{{ step.duration }}</span>
+                    <!-- 步骤测试按钮：未解锁 / 已通过 / 可测试 -->
+                    <button v-if="!isStepUnlocked(path, idx)" class="step-quiz-btn locked" disabled>🔒 未解锁</button>
+                    <button v-else-if="step.quizPassed" class="step-quiz-btn passed" @click.stop="openQuiz(path, [step.id])">
+                      <img class="quiz-icon" :src="xuexiceshiIcon" /> 已通过
+                    </button>
+                    <button v-else class="step-quiz-btn" @click.stop="openQuiz(path, [step.id])">
+                      <img class="quiz-icon" :src="xuexiceshiIcon" /> 测试
+                    </button>
                   </div>
                   <p class="tl-desc">{{ step.description }}</p>
                   <!-- 步骤资源 -->
@@ -565,8 +651,8 @@ const renderMarkdown = (text: string): string => {
 
             <!-- 操作按钮 -->
             <div class="path-actions">
-              <button class="act-btn" @click.stop="openQuiz(path)">
-                <img class="btn-icon" :src="xuexiceshiIcon" /> 学习测试
+              <button v-if="allStepsPassed(path)" class="act-btn final-test" @click.stop="openQuiz(path, path.steps.map(s => s.id), true)">
+                <img class="btn-icon" :src="xuexiceshiIcon" /> 综合测试
               </button>
               <button class="act-btn" @click.stop="openRenameDialog(path)">
                 <img class="btn-icon" :src="chongmingmingIcon" /> 重命名
@@ -603,10 +689,15 @@ const renderMarkdown = (text: string): string => {
     <!-- ========== 学习测试对话框 ========== -->
     <el-dialog
       v-model="quizVisible"
-      title="📝 学习测试"
       width="640px"
       :close-on-click-modal="false"
     >
+      <template #header>
+        <div class="quiz-dialog-title">
+          <img :src="xuexiceshiIcon" class="quiz-title-icon" />
+          <span>学习测试：{{ quizStepTitle }}</span>
+        </div>
+      </template>
       <div v-if="quizLoading" class="quiz-loading">
         <p>正在生成题目…</p>
       </div>
@@ -680,13 +771,31 @@ const renderMarkdown = (text: string): string => {
 /* ========== AI 面板 ========== */
 .ai-panel {
   width: 380px;
-  min-width: 340px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 面板拖拽分隔线 */
+.panel-divider {
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border-radius: 3px;
+  transition: background .2s;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.panel-divider:hover,
+.panel-divider:active {
+  background: var(--brand);
+  opacity: 0.5;
 }
 
 .ai-panel-header {
@@ -1250,6 +1359,74 @@ const renderMarkdown = (text: string): string => {
   background: var(--canvas);
   padding: 2px 8px;
   border-radius: 10px;
+}
+
+.step-quiz-btn {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background: #fff;
+  color: var(--brand);
+  cursor: pointer;
+  transition: all .15s;
+  margin-left: auto;
+}
+
+.step-quiz-btn:hover {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.step-quiz-btn.locked {
+  color: var(--weak);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.step-quiz-btn.passed {
+  color: #059669;
+  border-color: #34d399;
+  background: #f0fdf4;
+}
+
+.step-quiz-btn.passed:hover {
+  background: #34d399;
+  color: #fff;
+  border-color: #34d399;
+}
+
+.quiz-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+.quiz-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quiz-title-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.act-btn.final-test {
+  color: #059669;
+  border-color: #34d399;
+  background: #f0fdf4;
+}
+
+.act-btn.final-test:hover {
+  background: #34d399;
+  color: #fff;
+  border-color: #34d399;
 }
 
 .tl-desc {

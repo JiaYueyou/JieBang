@@ -145,6 +145,7 @@ export function pathFromApi(data: any): LearningPath {
         platform: r.platform || '',
       })),
       completed: s.completed || false,
+      quizPassed: s.quiz_passed || false,
     })),
     totalDuration: data.total_duration || '',
     createdAt: data.created_at || '',
