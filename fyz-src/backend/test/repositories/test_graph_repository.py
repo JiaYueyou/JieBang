@@ -76,3 +76,50 @@ def test_query_nodes_excludes_non_graph_labels(monkeypatch):
     assert "head([label IN labels(n)" in query
     assert "EvidenceChunk" not in params["allowed_labels"]
     assert set(params["allowed_labels"]) == graph_module.GRAPH_LABELS
+
+
+def test_search_nodes_uses_quoted_fulltext_query(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        graph_module, "run_read",
+        lambda query, params=None: calls.append((query, params)) or [],
+    )
+
+    Neo4jGraphRepository().search_nodes(query="Spring Boot", limit=20)
+
+    query, params = calls[0]
+    assert "db.index.fulltext.queryNodes" in query
+    assert params["query"] == '"Spring Boot"'
+    assert set(params["allowed_labels"]) == graph_module.GRAPH_LABELS
+
+
+def test_search_nodes_special_characters_use_compatible_query(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        graph_module, "run_read",
+        lambda query, params=None: calls.append((query, params)) or [],
+    )
+
+    Neo4jGraphRepository().search_nodes(query="C++", node_type="TechStack")
+
+    query, params = calls[0]
+    assert "db.index.fulltext.queryNodes" not in query
+    assert params["keyword"] == "C++"
+    assert params["node_type"] == "TechStack"
+
+
+def test_search_nodes_falls_back_when_fulltext_index_is_unavailable(monkeypatch):
+    calls = []
+
+    def fake_run_read(query, params=None):
+        calls.append((query, params))
+        if "db.index.fulltext.queryNodes" in query:
+            raise RuntimeError("index is still populating")
+        return []
+
+    monkeypatch.setattr(graph_module, "run_read", fake_run_read)
+
+    assert Neo4jGraphRepository().search_nodes(query="Python") == []
+    assert len(calls) == 2
+    assert "db.index.fulltext.queryNodes" in calls[0][0]
+    assert "MATCH (n {namespace:$namespace})" in calls[1][0]
