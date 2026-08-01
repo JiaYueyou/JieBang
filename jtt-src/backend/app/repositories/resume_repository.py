@@ -39,8 +39,18 @@ class ResumeRepository:
         await self.db.flush()
 
     async def delete(self, resume: Resume):
-        """删除简历"""
-        await self.db.delete(resume)
+        """删除简历（先删关联匹配记录，避免 FK 约束报错）"""
+        from app.models.match import MatchResult
+        from sqlalchemy import delete as sql_delete
+        # 批量删除关联的匹配结果
+        await self.db.execute(
+            sql_delete(MatchResult).where(MatchResult.resume_id == resume.id)
+        )
+        # 用 execute(delete(...)) 代替 session.delete()，确保在同一事务中生效
+        from app.models.resume import Resume as ResumeModel
+        await self.db.execute(
+            sql_delete(ResumeModel).where(ResumeModel.id == resume.id)
+        )
         await self.db.flush()
 
     async def duplicate(self, resume: Resume) -> Resume:

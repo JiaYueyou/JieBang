@@ -64,6 +64,8 @@ interface ResumeApiData {
   skills: any[]
   self_evaluation: string
   source_file?: string | null
+  source_file_path?: string | null
+  raw_text?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
@@ -143,6 +145,7 @@ export function pathFromApi(data: any): LearningPath {
         platform: r.platform || '',
       })),
       completed: s.completed || false,
+      quizPassed: s.quiz_passed || false,
     })),
     totalDuration: data.total_duration || '',
     createdAt: data.created_at || '',
@@ -173,6 +176,8 @@ export function resumeFromApi(data: ResumeApiData): ResumeData {
     skills: data.skills || [],
     selfEvaluation: data.self_evaluation || '',
     sourceFile: data.source_file ?? undefined,
+    sourceFilePath: data.source_file_path ?? undefined,
+    rawText: data.raw_text ?? undefined,
     createdAt: data.created_at ?? '',
     updatedAt: data.updated_at ?? '',
   }

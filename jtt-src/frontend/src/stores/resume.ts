@@ -62,7 +62,7 @@ export const useResumeStore = defineStore('resume', () => {
     const formData = new FormData()
     formData.append('file', file)
     const res: any = await resumeApi.upload(formData)
-    const uploaded = resumeFromApi(res.data)
+    const uploaded = resumeFromApi(res.data.resume)
     resumes.value.unshift(uploaded)
     return uploaded
   }

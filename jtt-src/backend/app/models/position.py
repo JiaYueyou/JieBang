@@ -32,7 +32,7 @@ class JobPosition(Base):
 
 class Skill(Base):
     """技能表 —— 岗位要求的必备/加分技能"""
-    __tablename__ = "skill"
+    __tablename__ = "position_skill"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     position_id: Mapped[int] = mapped_column(ForeignKey("job_position.id"), nullable=False)

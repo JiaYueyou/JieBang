@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
 import { useMatchStore } from '@/stores/match'
 import type { ResumeData, MatchResult, ImprovementSuggestion } from '@/types'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import MatchPanel from '@/components/diagnosis/MatchPanel.vue'
 
 const router = useRouter()
@@ -118,9 +118,22 @@ const handleDuplicate = (id: string) => {
     resumes.value.unshift(dup)
   }
 }
-const handleDelete = (id: string) => {
-  resumes.value = resumes.value.filter((r) => r.id !== id)
-  if (expandedResumeId.value === id) expandedResumeId.value = null
+const handleDelete = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该简历吗？删除后不可恢复。', '删除确认', {
+      confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning',
+    })
+  } catch {
+    return
+  }
+  try {
+    await resumeStore.remove(id)
+    resumes.value = resumeStore.resumes
+    if (expandedResumeId.value === id) expandedResumeId.value = null
+    ElMessage.success('简历已删除')
+  } catch {
+    ElMessage.error('删除失败，请重试')
+  }
 }
 const getScoreColor = (score: number) => {
   if (score >= 80) return 'var(--success)'

@@ -121,7 +121,9 @@ export interface ResumeData {
   projects: Project[]
   skills: Skill[]
   selfEvaluation: string
-  sourceFile?: string // 上传解析来源文件名
+  sourceFile?: string
+  sourceFilePath?: string
+  rawText?: string
   createdAt: string
   updatedAt: string
 }
@@ -173,6 +175,7 @@ export interface LearningStep {
   duration: string // 如 "1-2周"
   resources: LearningResource[]
   completed: boolean
+  quizPassed: boolean
 }
 
 export interface LearningResource {
