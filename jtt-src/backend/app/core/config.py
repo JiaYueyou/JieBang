@@ -31,9 +31,6 @@ DB_NAME = os.getenv("DB_NAME", "jiebang_user")
 
 DATABASE_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# ===== 爬虫数据库 jie_bang（只读）=====
-RAW_DB_NAME = os.getenv("RAW_DB_NAME", "jie_bang")
-RAW_DB_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{RAW_DB_NAME}"
 
 # ===== Neo4j 知识图谱 =====
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")

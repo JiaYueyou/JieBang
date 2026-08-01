@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db, get_raw_db
+from app.core.database import get_db
 from app.repositories.raw_job_repository import RawJobRepository
 from app.services.position_service import PositionService
 from app.schemas.position import (
@@ -80,9 +80,9 @@ async def list_positions(
     keyword: str | None = Query(None, description="搜索关键词"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=200, description="每页数量"),
-    db: AsyncSession = Depends(get_raw_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    """分页查询岗位列表（数据来源：jie_bang.raw_job_record）"""
+    """分页查询岗位列表（数据来源：raw_job_record）"""
     repo = RawJobRepository(db)
     rows, total = await repo.list_jobs(
         category=category, keyword=keyword, page=page, page_size=page_size,
@@ -107,10 +107,10 @@ async def get_knowledge_graph(
 @router.get("/{position_id}", response_model=ApiResponse[JobPositionDetailResponse])
 async def get_position_detail(
     position_id: str,
-    db: AsyncSession = Depends(get_raw_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    获取岗位详情（数据来源：jie_bang.raw_job_record）。
+    获取岗位详情（数据来源：raw_job_record）。
     ID 格式为 "raw-{数字}"，如 "raw-123"。
     """
     if not position_id.startswith("raw-"):
