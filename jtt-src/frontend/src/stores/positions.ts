@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { JobPosition, GraphNode, GraphEdge } from '@/types'
+import type { JobPosition, Neo4jGraphNode, Neo4jGraphEdge } from '@/types'
 import { positionsApi } from '@/api/positions'
 import { positionFromApi } from '@/utils/transform'
 
 export const usePositionsStore = defineStore('positions', () => {
   const positions = ref<JobPosition[]>([])
   const currentPosition = ref<JobPosition | null>(null)
-  const graphNodes = ref<GraphNode[]>([])
-  const graphEdges = ref<GraphEdge[]>([])
+  const graphNodes = ref<Neo4jGraphNode[]>([])
+  const graphEdges = ref<Neo4jGraphEdge[]>([])
   const loading = ref(false)
   const total = ref(0)
 

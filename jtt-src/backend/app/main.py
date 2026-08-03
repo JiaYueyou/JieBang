@@ -9,7 +9,7 @@ from app.core.config import TESTING, INITIAL_ADMIN_ENABLED, INITIAL_ADMIN_USERNA
 from app.core.database import engine, Base, async_session
 from app.core.neo4j import get_driver, close_driver
 from app.core.exceptions import register_exception_handlers
-from app.api.v1 import auth, positions, resume, match, tailor, learning, favorites
+from app.api.v1 import auth, graph, positions, resume, match, tailor, learning, favorites
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +84,7 @@ register_exception_handlers(app)
 
 # 注册所有 API 路由（统一前缀 /api/v1）
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(graph.router, prefix="/api/v1")
 app.include_router(positions.router, prefix="/api/v1")
 app.include_router(resume.router, prefix="/api/v1")
 app.include_router(match.router, prefix="/api/v1")

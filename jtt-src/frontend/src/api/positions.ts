@@ -1,5 +1,5 @@
 import api from './index'
-import type { ApiResponse, JobPosition, PaginatedData } from '@/types'
+import type { ApiResponse, JobPosition, PaginatedData, Neo4jGraphSubgraph } from '@/types'
 
 export const positionsApi = {
   getList: (params: { category?: string; keyword?: string; page?: number; pageSize?: number }) =>
@@ -15,7 +15,7 @@ export const positionsApi = {
   getDetail: (id: string) => api.get<ApiResponse<JobPosition>>(`/positions/${id}`),
 
   getKnowledgeGraph: (params?: { techStack?: string }) =>
-    api.get<ApiResponse<{ nodes: any[]; edges: any[] }>>('/positions/graph', {
+    api.get<ApiResponse<Neo4jGraphSubgraph>>('/positions/graph', {
       params: { root_tech: params?.techStack },
     }),
 }

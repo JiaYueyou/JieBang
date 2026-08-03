@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.repositories.raw_job_repository import RawJobRepository
 from app.services.position_service import PositionService
+from app.services.graph_service import GraphService
+from app.schemas.graph import GraphSubgraph
 from app.schemas.position import (
     JobPositionResponse, JobPositionDetailResponse, GraphResponse,
 )
@@ -93,14 +95,14 @@ async def list_positions(
     })
 
 
-@router.get("/graph", response_model=ApiResponse[GraphResponse])
+@router.get("/graph", response_model=ApiResponse[GraphSubgraph])
 async def get_knowledge_graph(
     root_tech: str | None = Query(None, description="根技术筛选，如 Java"),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取知识图谱数据（五级节点 + 边）"""
-    service = PositionService(db)
-    data = await service.get_graph_data(root_tech)
+    """获取知识图谱数据（五级节点 + 边，来自 Neo4j）"""
+    service = GraphService(db)
+    data = await service.panorama(keyword=root_tech)
     return ApiResponse(data=data)
 
 

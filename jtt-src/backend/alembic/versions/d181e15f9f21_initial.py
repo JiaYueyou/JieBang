@@ -36,24 +36,6 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('user',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('username', sa.String(length=50), nullable=False, comment='用户名'),
-    sa.Column('email', sa.String(length=100), nullable=False, comment='邮箱'),
-    sa.Column('password_hash', sa.String(length=255), nullable=False, comment='密码哈希'),
-    sa.Column('nickname', sa.String(length=50), nullable=True, comment='昵称'),
-    sa.Column('phone', sa.String(length=20), nullable=True, comment='手机号'),
-    sa.Column('city', sa.String(length=50), nullable=True, comment='所在城市'),
-    sa.Column('education', sa.String(length=50), nullable=True, comment='最高学历'),
-    sa.Column('avatar', sa.String(length=500), nullable=True, comment='头像URL'),
-    sa.Column('resume_count', sa.Integer(), nullable=False, comment='简历数量'),
-    sa.Column('match_history_count', sa.Integer(), nullable=False, comment='匹配历史次数'),
-    sa.Column('created_at', sa.DateTime(), nullable=False, comment='创建时间'),
-    sa.Column('updated_at', sa.DateTime(), nullable=False, comment='更新时间'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('username')
-    )
     op.create_table('favorite',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False, comment='用户ID'),
@@ -82,7 +64,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('resume',
+    op.create_table('user_resume',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False, comment='所属用户ID'),
     sa.Column('name', sa.String(length=100), nullable=False, comment='简历别名，用户自定义'),
@@ -143,7 +125,7 @@ def upgrade() -> None:
     sa.Column('match_date', sa.DateTime(), nullable=False, comment='匹配时间'),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['position_id'], ['job_position.id'], ),
-    sa.ForeignKeyConstraint(['resume_id'], ['resume.id'], ),
+    sa.ForeignKeyConstraint(['resume_id'], ['user_resume.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -156,10 +138,10 @@ def downgrade() -> None:
     op.drop_table('match_result')
     op.drop_table('skill_change')
     op.drop_table('position_skill')
-    op.drop_table('resume')
+    op.drop_table('user_resume')
     op.drop_table('learning_path')
     op.drop_index(op.f('ix_favorite_item_type'), table_name='favorite')
     op.drop_table('favorite')
-    op.drop_table('user')
     op.drop_table('job_position')
+    # user 表由 fyz-src 管理，不在此删除
     # ### end Alembic commands ###
