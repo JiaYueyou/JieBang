@@ -1,5 +1,5 @@
-"""Neo4j 图谱只读查询 —— 参数化 Cypher 访问。"""
-from app.core.neo4j import run_read
+"""Neo4j 图谱查询与写入 —— 参数化 Cypher 访问。"""
+from app.core.neo4j import run_read, run_write
 
 GRAPH_LABELS = {
     "Job", "SkillArea", "TechStack", "TechPoint",
@@ -12,8 +12,44 @@ GRAPH_RELATIONS = {
 
 
 class Neo4jGraphRepository:
-    """Neo4j 图谱只读查询（namespace="jiebang"，与 fyz 共享数据）"""
+    """Neo4j 图谱查询与写入（namespace="jiebang"，与 fyz 共享数据）"""
     namespace = "jiebang"
+
+    # ===== 写入方法 =====
+
+    def ensure_schema(self) -> None:
+        """创建 namespace+id 唯一约束（如果不存在）"""
+        for label in GRAPH_LABELS:
+            run_write(
+                f"CREATE CONSTRAINT {label.lower()}_jiebang_id IF NOT EXISTS "
+                f"FOR (n:{label}) REQUIRE (n.namespace, n.id) IS UNIQUE"
+            )
+
+    def merge_nodes(self, label: str, rows: list[dict], version: str = "") -> None:
+        """批量 UPSERT 节点"""
+        if label not in GRAPH_LABELS or not rows:
+            return
+        run_write(
+            f"UNWIND $rows AS row "
+            f"MERGE (n:{label} {{namespace:$namespace, id:row.id}}) "
+            "SET n += row.properties, n.syncVersion=$version",
+            {"rows": rows, "namespace": self.namespace, "version": version},
+        )
+
+    def merge_edges(self, relation: str, rows: list[dict], version: str = "") -> None:
+        """批量 UPSERT 边"""
+        if relation not in GRAPH_RELATIONS or not rows:
+            return
+        run_write(
+            "UNWIND $rows AS row "
+            "MATCH (a {namespace:$namespace, id:row.source}) "
+            "MATCH (b {namespace:$namespace, id:row.target}) "
+            f"MERGE (a)-[r:{relation} {{namespace:$namespace}}]->(b) "
+            "SET r += row.properties, r.syncVersion=$version",
+            {"rows": rows, "namespace": self.namespace, "version": version},
+        )
+
+    # ===== 查询方法 =====
 
     def counts(self) -> dict:
         nodes = run_read(

@@ -80,3 +80,12 @@ async def job_tree(
 ):
     """岗位完整技能树"""
     return ApiResponse(data=await service.job_tree(job_id, depth))
+
+
+@router.post("/enrich/{node_id}", response_model=ApiResponse[GraphSubgraph])
+async def enrich_skill(
+    node_id: str,
+    service: GraphService = Depends(get_graph_service),
+):
+    """对指定技能节点调用 LLM 生成技术点(L4)和知识点(L5)并写入图谱"""
+    return ApiResponse(data=await service.enrich_skill(node_id))

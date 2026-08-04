@@ -20,7 +20,7 @@ const selectedNode = ref<any>(null)
 // 节点类型显示/隐藏
 const NODE_TYPES: Neo4jNodeType[] = ['Job', 'SkillArea', 'TechStack', 'TechPoint', 'KnowledgePoint']
 const typeVisibility = ref<Record<string, boolean>>({
-  Job: true, SkillArea: true, TechStack: true, TechPoint: true, KnowledgePoint: true,
+  Job: true, SkillArea: true, TechStack: true, TechPoint: false, KnowledgePoint: false,
   SourceDocument: false, GraphSnapshot: false,
 })
 
@@ -141,9 +141,28 @@ function buildGraph() {
     behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
   })
 
-  graph.on('node:click', (evt: any) => {
+  graph.on('node:click', async (evt: any) => {
     const nodeId = evt.target?.id
     if (!nodeId) return
+
+    // 点击 TechStack 节点 → 触发 LLM 生成 L4/L5
+    const clickedNode = graphStore.nodes.find(n => n.id === nodeId)
+    if (clickedNode && clickedNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(nodeId)) {
+      try {
+        await graphStore.enrichNode(nodeId)
+        typeVisibility.value.TechPoint = true
+        typeVisibility.value.KnowledgePoint = true
+        refreshGraph()
+        setTimeout(() => {
+          const n = graph?.getNodeData().find((x: any) => x.id === nodeId)
+          if (n && graph) graph.setElementState(nodeId, 'selected')
+        }, 100)
+      } catch (e) {
+        console.error('Enrich failed:', e)
+      }
+      return
+    }
+
     const allEdges = graph!.getEdgeData()
     const allNodes = graph!.getNodeData()
 
@@ -229,12 +248,21 @@ function handleLevelChange() {
   loadPanorama()
 }
 
+async function handleLoadMore() {
+  await graphStore.loadMore()
+  nextTick(() => buildGraph())
+}
+
 function handleReset() {
   searchKeyword.value = ''
   stackFilter.value = ''
   levelFilter.value = ''
   selectedNode.value = null
-  Object.keys(typeVisibility.value).forEach(k => { typeVisibility.value[k] = k !== 'SourceDocument' && k !== 'GraphSnapshot' })
+  Object.keys(typeVisibility.value).forEach(k => {
+    typeVisibility.value[k] = (k === 'Job' || k === 'SkillArea' || k === 'TechStack')
+  })
+  graphStore.currentLimit = 50
+  graphStore.hasMore = true
   loadPanorama()
 }
 
@@ -280,6 +308,14 @@ onUnmounted(() => destroyGraph())
           <option value="senior">高级</option>
         </select>
         <button class="btn-reset" @click="handleReset">重置</button>
+        <button
+          v-if="graphStore.hasMore"
+          class="btn-load-more"
+          :disabled="graphStore.loading"
+          @click="handleLoadMore"
+        >
+          {{ graphStore.loading ? '加载中...' : '加载更多' }}
+        </button>
       </div>
     </div>
 
@@ -300,6 +336,13 @@ onUnmounted(() => destroyGraph())
           <span class="type-dot" :style="{ background: TYPE_COLORS[t] }"></span>
           <span class="type-label">{{ TYPE_LABELS[t] || t }}</span>
         </label>
+        <div class="panel-divider"></div>
+        <div class="enrich-hint" v-if="graphStore.enrichingNodeId">
+          <span class="spinner"></span> AI 正在分析技能...
+        </div>
+        <div class="enrich-hint enrich-hint--tip" v-else>
+          点击技术栈(TechStack)节点可展开深层技能点
+        </div>
         <div class="panel-divider"></div>
         <div class="panel-title">图例</div>
         <div class="legend-section">
@@ -462,6 +505,19 @@ onUnmounted(() => destroyGraph())
   color: #4f6ef6;
 }
 
+.btn-load-more {
+  padding: 6px 14px;
+  border: 1px solid #4f6ef6;
+  border-radius: 6px;
+  background: #4f6ef6;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-load-more:hover { background: #3d5bd9; }
+.btn-load-more:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+
 .graph-body {
   display: flex;
   flex: 1;
@@ -544,6 +600,35 @@ onUnmounted(() => destroyGraph())
 
 .legend-line.dash {
   border-top: 2px dashed rgba(245, 158, 11, 0.5);
+}
+
+.enrich-hint {
+  font-size: 12px;
+  color: #4f6ef6;
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.enrich-hint--tip {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #4f6ef6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 中央画布 */

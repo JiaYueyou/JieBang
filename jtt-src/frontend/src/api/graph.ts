@@ -44,3 +44,8 @@ export async function getJobTree(jobId: number, depth = 5): Promise<Neo4jGraphSu
   })
   return (res as any).data || emptySubgraph()
 }
+
+export async function enrichSkill(nodeId: string): Promise<Neo4jGraphSubgraph> {
+  const res = await api.post<ApiResponse<Neo4jGraphSubgraph>>(`/graph/enrich/${nodeId}`)
+  return (res as any).data || emptySubgraph()
+}
