@@ -10,6 +10,7 @@ from app.models.skill import (
     AsyncTask,
     JobSkillFact,
     RawJobRecord,
+    JobDuplicateCluster,
     Skill,
     SourceDocument,
     SourceTrustPolicy,
@@ -19,6 +20,7 @@ from app.models.graph import (
     GraphSnapshot,
     GraphSyncBatch,
     StandardJob,
+    StandardJobAlias,
     StandardJobSource,
 )
 from app.models.data_source import DataSource
@@ -43,7 +45,8 @@ from app.models.retrieval import (
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
     "Skill", "SourceDocument", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
-    "AgentRun", "AsyncTask", "StandardJob", "StandardJobSource",
+    "AgentRun", "AsyncTask", "StandardJob", "StandardJobAlias", "StandardJobSource",
+    "JobDuplicateCluster",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
     "DataSource",
     "AnalysisInsightDecision",

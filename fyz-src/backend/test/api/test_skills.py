@@ -168,3 +168,39 @@ async def test_admin_reviews_skill_facts_with_audit_trail(client, auth_headers):
     assert reviewed.json()["data"]["items"][0]["id"] == facts[0]["id"]
     assert reviewed.json()["data"]["summary"]["verified"] == 1
     assert reviewed.json()["data"]["summary"]["rejected"] == 1
+
+
+async def test_admin_batch_reviews_and_approves_all_skill_facts(client, auth_headers):
+    job = await _create_job(client, auth_headers)
+    extracted = await client.post(
+        f"/api/v1/jobs/{job['id']}/extract-skills", headers=auth_headers
+    )
+    fact_ids = [item["id"] for item in extracted.json()["data"]["facts"]]
+    assert len(fact_ids) >= 3
+
+    batch = await client.post(
+        "/api/v1/skills/facts/reviews/batch",
+        headers=auth_headers,
+        json={
+            "fact_ids": fact_ids[:2],
+            "decision": "rejected",
+            "note": "批量证据不充分",
+        },
+    )
+    assert batch.status_code == 200
+    assert batch.json()["data"]["processed_count"] == 2
+
+    approve_all = await client.post(
+        "/api/v1/skills/facts/reviews/approve-all",
+        headers=auth_headers,
+        json={"keyword": ""},
+    )
+    assert approve_all.status_code == 200
+    assert approve_all.json()["data"]["processed_count"] == len(fact_ids) - 2
+
+    queue = await client.get(
+        "/api/v1/skills/facts/reviews",
+        headers=auth_headers,
+        params={"status": "unverified"},
+    )
+    assert queue.json()["meta"]["total"] == 0

@@ -52,6 +52,11 @@ class GraphSubgraph(BaseModel):
     edge_count: int = 0
     snapshot_version: str | None = None
     truncated: bool = False
+    returned: int = 0
+    total_available: int | None = None
+    next_cursor: str | None = None
+    has_more: bool = False
+    query_scope: str | None = None
 
 
 class GraphSnapshotResponse(BaseModel):
@@ -65,3 +70,40 @@ class GraphSnapshotResponse(BaseModel):
     metadata: dict
     created_at: datetime
     completed_at: datetime | None
+
+
+class GraphEnrichmentCandidateResponse(BaseModel):
+    id: int
+    snapshot_id: str
+    skill_id: int
+    skill_name: str
+    candidate_data: dict
+    evidence_source_ids: list[str]
+    confidence: float
+    machine_validation_status: str
+    review_status: str
+    publication_status: str
+    review_note: str | None
+    reviewed_at: datetime | None
+    published_at: datetime | None
+    lock_version: int
+    agent_run_id: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class GraphEnrichmentCandidatePage(BaseModel):
+    items: list[GraphEnrichmentCandidateResponse] = Field(default_factory=list)
+    total: int
+    page: int
+    page_size: int
+
+
+class GraphEnrichmentReviewRequest(BaseModel):
+    action: Literal["approve", "reject"]
+    note: str | None = Field(default=None, max_length=500)
+    lock_version: int = Field(ge=0)
+
+
+class GraphEnrichmentPublishRequest(BaseModel):
+    candidate_ids: list[int] = Field(default_factory=list, max_length=100)

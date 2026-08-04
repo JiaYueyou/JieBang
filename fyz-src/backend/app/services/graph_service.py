@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import json
 import logging
 import time
 import uuid
@@ -11,11 +13,16 @@ from collections import defaultdict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
+from app.core.config import (
+    GRAPH_ENRICHMENT_CONCURRENCY,
+    GRAPH_ENRICHMENT_MAX_ATTEMPTS,
+    GRAPH_ENRICHMENT_TIMEOUT_SECONDS,
+)
+from app.core.database import async_session
 from app.core.agent_runtime import SkillGraphCompletionAgent
-from app.core.exceptions import ResourceNotFoundError
+from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now, utc_now_naive
-from app.domain.job_standardizer import CATEGORY_STACK, infer_job_stack, standardize_job_title
+from app.domain.job_standardizer import CATEGORY_STACK, normalize_job_title
 from app.domain.statuses import AgentRunStatus, TaskStatus
 from app.models import (
     AgentRun,
@@ -29,6 +36,7 @@ from app.models import (
     Skill,
     SourceDocument,
     StandardJob,
+    StandardJobAlias,
     StandardJobSource,
 )
 from app.providers import DeepSeekProvider, LLMProvider
@@ -50,6 +58,10 @@ from app.services.agent_grounding_service import (
 from app.services.retrieval_service import RetrievalService
 
 
+_local_graph_tasks: set[asyncio.Task] = set()
+logger = logging.getLogger(__name__)
+
+
 class GraphService:
     def __init__(
         self,
@@ -65,7 +77,9 @@ class GraphService:
         self.graph = graph_repository or Neo4jGraphRepository()
         self.llm = llm_provider or DeepSeekProvider()
         self.enrichment_agent = SkillGraphCompletionAgent(
-            self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS
+            self.llm,
+            timeout_seconds=GRAPH_ENRICHMENT_TIMEOUT_SECONDS,
+            max_attempts=GRAPH_ENRICHMENT_MAX_ATTEMPTS,
         )
         self.retrieval = retrieval_service or RetrievalService(db)
         self.grounding = grounding_service or AgentGroundingService(db)
@@ -87,16 +101,27 @@ class GraphService:
         for source_type, rows in (("raw", raw_jobs), ("internal", internal_jobs)):
             for row in rows:
                 title = row.standardized_title or row.title
-                name, key, level, confidence = standardize_job_title(title)
-                standard = await self.audit.get_standard_job(key)
+                normalized = normalize_job_title(
+                    row.title,
+                    city=getattr(row, "city", None) or getattr(row, "location", None),
+                    company=getattr(row, "company", None),
+                    jd_text=getattr(row, "jd_text", None),
+                )
+                standard = await self.audit.get_standard_job(normalized.canonical_key)
                 if not standard:
                     standard = StandardJob(
-                        name=name,
-                        canonical_key=key,
+                        name=normalized.name,
+                        canonical_key=normalized.canonical_key,
                         aliases=[],
-                        stack=infer_job_stack(name),
-                        level=level,
-                        description=f"由多来源岗位数据聚合形成的{name}能力模型。",
+                        stack={"algorithm": "ai", "data": "data", "devops": "devops"}.get(
+                            normalized.role_family, "backend"
+                        ),
+                        level=normalized.level,
+                        role_family=normalized.role_family,
+                        specialization_key=normalized.specialization_key,
+                        occupation_code=normalized.occupation_code,
+                        normalization_version=normalized.version,
+                        description=f"由多来源岗位数据聚合形成的{normalized.name}能力模型。",
                         source_count=0,
                     )
                     self.db.add(standard)
@@ -109,6 +134,27 @@ class GraphService:
                 if source_type == "raw":
                     row.standardized_title = standard.name
                     row.standard_job_id = standard.id
+                    row.city_code = normalized.city_code
+                    row.company_key = normalized.company_key
+                    row.work_mode = normalized.work_mode
+                    row.employment_type = normalized.employment_type
+                    row.normalization_version = normalized.version
+                    row.normalization_status = normalized.status
+                    row.normalization_confidence = normalized.confidence
+                alias_key = "".join(ch for ch in row.title.casefold() if ch.isalnum())
+                alias = await self.db.scalar(select(StandardJobAlias).where(
+                    StandardJobAlias.standard_job_id == standard.id,
+                    StandardJobAlias.alias_key == alias_key,
+                ))
+                if alias is None:
+                    self.db.add(StandardJobAlias(
+                        standard_job_id=standard.id,
+                        alias=row.title,
+                        alias_key=alias_key,
+                        source_type=source_type,
+                        confidence=normalized.confidence,
+                        normalization_version=normalized.version,
+                    ))
                 link = await self.audit.get_source(source_type, row.id)
                 if not link:
                     self.db.add(StandardJobSource(
@@ -116,7 +162,7 @@ class GraphService:
                         source_type=source_type,
                         source_id=row.id,
                         original_title=row.title,
-                        confidence=confidence,
+                        confidence=normalized.confidence,
                     ))
         await self.db.flush()
         counts = (await self.db.execute(
@@ -159,9 +205,9 @@ class GraphService:
         self.db.add_all([snapshot, batch])
         await self.db.commit()
         try:
+            await self._report_progress(task_id, batch, 8, "standardizing", "正在聚合标准岗位")
             standard_count = await self.aggregate_standard_jobs()
-            batch.progress = 20
-            await self.db.commit()
+            await self._report_progress(task_id, batch, 20, "retrieving", "正在检索可补全技术栈")
             enrichment_stats = {
                 "enabled": bool(getattr(self.llm, "enabled", True)),
                 "candidates_total": 0,
@@ -174,18 +220,36 @@ class GraphService:
             }
             if enrich_top_skills:
                 enrichment_stats.update(
-                    await self._prepare_top_candidates(snapshot_id, user_id)
+                    await self._prepare_top_candidates(
+                        snapshot_id,
+                        user_id,
+                        progress_callback=lambda completed, total, skill_name, status: self._report_progress(
+                            task_id,
+                            batch,
+                            20 + int(50 * completed / max(total, 1)),
+                            "generating",
+                            f"并发生成 L4/L5：{completed}/{total}（{skill_name}：{status}）",
+                            completed=completed,
+                            total=total,
+                        ),
+                    )
                 )
-            batch.progress = 45
-            await self.db.commit()
+            await self._report_progress(task_id, batch, 76, "building", "正在构建图谱节点与关系")
             nodes, edges, fact_count = await self._build_payload(snapshot)
-            tech_points, knowledge_points = await self._append_verified_deep_nodes(
+            tech_points, knowledge_points, published_candidate_ids = await self._append_verified_deep_nodes(
                 snapshot_id, nodes, edges
             )
             enrichment_stats["tech_points_written"] = tech_points
             enrichment_stats["knowledge_points_written"] = knowledge_points
+            await self._report_progress(task_id, batch, 88, "publishing", "正在写入 Neo4j 正式图谱")
             await asyncio.to_thread(self._write_payload, nodes, edges, version, mode)
             counts = await asyncio.to_thread(self.graph.counts)
+            for candidate_id in published_candidate_ids:
+                candidate = await self.db.get(GraphEnrichmentCandidate, candidate_id)
+                if candidate:
+                    candidate.verification_status = "verified"
+                    candidate.publication_status = "published"
+                    candidate.published_at = utc_now_naive()
             for row in nodes.get("TechStack", []):
                 skill_id = int(row["id"].split(":", 1)[1])
                 skill = await self.db.get(Skill, skill_id)
@@ -228,8 +292,44 @@ class GraphService:
             await self.db.commit()
             raise
 
-    async def _prepare_top_candidates(self, snapshot_id: str, user_id: int | None) -> dict[str, int]:
-        logger = logging.getLogger(__name__)
+    async def _report_progress(
+        self,
+        task_id: str | None,
+        batch: GraphSyncBatch,
+        progress: int,
+        stage: str,
+        detail: str,
+        *,
+        completed: int | None = None,
+        total: int | None = None,
+    ) -> None:
+        batch.progress = progress
+        if task_id:
+            task = await self.db.get(AsyncTask, task_id)
+            if task:
+                task.progress = progress
+                task.result = {
+                    "stage": stage,
+                    "detail": detail,
+                    "completed": completed,
+                    "total": total,
+                }
+        await self.db.commit()
+        logger.info(
+            "graph_sync_progress task_id=%s snapshot_id=%s progress=%d stage=%s detail=%s",
+            task_id,
+            batch.snapshot_id,
+            progress,
+            stage,
+            detail,
+        )
+
+    async def _prepare_top_candidates(
+        self,
+        snapshot_id: str,
+        user_id: int | None,
+        progress_callback=None,
+    ) -> dict[str, int]:
         rows = (await self.db.execute(
             select(Skill, func.count(JobSkillFact.id).label("coverage"))
             .join(JobSkillFact, JobSkillFact.skill_id == Skill.id)
@@ -249,102 +349,128 @@ class GraphService:
             "candidates_skipped": 0,
         }
         logger.info("graph_enrichment: preparing %d top candidates for snapshot %s", len(rows), snapshot_id)
-        for skill, _coverage in rows:
-            candidate = GraphEnrichmentCandidate(
-                snapshot_id=snapshot_id,
-                skill_id=skill.id,
-                evidence_source_ids=[],
-                candidate_data={"reason": "llm_disabled", "skill_name": skill.name},
-                confidence=0,
-                verification_status="unverified",
-            )
-            provider_enabled = bool(getattr(self.llm, "enabled", True))
-            if not provider_enabled:
-                candidate.candidate_data = {"reason": "llm_disabled", "skill_name": skill.name}
-                stats["candidates_skipped"] += 1
-                logger.info("graph_enrichment: skill=%s skipped (llm disabled)", skill.name)
-                await self.audit.add_candidate(candidate)
-                continue
+        semaphore = asyncio.Semaphore(GRAPH_ENRICHMENT_CONCURRENCY)
 
-            retrieval_query = f"{skill.name} 技术点 知识点 能力要求"
-            try:
-                retrieval = await self.retrieval.search(
-                    RetrievalSearchRequest(
-                        query=retrieval_query,
-                        skill_ids=[skill.id],
-                        top_k=12,
-                        minimum_quality_score=0.55,
-                        minimum_retrieval_score=0.2,
-                    ),
-                    user_id=user_id or 0,
-                    log_query=user_id is not None,
-                )
-            except Exception as exc:
-                candidate.candidate_data = {
-                    "reason": "retrieval_unavailable",
-                    "skill_name": skill.name,
-                    "error_code": type(exc).__name__,
-                }
-                stats["candidates_skipped"] += 1
-                logger.warning(
-                    "graph_enrichment: skill=%s skipped (retrieval unavailable: %s)",
-                    skill.name,
-                    type(exc).__name__,
-                )
-                await self.audit.add_candidate(candidate)
-                continue
-
-            candidate.evidence_source_ids = [
-                item.evidence_id for item in retrieval.items
-            ]
-            independent_sources = {
-                item.source_platform.strip().casefold()
-                for item in retrieval.items
-            }
-            if len(retrieval.items) < 2 or len(independent_sources) < 2:
-                candidate.candidate_data = {
-                    "reason": "insufficient_evidence",
-                    "skill_name": skill.name,
-                    "sources": sorted(independent_sources),
-                    "evidence_ids": candidate.evidence_source_ids,
-                    "source_count": len(retrieval.items),
-                    "index_version": retrieval.index_version,
-                    "warnings": retrieval.warnings,
-                }
-                stats["candidates_skipped"] += 1
-                logger.info(
-                    "graph_enrichment: skill=%s skipped (insufficient evidence: %d sources, %d platforms)",
-                    skill.name, len(retrieval.items), len(independent_sources),
-                )
-            else:
-                await self._enrich_candidate(
-                    candidate,
-                    skill,
-                    retrieval,
-                    user_id,
-                )
-                if candidate.candidate_data.get("reason") == "llm_failed":
-                    stats["candidates_failed"] += 1
-                    logger.warning("graph_enrichment: skill=%s enrichment failed", skill.name)
-                elif candidate.verification_status == "machine_validated":
-                    stats["candidates_machine_validated"] += 1
-                    logger.info(
-                        "graph_enrichment: skill=%s machine validated",
-                        skill.name,
+        async def run_one(skill_id: int) -> tuple[str, str]:
+            async with semaphore:
+                if GRAPH_ENRICHMENT_CONCURRENCY == 1:
+                    result = await self._prepare_candidate(snapshot_id, skill_id, user_id)
+                    await self.db.flush()
+                    return result
+                async with async_session() as worker_db:
+                    worker = GraphService(
+                        worker_db,
+                        graph_repository=self.graph,
+                        llm_provider=self.llm,
                     )
-                else:
-                    stats["candidates_skipped"] += 1
-                    logger.info("graph_enrichment: skill=%s filtered out", skill.name)
-            await self.audit.add_candidate(candidate)
+                    status, skill_name = await worker._prepare_candidate(
+                        snapshot_id, skill_id, user_id
+                    )
+                    await worker_db.commit()
+                    return status, skill_name
+
+        tasks = [asyncio.create_task(run_one(skill.id)) for skill, _coverage in rows]
+        for completed, task in enumerate(asyncio.as_completed(tasks), start=1):
+            status, skill_name = await task
+            stats[f"candidates_{status}"] += 1
+            if progress_callback:
+                await progress_callback(completed, len(tasks), skill_name, status)
         logger.info(
-            "graph_enrichment: snapshot=%s total=%d machine_validated=%d failed=%d skipped=%d",
+            "graph_enrichment: snapshot=%s total=%d machine_validated=%d failed=%d skipped=%d concurrency=%d",
             snapshot_id,
             stats["candidates_total"],
             stats["candidates_machine_validated"],
             stats["candidates_failed"],
             stats["candidates_skipped"],
+            GRAPH_ENRICHMENT_CONCURRENCY,
         )
         return stats
+
+    async def _prepare_candidate(
+        self, snapshot_id: str, skill_id: int, user_id: int | None
+    ) -> tuple[str, str]:
+        skill = await self.db.get(Skill, skill_id)
+        if skill is None:
+            logger.warning("graph_enrichment: skill_id=%s disappeared", skill_id)
+            return "skipped", str(skill_id)
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot_id,
+            skill_id=skill.id,
+            evidence_source_ids=[],
+            candidate_data={"reason": "llm_disabled", "skill_name": skill.name},
+            confidence=0,
+            verification_status="unverified",
+            machine_validation_status="pending",
+            review_status="pending",
+            publication_status="draft",
+        )
+        provider_enabled = bool(getattr(self.llm, "enabled", True))
+        if not provider_enabled:
+            candidate.candidate_data = {"reason": "llm_disabled", "skill_name": skill.name}
+            candidate.machine_validation_status = "skipped"
+            logger.info("graph_enrichment: skill=%s skipped (llm disabled)", skill.name)
+            await self.audit.add_candidate(candidate)
+            return "skipped", skill.name
+
+        retrieval_query = f"{skill.name} 技术点 知识点 常用方案 核心组件"
+        try:
+            retrieval = await self.retrieval.search(
+                RetrievalSearchRequest(
+                    query=retrieval_query,
+                    skill_ids=[skill.id],
+                    top_k=8,
+                    minimum_quality_score=0.55,
+                    minimum_retrieval_score=0.2,
+                ),
+                user_id=user_id or 0,
+                log_query=user_id is not None,
+            )
+        except Exception as exc:
+            candidate.candidate_data = {
+                "reason": "retrieval_unavailable",
+                "skill_name": skill.name,
+                "error_code": type(exc).__name__,
+            }
+            candidate.machine_validation_status = "retrieval_failed"
+            logger.warning(
+                "graph_enrichment: skill=%s skipped (retrieval unavailable: %s)",
+                skill.name,
+                type(exc).__name__,
+            )
+            await self.audit.add_candidate(candidate)
+            return "skipped", skill.name
+
+        candidate.evidence_source_ids = [item.evidence_id for item in retrieval.items]
+        independent_sources = {item.source_platform.strip().casefold() for item in retrieval.items}
+        if len(retrieval.items) < 2 or len(independent_sources) < 2:
+            candidate.candidate_data = {
+                "reason": "insufficient_evidence",
+                "skill_name": skill.name,
+                "sources": sorted(independent_sources),
+                "evidence_ids": candidate.evidence_source_ids,
+                "source_count": len(retrieval.items),
+                "index_version": retrieval.index_version,
+                "warnings": retrieval.warnings,
+            }
+            candidate.machine_validation_status = "insufficient_evidence"
+            logger.info(
+                "graph_enrichment: skill=%s skipped (insufficient evidence: %d sources, %d platforms)",
+                skill.name, len(retrieval.items), len(independent_sources),
+            )
+            status = "skipped"
+        else:
+            await self._enrich_candidate(candidate, skill, retrieval, user_id)
+            if candidate.candidate_data.get("reason") in {"llm_failed", "llm_timeout"}:
+                logger.warning("graph_enrichment: skill=%s enrichment failed", skill.name)
+                status = "failed"
+            elif candidate.verification_status == "machine_validated":
+                logger.info("graph_enrichment: skill=%s machine validated", skill.name)
+                status = "machine_validated"
+            else:
+                logger.info("graph_enrichment: skill=%s filtered out", skill.name)
+                status = "skipped"
+        await self.audit.add_candidate(candidate)
+        return status, skill.name
 
     async def _job_directions_for_skill(self, skill_id: int) -> list[str]:
         raw_names = (await self.db.execute(
@@ -402,7 +528,7 @@ class GraphService:
             {
                 "evidence_id": item.evidence_id,
                 "source": item.source_platform[:100],
-                "text": item.chunk_text[:2000],
+                "text": item.chunk_text[:1200],
             }
             for item in retrieval.items
         ]
@@ -442,6 +568,9 @@ class GraphService:
                 if filtered.tech_points
                 else "unverified"
             )
+            candidate.machine_validation_status = (
+                "passed" if filtered.tech_points else "failed"
+            )
             run.status = (
                 AgentRunStatus.succeeded.value
                 if filtered.tech_points and report.rejected_count == 0
@@ -475,7 +604,16 @@ class GraphService:
                 confidence,
             )
         except Exception as exc:
-            candidate.candidate_data = {"reason": "llm_failed", "error": str(exc)[:500]}
+            error_message = str(exc)
+            failure_reason = (
+                "llm_timeout" if "timed out" in error_message.casefold() else "llm_failed"
+            )
+            candidate.candidate_data = {
+                "reason": failure_reason,
+                "error": error_message[:500],
+                "retryable": failure_reason == "llm_timeout",
+            }
+            candidate.machine_validation_status = "failed"
             run.status = AgentRunStatus.failed.value
             run.error_code = type(exc).__name__
             run.error_message = str(exc)[:2000]
@@ -495,7 +633,7 @@ class GraphService:
                     "rejected_claim_count": 0,
                     "claims": [],
                 },
-                "fallback_reason": "llm_failed",
+                "fallback_reason": failure_reason,
             }
             logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
         finally:
@@ -526,7 +664,15 @@ class GraphService:
                             f"knowledge:{point_index}:{knowledge_index}"
                         ),
                         claim_type="knowledge_point",
-                        claim_text=f"{item.name}\n{item.description}",
+                        claim_text="\n".join(filter(None, [
+                            item.name,
+                            item.description,
+                            "核心技术：" + "、".join(item.core_stack) if item.core_stack else "",
+                            "常用方案：" + "；".join(
+                                f"{solution.name}：{solution.purpose}"
+                                for solution in item.common_solutions
+                            ) if item.common_solutions else "",
+                        ])),
                         anchor_text=item.name,
                         evidence_ids=tuple(item.evidence_ids),
                     )
@@ -746,16 +892,25 @@ class GraphService:
 
     async def _append_verified_deep_nodes(
         self, snapshot_id, nodes, edges, skills: dict[int, Skill] | None = None
-    ) -> tuple[int, int]:
+    ) -> tuple[int, int, list[int]]:
         logger = logging.getLogger(__name__)
         candidates = list((await self.db.execute(
             select(GraphEnrichmentCandidate).where(
-                GraphEnrichmentCandidate.snapshot_id == snapshot_id,
-                GraphEnrichmentCandidate.verification_status == "verified",
+                GraphEnrichmentCandidate.review_status == "approved",
+                GraphEnrichmentCandidate.publication_status.in_(("approved", "published")),
+            ).order_by(
+                GraphEnrichmentCandidate.skill_id,
+                GraphEnrichmentCandidate.updated_at.desc(),
+                GraphEnrichmentCandidate.id.desc(),
             )
         )).scalars())
+        latest_by_skill: dict[int, GraphEnrichmentCandidate] = {}
+        for candidate in candidates:
+            latest_by_skill.setdefault(candidate.skill_id, candidate)
+        candidates = list(latest_by_skill.values())
         tech_points = 0
         knowledge_points = 0
+        candidate_ids: list[int] = []
         skills = skills or {}
         for candidate in candidates:
             skill = skills.get(candidate.skill_id) or await self.db.get(Skill, candidate.skill_id)
@@ -763,12 +918,15 @@ class GraphService:
                 logger.warning("graph_enrichment: candidate skill_id=%d not found", candidate.skill_id)
                 continue
             output = GraphEnrichmentOutput.model_validate(candidate.candidate_data)
+            candidate_ids.append(candidate.id)
             for point_index, point in enumerate(output.tech_points):
                 point_id = f"point:{skill.id}:{point_index}"
                 nodes["TechPoint"].append(self._node(
                     point_id, name=point.name, canonicalKey=point_id,
                     stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
                     description=point.detail, importance=point.confidence,
+                    evidence_ids=list(dict.fromkeys(point.evidence_ids)),
+                    source_count=len(set(point.evidence_ids)),
                 ))
                 edges["REFINES_TO"].append(self._edge(
                     f"skill:{skill.id}", point_id, confidence=point.confidence,
@@ -783,7 +941,11 @@ class GraphService:
                         knowledge_id, name=knowledge.name, canonicalKey=knowledge_id,
                         stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
                         description=knowledge.description, difficulty=knowledge.difficulty,
+                        core_stack=knowledge.core_stack,
+                        common_solutions=[solution.model_dump(mode="json") for solution in knowledge.common_solutions],
                         importance=knowledge.confidence,
+                        evidence_ids=list(dict.fromkeys(knowledge.evidence_ids)),
+                        source_count=len(set(knowledge.evidence_ids)),
                     ))
                     edges["HAS_KNOWLEDGE"].append(self._edge(
                         point_id, knowledge_id, confidence=knowledge.confidence,
@@ -794,7 +956,99 @@ class GraphService:
             "graph_enrichment: appended tech_points=%d knowledge_points=%d for snapshot=%s",
             tech_points, knowledge_points, snapshot_id,
         )
-        return tech_points, knowledge_points
+        return tech_points, knowledge_points, candidate_ids
+
+    async def list_enrichment_candidates(
+        self, *, page: int, page_size: int, review_status: str | None,
+    ) -> dict:
+        filters = []
+        if review_status:
+            filters.append(GraphEnrichmentCandidate.review_status == review_status)
+        total = int(await self.db.scalar(
+            select(func.count(GraphEnrichmentCandidate.id)).where(*filters)
+        ) or 0)
+        rows = (await self.db.execute(
+            select(GraphEnrichmentCandidate, Skill.name)
+            .join(Skill, Skill.id == GraphEnrichmentCandidate.skill_id)
+            .where(*filters)
+            .order_by(GraphEnrichmentCandidate.created_at.desc(), GraphEnrichmentCandidate.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )).all()
+        return {
+            "items": [self._candidate_response(candidate, skill_name) for candidate, skill_name in rows],
+            "total": total, "page": page, "page_size": page_size,
+        }
+
+    async def review_enrichment_candidate(
+        self, candidate_id: int, *, action: str, note: str | None,
+        lock_version: int, user_id: int,
+    ) -> dict:
+        candidate = await self.db.get(GraphEnrichmentCandidate, candidate_id)
+        if candidate is None:
+            raise ResourceNotFoundError("L4/L5 补充候选不存在")
+        if candidate.lock_version != lock_version:
+            raise InvalidParameterError("候选已被其他审核操作更新，请刷新后重试")
+        if action == "approve" and candidate.machine_validation_status != "passed":
+            raise InvalidParameterError("只有机器校验通过的候选可以批准")
+        candidate.review_status = "approved" if action == "approve" else "rejected"
+        candidate.publication_status = "approved" if action == "approve" else "rejected"
+        candidate.verification_status = "verified" if action == "approve" else "rejected"
+        candidate.reviewed_by = user_id
+        candidate.reviewed_at = utc_now_naive()
+        candidate.review_note = (note or "").strip() or None
+        candidate.lock_version += 1
+        await self.db.flush()
+        await self.db.refresh(candidate)
+        skill = await self.db.get(Skill, candidate.skill_id)
+        response = self._candidate_response(
+            candidate, skill.name if skill else f"技能 {candidate.skill_id}"
+        )
+        await self.db.commit()
+        return response
+
+    async def prepare_enrichment_publication(self, candidate_ids: list[int]) -> int:
+        query = select(GraphEnrichmentCandidate).where(
+            GraphEnrichmentCandidate.review_status == "approved",
+            GraphEnrichmentCandidate.publication_status.in_(("approved", "published")),
+        )
+        if candidate_ids:
+            query = query.where(GraphEnrichmentCandidate.id.in_(candidate_ids))
+        rows = list((await self.db.execute(query)).scalars())
+        if candidate_ids and len(rows) != len(set(candidate_ids)):
+            raise InvalidParameterError("选中的候选包含未批准或不存在的记录")
+        if not rows:
+            raise InvalidParameterError("当前没有可发布的 L4/L5 候选")
+        for row in rows:
+            row.publication_status = "approved"
+        await self.db.commit()
+        return len(rows)
+
+    @staticmethod
+    def _candidate_response(candidate: GraphEnrichmentCandidate, skill_name: str) -> dict:
+        machine_status = candidate.machine_validation_status
+        if machine_status == "pending":
+            machine_status = {
+                "llm_disabled": "skipped",
+                "retrieval_unavailable": "retrieval_failed",
+                "insufficient_evidence": "insufficient_evidence",
+                "llm_failed": "failed",
+                "llm_timeout": "failed",
+            }.get((candidate.candidate_data or {}).get("reason"), machine_status)
+        return {
+            "id": candidate.id, "snapshot_id": candidate.snapshot_id,
+            "skill_id": candidate.skill_id, "skill_name": skill_name,
+            "candidate_data": candidate.candidate_data or {},
+            "evidence_source_ids": [str(value) for value in (candidate.evidence_source_ids or [])],
+            "confidence": candidate.confidence,
+            "machine_validation_status": machine_status,
+            "review_status": candidate.review_status,
+            "publication_status": candidate.publication_status,
+            "review_note": candidate.review_note, "reviewed_at": candidate.reviewed_at,
+            "published_at": candidate.published_at, "lock_version": candidate.lock_version,
+            "agent_run_id": candidate.agent_run_id, "created_at": candidate.created_at,
+            "updated_at": candidate.updated_at,
+        }
 
     def _write_payload(self, nodes, edges, version: str, mode: str) -> None:
         self.graph.ensure_schema()
@@ -816,6 +1070,29 @@ class GraphService:
         edges = await asyncio.to_thread(self.graph.query_edges, [row["id"] for row in rows])
         return self._subgraph(rows, edges, truncated=truncated)
 
+    async def overview(
+        self, *, cursor: str | None, page_size: int, max_layer: int,
+        keyword: str | None = None, stack: str | None = None,
+        level: str | None = None,
+    ) -> GraphSubgraph:
+        offset = self._decode_cursor(cursor)
+        seeds = await asyncio.to_thread(
+            self.graph.query_overview_jobs,
+            offset=offset, page_size=page_size, keyword=keyword,
+            stack=stack, level=level,
+        )
+        has_more = len(seeds) > page_size
+        seeds = seeds[:page_size]
+        nodes, edges = await asyncio.to_thread(
+            self.graph.query_overview_context,
+            [row["id"] for row in seeds], max_layer,
+        )
+        return self._subgraph(
+            nodes, edges, truncated=has_more, has_more=has_more,
+            next_cursor=self._encode_cursor(offset + page_size) if has_more else None,
+            query_scope=f"overview:L1-L{max_layer}",
+        )
+
     async def node(self, node_id: str) -> GraphSubgraph:
         nodes, edges = await asyncio.to_thread(self.graph.expand, node_id, 1, 100)
         if not nodes:
@@ -827,10 +1104,37 @@ class GraphService:
         truncated = len(nodes) > limit
         return self._subgraph(nodes[:limit], edges, truncated=truncated)
 
+    async def neighbors(
+        self, node_id: str, *, cursor: str | None, page_size: int, max_layer: int,
+    ) -> GraphSubgraph:
+        offset = self._decode_cursor(cursor)
+        nodes, edges = await asyncio.to_thread(
+            self.graph.query_neighbors,
+            node_id=node_id, offset=offset, page_size=page_size, max_layer=max_layer,
+        )
+        if not nodes:
+            # Distinguish a leaf from a missing node through the existing detail query.
+            detail = await self.node(node_id)
+            return self._subgraph(
+                [self._schema_node_row(detail.nodes[0])], [],
+                query_scope=f"neighbors:L1-L{max_layer}",
+            )
+        has_more = len(nodes) - 1 > page_size
+        kept_nodes = nodes[:page_size + 1]
+        kept_ids = {row["id"] for row in kept_nodes}
+        kept_edges = [
+            row for row in edges
+            if row["source"] in kept_ids and row["target"] in kept_ids
+        ]
+        return self._subgraph(
+            kept_nodes, kept_edges, truncated=has_more, has_more=has_more,
+            next_cursor=self._encode_cursor(offset + page_size) if has_more else None,
+            query_scope=f"neighbors:L1-L{max_layer}",
+        )
+
     async def search(self, query: str, node_type: str | None, limit: int) -> GraphSubgraph:
         rows = await asyncio.to_thread(
-            self.graph.query_nodes, keyword=query, node_type=node_type, limit=limit,
-            include_auxiliary=True,
+            self.graph.search_nodes, query=query, node_type=node_type, limit=limit,
         )
         edges = await asyncio.to_thread(self.graph.query_edges, [row["id"] for row in rows])
         return self._subgraph(rows, edges)
@@ -854,14 +1158,26 @@ class GraphService:
             raise ResourceNotFoundError("图谱快照不存在")
         return self._snapshot_response(row)
 
-    def _subgraph(self, rows, edge_rows, *, truncated=False) -> GraphSubgraph:
+    def _subgraph(
+        self, rows, edge_rows, *, truncated=False, has_more=False,
+        next_cursor: str | None = None, query_scope: str | None = None,
+        total_available: int | None = None,
+    ) -> GraphSubgraph:
         nodes = []
         for row in rows:
             props = dict(row["properties"])
             props.pop("namespace", None)
             props.pop("syncVersion", None)
+            common_solutions = props.get("common_solutions")
+            if isinstance(common_solutions, str):
+                try:
+                    decoded = json.loads(common_solutions)
+                    props["common_solutions"] = decoded if isinstance(decoded, list) else []
+                except json.JSONDecodeError:
+                    logger.warning("graph_node_invalid_common_solutions node_id=%s", row["id"])
+                    props["common_solutions"] = []
             nodes.append(GraphNode(
-                id=row["id"], type=row["type"], name=props.pop("name", row["id"]),
+                id=row["id"], type=row["type"], name=props.pop("name", None) or row["id"],
                 stack=props.pop("stack", None), level=props.pop("level", None),
                 description=props.pop("description", ""),
                 importance=props.pop("importance", None),
@@ -883,8 +1199,39 @@ class GraphService:
         ]
         return GraphSubgraph(
             nodes=nodes, edges=edges, node_count=len(nodes), edge_count=len(edges),
-            truncated=truncated,
+            truncated=truncated, returned=len(nodes), total_available=total_available,
+            next_cursor=next_cursor, has_more=has_more, query_scope=query_scope,
         )
+
+    @staticmethod
+    def _encode_cursor(offset: int) -> str:
+        return base64.urlsafe_b64encode(f"offset:{offset}".encode()).decode().rstrip("=")
+
+    @staticmethod
+    def _decode_cursor(cursor: str | None) -> int:
+        if not cursor:
+            return 0
+        try:
+            padded = cursor + "=" * (-len(cursor) % 4)
+            value = base64.urlsafe_b64decode(padded.encode()).decode()
+            prefix, raw_offset = value.split(":", 1)
+            if prefix != "offset":
+                raise ValueError
+            return max(int(raw_offset), 0)
+        except (ValueError, UnicodeDecodeError):
+            return 0
+
+    @staticmethod
+    def _schema_node_row(node: GraphNode) -> dict:
+        return {
+            "id": node.id,
+            "type": node.type,
+            "properties": {
+                "name": node.name, "stack": node.stack, "level": node.level,
+                "description": node.description, "importance": node.importance,
+                "frequency": node.frequency, **node.properties,
+            },
+        }
 
     @staticmethod
     def _layout(nodes: list[GraphNode]) -> None:
@@ -926,7 +1273,8 @@ class GraphTaskService:
         self.db = db
 
     async def create_sync(
-        self, *, mode: str, enrich_top_skills: bool, user_id: int
+        self, *, mode: str, enrich_top_skills: bool, user_id: int,
+        run_eager_in_background: bool = False,
     ) -> TaskStatusResponse:
         from app.core.config import CELERY_TASK_ALWAYS_EAGER
         from app.tasks.graph_sync import _process_graph_sync, process_graph_sync
@@ -939,7 +1287,15 @@ class GraphTaskService:
         self.db.add(task)
         await self.db.commit()
         if CELERY_TASK_ALWAYS_EAGER:
-            await _process_graph_sync(task.id, mode, enrich_top_skills, user_id)
+            if run_eager_in_background:
+                local_task = asyncio.create_task(
+                    _process_graph_sync(task.id, mode, enrich_top_skills, user_id),
+                    name=f"graph-sync-{task.id}",
+                )
+                _local_graph_tasks.add(local_task)
+                local_task.add_done_callback(self._finish_local_task)
+            else:
+                await _process_graph_sync(task.id, mode, enrich_top_skills, user_id)
         else:
             process_graph_sync.delay(task.id, mode, enrich_top_skills, user_id)
         await self.db.refresh(task)
@@ -949,3 +1305,12 @@ class GraphTaskService:
             error_message=task.error_message, created_at=task.created_at,
             started_at=task.started_at, finished_at=task.finished_at,
         )
+
+    @staticmethod
+    def _finish_local_task(task: asyncio.Task) -> None:
+        _local_graph_tasks.discard(task)
+        if task.cancelled():
+            return
+        # 读取异常，避免后台任务产生 "Task exception was never retrieved"；
+        # _process_graph_sync 已经把失败详情持久化到 AsyncTask。
+        task.exception()

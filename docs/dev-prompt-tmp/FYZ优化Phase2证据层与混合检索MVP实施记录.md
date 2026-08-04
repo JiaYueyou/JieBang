@@ -150,7 +150,7 @@ GET  /api/v1/retrieval/evidence/{evidence_id}
 
 最新索引使用 `text-embedding-3-large` 3072 维向量与 ChromaDB，Collection 为 `jiebang-evidence-e93abd41a75aab10f84a`。`job-skill-evidence-v2` 检索文本包含标准岗位、规范技能名、别名、受控语义说明和原文片段，但引用返回仍保持原文片段。评测器会批量预取去重后的查询向量，避免 120 条样本逐条调用外部 Embedding。
 
-岗位技能事实通过 `phase2-machine-validation-v1` 策略补齐：只认证由现有规则抽取器从 MySQL 原始 JD 重新命中、置信度不低于 `0.70`、质量状态为 `accepted/warning` 且未排除的事实。新增 285 条机器认证事实，未通过重新抽取或置信度门槛的事实保持 `unverified`。脚本 `approve_phase2_coverage_facts.py --revert` 可以只回滚该策略写入的数据。
+岗位技能事实曾通过 `phase2-machine-validation-v1` 策略补齐：只认证由现有规则抽取器从 MySQL 原始 JD 重新命中、置信度不低于 `0.70`、质量状态为 `accepted/warning` 且未排除的事实。新增 285 条机器认证事实，未通过重新抽取或置信度门槛的事实保持 `unverified`。该阶段性脚本现已移除，后续事实变更统一通过 `/api/v1/skills/facts/reviews`、批量审核和一键同意接口完成并保留审核记录。
 
 ## 7. 自动化验证
 

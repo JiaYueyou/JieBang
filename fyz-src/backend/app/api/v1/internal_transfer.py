@@ -14,6 +14,7 @@ from app.schemas.internal_transfer import (
     EnterpriseTalentSummary,
     InternalMatchResult,
     InternalPositionCreate,
+    InternalPositionStatus,
     InternalPositionStatusUpdate,
     InternalPositionSummary,
     MatchByPositionRequest,
@@ -86,10 +87,20 @@ async def create_talent_from_directory(
 
 @router.get("/positions", response_model=ApiResponse[list[InternalPositionSummary]])
 async def list_positions(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    status: InternalPositionStatus | None = Query(default=None),
+    keyword: str | None = Query(default=None, max_length=120),
     _principal: TokenPrincipal = Depends(get_current_user),
     svc: InternalTransferService = Depends(service),
 ):
-    return ApiResponse(data=await svc.list_positions())
+    rows, meta = await svc.list_positions(
+        page=page,
+        page_size=page_size,
+        status=status,
+        keyword=keyword,
+    )
+    return ApiResponse(data=rows, meta=meta)
 
 
 @router.post("/positions", response_model=ApiResponse[InternalPositionSummary])

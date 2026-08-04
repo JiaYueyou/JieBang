@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { dataProvider } from "@/data";
 import type {
   AdminOverview,
+  AdminResourceSnapshot,
   AgentRunAudit,
   AgentRunStatus,
   DataQualityPage,
@@ -16,6 +17,13 @@ export const useAdminStore=defineStore("admin",()=>{
   const agentRunStatus=ref<AgentRunStatus|undefined>(),agentRunType=ref("");
   const qualityPage=ref<DataQualityPage|null>(null),qualityLoading=ref(false),qualityError=ref("");
   async function load(force=false){if(loaded.value&&!force)return;loading.value=true;error.value="";try{data.value=await dataProvider.admin.getOverview();loaded.value=true;}catch(e){error.value=e instanceof Error?e.message:"加载失败";}finally{loading.value=false;}}
+  async function refreshResources():Promise<AdminResourceSnapshot>{
+    const snapshot=await dataProvider.admin.getResources();
+    if(data.value){
+      data.value={...data.value,resources:snapshot.resources,traffic:snapshot.traffic};
+    }
+    return snapshot;
+  }
   async function loadQuality(query:DataQualityQuery){
     qualityLoading.value=true;qualityError.value="";
     try{qualityPage.value=await dataProvider.admin.listQuality(query);}
@@ -43,6 +51,6 @@ export const useAdminStore=defineStore("admin",()=>{
     data,loading,loaded,error,qualityPage,qualityLoading,qualityError,
     load,refresh:()=>load(true),loadQuality,decideQuality,toggleCrawler,runCrawler,
     pollCrawler,importCrawlerOutput,agentRuns,agentRunsLoading,agentRunsTotal,
-    agentRunPage,agentRunPageSize,agentRunStatus,agentRunType,loadAgentRuns,
+    agentRunPage,agentRunPageSize,agentRunStatus,agentRunType,loadAgentRuns,refreshResources,
   };
 });

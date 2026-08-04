@@ -3,6 +3,8 @@
 ## 1. 数据边界
 
 - MySQL 是用户、岗位、技能事实、来源证据、任务和图谱审计的事实库。
+- ChromaDB 是由 MySQL `retrieval_index_entry` 中的预计算向量物化的检索索引，
+  可以删除后重建，不是事实来源。
 - Neo4j 是由 MySQL 已验证事实重建的查询模型，不是事实来源。
 - Neo4j 业务节点和关系使用 `namespace=jiebang` 隔离。
 - Redis 只负责 Celery 消息和任务结果，不保存最终业务事实。
@@ -26,6 +28,8 @@ JWT_SECRET_KEY=足够长的随机值
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=本地密码
+CHROMA_MODE=persistent
+CHROMA_PERSIST_PATH=./storage/chroma
 ```
 
 生成 JWT 密钥：
@@ -75,11 +79,14 @@ base
 → 20260620_0002  岗位、技能和版本
 → 20260620_0003  标准技能与抽取流水线
 → 20260620_0004  标准岗位与图谱同步审计
-→ 20260710_0005  岗位洞察决策审计（head）
-→ 20260712_0006  私有简历、匹配快照与解释证据（当前 head）
+→ 20260710_0005  岗位洞察决策审计
+→ 20260712_0006  私有简历、匹配快照与解释证据
+→ 20260715_0007～20260731_0015  转岗、员工、来源、审核、审计、质量与 RAG
+→ 20260801_0016  岗位标准化 v2
+→ 20260801_0017  L4/L5 图谱补全工作流（当前 head）
 ```
 
-### ⚠ `20260712_0006_matching` 数据库版本更新
+### ⚠ 当前 `20260801_0017` 数据库版本
 
 该迁移创建 `resume`、`resume_parse_result`、`resume_skill`、`match_record` 和 `match_evidence`，供 FYZ 人才匹配与 Match Explanation 使用。拉取包含该 revision 的代码后，先执行：
 
@@ -89,7 +96,9 @@ alembic upgrade head
 alembic current
 ```
 
-确认当前版本为 `20260712_0006 (head)` 后再重启 FastAPI。不要使用 `alembic stamp head` 跳过 DDL；否则会造成 `/api/v1/talents` 已存在、但登录后查询因业务表缺失而失败。
+确认当前版本为 `20260801_0017 (head)` 后再重启 FastAPI。不要使用
+`alembic stamp head` 跳过 DDL；否则会造成路由已存在、但查询因岗位标准化或
+图谱审核表缺失而失败。
 
 ### 已存在旧 `user` 表
 
@@ -135,14 +144,16 @@ alembic upgrade head
 
 ### 导入团队完整数据库快照
 
-团队本地环境统一使用 `fyz-src/backend/scripts/` 的四步迁移包。它先创建或升级
-MySQL 表，再导入全部表数据，最后从 MySQL 事实库重建 Neo4j；不要再使用多个
-离线脚本分别导入同一批 JD、技能或图谱数据。
+团队本地环境统一使用 `fyz-src/backend/scripts/` 的五阶段迁移包。它先创建或
+升级 MySQL 表并导入全部事实/审计/预计算向量数据，再从 MySQL 复原 ChromaDB、
+重建 Neo4j，最后核对三类存储；不要再使用多个离线脚本分别导入同一批 JD、
+技能、向量或图谱数据。
 
 ```powershell
 cd fyz-src\backend
 python scripts\01_prepare_mysql_schema.py
 python scripts\02_import_mysql_snapshot.py --replace
+python scripts\restore_chroma_from_mysql.py --replace
 python scripts\03_rebuild_neo4j.py
 python scripts\04_verify_database_import.py
 ```
@@ -150,10 +161,18 @@ python scripts\04_verify_database_import.py
 也可以一键运行：
 
 ```powershell
-python scripts\run_database_import.py --replace
+.\scripts\Import-TeamDatabase.ps1 -Replace
 ```
 
-第二步会覆盖目标 MySQL 的现有业务数据。来源方更新数据库内容后，运行
+也可以运行跨平台 Python 入口：
+
+```text
+python scripts/run_database_import.py --replace
+```
+
+导入会覆盖目标 MySQL 的现有业务数据、`jiebang-evidence-` Chroma collection
+和 Neo4j `namespace=jiebang`。Chroma 直接使用 SQL 中已经保存的向量，不调用
+外部 Embedding API。来源方更新数据库内容后，运行
 `python scripts\export_mysql_snapshot.py` 来刷新 `mysql_snapshot.sql` 与其
 SHA-256 manifest。完整安全边界、校验项和故障处理见
 [数据库迁移脚本说明](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)。
@@ -171,7 +190,21 @@ INITIAL_ADMIN_PASSWORD=本地强密码
 执行迁移后启动后端，管理员不存在时会被创建。之后建议关闭
 `INITIAL_ADMIN_ENABLED`。生产环境不得使用文档示例密码。
 
-## 5. Neo4j
+## 5. ChromaDB 与 Neo4j
+
+ChromaDB 使用持久化目录，但该目录属于本机运行数据，不提交 Git。团队迁移时
+由 `restore_chroma_from_mysql.py` 读取 MySQL 中的 index version、evidence、
+lexical text、embedding 和 checksum 后重新建立 collection。只有主动创建新的
+索引版本时才调用配置的 Embedding provider。
+
+可单独复原并校验：
+
+```powershell
+python scripts\restore_chroma_from_mysql.py --replace
+python scripts\04_verify_database_import.py
+```
+
+### Neo4j
 
 启动 Neo4j 5.x，设置与 `.env` 一致的密码后：
 

@@ -42,7 +42,12 @@ const router = createRouter({
           path: "matching/:resumeId",
           name: "MatchingDetail",
           component: () => import("@/views/MatchingDetail.vue"),
-          meta: { title: "人才详情", parentTitle: "人才匹配", parentPath: "/matching" },
+          meta: {
+            title: "人才详情",
+            parentTitle: "人才匹配",
+            parentPath: "/matching",
+            activeMenu: "/matching",
+          },
         },
         {
           path: "career",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Protocol, TypeVar
 
 import httpx
@@ -14,10 +15,12 @@ from app.core.config import (
     DEEPSEEK_BASE_URL,
     DEEPSEEK_CONNECT_TIMEOUT_SECONDS,
     DEEPSEEK_MODEL,
+    DEEPSEEK_MAX_ATTEMPTS,
     DEEPSEEK_TIMEOUT_SECONDS,
 )
 
 T = TypeVar("T", bound=BaseModel)
+logger = logging.getLogger(__name__)
 
 
 class LLMProvider(Protocol):
@@ -92,7 +95,11 @@ class DeepSeekProvider:
             "temperature": 0,
         }
         last_error = "unknown provider error"
-        for attempt in range(2):
+        max_attempts = max(
+            1,
+            min(4, int(metadata.get("max_attempts", DEEPSEEK_MAX_ATTEMPTS))),
+        )
+        for attempt in range(max_attempts):
             raw_content = ""
             try:
                 timeout = httpx.Timeout(
@@ -113,17 +120,22 @@ class DeepSeekProvider:
                     raw_content = response.json()["choices"][0]["message"]["content"]
                     return response_schema.model_validate(json.loads(raw_content))
             except httpx.ConnectTimeout as exc:
-                raise RuntimeError(
+                last_error = (
                     "DeepSeek connection or TLS handshake timed out after "
                     f"{min(self.connect_timeout_seconds, timeout_seconds)} seconds"
-                ) from exc
+                )
+                if attempt + 1 >= max_attempts:
+                    raise RuntimeError(last_error) from exc
             except httpx.ReadTimeout as exc:
-                # Retrying the same long prompt immediately only doubles the UI wait.
-                raise RuntimeError(
-                    f"DeepSeek response timed out after {timeout_seconds} seconds"
-                ) from exc
+                last_error = f"DeepSeek response timed out after {timeout_seconds} seconds"
+                if attempt + 1 >= max_attempts:
+                    raise RuntimeError(
+                        f"{last_error} ({max_attempts} attempts exhausted)"
+                    ) from exc
             except httpx.TimeoutException as exc:
-                raise RuntimeError(f"DeepSeek request timed out: {type(exc).__name__}") from exc
+                last_error = f"DeepSeek request timed out: {type(exc).__name__}"
+                if attempt + 1 >= max_attempts:
+                    raise RuntimeError(last_error) from exc
             except httpx.HTTPStatusError as exc:
                 status = exc.response.status_code
                 last_error = f"DeepSeek returned HTTP {status}"
@@ -131,7 +143,9 @@ class DeepSeekProvider:
                     break
             except httpx.RequestError as exc:
                 detail = str(exc).strip() or type(exc).__name__
-                raise RuntimeError(f"DeepSeek request failed: {detail}") from exc
+                last_error = f"DeepSeek request failed: {detail}"
+                if attempt + 1 >= max_attempts:
+                    raise RuntimeError(last_error) from exc
             except (json.JSONDecodeError, KeyError, ValueError) as exc:
                 detail = str(exc).strip() or type(exc).__name__
                 last_error = f"invalid structured output: {detail}"
@@ -148,6 +162,11 @@ class DeepSeekProvider:
                             ),
                         },
                     ]
-            if attempt == 0:
-                await asyncio.sleep(0.5)
+            if attempt + 1 < max_attempts:
+                delay = min(4.0, 0.75 * (2 ** attempt))
+                logger.warning(
+                    "deepseek_structured_retry attempt=%d/%d delay=%.2fs reason=%s",
+                    attempt + 1, max_attempts, delay, last_error,
+                )
+                await asyncio.sleep(delay)
         raise RuntimeError(f"DeepSeek structured output failed: {last_error}")

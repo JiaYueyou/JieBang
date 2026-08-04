@@ -1,5 +1,6 @@
 from jiebang_agents.graph_enrichment.agent import GraphEnrichmentAgent, SkillGraphCompletionAgent
 from jiebang_agents.graph_enrichment.schemas import (
+    CommonSolutionOutput,
     GraphEnrichmentOutput,
     GraphEvidenceInput,
     KnowledgePointOutput,
@@ -13,6 +14,7 @@ __all__ = [
     "SkillGraphCompletionInput",
     "GraphEvidenceInput",
     "GraphEnrichmentOutput",
+    "CommonSolutionOutput",
     "KnowledgePointOutput",
     "TechPointOutput",
 ]

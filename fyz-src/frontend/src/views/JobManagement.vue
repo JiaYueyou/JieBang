@@ -16,7 +16,7 @@
 
     <!-- ═══ Tab A: 岗位发布 ═══ -->
     <div v-show="tab === 'publish'" class="anim-fade-up anim-delay-2">
-      <div class="jm-grid">
+      <div class="jm-grid jm-publish-grid">
         <!-- Left: Input -->
         <div class="dash-card">
           <div class="dash-card-header">
@@ -95,6 +95,7 @@
                   allow-create
                   default-first-option
                   placeholder="输入或选择核心技能"
+                  class="core-skill-select"
                   style="width:100%"
                   @change="markSuggestionDirty"
                 />
@@ -174,13 +175,13 @@
         <section class="dash-card ledger-pane public-ledger">
           <div class="ledger-head">
             <div><span class="ledger-kicker">PUBLIC MARKET</span><h3>公开招聘信息</h3><p>仅进入外部招聘与 C 端岗位市场</p></div>
-            <span class="ledger-count">{{ filteredPublicJobs.length }}</span>
+            <span class="ledger-count">{{ publicTotal }}</span>
           </div>
           <div class="ledger-filters">
             <el-input v-model="publicKeyword" clearable placeholder="搜索公开岗位" :prefix-icon="Search" />
             <el-select v-model="publicStatus" clearable placeholder="招聘状态"><el-option label="招聘中" value="open"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="已关闭" value="closed"/></el-select>
           </div>
-          <el-table :data="filteredPublicJobs" style="width:100%" size="default">
+          <el-table :data="publishedJobs" style="width:100%" size="default" max-height="300">
             <el-table-column prop="title" label="岗位名称" min-width="180" />
             <el-table-column prop="department" label="部门" min-width="110" />
             <el-table-column prop="headcount" label="人数" width="66" align="center" />
@@ -208,18 +209,27 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="ledger-pagination">
+            <el-pagination
+              v-model:current-page="publicPage"
+              :page-size="ledgerPageSize"
+              :total="publicTotal"
+              layout="prev, pager, next, total"
+              @current-change="loadPublicJobs"
+            />
+          </div>
         </section>
 
         <section class="dash-card ledger-pane internal-ledger">
           <div class="ledger-head">
             <div><span class="ledger-kicker">PRIVATE MOBILITY</span><h3>内部需求岗位</h3><p>仅用于企业人才流动与管理决策</p></div>
-            <span class="ledger-count">{{ filteredInternalPositions.length }}</span>
+            <span class="ledger-count">{{ internalTotal }}</span>
           </div>
           <div class="ledger-filters">
             <el-input v-model="internalKeyword" clearable placeholder="搜索内部岗位" :prefix-icon="Search" />
             <el-select v-model="internalStatus" clearable placeholder="内部状态"><el-option label="内部开放" value="open"/><el-option label="待审批" value="pending_approval"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="名额已满" value="filled"/><el-option label="已关闭" value="closed"/></el-select>
           </div>
-          <el-table :data="filteredInternalPositions" style="width:100%" size="default">
+          <el-table :data="internalPositions" style="width:100%" size="default" max-height="300">
             <el-table-column prop="title" label="内部岗位" min-width="160" />
             <el-table-column prop="department" label="接收部门" min-width="110" />
             <el-table-column prop="headcount" label="名额" width="66" align="center" />
@@ -236,6 +246,15 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="ledger-pagination">
+            <el-pagination
+              v-model:current-page="internalPage"
+              :page-size="ledgerPageSize"
+              :total="internalTotal"
+              layout="prev, pager, next, total"
+              @current-change="loadInternalPositions"
+            />
+          </div>
         </section>
       </div>
     </div>
@@ -258,7 +277,7 @@
           <el-input v-model="observedSource" clearable placeholder="来源平台" @keyup.enter="reloadObserved" />
           <el-button type="primary" @click="reloadObserved">查询</el-button>
         </div>
-        <el-table :data="observedJobs" style="width:100%" size="default">
+        <el-table :data="observedJobs" style="width:100%" size="default" max-height="520">
           <el-table-column prop="title" label="岗位名称" min-width="190" />
           <el-table-column prop="company" label="企业" min-width="140" />
           <el-table-column prop="city" label="城市" width="100" />
@@ -552,7 +571,9 @@ const router = useRouter();
 const route = useRoute();
 const {
   jobs: publishedJobs,
+  publicTotal,
   internalPositions,
+  internalTotal,
   emergingJobs,
   capabilityChanges,
   insightQuality,
@@ -626,26 +647,35 @@ const publicKeyword = ref("");
 const publicStatus = ref("");
 const internalKeyword = ref("");
 const internalStatus = ref("");
-const filteredPublicJobs = computed(() => {
-  const keyword = publicKeyword.value.trim().toLowerCase();
-  return publishedJobs.value.filter((job) => {
-    const matchesKeyword = !keyword || `${job.title} ${job.department}`.toLowerCase().includes(keyword);
-    return matchesKeyword && (!publicStatus.value || job.status === publicStatus.value);
+const publicPage = ref(1);
+const internalPage = ref(1);
+const ledgerPageSize = 6;
+let publicFilterTimer: ReturnType<typeof setTimeout> | undefined;
+let internalFilterTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function loadPublicJobs() {
+  await store.loadPublic({
+    page: publicPage.value,
+    pageSize: ledgerPageSize,
+    status: (publicStatus.value || undefined) as JobSummary["status"] | undefined,
+    keyword: publicKeyword.value.trim() || undefined,
   });
-});
-const filteredInternalPositions = computed(() => {
-  const keyword = internalKeyword.value.trim().toLowerCase();
-  return internalPositions.value.filter((position) => {
-    const matchesKeyword = !keyword || `${position.title} ${position.department} ${position.receiving_manager || ""}`.toLowerCase().includes(keyword);
-    return matchesKeyword && (!internalStatus.value || position.status === internalStatus.value);
+}
+
+async function loadInternalPositions() {
+  await store.loadInternal({
+    page: internalPage.value,
+    pageSize: ledgerPageSize,
+    status: (internalStatus.value || undefined) as InternalPositionStatus | undefined,
+    keyword: internalKeyword.value.trim() || undefined,
   });
-});
+}
 const previewTarget = computed(() => generatedDraft.value?.target || demandTarget.value);
 onMounted(async () => {
   const requestedTab = route.query.tab;
   if (requestedTab === "insight" || requestedTab === "observed") tab.value = requestedTab;
   if (typeof route.query.skill === "string") skillPreference.value = route.query.skill;
-  await Promise.all([store.load(), store.loadInsights(skillPreference.value || undefined)]);
+  await Promise.all([store.load(true), store.loadInsights(skillPreference.value || undefined)]);
   if (requestedTab === "observed") {
     await loadObservedJobs();
     const recordId = Number(route.query.record);
@@ -658,7 +688,21 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => {
   if (suggestionTimer) clearTimeout(suggestionTimer);
+  if (publicFilterTimer) clearTimeout(publicFilterTimer);
+  if (internalFilterTimer) clearTimeout(internalFilterTimer);
   suggestionRequestId += 1;
+});
+
+watch([publicKeyword, publicStatus], () => {
+  publicPage.value = 1;
+  if (publicFilterTimer) clearTimeout(publicFilterTimer);
+  publicFilterTimer = setTimeout(loadPublicJobs, 300);
+});
+
+watch([internalKeyword, internalStatus], () => {
+  internalPage.value = 1;
+  if (internalFilterTimer) clearTimeout(internalFilterTimer);
+  internalFilterTimer = setTimeout(loadInternalPositions, 300);
 });
 
 watch(
@@ -828,9 +872,13 @@ async function publishFromPreview() {
       internal_description: draft.jd_text,
       status: "draft",
     });
+    internalPage.value = 1;
+    await loadInternalPositions();
     ElMessage.success("内部岗位已保存为草稿，可提交审批后开放");
   } else {
     await store.create(toPublishPayload(generated.value));
+    publicPage.value = 1;
+    await loadPublicJobs();
     ElMessage.success("公开岗位发布成功");
   }
   generated.value = null;
@@ -859,11 +907,13 @@ function internalStatusLabel(status: InternalPositionStatus) {
 
 async function setInternalStatus(id: number, status: InternalPositionStatus) {
   await store.updateInternalPositionStatus(id, status);
+  await loadInternalPositions();
   ElMessage.success(`内部岗位状态已更新为“${internalStatusLabel(status)}”`);
 }
 
 async function closeJob(row: JobSummary) {
   await store.updateStatus(row.id, "closed");
+  await loadPublicJobs();
   ElMessage.success(`已关闭"${row.title}"`);
 }
 
@@ -892,6 +942,7 @@ async function saveDetail() {
     return;
   }
   await store.update(detailJob.value);
+  await loadPublicJobs();
   ElMessage.success("岗位信息已更新");
   detailVisible.value = false;
 }
@@ -938,6 +989,7 @@ function toPublishPayload(job: JobSummary) {
 async function deleteDetail() {
   if (!detailJob.value) return;
   await store.remove(detailJob.value.id);
+  await loadPublicJobs();
   ElMessage.success("岗位已删除");
   detailVisible.value = false;
 }
@@ -1039,6 +1091,10 @@ function viewChangeTrend(change: CapabilityChange) {
 .suggestion-review small { margin-top:2px;color:var(--text-secondary);font-size:12px; }
 .suggestion-review>div:last-child { display:flex;align-items:center;white-space:nowrap; }
 .demand-switch { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px; }
+.jm-publish-grid { align-items:stretch; }
+.jm-publish-grid>.dash-card { display:flex;flex-direction:column;height:clamp(600px,calc(100vh - 330px),720px);min-height:0;overflow:hidden; }
+.jm-publish-grid>.dash-card>.dash-card-body { min-height:0;flex:1;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable; }
+.jm-publish-grid .jd-preview { height:100%;min-height:0; }
 .demand-option { display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer;transition:.2s ease; }
 .demand-option:hover { border-color:var(--color-brand);transform:translateY(-1px); }
 .demand-option.active.public { border-color:var(--color-brand);background:var(--color-brand-light);box-shadow:0 0 0 2px rgba(79,110,246,.08); }
@@ -1050,10 +1106,13 @@ function viewChangeTrend(change: CapabilityChange) {
 .demand-option small { margin-top:2px;color:var(--text-muted);font-size:11px;line-height:1.35; }
 .internal-generate { --el-button-bg-color:#b87420;--el-button-border-color:#b87420;--el-button-hover-bg-color:#c98228;--el-button-hover-border-color:#c98228; }
 .badge-internal { color:#9a5a0b!important;background:#fff1d8!important; }
-.skill-wrap { display:flex;gap:6px;flex-wrap:wrap; }
+.skill-wrap { display:flex;gap:6px;flex-wrap:wrap;max-height:116px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:4px; }
+.core-skill-select :deep(.el-select__wrapper) { align-content:flex-start;min-height:112px;max-height:176px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable; }
+.profile-editor { max-height:188px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:6px; }
+.insight-skills,.change-tags { max-height:104px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:4px; }
 .manager-check { padding:12px 14px;border:1px solid #f2d29e;border-radius:10px;background:#fffaf1; }
-.position-ledger { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start; }
-.ledger-pane { min-width:0;overflow:hidden; }
+.position-ledger { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch; }
+.ledger-pane { display:flex;min-width:0;height:560px;overflow:hidden;flex-direction:column; }
 .ledger-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 12px;border-bottom:1px solid var(--border-color); }
 .ledger-head h3 { margin:3px 0 2px;color:var(--text-primary);font-size:17px; }
 .ledger-head p { margin:0;color:var(--text-muted);font-size:12px; }
@@ -1067,6 +1126,7 @@ function viewChangeTrend(change: CapabilityChange) {
 .observed-ledger { border-top:3px solid var(--color-success);overflow:hidden; }
 .observed-ledger .ledger-filters { grid-template-columns:minmax(220px,1fr) 120px 130px auto; }
 .observed-pagination { display:flex;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--border-color); }
+.ledger-pagination { display:flex;justify-content:flex-end;margin-top:auto;padding:12px 14px;border-top:1px solid var(--border-color); }
 .observed-detail { display:flex;flex-direction:column;gap:16px; }
 .observed-detail-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px; }
 .observed-detail-head h3 { margin:0 0 4px;font-size:20px; }
@@ -1076,5 +1136,5 @@ function viewChangeTrend(change: CapabilityChange) {
 .table-actions { display:flex;align-items:center;justify-content:flex-end; }
 @keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
 @media(max-width:1180px){.position-ledger{grid-template-columns:1fr}}
-@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters,.observed-ledger .ledger-filters{grid-template-columns:1fr}}
+@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters,.observed-ledger .ledger-filters{grid-template-columns:1fr}.jm-publish-grid>.dash-card,.ledger-pane{height:auto;max-height:none}.jm-publish-grid>.dash-card>.dash-card-body{overflow:visible}}
 </style>

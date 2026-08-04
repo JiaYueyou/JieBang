@@ -1,17 +1,28 @@
 """Neo4j 能力图谱同步、快照与查询 API。"""
 
+import logging
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_admin
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
-from app.schemas.graph import GraphSnapshotResponse, GraphSubgraph, GraphSyncRequest
+from app.schemas.graph import (
+    GraphEnrichmentCandidatePage,
+    GraphEnrichmentCandidateResponse,
+    GraphEnrichmentPublishRequest,
+    GraphEnrichmentReviewRequest,
+    GraphSnapshotResponse,
+    GraphSubgraph,
+    GraphSyncRequest,
+)
 from app.schemas.skill import TaskStatusResponse
 from app.services import GraphService, GraphTaskService
 
 router = APIRouter(prefix="/graph", tags=["技能图谱"])
+logger = logging.getLogger(__name__)
 
 
 def get_graph_service(db: AsyncSession = Depends(get_db)) -> GraphService:
@@ -40,6 +51,10 @@ async def sync_graph(
         enrich_top_skills=payload.enrich_top_skills,
         user_id=principal.user_id,
     )
+    logger.info(
+        "graph_sync_created task_id=%s mode=%s enrich=%s user_id=%s",
+        task.task_id, payload.mode.value, payload.enrich_top_skills, principal.user_id,
+    )
     return ApiResponse(message="图谱同步任务已创建", data=task)
 
 
@@ -60,6 +75,70 @@ async def get_snapshot(
     return ApiResponse(data=await service.get_snapshot(snapshot_id))
 
 
+@router.post("/enrichment/generate", response_model=ApiResponse[TaskStatusResponse])
+async def generate_enrichment_candidates(
+    principal: TokenPrincipal = Depends(require_admin),
+    service: GraphTaskService = Depends(get_graph_task_service),
+):
+    task = await service.create_sync(
+        mode="incremental", enrich_top_skills=True, user_id=principal.user_id,
+        run_eager_in_background=True,
+    )
+    logger.info("graph_enrichment_created task_id=%s user_id=%s", task.task_id, principal.user_id)
+    return ApiResponse(message="L4/L5 候选生成任务已创建", data=task)
+
+
+@router.get(
+    "/enrichment/candidates",
+    response_model=ApiResponse[GraphEnrichmentCandidatePage],
+)
+async def list_enrichment_candidates(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=12, ge=1, le=50),
+    review_status: str | None = Query(default=None, pattern="^(pending|approved|rejected)$"),
+    _principal: TokenPrincipal = Depends(require_admin),
+    service: GraphService = Depends(get_graph_service),
+):
+    return ApiResponse(data=await service.list_enrichment_candidates(
+        page=page, page_size=page_size, review_status=review_status,
+    ))
+
+
+@router.patch(
+    "/enrichment/candidates/{candidate_id}/review",
+    response_model=ApiResponse[GraphEnrichmentCandidateResponse],
+)
+async def review_enrichment_candidate(
+    candidate_id: int,
+    payload: GraphEnrichmentReviewRequest,
+    principal: TokenPrincipal = Depends(require_admin),
+    service: GraphService = Depends(get_graph_service),
+):
+    return ApiResponse(data=await service.review_enrichment_candidate(
+        candidate_id, action=payload.action, note=payload.note,
+        lock_version=payload.lock_version, user_id=principal.user_id,
+    ))
+
+
+@router.post("/enrichment/publish", response_model=ApiResponse[TaskStatusResponse])
+async def publish_enrichment_candidates(
+    payload: GraphEnrichmentPublishRequest,
+    principal: TokenPrincipal = Depends(require_admin),
+    graph_service: GraphService = Depends(get_graph_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
+):
+    count = await graph_service.prepare_enrichment_publication(payload.candidate_ids)
+    task = await task_service.create_sync(
+        mode="incremental", enrich_top_skills=False, user_id=principal.user_id,
+        run_eager_in_background=True,
+    )
+    logger.info(
+        "graph_publication_created task_id=%s candidate_count=%d user_id=%s",
+        task.task_id, count, principal.user_id,
+    )
+    return ApiResponse(message=f"{count} 条已批准候选进入图谱发布任务", data=task)
+
+
 @router.get("/panorama", response_model=ApiResponse[GraphSubgraph])
 async def panorama(
     stack: str | None = None,
@@ -75,6 +154,23 @@ async def panorama(
     ))
 
 
+@router.get("/overview", response_model=ApiResponse[GraphSubgraph])
+async def graph_overview(
+    cursor: str | None = Query(default=None, max_length=120),
+    page_size: int = Query(default=24, ge=1, le=60),
+    max_layer: int = Query(default=3, ge=1, le=3),
+    stack: str | None = None,
+    level: str | None = None,
+    keyword: str | None = Query(default=None, max_length=120),
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: GraphService = Depends(get_graph_service),
+):
+    return ApiResponse(data=await service.overview(
+        cursor=cursor, page_size=page_size, max_layer=max_layer,
+        stack=stack, level=level, keyword=keyword,
+    ))
+
+
 @router.get("/nodes/{node_id}", response_model=ApiResponse[GraphSubgraph])
 async def node_detail(
     node_id: str,
@@ -82,6 +178,20 @@ async def node_detail(
     service: GraphService = Depends(get_graph_service),
 ):
     return ApiResponse(data=await service.node(node_id))
+
+
+@router.get("/nodes/{node_id}/neighbors", response_model=ApiResponse[GraphSubgraph])
+async def node_neighbors(
+    node_id: str,
+    cursor: str | None = Query(default=None, max_length=120),
+    page_size: int = Query(default=40, ge=1, le=100),
+    max_layer: int = Query(default=3, ge=1, le=5),
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: GraphService = Depends(get_graph_service),
+):
+    return ApiResponse(data=await service.neighbors(
+        node_id, cursor=cursor, page_size=page_size, max_layer=max_layer,
+    ))
 
 
 @router.get("/expand", response_model=ApiResponse[GraphSubgraph])

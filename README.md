@@ -16,17 +16,25 @@
 - MySQL 事实数据到 Neo4j 能力图谱的全量/增量同步；
 - 独立 `agent-development` 包：JD 草稿、技能补全、L4/L5 图谱补全与职业规划 Agent；
 - 可编辑草稿的 JD 生成 Agent、L4/L5 证据门槛，以及简历文本解析和转岗学习规划接口；
-- 团队 MySQL 全量快照导入与 Neo4j 重建脚本；
+- 团队完整数据迁移包：Alembic 建表、MySQL 全量 SQL、ChromaDB 预计算向量复原、
+  Neo4j 命名空间重建和三库一致性校验；
 - FYZ 管理与决策端，以及 JTT 求职者端两套 Vue 3 前端；
 - DeepSeek 可选增强；模型不可用时 JD 与职业规划仍返回可编辑/可执行模板结果；
 - 后端测试、两套前端构建和仓库安全 CI。
 
-当前仍需继续开发：
+截至 2026-08-01，仓库内共享快照状态为：
 
-- `changes`、`matching`、`admin` 后端路由仍是占位实现；
+- MySQL Alembic `20260801_0017`，38 张表、4679 行；
+- ChromaDB 4 个有效 collection、646 条 3072 维预计算向量；
+- Neo4j 最近已成功图谱快照 474 个节点、817 条关系；
+- 快照包含岗位标准化、事实审核、L4/L5 候选/发布、检索索引和 Agent 审计数据。
+
+当前仍需继续开发和验收：
+
 - JTT 简历、匹配、收藏、学习路径等页面需要继续对接真实后端；
-- 完整的简历持久化、匹配记录、JTT 联调和学习路径进度仍需继续开发；
-- 爬虫模板、持续增量数据、图谱高级分析和比赛级评测仍需完善。
+- L4/L5 Agent 的外部模型稳定性、失败重试和人工审核质量仍需持续压测；
+- 爬虫持续增量数据、岗位/技能标准化评测、图谱高级分析和比赛级评测仍需完善；
+- 当前共享快照含内部开发记录，对外发布前必须完成数据授权和脱敏复核。
 
 ## 2. 仓库目录
 
@@ -71,6 +79,7 @@ IDE 配置或 AI 工具会话。完整规则见
 | Node.js | 22.12+ | 两套 Vue 前端 |
 | MySQL | 8.0 | 业务事实库 |
 | Neo4j | 5.x Community | 可重建图查询模型 |
+| ChromaDB | 由 `requirements.txt` 固定 | 本地持久化向量检索索引 |
 | Redis | 7.x | Celery Broker 和结果存储 |
 
 本项目不依赖任何成员机器上的绝对安装路径。激活 `jiebang` 环境后直接使用
@@ -184,10 +193,19 @@ alembic current
 python scripts\run_database_import.py --replace
 ```
 
-该命令会校验并导入仓库中的完整 MySQL 快照，再从 MySQL 事实库重建
-Neo4j `namespace=jiebang`。它会覆盖目标数据库已有业务数据；仅在确认
+该命令会用 Alembic 创建结构、导入仓库中的完整 MySQL SQL 快照，从 SQL 中
+保存的预计算向量复原 ChromaDB，再从 MySQL 事实库重建 Neo4j
+`namespace=jiebang`，最后校验三类存储。它不会重新调用 Embedding API。
+命令会覆盖目标数据库已有业务数据；仅在确认
 `fyz-src/backend/.env` 指向目标本地数据库后执行。分步命令和快照刷新方式见
 [数据库、数据导入与运行指南](docs/database-and-runtime.md)。
+
+推荐由团队成员直接使用 PowerShell 单入口：
+
+```powershell
+cd fyz-src\backend
+.\scripts\Import-TeamDatabase.ps1 -Replace
+```
 
 如果本地数据库已经存在旧表，不要猜测版本，也不要直接执行
 `alembic stamp head`。请先阅读
@@ -299,7 +317,8 @@ npm.cmd run build
 | [需求文档](docs/requirements.md) | 功能范围、优先级与验收指标 |
 | [开发规范](docs/dev-spec.md) | API、数据库、代码和协作规范 |
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
-| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL 快照导入与 Neo4j 重建 |
+| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL、ChromaDB、Neo4j 一键导入与一致性校验 |
+| [后端脚本清单](fyz-src/backend/scripts/README.md) | 当前可用的数据迁移、回填和工程评测脚本 |
 | [API 参考](docs/api-reference.md) | 当前真实接口、请求示例和占位状态 |
 | [Agent 开发工作区](agent-development/README.md) | 独立 Agent 包、契约、Prompt 与测试入口 |
 | [统一文档规范](docs/documentation-standard.md) | 需求、接口、迁移和 Agent 文档格式 |

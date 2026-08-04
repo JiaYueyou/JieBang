@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now_naive
+from app.schemas.common import PageMeta
 from app.models import (
     EnterpriseEmployeeDirectory,
     EnterpriseTalent,
@@ -257,11 +258,40 @@ class InternalTransferService:
         await self.db.refresh(row)
         return self.talent_summary(row)
 
-    async def list_positions(self) -> list[InternalPositionSummary]:
+    async def list_positions(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        status: InternalPositionStatus | None = None,
+        keyword: str | None = None,
+    ) -> tuple[list[InternalPositionSummary], PageMeta]:
+        filters = []
+        if status is not None:
+            filters.append(InternalPosition.status == status.value)
+        if keyword and keyword.strip():
+            pattern = f"%{keyword.strip()}%"
+            filters.append(or_(
+                InternalPosition.title.like(pattern),
+                InternalPosition.department.like(pattern),
+                InternalPosition.receiving_manager.like(pattern),
+            ))
+
+        statement = select(InternalPosition).where(*filters)
+        total_statement = select(func.count()).select_from(InternalPosition).where(*filters)
+        total = int((await self.db.execute(total_statement)).scalar_one())
         rows = list((await self.db.execute(
-            select(InternalPosition).order_by(InternalPosition.updated_at.desc(), InternalPosition.id.desc())
+            statement
+            .order_by(InternalPosition.updated_at.desc(), InternalPosition.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )).scalars())
-        return [self.position_summary(row) for row in rows]
+        return [self.position_summary(row) for row in rows], PageMeta(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=(total + page_size - 1) // page_size if total else 0,
+        )
 
     async def create_position(self, payload: InternalPositionCreate, *, user_id: int) -> InternalPositionSummary:
         if payload.status != InternalPositionStatus.draft:
