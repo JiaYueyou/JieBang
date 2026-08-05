@@ -33,8 +33,6 @@ const layers = [
   { type: 'Job' as Neo4jNodeType, label: 'Job', desc: '岗位', color: '#122d6e' },
   { type: 'SkillArea' as Neo4jNodeType, label: 'SkillArea', desc: '技能领域', color: '#2f47b8' },
   { type: 'TechStack' as Neo4jNodeType, label: 'TechStack', desc: '技术栈', color: '#3f5ae0' },
-  { type: 'TechPoint' as Neo4jNodeType, label: 'TechPoint', desc: '技术细节点', color: '#7893de' },
-  { type: 'KnowledgePoint' as Neo4jNodeType, label: 'KnowledgePoint', desc: '知识要点', color: '#b4c2f2' },
 ]
 
 const stackOptions = [
@@ -138,6 +136,15 @@ async function handleEnrichClick() {
   }
 }
 
+async function handleEnrichChildClick(nodeId: string) {
+  if (graphStore.enrichingNodeId) return
+  try {
+    await graphStore.enrichNode(nodeId)
+  } catch (e) {
+    console.error('Enrich child failed:', e)
+  }
+}
+
 function handleRelatedNodeClick(attrs: any) {
   activeNode.value = attrs as GraphNodeAttrs
 }
@@ -194,7 +201,7 @@ onUnmounted(() => clearTimeout(filterTimer))
     <section class="graph-layout">
       <!-- 左侧：层过滤 -->
       <aside class="graph-side-card">
-        <div class="card-title">五层模型</div>
+        <div class="card-title">三层模型</div>
         <div class="layer-list">
           <button
             v-for="layer in layers"
@@ -267,7 +274,7 @@ onUnmounted(() => clearTimeout(filterTimer))
 
           <div class="card-title sub-title">上级节点</div>
           <div class="related-list">
-            <button v-for="n in parentNodes" :key="n.id" @click="handleRelatedNodeClick(n)">
+            <button v-for="n in parentNodes" :key="n.id" class="related-node-btn" @click="handleRelatedNodeClick(n)">
               <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
               {{ n.name }}
             </button>
@@ -276,10 +283,20 @@ onUnmounted(() => clearTimeout(filterTimer))
 
           <div class="card-title sub-title">下级节点</div>
           <div class="related-list">
-            <button v-for="n in childNodes" :key="n.id" @click="handleRelatedNodeClick(n)">
-              <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
-              {{ n.name }}
-            </button>
+            <div v-for="n in childNodes" :key="n.id" class="child-node-row">
+              <button class="related-node-btn" @click="handleRelatedNodeClick(n)">
+                <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
+                {{ n.name }}
+              </button>
+              <button
+                v-if="n.type === 'TechStack' && !graphStore.enrichedNodeIds.has(n.id)"
+                class="btn-enrich-child"
+                :disabled="!!graphStore.enrichingNodeId"
+                @click.stop="handleEnrichChildClick(n.id)"
+              >
+                {{ graphStore.enrichingNodeId === n.id ? '生成中...' : '生成L4/L5' }}
+              </button>
+            </div>
             <em v-if="childNodes.length === 0">暂无下级节点</em>
           </div>
         </div>
@@ -573,28 +590,32 @@ onUnmounted(() => clearTimeout(filterTimer))
 }
 
 .btn-enrich {
-  width: 100%;
+  display: block;
+  width: 140px;
   margin-top: 14px;
-  padding: 8px 12px;
+  padding: 8px 0;
   border: 1px solid #4f6ef6;
   border-radius: 6px;
   background: #eef0ff;
   color: #4f6ef6;
   font-size: 13px;
+  text-align: center;
   cursor: pointer;
 }
 .btn-enrich:hover { background: #dfe3ff; }
 .btn-enrich:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-pin {
-  width: 100%;
+  display: block;
+  width: 140px;
   margin-top: 8px;
-  padding: 7px 12px;
+  padding: 8px 0;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #fff;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13px;
+  text-align: center;
   cursor: pointer;
 }
 .btn-pin:hover { border-color: #f59e0b; color: #f59e0b; }
@@ -634,7 +655,7 @@ onUnmounted(() => clearTimeout(filterTimer))
   padding-right: 4px;
 }
 
-.related-list button {
+.related-list .related-node-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -647,16 +668,49 @@ onUnmounted(() => clearTimeout(filterTimer))
   cursor: pointer;
 }
 
-.related-list button:hover {
+.related-list .related-node-btn:hover {
   color: #4f6ef6;
   background: #eef0ff;
 }
 
-.related-list button span {
+.related-list .related-node-btn span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.child-node-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.child-node-row .related-node-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-enrich-child {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid #4f6ef6;
+  border-radius: 4px;
+  background: #eef0ff;
+  color: #4f6ef6;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.btn-enrich-child:hover {
+  background: #dfe3ff;
+}
+
+.btn-enrich-child:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .related-list em {

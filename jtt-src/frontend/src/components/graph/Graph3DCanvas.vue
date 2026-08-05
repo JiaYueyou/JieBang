@@ -204,7 +204,7 @@ function buildOption(): any {
     },
     legend: {
       show: true,
-      data: levelCategories.map(c => c.name),
+      data: levelCategories.slice(0, 3).map(c => c.name),
       top: 10, right: 20,
       textStyle: { color: '#64748b', fontSize: 12 },
       itemWidth: 16, itemHeight: 16
