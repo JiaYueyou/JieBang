@@ -105,6 +105,7 @@
           />
           <div class="md-section"><h4>匹配优势</h4><p v-for="item in explanation.strengths" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
           <div class="md-section"><h4>能力缺口</h4><p v-for="item in explanation.gaps" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
+          <div class="md-section" v-if="explanation.risks.length"><h4>风险提示</h4><p v-for="item in explanation.risks" :key="item.title"><strong>{{ item.title }}：</strong>{{ item.explanation }}</p></div>
           <div class="md-section" v-if="explanation.interview_suggestions.length"><h4>面试建议</h4><p v-for="item in explanation.interview_suggestions" :key="item">{{ item }}</p></div>
           <el-tag size="small" type="info">{{ explanation.generation_mode === 'llm' ? '模型解释' : '确定性模板解释' }}</el-tag>
         </template>
@@ -144,15 +145,33 @@ import { ArrowLeft, CircleCheck, WarningFilled, Connection, Document, Upload, Wa
 import FavoriteButton from "@/components/common/FavoriteButton.vue";
 import DataState from "@/components/common/DataState.vue";
 import { useTalentStore } from "@/stores/talents";
+import { useHistoryStore } from "@/stores/history";
 import { dataProvider } from "@/data";
 import type { MatchExplanation } from "@/domain/types";
 
 const route = useRoute();
 const store = useTalentStore();
+const historyStore = useHistoryStore();
 const { talents, loading, error } = storeToRefs(store);
 const explanation = ref<MatchExplanation | null>(null);
 const explaining = ref(false);
-onMounted(() => store.load());
+onMounted(async () => {
+  await store.load();
+  if (!talent.value) return;
+  try {
+    await historyStore.record({
+      type: "match",
+      targetId: talent.value.match_id,
+      title: `${talent.value.name}的匹配报告`,
+      description: `${talent.value.position} · 综合匹配度 ${talent.value.score}%`,
+      source: "人才匹配",
+      tags: [...talent.value.matched, ...talent.value.missing].slice(0, 5),
+      url: `/matching/${talent.value.resume_id}`,
+    });
+  } catch {
+    ElMessage.warning("匹配报告已打开，但浏览足迹记录失败");
+  }
+});
 const talent = computed(() => {
   const id = Number(route.params.resumeId);
   return talents.value.find((t) => t.resume_id === id) || null;

@@ -9,11 +9,14 @@
       <button class="jm-tab" :class="{ active: tab === 'insight' }" @click="tab = 'insight'">
         <el-icon><TrendCharts /></el-icon> 岗位洞察
       </button>
+      <button class="jm-tab" :class="{ active: tab === 'observed' }" @click="openObservedTab">
+        <el-icon><View /></el-icon> 采集岗位
+      </button>
     </div>
 
     <!-- ═══ Tab A: 岗位发布 ═══ -->
     <div v-show="tab === 'publish'" class="anim-fade-up anim-delay-2">
-      <div class="jm-grid">
+      <div class="jm-grid jm-publish-grid">
         <!-- Left: Input -->
         <div class="dash-card">
           <div class="dash-card-header">
@@ -92,6 +95,7 @@
                   allow-create
                   default-first-option
                   placeholder="输入或选择核心技能"
+                  class="core-skill-select"
                   style="width:100%"
                   @change="markSuggestionDirty"
                 />
@@ -171,13 +175,13 @@
         <section class="dash-card ledger-pane public-ledger">
           <div class="ledger-head">
             <div><span class="ledger-kicker">PUBLIC MARKET</span><h3>公开招聘信息</h3><p>仅进入外部招聘与 C 端岗位市场</p></div>
-            <span class="ledger-count">{{ filteredPublicJobs.length }}</span>
+            <span class="ledger-count">{{ publicTotal }}</span>
           </div>
           <div class="ledger-filters">
             <el-input v-model="publicKeyword" clearable placeholder="搜索公开岗位" :prefix-icon="Search" />
             <el-select v-model="publicStatus" clearable placeholder="招聘状态"><el-option label="招聘中" value="open"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="已关闭" value="closed"/></el-select>
           </div>
-          <el-table :data="filteredPublicJobs" style="width:100%" size="default">
+          <el-table :data="publishedJobs" style="width:100%" size="default" max-height="300">
             <el-table-column prop="title" label="岗位名称" min-width="180" />
             <el-table-column prop="department" label="部门" min-width="110" />
             <el-table-column prop="headcount" label="人数" width="66" align="center" />
@@ -205,18 +209,27 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="ledger-pagination">
+            <el-pagination
+              v-model:current-page="publicPage"
+              :page-size="ledgerPageSize"
+              :total="publicTotal"
+              layout="prev, pager, next, total"
+              @current-change="loadPublicJobs"
+            />
+          </div>
         </section>
 
         <section class="dash-card ledger-pane internal-ledger">
           <div class="ledger-head">
             <div><span class="ledger-kicker">PRIVATE MOBILITY</span><h3>内部需求岗位</h3><p>仅用于企业人才流动与管理决策</p></div>
-            <span class="ledger-count">{{ filteredInternalPositions.length }}</span>
+            <span class="ledger-count">{{ internalTotal }}</span>
           </div>
           <div class="ledger-filters">
             <el-input v-model="internalKeyword" clearable placeholder="搜索内部岗位" :prefix-icon="Search" />
             <el-select v-model="internalStatus" clearable placeholder="内部状态"><el-option label="内部开放" value="open"/><el-option label="待审批" value="pending_approval"/><el-option label="草稿" value="draft"/><el-option label="已暂停" value="paused"/><el-option label="名额已满" value="filled"/><el-option label="已关闭" value="closed"/></el-select>
           </div>
-          <el-table :data="filteredInternalPositions" style="width:100%" size="default">
+          <el-table :data="internalPositions" style="width:100%" size="default" max-height="300">
             <el-table-column prop="title" label="内部岗位" min-width="160" />
             <el-table-column prop="department" label="接收部门" min-width="110" />
             <el-table-column prop="headcount" label="名额" width="66" align="center" />
@@ -233,8 +246,67 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="ledger-pagination">
+            <el-pagination
+              v-model:current-page="internalPage"
+              :page-size="ledgerPageSize"
+              :total="internalTotal"
+              layout="prev, pager, next, total"
+              @current-change="loadInternalPositions"
+            />
+          </div>
         </section>
       </div>
+    </div>
+
+    <!-- ═══ Tab B: 采集岗位与来源证据 ═══ -->
+    <div v-show="tab === 'observed'" class="anim-fade-up anim-delay-2">
+      <DataState :loading="observedLoading" :error="observedError" @retry="loadObservedJobs" />
+      <section class="dash-card observed-ledger">
+        <div class="ledger-head">
+          <div>
+            <span class="ledger-kicker">MYSQL SOURCE OF TRUTH</span>
+            <h3>采集岗位与技能证据</h3>
+            <p>展示入库岗位、原始来源和经过审核的技能事实</p>
+          </div>
+          <span class="ledger-count">{{ observedTotal }}</span>
+        </div>
+        <div class="ledger-filters">
+          <el-input v-model="observedKeyword" clearable placeholder="搜索岗位、企业" :prefix-icon="Search" @keyup.enter="reloadObserved" />
+          <el-input v-model="observedCity" clearable placeholder="城市" @keyup.enter="reloadObserved" />
+          <el-input v-model="observedSource" clearable placeholder="来源平台" @keyup.enter="reloadObserved" />
+          <el-button type="primary" @click="reloadObserved">查询</el-button>
+        </div>
+        <el-table :data="observedJobs" style="width:100%" size="default" max-height="520">
+          <el-table-column prop="title" label="岗位名称" min-width="190" />
+          <el-table-column prop="company" label="企业" min-width="140" />
+          <el-table-column prop="city" label="城市" width="100" />
+          <el-table-column prop="source" label="来源" width="100" />
+          <el-table-column label="技能事实" width="150" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" type="success">{{ row.verified_skill_count }} 已确认</el-tag>
+              <el-tag v-if="row.pending_skill_count" size="small" type="warning" style="margin-left:4px;">{{ row.pending_skill_count }} 待审</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="posted_at" label="发布时间" width="120">
+            <template #default="{ row }">{{ row.posted_at || "未知" }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" align="right">
+            <template #default="{ row }">
+              <el-button text type="primary" size="small" @click="openObservedDetail(row.id)">查看证据</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="observed-pagination">
+          <el-pagination
+            v-model:current-page="observedPage"
+            :page-size="observedPageSize"
+            :total="observedTotal"
+            layout="prev, pager, next, total"
+            @current-change="loadObservedJobs"
+          />
+        </div>
+      </section>
     </div>
 
     <!-- ═══ Tab B: 岗位洞察 ═══ -->
@@ -251,6 +323,7 @@
       </div>
 
       <DataState :loading="insightLoading" :error="insightError" @retry="store.loadInsights(skillPreference)" />
+      <ReferenceBaseline :baseline="insightBaseline" class="insight-baseline" />
       <el-alert
         v-if="insightQuality?.insufficient_data"
         class="insight-quality-alert"
@@ -265,7 +338,7 @@
           <div class="dash-card-header"><span class="dash-card-title">新兴岗位发现</span><span class="dash-card-badge">AI 驱动</span></div>
           <div class="dash-card-body">
             <div class="insight-list">
-              <div class="insight-card" v-for="(job,i) in emergingJobs" :key="i" :class="{ collapsed: !emergingExpanded && i >= 3 }">
+              <div class="insight-card" v-for="job in paginatedEmergingJobs" :key="job.id">
                 <div class="insight-card-top">
                   <div class="insight-dot"></div>
                   <span class="insight-name">{{ job.name }}</span>
@@ -283,10 +356,17 @@
               </div>
               <el-empty v-if="!insightLoading && emergingJobs.length === 0" description="暂无满足来源阈值的新兴岗位" />
             </div>
-            <button v-if="emergingJobs.length > 3" class="expand-btn" @click="emergingExpanded = !emergingExpanded">
-              {{ emergingExpanded ? '收起' : `展开全部 (${emergingJobs.length} 个)` }}
-              <el-icon :class="{ rotated: emergingExpanded }"><ArrowDown /></el-icon>
-            </button>
+            <div v-if="emergingJobs.length > insightPageSize" class="insight-pagination">
+              <span>共 {{ emergingJobs.length }} 个岗位</span>
+              <el-pagination
+                v-model:current-page="emergingPage"
+                size="small"
+                background
+                layout="prev, pager, next"
+                :page-size="insightPageSize"
+                :total="emergingJobs.length"
+              />
+            </div>
           </div>
         </div>
 
@@ -294,7 +374,7 @@
           <div class="dash-card-header"><span class="dash-card-title">能力动态更新</span><span class="dash-card-badge">近期变化</span></div>
           <div class="dash-card-body">
             <div class="insight-list">
-              <div class="insight-card" v-for="(ch,i) in capabilityChanges" :key="i">
+              <div class="insight-card" v-for="ch in paginatedCapabilityChanges" :key="ch.job">
                 <div class="insight-card-top">
                   <span class="insight-name">{{ ch.job }}</span><span class="insight-period">{{ ch.period }}</span>
                 </div>
@@ -310,6 +390,17 @@
                 </div>
               </div>
               <el-empty v-if="!insightLoading && capabilityChanges.length === 0" description="当前时间窗口暂无可确认的能力变化" />
+            </div>
+            <div v-if="capabilityChanges.length > insightPageSize" class="insight-pagination">
+              <span>共 {{ capabilityChanges.length }} 项变化</span>
+              <el-pagination
+                v-model:current-page="capabilityPage"
+                size="small"
+                background
+                layout="prev, pager, next"
+                :page-size="insightPageSize"
+                :total="capabilityChanges.length"
+              />
             </div>
           </div>
         </div>
@@ -400,21 +491,56 @@
         </el-popconfirm>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="observedDetailVisible" title="采集岗位证据" width="760px" destroy-on-close top="5vh">
+      <DataState :loading="observedDetailLoading" :error="observedDetailError" />
+      <div v-if="observedDetail" class="observed-detail">
+        <div class="observed-detail-head">
+          <div><h3>{{ observedDetail.title }}</h3><p>{{ observedDetail.company || "企业未知" }} · {{ observedDetail.city || "城市未知" }}</p></div>
+          <a v-if="observedDetail.source_url" :href="observedDetail.source_url" target="_blank" rel="noopener noreferrer">查看原始来源</a>
+        </div>
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="来源">{{ observedDetail.source }}</el-descriptions-item>
+          <el-descriptions-item label="发布时间">{{ observedDetail.posted_at || "未知" }}</el-descriptions-item>
+          <el-descriptions-item label="抓取时间">{{ observedDetail.crawled_at || "未知" }}</el-descriptions-item>
+          <el-descriptions-item label="薪资">{{ observedDetail.salary_text || "未知" }}</el-descriptions-item>
+          <el-descriptions-item label="经验">{{ observedDetail.experience_text || "未知" }}</el-descriptions-item>
+          <el-descriptions-item label="学历">{{ observedDetail.education_text || "未知" }}</el-descriptions-item>
+        </el-descriptions>
+        <h4>技能证据</h4>
+        <el-table :data="observedDetail.skills" size="small" max-height="360">
+          <el-table-column prop="skill_name" label="技能" width="120" />
+          <el-table-column prop="evidence_text" label="证据文本" min-width="260" show-overflow-tooltip />
+          <el-table-column label="置信度" width="90" align="center">
+            <template #default="{ row }">{{ Math.round(row.confidence * 100) }}%</template>
+          </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.verification_status === 'verified' ? 'success' : row.verification_status === 'rejected' ? 'danger' : 'warning'" size="small">
+                {{ row.verification_status === "verified" ? "已确认" : row.verification_status === "rejected" ? "已驳回" : "待审核" }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, ArrowDown, View, Edit, Delete, Refresh, Promotion, OfficeBuilding } from "@element-plus/icons-vue";
+import { Plus, TrendCharts, MagicStick, Document, Search, CopyDocument, Check, View, Edit, Delete, Refresh, Promotion, OfficeBuilding } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useRoute, useRouter } from "vue-router";
 import { useJobStore } from "@/stores/jobs";
+import { useHistoryStore } from "@/stores/history";
 import DataState from "@/components/common/DataState.vue";
+import ReferenceBaseline from "@/components/analysis/ReferenceBaseline.vue";
 import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
-import type { CapabilityChange, EmergingJob, GeneratedJDDraft, InternalPositionStatus, JobSummary } from "@/domain/types";
+import type { CapabilityChange, EmergingJob, GeneratedJDDraft, InternalPositionStatus, JobSummary, ObservedJobDetail } from "@/domain/types";
 
-const tab = ref<"publish" | "insight">("publish");
+const tab = ref<"publish" | "insight" | "observed">("publish");
 
 // ── Tab A ──
 const jdMode = ref<"req" | "profile">("req");
@@ -440,40 +566,121 @@ let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
 let suggestionRequestId = 0;
 let lastSuggestionKey = "";
 const store = useJobStore();
+const historyStore = useHistoryStore();
 const router = useRouter();
 const route = useRoute();
 const {
   jobs: publishedJobs,
+  publicTotal,
   internalPositions,
+  internalTotal,
   emergingJobs,
   capabilityChanges,
   insightQuality,
+  insightBaseline,
   insightLoading,
   insightError,
   loading,
   error,
+  observedJobs,
+  observedTotal,
+  observedLoading,
+  observedError,
 } = storeToRefs(store);
+const observedKeyword = ref("");
+const observedCity = ref("");
+const observedSource = ref("");
+const observedPage = ref(1);
+const observedPageSize = 20;
+const observedDetailVisible = ref(false);
+const observedDetailLoading = ref(false);
+const observedDetailError = ref("");
+const observedDetail = ref<ObservedJobDetail | null>(null);
+
+async function loadObservedJobs() {
+  await store.loadObserved({
+    page: observedPage.value,
+    pageSize: observedPageSize,
+    keyword: observedKeyword.value.trim() || undefined,
+    city: observedCity.value.trim() || undefined,
+    source: observedSource.value || undefined,
+  });
+}
+
+function reloadObserved() {
+  observedPage.value = 1;
+  loadObservedJobs();
+}
+
+function openObservedTab() {
+  tab.value = "observed";
+  if (observedJobs.value.length === 0) loadObservedJobs();
+}
+
+async function openObservedDetail(id: number) {
+  observedDetailVisible.value = true;
+  observedDetailLoading.value = true;
+  observedDetailError.value = "";
+  observedDetail.value = null;
+  try {
+    observedDetail.value = await store.getObserved(id);
+    try {
+      await historyStore.record({
+        type: "job",
+        targetId: observedDetail.value.id,
+        title: observedDetail.value.title,
+        description: `${observedDetail.value.company || "企业待确认"} · ${observedDetail.value.city || "地点待确认"}`,
+        source: observedDetail.value.source,
+        tags: observedDetail.value.skills.slice(0, 5).map((skill) => skill.skill_name),
+        url: `/jobs?tab=observed&record=${observedDetail.value.id}`,
+      });
+    } catch {
+      ElMessage.warning("岗位详情已打开，但浏览足迹记录失败");
+    }
+  } catch (exception) {
+    observedDetailError.value = exception instanceof Error ? exception.message : "岗位证据加载失败";
+  } finally {
+    observedDetailLoading.value = false;
+  }
+}
 const publicKeyword = ref("");
 const publicStatus = ref("");
 const internalKeyword = ref("");
 const internalStatus = ref("");
-const filteredPublicJobs = computed(() => {
-  const keyword = publicKeyword.value.trim().toLowerCase();
-  return publishedJobs.value.filter((job) => {
-    const matchesKeyword = !keyword || `${job.title} ${job.department}`.toLowerCase().includes(keyword);
-    return matchesKeyword && (!publicStatus.value || job.status === publicStatus.value);
+const publicPage = ref(1);
+const internalPage = ref(1);
+const ledgerPageSize = 6;
+let publicFilterTimer: ReturnType<typeof setTimeout> | undefined;
+let internalFilterTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function loadPublicJobs() {
+  await store.loadPublic({
+    page: publicPage.value,
+    pageSize: ledgerPageSize,
+    status: (publicStatus.value || undefined) as JobSummary["status"] | undefined,
+    keyword: publicKeyword.value.trim() || undefined,
   });
-});
-const filteredInternalPositions = computed(() => {
-  const keyword = internalKeyword.value.trim().toLowerCase();
-  return internalPositions.value.filter((position) => {
-    const matchesKeyword = !keyword || `${position.title} ${position.department} ${position.receiving_manager || ""}`.toLowerCase().includes(keyword);
-    return matchesKeyword && (!internalStatus.value || position.status === internalStatus.value);
+}
+
+async function loadInternalPositions() {
+  await store.loadInternal({
+    page: internalPage.value,
+    pageSize: ledgerPageSize,
+    status: (internalStatus.value || undefined) as InternalPositionStatus | undefined,
+    keyword: internalKeyword.value.trim() || undefined,
   });
-});
+}
 const previewTarget = computed(() => generatedDraft.value?.target || demandTarget.value);
 onMounted(async () => {
-  await Promise.all([store.load(), store.loadInsights()]);
+  const requestedTab = route.query.tab;
+  if (requestedTab === "insight" || requestedTab === "observed") tab.value = requestedTab;
+  if (typeof route.query.skill === "string") skillPreference.value = route.query.skill;
+  await Promise.all([store.load(true), store.loadInsights(skillPreference.value || undefined)]);
+  if (requestedTab === "observed") {
+    await loadObservedJobs();
+    const recordId = Number(route.query.record);
+    if (Number.isInteger(recordId) && recordId > 0) await openObservedDetail(recordId);
+  }
   if (route.query.scope === "internal") {
     await nextTick();
     document.getElementById("position-ledger")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -481,7 +688,21 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => {
   if (suggestionTimer) clearTimeout(suggestionTimer);
+  if (publicFilterTimer) clearTimeout(publicFilterTimer);
+  if (internalFilterTimer) clearTimeout(internalFilterTimer);
   suggestionRequestId += 1;
+});
+
+watch([publicKeyword, publicStatus], () => {
+  publicPage.value = 1;
+  if (publicFilterTimer) clearTimeout(publicFilterTimer);
+  publicFilterTimer = setTimeout(loadPublicJobs, 300);
+});
+
+watch([internalKeyword, internalStatus], () => {
+  internalPage.value = 1;
+  if (internalFilterTimer) clearTimeout(internalFilterTimer);
+  internalFilterTimer = setTimeout(loadInternalPositions, 300);
 });
 
 watch(
@@ -651,9 +872,13 @@ async function publishFromPreview() {
       internal_description: draft.jd_text,
       status: "draft",
     });
+    internalPage.value = 1;
+    await loadInternalPositions();
     ElMessage.success("内部岗位已保存为草稿，可提交审批后开放");
   } else {
     await store.create(toPublishPayload(generated.value));
+    publicPage.value = 1;
+    await loadPublicJobs();
     ElMessage.success("公开岗位发布成功");
   }
   generated.value = null;
@@ -682,11 +907,13 @@ function internalStatusLabel(status: InternalPositionStatus) {
 
 async function setInternalStatus(id: number, status: InternalPositionStatus) {
   await store.updateInternalPositionStatus(id, status);
+  await loadInternalPositions();
   ElMessage.success(`内部岗位状态已更新为“${internalStatusLabel(status)}”`);
 }
 
 async function closeJob(row: JobSummary) {
   await store.updateStatus(row.id, "closed");
+  await loadPublicJobs();
   ElMessage.success(`已关闭"${row.title}"`);
 }
 
@@ -715,6 +942,7 @@ async function saveDetail() {
     return;
   }
   await store.update(detailJob.value);
+  await loadPublicJobs();
   ElMessage.success("岗位信息已更新");
   detailVisible.value = false;
 }
@@ -761,15 +989,43 @@ function toPublishPayload(job: JobSummary) {
 async function deleteDetail() {
   if (!detailJob.value) return;
   await store.remove(detailJob.value.id);
+  await loadPublicJobs();
   ElMessage.success("岗位已删除");
   detailVisible.value = false;
 }
 
 // ── Tab B ──
 const skillPreference = ref("");
-const emergingExpanded = ref(false);
+const insightPageSize = 3;
+const emergingPage = ref(1);
+const capabilityPage = ref(1);
+const paginatedEmergingJobs = computed(() => {
+  const start = (emergingPage.value - 1) * insightPageSize;
+  return emergingJobs.value.slice(start, start + insightPageSize);
+});
+const paginatedCapabilityChanges = computed(() => {
+  const start = (capabilityPage.value - 1) * insightPageSize;
+  return capabilityChanges.value.slice(start, start + insightPageSize);
+});
 async function searchInsight() {
-  await store.loadInsights(skillPreference.value.trim());
+  const keyword = skillPreference.value.trim();
+  emergingPage.value = 1;
+  capabilityPage.value = 1;
+  await store.loadInsights(keyword);
+  if (!keyword) return;
+  try {
+    await historyStore.record({
+      type: "search",
+      targetId: keyword,
+      title: `岗位洞察：${keyword}`,
+      description: `查看与“${keyword}”相关的新兴岗位和能力变化`,
+      source: "岗位管理",
+      tags: [keyword, "岗位洞察"],
+      url: `/jobs?tab=insight&skill=${encodeURIComponent(keyword)}`,
+    });
+  } catch {
+    ElMessage.warning("洞察结果已更新，但浏览足迹记录失败");
+  }
 }
 
 async function confirmEmergingJob(job: EmergingJob) {
@@ -814,6 +1070,10 @@ function viewChangeTrend(change: CapabilityChange) {
   margin-top: 12px;
   border-radius: 12px;
 }
+.insight-pagination { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-top:8px;padding:10px 2px 0;border-top:1px solid var(--border-color); }
+.insight-pagination>span { color:var(--text-muted);font-size:12px;white-space:nowrap; }
+.insight-pagination :deep(.el-pagination) { margin-left:auto; }
+.insight-pagination :deep(.btn-prev),.insight-pagination :deep(.btn-next),.insight-pagination :deep(.number) { border-radius:8px!important; }
 .suggestion-field { margin-bottom: 18px; }
 .suggestion-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px; }
 .suggestion-heading>div { display:flex;flex-direction:column; }
@@ -831,6 +1091,10 @@ function viewChangeTrend(change: CapabilityChange) {
 .suggestion-review small { margin-top:2px;color:var(--text-secondary);font-size:12px; }
 .suggestion-review>div:last-child { display:flex;align-items:center;white-space:nowrap; }
 .demand-switch { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px; }
+.jm-publish-grid { align-items:stretch; }
+.jm-publish-grid>.dash-card { display:flex;flex-direction:column;height:clamp(600px,calc(100vh - 330px),720px);min-height:0;overflow:hidden; }
+.jm-publish-grid>.dash-card>.dash-card-body { min-height:0;flex:1;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable; }
+.jm-publish-grid .jd-preview { height:100%;min-height:0; }
 .demand-option { display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer;transition:.2s ease; }
 .demand-option:hover { border-color:var(--color-brand);transform:translateY(-1px); }
 .demand-option.active.public { border-color:var(--color-brand);background:var(--color-brand-light);box-shadow:0 0 0 2px rgba(79,110,246,.08); }
@@ -842,10 +1106,13 @@ function viewChangeTrend(change: CapabilityChange) {
 .demand-option small { margin-top:2px;color:var(--text-muted);font-size:11px;line-height:1.35; }
 .internal-generate { --el-button-bg-color:#b87420;--el-button-border-color:#b87420;--el-button-hover-bg-color:#c98228;--el-button-hover-border-color:#c98228; }
 .badge-internal { color:#9a5a0b!important;background:#fff1d8!important; }
-.skill-wrap { display:flex;gap:6px;flex-wrap:wrap; }
+.skill-wrap { display:flex;gap:6px;flex-wrap:wrap;max-height:116px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:4px; }
+.core-skill-select :deep(.el-select__wrapper) { align-content:flex-start;min-height:112px;max-height:176px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable; }
+.profile-editor { max-height:188px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:6px; }
+.insight-skills,.change-tags { max-height:104px;overflow-y:auto;overscroll-behavior:auto;scrollbar-gutter:stable;padding-right:4px; }
 .manager-check { padding:12px 14px;border:1px solid #f2d29e;border-radius:10px;background:#fffaf1; }
-.position-ledger { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start; }
-.ledger-pane { min-width:0;overflow:hidden; }
+.position-ledger { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch; }
+.ledger-pane { display:flex;min-width:0;height:560px;overflow:hidden;flex-direction:column; }
 .ledger-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 12px;border-bottom:1px solid var(--border-color); }
 .ledger-head h3 { margin:3px 0 2px;color:var(--text-primary);font-size:17px; }
 .ledger-head p { margin:0;color:var(--text-muted);font-size:12px; }
@@ -856,8 +1123,18 @@ function viewChangeTrend(change: CapabilityChange) {
 .ledger-filters { display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:8px;padding:12px 14px; }
 .public-ledger { border-top:3px solid var(--color-brand); }
 .internal-ledger { border-top:3px solid #c98228; }
+.observed-ledger { border-top:3px solid var(--color-success);overflow:hidden; }
+.observed-ledger .ledger-filters { grid-template-columns:minmax(220px,1fr) 120px 130px auto; }
+.observed-pagination { display:flex;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--border-color); }
+.ledger-pagination { display:flex;justify-content:flex-end;margin-top:auto;padding:12px 14px;border-top:1px solid var(--border-color); }
+.observed-detail { display:flex;flex-direction:column;gap:16px; }
+.observed-detail-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px; }
+.observed-detail-head h3 { margin:0 0 4px;font-size:20px; }
+.observed-detail-head p { margin:0;color:var(--text-muted); }
+.observed-detail-head a { color:var(--color-brand);font-size:13px;white-space:nowrap; }
+.observed-detail h4 { margin:4px 0 -6px;font-size:14px; }
 .table-actions { display:flex;align-items:center;justify-content:flex-end; }
 @keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
 @media(max-width:1180px){.position-ledger{grid-template-columns:1fr}}
-@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters{grid-template-columns:1fr}}
+@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters,.observed-ledger .ledger-filters{grid-template-columns:1fr}.jm-publish-grid>.dash-card,.ledger-pane{height:auto;max-height:none}.jm-publish-grid>.dash-card>.dash-card-body{overflow:visible}}
 </style>

@@ -113,7 +113,7 @@ async def test_deepseek_rejects_invalid_json_after_retries(monkeypatch):
     assert len(calls) == 2
 
 
-async def test_deepseek_reports_timeout_without_repeating_long_request(monkeypatch):
+async def test_deepseek_retries_read_timeout_then_reports_exhaustion(monkeypatch):
     calls = []
 
     class FakeClient:
@@ -131,6 +131,9 @@ async def test_deepseek_reports_timeout_without_repeating_long_request(monkeypat
             raise httpx.ReadTimeout("", request=httpx.Request("POST", "https://test"))
 
     monkeypatch.setattr(llm_module.httpx, "AsyncClient", FakeClient)
+    async def no_sleep(_seconds):
+        return None
+    monkeypatch.setattr(llm_module.asyncio, "sleep", no_sleep)
     provider = DeepSeekProvider()
     provider.api_key = "test-key"
 
@@ -140,7 +143,43 @@ async def test_deepseek_reports_timeout_without_repeating_long_request(monkeypat
             timeout_seconds=30, metadata={},
         )
 
-    assert len(calls) == 1
+    assert len(calls) == 2
+
+
+async def test_deepseek_recovers_after_transient_read_timeout(monkeypatch):
+    calls = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            calls.append(1)
+            if len(calls) == 1:
+                raise httpx.ReadTimeout("", request=httpx.Request("POST", "https://test"))
+            return _FakeResponse('{"skills": []}')
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr(llm_module.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(llm_module.asyncio, "sleep", no_sleep)
+    provider = DeepSeekProvider()
+    provider.api_key = "test-key"
+
+    result = await provider.generate_structured(
+        system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
+        timeout_seconds=30, metadata={"max_attempts": 2},
+    )
+
+    assert result.skills == []
+    assert len(calls) == 2
 
 
 async def test_deepseek_does_not_inherit_environment_proxy(monkeypatch):

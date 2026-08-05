@@ -145,8 +145,8 @@ const handleEducationChange = async (val: string) => {
             <el-dropdown-item @click="router.push('/profile')">
               <el-icon><User /></el-icon>个人中心
             </el-dropdown-item>
-            <el-dropdown-item @click="router.push('/resumes')">
-              <el-icon><Document /></el-icon>我的简历
+            <el-dropdown-item @click="router.push('/diagnosis')">
+              <el-icon><Document /></el-icon>简历诊断
             </el-dropdown-item>
             <el-dropdown-item divided @click="router.push('/login')">
               <el-icon><SwitchButton /></el-icon>退出登录

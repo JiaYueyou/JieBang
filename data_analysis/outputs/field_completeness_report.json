@@ -1,0 +1,470 @@
+{
+  "generated_at": "2026-07-21",
+  "description": "所有数据源字段完整率报告",
+  "standard_fields": [
+    "title",
+    "company",
+    "city",
+    "salary",
+    "experience",
+    "education",
+    "jd_text",
+    "responsibilities",
+    "requirements",
+    "keywords",
+    "posted_at",
+    "url",
+    "source",
+    "crawled_at"
+  ],
+  "files": [
+    {
+      "file": "jd_crawl_ifly.json",
+      "label": "学长-科大讯飞官网(清洗后)",
+      "total_records": 50,
+      "overall_completeness_pct": 88.4,
+      "field_completeness": {
+        "title": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "experience": {
+          "filled": 35,
+          "rate_pct": 70.0
+        },
+        "education": {
+          "filled": 34,
+          "rate_pct": 68.0
+        },
+        "jd_text": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "requirements": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "keywords": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "posted_at": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 50,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "jd_crawl_ifly_full.json",
+      "label": "李亚铮-科大讯飞全部(原始)",
+      "total_records": 220,
+      "overall_completeness_pct": 89.5,
+      "field_completeness": {
+        "title": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "experience": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "education": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "jd_text": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "requirements": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "keywords": {
+          "filled": 118,
+          "rate_pct": 53.6
+        },
+        "posted_at": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 220,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "jd_crawl_ifly_merged.json",
+      "label": "李亚铮-科大讯飞合并(学长+新增)",
+      "total_records": 91,
+      "overall_completeness_pct": 88.9,
+      "field_completeness": {
+        "title": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "experience": {
+          "filled": 76,
+          "rate_pct": 83.5
+        },
+        "education": {
+          "filled": 75,
+          "rate_pct": 82.4
+        },
+        "jd_text": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "requirements": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "keywords": {
+          "filled": 72,
+          "rate_pct": 79.1
+        },
+        "posted_at": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 91,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 91,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "jd_crawl_zl.json",
+      "label": "学长-智联招聘(清洗后)",
+      "total_records": 50,
+      "overall_completeness_pct": 90.1,
+      "field_completeness": {
+        "title": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "experience": {
+          "filled": 26,
+          "rate_pct": 52.0
+        },
+        "education": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "jd_text": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 31,
+          "rate_pct": 62.0
+        },
+        "requirements": {
+          "filled": 24,
+          "rate_pct": 48.0
+        },
+        "keywords": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "posted_at": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 50,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 50,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "jd_crawl_zl_new.json",
+      "label": "李亚铮-智联招聘(新爬)",
+      "total_records": 78,
+      "overall_completeness_pct": 99.8,
+      "field_completeness": {
+        "title": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "experience": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "education": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "jd_text": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 76,
+          "rate_pct": 97.4
+        },
+        "requirements": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "keywords": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "posted_at": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 78,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 78,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "jd_crawl2.json",
+      "label": "学长-智联招聘旧版",
+      "total_records": 90,
+      "overall_completeness_pct": 68.6,
+      "field_completeness": {
+        "title": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 2,
+          "rate_pct": 2.2
+        },
+        "experience": {
+          "filled": 4,
+          "rate_pct": 4.4
+        },
+        "education": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "jd_text": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 79,
+          "rate_pct": 87.8
+        },
+        "requirements": {
+          "filled": 59,
+          "rate_pct": 65.6
+        },
+        "keywords": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "posted_at": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "url": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 90,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 90,
+          "rate_pct": 100.0
+        }
+      }
+    },
+    {
+      "file": "科大讯飞.json",
+      "label": "学长-科大讯飞官网(原始)",
+      "total_records": 220,
+      "overall_completeness_pct": 68.1,
+      "field_completeness": {
+        "title": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "company": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "city": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "salary": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "experience": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "education": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "jd_text": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "responsibilities": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "requirements": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "keywords": {
+          "filled": 119,
+          "rate_pct": 54.1
+        },
+        "posted_at": {
+          "filled": 0,
+          "rate_pct": 0.0
+        },
+        "url": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "source": {
+          "filled": 220,
+          "rate_pct": 100.0
+        },
+        "crawled_at": {
+          "filled": 220,
+          "rate_pct": 100.0
+        }
+      }
+    }
+  ]
+}

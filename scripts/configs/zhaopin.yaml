@@ -1,0 +1,58 @@
+# 智联招聘 — 爬虫配置
+# 数据源：zhaopin.com (搜索关键词：科大讯飞)
+# 对应爬虫：spiders/zhaopin_spider.py
+
+# ========== 基础信息 ==========
+name: "zhaopin"
+source_name: "智联招聘"
+base_url: "https://sou.zhaopin.com/"
+
+# ========== 请求配置 ==========
+method: GET
+request_interval: 2.0        # 浏览器自动化较慢，间隔长一点
+retry_times: 2
+retry_delay: 3
+timeout: 30
+
+# ========== 分页 ==========
+page_start: 1                 # 起始页码（从1开始）
+total_pages: 5                # 智联最多返回5页（100条）
+page_size: 20
+
+# ========== 搜索配置 ==========
+filters:
+  keyword: "科大讯飞"
+  months_back: 3              # 只爬近3个月
+  company_only: false         # 是否只保留科大讯飞自身（false=含外包）
+
+# ========== 解析规则（API 字段映射）==========
+parse_rules:
+  # 智联 API 字段名 -> 标准字段名
+  field_mapping:
+    name: "title"
+    companyName: "company"
+    workCity: "city"
+    salaryReal: "salary"
+    workingExp: "experience"
+    education: "education"
+    publishTime: "post_date"
+    positionURL: "url"
+  # JD 详情路径
+  jd_path:
+    - "jobDetailData"
+    - "position"
+    - "desc"
+    - "description"
+  # 技能标签路径
+  skill_path:
+    - "skillLabel"
+  # 薪资单位转换
+  salary_unit: "元"
+
+# ========== 翻页URL模板 ==========
+page_url_template: "https://www.zhaopin.com/sou/jl489/kwF78LI9SBLUCDS/p{page}"
+
+# ========== 额外请求头 ==========
+headers:
+  Accept: "application/json, text/plain, */*"
+  Accept-Language: "zh-CN,zh;q=0.9"

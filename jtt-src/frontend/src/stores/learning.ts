@@ -1,17 +1,34 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { LearningPath, LearningStep } from '@/types'
 import { learningApi } from '@/api/learning'
+import { pathFromApi } from '@/utils/transform'
+
+const STORAGE_KEY = 'jiebang_learning_paths'
+
+function loadSavedPaths(): LearningPath[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function savePaths(paths: LearningPath[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(paths)) } catch {}
+}
 
 export const useLearningStore = defineStore('learning', () => {
-  const paths = ref<LearningPath[]>([])
+  const paths = ref<LearningPath[]>(loadSavedPaths())
   const loading = ref(false)
+
+  // Persist to localStorage on every change
+  watch(paths, (val) => savePaths(val), { deep: true })
 
   const fetchPaths = async () => {
     loading.value = true
     try {
       const res: any = await learningApi.getList()
-      if (res.data) paths.value = res.data
+      if (res.data) paths.value = (res.data || []).map(pathFromApi)
     } finally {
       loading.value = false
     }
@@ -19,7 +36,7 @@ export const useLearningStore = defineStore('learning', () => {
 
   const addPath = async (path: LearningPath) => {
     const res: any = await learningApi.create({ name: path.name, positionId: parseInt(path.positionId) || 1 })
-    if (res.data) paths.value.push(res.data)
+    if (res.data) paths.value.push(pathFromApi(res.data))
   }
 
   const removePath = async (id: string) => {
@@ -47,5 +64,19 @@ export const useLearningStore = defineStore('learning', () => {
     return Math.round((done / path.steps.length) * 100)
   }
 
-  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, getCompletionPercent }
+  const generateFromGaps = async (resumeId: string, positionId: string) => {
+    loading.value = true
+    try {
+      const res: any = await learningApi.generatePath({
+        positionId: Number(positionId),
+        resumeId: Number(resumeId),
+      })
+      if (res.data) paths.value.push(pathFromApi(res.data))
+      return res.data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, getCompletionPercent, generateFromGaps }
 })

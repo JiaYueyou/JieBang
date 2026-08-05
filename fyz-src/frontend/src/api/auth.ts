@@ -10,6 +10,7 @@ export interface LoginResult {
   access_token: string;
   token_type: string;
   username: string;
+  role: "user" | "recruiter" | "admin";
 }
 
 export async function loginApi(params: LoginParams): Promise<LoginResult> {

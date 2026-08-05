@@ -15,10 +15,25 @@ class AcceptSuggestionRequest(BaseModel):
     suggestion_id: str
 
 
+class SuggestionResponse(BaseModel):
+    """单条优化建议（响应 / 前端回传载荷共用）"""
+    id: str
+    section: str
+    field: str = ""
+    original: str = ""
+    suggested: str = ""
+    reason: str = ""
+    change_type: str = "small"
+    accepted: bool = False
+    verified: bool = True
+    warning: str | None = None
+
+
 class ApplyAllRequest(BaseModel):
-    """批量应用建议"""
+    """批量应用建议（suggestions 为前端回传的建议全文，用于实际写入新简历）"""
     resume_id: int
     suggestion_ids: list[str] = Field(..., min_length=1)
+    suggestions: list[SuggestionResponse] | None = None
 
 
 class OptimizePhraseRequest(BaseModel):
@@ -36,22 +51,9 @@ class SaveAsNewRequest(BaseModel):
     """保存为新的简历版本"""
     resume_id: int
     suggestion_ids: list[str]
+    suggestions: list[SuggestionResponse] | None = None
 
 
 class SaveAsNewResponse(BaseModel):
     """保存结果"""
     new_resume_id: int
-
-
-class SuggestionResponse(BaseModel):
-    """单条优化建议响应"""
-    id: str
-    section: str
-    field: str
-    original: str
-    suggested: str
-    reason: str
-    change_type: str = "small"
-    accepted: bool = False
-    verified: bool = True
-    warning: str | None = None

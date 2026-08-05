@@ -34,6 +34,102 @@ async def create_job(client, auth_headers, **overrides):
     )
 
 
+async def test_observed_job_catalog_returns_source_and_skill_evidence(
+    client, auth_headers
+):
+    from app.core.database import async_session
+    from app.models import JobSkillFact, RawJobRecord, Skill, SourceDocument
+
+    async with async_session() as db:
+        source = SourceDocument(
+            source="zhaopin",
+            external_id="job-001",
+            url="https://example.test/jobs/1",
+            title="Python 数据工程师",
+            company="示例科技",
+            content_fingerprint="observed-job-source-001",
+            content_summary="负责 Python 数据处理",
+            source_meta={"posted_at": "2026-07-01", "crawled_at": "2026-07-02"},
+        )
+        db.add(source)
+        await db.flush()
+        raw = RawJobRecord(
+            source_document_id=source.id,
+            title="Python 数据工程师",
+            standardized_title="数据工程师",
+            company="示例科技",
+            city="合肥",
+            salary_text="20K-30K",
+            experience_text="3-5年",
+            education_text="本科",
+            jd_text="负责 Python 数据处理",
+            responsibilities="数据管道建设",
+            requirements="熟悉 Python",
+            keywords="Python",
+            posted_at_text="2026-07-01",
+            crawled_at_text="2026-07-02",
+            dedup_status="unique",
+            normalized_data={"source_file_schema": "job-v1"},
+        )
+        db.add(raw)
+        skill = Skill(
+            name="Python",
+            canonical_name="Python",
+            canonical_key="python-observed-test",
+            category="backend",
+            aliases=[],
+        )
+        db.add(skill)
+        await db.flush()
+        db.add(JobSkillFact(
+            raw_job_record_id=raw.id,
+            skill_id=skill.id,
+            kind="required",
+            importance=0.9,
+            frequency=1,
+            confidence=0.95,
+            evidence_text="熟悉 Python",
+            verification_status="verified",
+            extraction_method="rule",
+            source_count=2,
+        ))
+        await db.commit()
+        raw_id = raw.id
+
+    listed = await client.get(
+        "/api/v1/jobs/observed?page=1&page_size=10&keyword=Python&city=合肥",
+        headers=auth_headers,
+    )
+    assert listed.status_code == 200
+    assert listed.json()["meta"]["total"] == 1
+    item = listed.json()["data"][0]
+    assert item["source"] == "zhaopin"
+    assert item["source_url"] == "https://example.test/jobs/1"
+    assert item["verified_skill_count"] == 1
+
+    detail = await client.get(
+        f"/api/v1/jobs/observed/{raw_id}",
+        headers=auth_headers,
+    )
+    assert detail.status_code == 200
+    assert detail.json()["data"]["skills"][0] == {
+        "fact_id": detail.json()["data"]["skills"][0]["fact_id"],
+        "skill_id": skill.id,
+        "skill_name": "Python",
+        "category": "backend",
+        "kind": "required",
+        "confidence": 0.95,
+        "evidence_text": "熟悉 Python",
+        "verification_status": "verified",
+        "extraction_method": "rule",
+        "source_count": 2,
+    }
+
+
+async def test_observed_job_catalog_requires_authentication(client):
+    assert (await client.get("/api/v1/jobs/observed")).status_code == 401
+
+
 class TestJobApi:
     async def test_requires_authentication(self, client):
         response = await client.get("/api/v1/jobs")

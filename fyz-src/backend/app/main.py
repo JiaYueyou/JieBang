@@ -1,8 +1,11 @@
 """应用入口"""
 
 from contextlib import asynccontextmanager
+import logging
+import time
+import uuid
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.bootstrap import bootstrap_initial_admin
@@ -20,12 +23,18 @@ from app.api.v1.analysis import router as analysis_router
 from app.api.v1.career import router as career_router
 from app.api.v1.matching import router as matching_router
 from app.api.v1.internal_transfer import router as internal_transfer_router
+from app.api.v1.admin import router as admin_router
+from app.api.v1.user_activity import router as user_activity_router
+from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.retrieval import router as retrieval_router
 from app.api.v1.placeholder import make_placeholder_router
 
 
 # --- 占位路由 ---
 changes_router = make_placeholder_router("changes", "能力更新", "既有岗位能力动态更新")
-admin_router = make_placeholder_router("admin", "系统管理", "系统管理")
+logger = logging.getLogger("app.business")
+# Uvicorn 默认只配置自身 logger；显式开启 app.* 业务日志并复用其输出 handler。
+logging.getLogger("app").setLevel(logging.INFO)
 
 
 @asynccontextmanager
@@ -55,6 +64,34 @@ app = FastAPI(
 )
 register_exception_handlers(app)
 
+
+@app.middleware("http")
+async def request_business_log(request: Request, call_next):
+    """输出可关联的请求生命周期日志；不记录请求体、令牌等敏感数据。"""
+    request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+    started = time.perf_counter()
+    logger.info(
+        "request_started request_id=%s method=%s path=%s client=%s",
+        request_id, request.method, request.url.path,
+        request.client.host if request.client else "unknown",
+    )
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request_failed request_id=%s method=%s path=%s duration_ms=%d",
+            request_id, request.method, request.url.path,
+            int((time.perf_counter() - started) * 1000),
+        )
+        raise
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_completed request_id=%s method=%s path=%s status=%d duration_ms=%d",
+        request_id, request.method, request.url.path, response.status_code,
+        int((time.perf_counter() - started) * 1000),
+    )
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -76,6 +113,9 @@ app.include_router(analysis_router, prefix="/api/v1")
 app.include_router(career_router, prefix="/api/v1")
 app.include_router(internal_transfer_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(user_activity_router, prefix="/api/v1")
+app.include_router(dashboard_router, prefix="/api/v1")
+app.include_router(retrieval_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health", response_model=ApiResponse)

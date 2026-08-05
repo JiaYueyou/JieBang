@@ -42,7 +42,12 @@ const router = createRouter({
           path: "matching/:resumeId",
           name: "MatchingDetail",
           component: () => import("@/views/MatchingDetail.vue"),
-          meta: { title: "人才详情", parentTitle: "人才匹配", parentPath: "/matching" },
+          meta: {
+            title: "人才详情",
+            parentTitle: "人才匹配",
+            parentPath: "/matching",
+            activeMenu: "/matching",
+          },
         },
         {
           path: "career",
@@ -78,7 +83,7 @@ const router = createRouter({
           path: "admin",
           name: "Admin",
           component: () => import("@/views/Admin.vue"),
-          meta: { title: "系统管理" },
+          meta: { title: "系统管理", roles: ["admin"] },
         },
       ],
     },
@@ -88,9 +93,15 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title || ""} - 智联职引`;
   const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role") || "user";
   if (!to.meta.noAuth && !token) {
     next("/login");
   } else if ((to.path === "/login" || to.path === "/register") && token) {
+    next("/dashboard");
+  } else if (
+    Array.isArray(to.meta.roles)
+    && !(to.meta.roles as string[]).includes(role)
+  ) {
     next("/dashboard");
   } else {
     next();

@@ -4,7 +4,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
@@ -16,12 +15,23 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/api/learning/assistant': {
+        target: 'http://localhost:8001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
+      },
+      '/api/assistant': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/api/tailor/optimize-phrase': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/api': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: true,
+
       },
     },
   },

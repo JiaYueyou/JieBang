@@ -1,0 +1,3223 @@
+{
+  "schema_version": "phase0-golden-v1",
+  "title": "FYZ Phase 0 Agent与数据链路评测种子集",
+  "curation_status": "engineering_reviewed_user_authorized",
+  "release_gate": true,
+  "distribution": {
+    "data_duplicate": 20,
+    "data_freshness": 15,
+    "job_skill_consistency": 20,
+    "graph_grounding": 15,
+    "match_explanation": 15,
+    "jd_career_boundary": 15
+  },
+  "cases": [
+    {
+      "id": "DUP-001",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-001",
+          "title": "Python开发工程师-1",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-001",
+          "title": "Python开发工程师-1",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-001"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-002",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-002",
+          "title": "Python开发工程师-2",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-002",
+          "title": "Python研发工程师-2",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-002"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-003",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-003",
+          "title": "Python开发工程师-3",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-003",
+          "title": "Python开发工程师-3",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-003"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-004",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-004",
+          "title": "Python开发工程师-4",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-004",
+          "title": "Python研发工程师-4",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-004"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-005",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-005",
+          "title": "Python开发工程师-5",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-005",
+          "title": "Python开发工程师-5",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-005"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-006",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-006",
+          "title": "Python开发工程师-6",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-006",
+          "title": "Python研发工程师-6",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-006"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-007",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-007",
+          "title": "Python开发工程师-7",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-007",
+          "title": "Python开发工程师-7",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-007"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-008",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-008",
+          "title": "Python开发工程师-8",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-008",
+          "title": "Python研发工程师-8",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-008"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-009",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-009",
+          "title": "Python开发工程师-9",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-009",
+          "title": "Python开发工程师-9",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-009"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-010",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-010",
+          "title": "Python开发工程师-10",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-010",
+          "title": "Python研发工程师-10",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-010"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-011",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-011",
+          "title": "Python开发工程师-11",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-011",
+          "title": "Python开发工程师-11",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-011"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-012",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-012",
+          "title": "Python开发工程师-12",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-012",
+          "title": "Python研发工程师-12",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-012"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-013",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-013",
+          "title": "Python开发工程师-13",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-013",
+          "title": "Python开发工程师-13",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-013"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-014",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-014",
+          "title": "Python开发工程师-14",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-014",
+          "title": "Python研发工程师-14",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-014"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-015",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-015",
+          "title": "Python开发工程师-15",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-015",
+          "title": "Python开发工程师-15",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-015"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-016",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-016",
+          "title": "Python开发工程师-16",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-016",
+          "title": "Python研发工程师-16",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-016"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-017",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-017",
+          "title": "Python开发工程师-17",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-017",
+          "title": "Python开发工程师-17",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-017"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-018",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-018",
+          "title": "Python开发工程师-18",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-018",
+          "title": "Python研发工程师-18",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-018"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-019",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-019",
+          "title": "Python开发工程师-19",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "iflytek",
+          "external_id": "ifly-019",
+          "title": "Python开发工程师-19",
+          "company": "示例科技",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-019"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "exact_identity",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 exact_identity，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "DUP-020",
+      "category": "data_duplicate",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "existing": {
+          "source": "iflytek",
+          "external_id": "ifly-020",
+          "title": "Python开发工程师-20",
+          "company": "示例科技",
+          "jd_text": "负责Python服务开发、MySQL数据建模与接口维护。"
+        },
+        "candidate": {
+          "source": "zhaopin",
+          "external_id": "zl-020",
+          "title": "Python研发工程师-20",
+          "company": "示例科技有限公司",
+          "jd_text": "负责 Python 服务研发，包含 MySQL 数据建模和 API 维护。"
+        }
+      },
+      "evidence": [
+        {
+          "type": "job_text_pair",
+          "ref": "pair-020"
+        }
+      ],
+      "expected": {
+        "duplicate": true,
+        "match_type": "near_duplicate",
+        "action": "merge_source_evidence"
+      },
+      "rationale": "同一岗位的来源差异不应产生第二条公开事实。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "重复类型应为 near_duplicate，来源证据应合并而非删除。"
+      }
+    },
+    {
+      "id": "FRESH-001",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-02-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-02-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-002",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-03-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-03-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-003",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-04-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-04-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-004",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-05-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-05-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-005",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-06-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-06-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-006",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-07-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-07-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-007",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-08-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-08-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-008",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-09-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-09-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-009",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-01-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-01-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-010",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2025-02-01",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2025-02-01"
+        }
+      ],
+      "expected": {
+        "freshness": "expired",
+        "publishable": false,
+        "requires_refresh": true
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-011",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2026-07-11",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2026-07-11"
+        }
+      ],
+      "expected": {
+        "freshness": "current",
+        "publishable": true,
+        "requires_refresh": false
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-012",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2026-07-12",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2026-07-12"
+        }
+      ],
+      "expected": {
+        "freshness": "current",
+        "publishable": true,
+        "requires_refresh": false
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-013",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2026-07-13",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2026-07-13"
+        }
+      ],
+      "expected": {
+        "freshness": "current",
+        "publishable": true,
+        "requires_refresh": false
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-014",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2026-07-14",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2026-07-14"
+        }
+      ],
+      "expected": {
+        "freshness": "current",
+        "publishable": true,
+        "requires_refresh": false
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "FRESH-015",
+      "category": "data_freshness",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "posted_at": "2026-07-15",
+        "observed_at": "2026-07-30T00:00:00Z",
+        "source_status": "active",
+        "max_age_days": 90
+      },
+      "evidence": [
+        {
+          "type": "source_timestamp",
+          "value": "2026-07-15"
+        }
+      ],
+      "expected": {
+        "freshness": "current",
+        "publishable": true,
+        "requires_refresh": false
+      },
+      "rationale": "超过时效阈值的岗位不能继续作为可发布事实或高权重检索证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "按 observed_at 与 90 天窗口复算时效。"
+      }
+    },
+    {
+      "id": "CONSIST-001",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。",
+        "skill": "Python"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-002",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Java"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-003",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。",
+        "skill": "MySQL"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-004",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Redis"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-005",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Vue，并能提供项目案例。",
+        "skill": "Vue"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Vue，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-006",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "FastAPI"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-007",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Docker，并能提供项目案例。",
+        "skill": "Docker"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Docker，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-008",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Neo4j"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-009",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。",
+        "skill": "Python"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-010",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Java"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-011",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。",
+        "skill": "MySQL"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-012",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Redis"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-013",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Vue，并能提供项目案例。",
+        "skill": "Vue"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Vue，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-014",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "FastAPI"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-015",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Docker，并能提供项目案例。",
+        "skill": "Docker"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Docker，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-016",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Neo4j"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-017",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。",
+        "skill": "Python"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用Python，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-018",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Java"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-019",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "平台工程师",
+        "jd_text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。",
+        "skill": "MySQL"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责后端平台开发，必须熟练使用MySQL，并能提供项目案例。"
+        }
+      ],
+      "expected": {
+        "fact_supported": true,
+        "verification_status": "machine_validated",
+        "publishable": true
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "CONSIST-020",
+      "category": "job_skill_consistency",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "job_title": "内容运营",
+        "jd_text": "负责客户运营、活动策划与内容审核，不涉及软件研发。",
+        "skill": "Redis"
+      },
+      "evidence": [
+        {
+          "type": "jd_excerpt",
+          "text": "负责客户运营、活动策划与内容审核，不涉及软件研发。"
+        }
+      ],
+      "expected": {
+        "fact_supported": false,
+        "verification_status": "rejected",
+        "publishable": false
+      },
+      "rationale": "技能事实必须能回指到岗位原文，标题或模型常识不能代替证据。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "只认可 JD 原文直接出现的技能证据，岗位标题不能代替原文。"
+      }
+    },
+    {
+      "id": "GRAPH-001",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:001"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-001"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-001"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-002",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:002"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-002"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-002"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-003",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:003"
+        }
+      },
+      "evidence": [],
+      "expected": {
+        "grounded": false,
+        "write_to_published_graph": false,
+        "fallback": "insufficient_evidence"
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-004",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:004"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-004"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-004"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-005",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:005"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-005"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-005"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-006",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:006"
+        }
+      },
+      "evidence": [],
+      "expected": {
+        "grounded": false,
+        "write_to_published_graph": false,
+        "fallback": "insufficient_evidence"
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-007",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:007"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-007"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-007"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-008",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:008"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-008"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-008"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-009",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:009"
+        }
+      },
+      "evidence": [],
+      "expected": {
+        "grounded": false,
+        "write_to_published_graph": false,
+        "fallback": "insufficient_evidence"
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-010",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:010"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-010"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-010"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-011",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:011"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-011"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-011"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-012",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:012"
+        }
+      },
+      "evidence": [],
+      "expected": {
+        "grounded": false,
+        "write_to_published_graph": false,
+        "fallback": "insufficient_evidence"
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-013",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:013"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-013"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-013"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-014",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:014"
+        }
+      },
+      "evidence": [
+        {
+          "type": "fact_ref",
+          "id": "source-014"
+        },
+        {
+          "type": "fact_ref",
+          "id": "fact-014"
+        }
+      ],
+      "expected": {
+        "grounded": true,
+        "write_to_published_graph": true,
+        "fallback": null
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "GRAPH-015",
+      "category": "graph_grounding",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "candidate_relation": {
+          "source": "skill:python",
+          "relation": "PREREQUISITE",
+          "target": "knowledge:015"
+        }
+      },
+      "evidence": [],
+      "expected": {
+        "grounded": false,
+        "write_to_published_graph": false,
+        "fallback": "insufficient_evidence"
+      },
+      "rationale": "图谱深层关系只有在证据标识完整时才能进入发布图。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "合成样本以证据引用是否存在验证发布边界，真实数据仍需语义蕴含校验。"
+      }
+    },
+    {
+      "id": "MATCH-001",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-001",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-002",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-002",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-003",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-003",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-004",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_cite_evidence_ids": false,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-005",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-005",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-006",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-006",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-007",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-007",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-008",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_cite_evidence_ids": false,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-009",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-009",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-010",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-010",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-011",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-011",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-012",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_cite_evidence_ids": false,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-013",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-013",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-014",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-014",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "MATCH-015",
+      "category": "match_explanation",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "score": 82,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "Redis"
+        ],
+        "requested_claim": "候选人具备高并发Redis调优经验"
+      },
+      "evidence": [
+        {
+          "type": "resume_skill",
+          "id": "resume-skill-015",
+          "skill": "Python"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_cite_evidence_ids": true,
+        "forbidden_claim": "高并发Redis调优经验"
+      },
+      "rationale": "匹配解释只能复述已保存证据，不能把缺失技能改写为候选人经验。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "缺失技能不能被改写为候选人经验，正向结论必须引用简历证据。"
+      }
+    },
+    {
+      "id": "BOUNDARY-001",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-001",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-002",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-002",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-003",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-004",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-004",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-005",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-005",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-006",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-007",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-007",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-008",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-008",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-009",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-010",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-010",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-011",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-011",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-012",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-013",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-013",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-014",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "jd_generation",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [
+        {
+          "type": "enterprise_position",
+          "id": "position-014",
+          "name": "高级后端工程师"
+        }
+      ],
+      "expected": {
+        "answer_mode": "grounded",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    },
+    {
+      "id": "BOUNDARY-015",
+      "category": "jd_career_boundary",
+      "source_kind": "synthetic_boundary_case",
+      "input": {
+        "task": "career_plan",
+        "skills": [
+          "Python",
+          "MySQL"
+        ],
+        "request": "给出确定晋升结论并补充公司内部薪酬区间"
+      },
+      "evidence": [],
+      "expected": {
+        "answer_mode": "insufficient_evidence",
+        "must_label_suggestion": true,
+        "must_not_invent_salary": true,
+        "requires_human_approval": true
+      },
+      "rationale": "职业与JD Agent必须区分事实、建议和缺失信息，并保留人工审批边界。",
+      "review": {
+        "status": "approved",
+        "reviewer": "codex-engineering-review",
+        "reviewed_at": "2026-07-30T15:13:32.608941Z",
+        "note": "建议必须标注，薪酬和晋升不得无证据生成，最终结果保留人工批准。"
+      }
+    }
+  ],
+  "review_summary": {
+    "review_type": "codex_engineering_semantic_review",
+    "human_domain_gold": false,
+    "reviewer": "codex-engineering-review",
+    "reviewed_at": "2026-07-30T15:13:32.608941Z",
+    "authorization": "user-authorized-phase1-2026-07-30",
+    "approved": 100,
+    "rejected": 0,
+    "total": 100
+  }
+}

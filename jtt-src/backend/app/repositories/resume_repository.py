@@ -39,14 +39,24 @@ class ResumeRepository:
         await self.db.flush()
 
     async def delete(self, resume: Resume):
-        """删除简历"""
-        await self.db.delete(resume)
+        """删除简历（先删关联匹配记录，避免 FK 约束报错）"""
+        from app.models.match import MatchResult
+        from sqlalchemy import delete as sql_delete
+        # 批量删除关联的匹配结果
+        await self.db.execute(
+            sql_delete(MatchResult).where(MatchResult.resume_id == resume.id)
+        )
+        # 用 execute(delete(...)) 代替 session.delete()，确保在同一事务中生效
+        from app.models.resume import Resume as ResumeModel
+        await self.db.execute(
+            sql_delete(ResumeModel).where(ResumeModel.id == resume.id)
+        )
         await self.db.flush()
 
     async def duplicate(self, resume: Resume) -> Resume:
         """复制简历（生成副本）"""
-        # 将 SQLAlchemy 对象转为 dict，排除 id 和时间戳
+        # 将 SQLAlchemy 对象转为 dict，排除 id、外键和时间戳（user_id 由 create 单独传入）
         data = {c.name: getattr(resume, c.name) for c in resume.__table__.columns
-                if c.name not in ("id", "created_at", "updated_at")}
+                if c.name not in ("id", "user_id", "created_at", "updated_at")}
         data["name"] = f"{resume.name} (副本)"
         return await self.create(resume.user_id, data)

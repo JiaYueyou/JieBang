@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -18,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.core.time import utc_now
 
 
 class Skill(Base):
@@ -29,6 +31,9 @@ class Skill(Base):
     canonical_key: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     aliases: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    validation_status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="approved", index=True
+    )
     graph_node_id: Mapped[str | None] = mapped_column(String(120), unique=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
@@ -58,10 +63,32 @@ class RawJobRecord(Base):
     source_document_id: Mapped[int] = mapped_column(
         ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False, unique=True
     )
+    standard_job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("standard_job.id"), index=True
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     standardized_title: Mapped[str | None] = mapped_column(String(255), index=True)
     company: Mapped[str | None] = mapped_column(String(255))
     city: Mapped[str | None] = mapped_column(String(100))
+    city_code: Mapped[str | None] = mapped_column(String(40), index=True)
+    company_key: Mapped[str | None] = mapped_column(String(160), index=True)
+    work_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="onsite", index=True)
+    employment_type: Mapped[str] = mapped_column(String(20), nullable=False, default="full_time", index=True)
+    normalization_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="job-title-v1", index=True
+    )
+    normalization_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    normalization_confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    duplicate_cluster_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "job_duplicate_cluster.id",
+            name="fk_raw_job_record_duplicate_cluster",
+            use_alter=True,
+        ),
+        index=True,
+    )
     salary_text: Mapped[str | None] = mapped_column(String(100))
     experience_text: Mapped[str | None] = mapped_column(String(100))
     education_text: Mapped[str | None] = mapped_column(String(100))
@@ -71,11 +98,71 @@ class RawJobRecord(Base):
     keywords: Mapped[str] = mapped_column(Text, nullable=False, default="")
     posted_at_text: Mapped[str | None] = mapped_column(String(100))
     crawled_at_text: Mapped[str | None] = mapped_column(String(100))
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    crawled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     dedup_status: Mapped[str] = mapped_column(String(20), nullable=False, default="unique")
+    quality_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    freshness_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    source_trust_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    quality_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    quality_flags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    content_simhash: Mapped[str | None] = mapped_column(String(16), index=True)
+    near_duplicate_group_id: Mapped[str | None] = mapped_column(String(40), index=True)
+    near_duplicate_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    quality_policy_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="phase1-v1"
+    )
+    quality_evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_excluded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
+    exclusion_reason: Mapped[str | None] = mapped_column(String(500))
+    excluded_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"))
+    excluded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     normalized_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     source_document: Mapped[SourceDocument] = relationship(lazy="selectin")
+
+
+class JobDuplicateCluster(Base):
+    __tablename__ = "job_duplicate_cluster"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    standard_job_id: Mapped[int] = mapped_column(
+        ForeignKey("standard_job.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    representative_raw_job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("raw_job_record.id", ondelete="SET NULL"), index=True
+    )
+    company_key: Mapped[str | None] = mapped_column(String(160), index=True)
+    city_code: Mapped[str | None] = mapped_column(String(40), index=True)
+    member_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SourceTrustPolicy(Base):
+    __tablename__ = "source_trust_policy"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    trust_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
+    freshness_window_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    policy_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="phase1-v1"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class JobSkillFact(Base):
@@ -100,6 +187,9 @@ class JobSkillFact(Base):
     extraction_method: Mapped[str] = mapped_column(String(20), nullable=False)
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     agent_run_id: Mapped[str | None] = mapped_column(ForeignKey("agent_run.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_note: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
@@ -124,22 +214,34 @@ class AgentRun(Base):
     error_code: Mapped[str | None] = mapped_column(String(100))
     error_message: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AsyncTask(Base):
     __tablename__ = "async_task"
+    __table_args__ = (
+        UniqueConstraint(
+            "created_by", "task_type", "idempotency_key",
+            name="uq_async_task_idempotency",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     request_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    idempotency_key: Mapped[str | None] = mapped_column(String(64))
     result: Mapped[dict | None] = mapped_column(JSON)
     error_code: Mapped[str | None] = mapped_column(String(100))
     error_message: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-    started_at: Mapped[datetime | None] = mapped_column(DateTime)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

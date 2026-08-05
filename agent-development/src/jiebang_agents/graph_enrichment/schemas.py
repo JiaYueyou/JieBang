@@ -1,10 +1,16 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class GraphEvidenceInput(BaseModel):
-    source_id: int
+    model_config = ConfigDict(populate_by_name=True)
+
+    evidence_id: str = Field(
+        min_length=1,
+        max_length=64,
+        validation_alias=AliasChoices("evidence_id", "source_id"),
+    )
     source: str = Field(min_length=1, max_length=100)
     text: str = Field(min_length=1, max_length=2000)
 
@@ -16,20 +22,38 @@ class SkillGraphCompletionInput(BaseModel):
     evidence: list[GraphEvidenceInput] = Field(min_length=2, max_length=20)
 
 
+class CommonSolutionOutput(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    purpose: str = Field(min_length=1, max_length=300)
+
+
 class KnowledgePointOutput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     name: str
     description: str
     difficulty: Literal["easy", "medium", "hard"]
     confidence: float = Field(ge=0, le=1)
-    source_ids: list[int] = Field(min_length=2)
+    evidence_ids: list[str] = Field(
+        min_length=2,
+        validation_alias=AliasChoices("evidence_ids", "source_ids"),
+    )
     prerequisites: list[str] = Field(default_factory=list)
+    core_stack: list[str] = Field(default_factory=list, max_length=8)
+    common_solutions: list[CommonSolutionOutput] = Field(default_factory=list, max_length=8)
 
 
 class TechPointOutput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     name: str
+    category: Literal["framework", "library", "tool", "platform", "component"] = "tool"
     detail: str
     confidence: float = Field(ge=0, le=1)
-    source_ids: list[int] = Field(min_length=2)
+    evidence_ids: list[str] = Field(
+        min_length=2,
+        validation_alias=AliasChoices("evidence_ids", "source_ids"),
+    )
     knowledge_points: list[KnowledgePointOutput] = Field(default_factory=list)
 
 

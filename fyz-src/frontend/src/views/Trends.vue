@@ -4,7 +4,7 @@
     <!-- Stats -->
     <div class="tr-stats anim-fade-up">
       <div class="tr-stat"><span class="tr-num">{{ stats.totalJobs }}</span><span class="tr-label">累计岗位数</span></div>
-      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">新兴技能 (月)</span></div>
+      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">新兴技能（当前窗口）</span></div>
       <div class="tr-stat"><span class="tr-num green">{{ stats.avgSalary }}</span><span class="tr-label">平均薪资</span></div>
       <div class="tr-stat"><span class="tr-num amber">{{ stats.activeCities }}</span><span class="tr-label">活跃城市</span></div>
     </div>
@@ -14,8 +14,10 @@
       <div class="dash-card-body" style="padding:12px 20px;">
         <div class="tr-filter-row">
           <el-select v-model="timeRange" size="default" style="width:130px;">
-            <el-option label="近 6 个月" value="6" /><el-option label="近 12 个月" value="12" />
-            <el-option label="近 24 个月" value="24" />
+            <el-option label="近 15 天" value="15d" />
+            <el-option label="近 1 个月" value="1m" />
+            <el-option label="近 3 个月" value="3m" />
+            <el-option label="近 6 个月" value="6m" />
           </el-select>
           <el-input v-model="jobFilter" placeholder="筛选岗位" clearable size="default" style="width:180px;" />
           <el-select v-model="cityFilter" size="default" style="width:130px;" clearable placeholder="城市">
@@ -28,6 +30,8 @@
       </div>
     </div>
 
+    <ReferenceBaseline :baseline="data?.baseline ?? null" class="anim-fade-up anim-delay-1" />
+
     <el-alert
       v-if="dataQuality?.insufficient_data"
       class="tr-quality-alert anim-fade-up anim-delay-1"
@@ -36,11 +40,18 @@
       show-icon
       :title="dataQuality.notes.join(' ') || '当前统计窗口数据不足。'"
     />
+    <div v-if="dataQuality" class="tr-evidence-strip anim-fade-up anim-delay-1">
+      <span><strong>{{ dataQuality.total_records }}</strong> 原始观测</span>
+      <span><strong>{{ dataQuality.deduplicated_records }}</strong> 去重岗位</span>
+      <span><strong>{{ dataQuality.independent_job_clusters }}</strong> 独立岗位簇</span>
+      <span><strong>{{ dataQuality.independent_companies }}</strong> 独立企业</span>
+      <span v-if="dataQuality.duplicate_records"><strong>{{ dataQuality.duplicate_records }}</strong> 条转载/重复已合并</span>
+    </div>
 
     <!-- Chart grid -->
     <div class="tr-chart-grid anim-fade-up anim-delay-2">
       <div class="dash-card">
-        <div class="dash-card-header"><span class="dash-card-title">岗位需求趋势</span><span class="dash-card-badge">{{ timeRange }} 个月</span></div>
+        <div class="dash-card-header"><span class="dash-card-title">岗位需求趋势</span><span class="dash-card-badge">{{ windowLabel }}</span></div>
         <div class="dash-card-body"><v-chart :option="jobDemandOption" autoresize style="height:300px;" /></div>
       </div>
       <div class="dash-card">
@@ -71,11 +82,20 @@
           </el-table-column>
           <el-table-column prop="growth" label="增长率" width="100" align="center">
             <template #default="{ row }">
-              <span :style="{ color: row.growth > 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
-                {{ row.growth > 0 ? '+' : '' }}{{ row.growth }}%
+              <span :style="{ color: row.growth === null ? 'var(--color-warning)' : row.growth > 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
+                {{ row.growth === null ? (row.previous_count === 0 ? '新出现' : '基线不足') : `${row.growth > 0 ? '+' : ''}${row.growth}%` }}
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="本期 / 上期" width="120" align="center">
+            <template #default="{ row }">
+              <span class="trend-evidence-count">{{ row.current_count }} / {{ row.previous_count }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="企业证据" width="120" align="center">
+            <template #default="{ row }">{{ row.current_companies }} / {{ row.previous_companies }} 家</template>
+          </el-table-column>
+          <el-table-column prop="evidence_note" label="变化证据" min-width="260" show-overflow-tooltip />
           <el-table-column prop="stage" label="生命周期" width="120" align="center">
             <template #default="{ row }">
               <el-tag :type="row.stage === '成长期' ? 'success' : row.stage === '成熟期' ? '' : 'warning'" size="small">{{ row.stage }}</el-tag>
@@ -98,11 +118,13 @@ import { GridComponent, TooltipComponent, LegendComponent, VisualMapComponent } 
 import { CanvasRenderer } from "echarts/renderers";
 import { useTrendStore } from "@/stores/trends";
 import DataState from "@/components/common/DataState.vue";
+import ReferenceBaseline from "@/components/analysis/ReferenceBaseline.vue";
+import type { TrendQuery } from "@/domain/types";
 
 use([LineChart, BarChart, HeatmapChart, GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CanvasRenderer]);
 
 const PALETTE = ["#4f6ef6","#34b37e","#f59e4b","#7c6ff7","#5b9df5","#e85d5d"];
-const timeRange = ref("12");
+const timeRange = ref<TrendQuery["window"]>("3m");
 const jobFilter = ref("");
 const cityFilter = ref("");
 const route = useRoute();
@@ -113,6 +135,7 @@ const months = computed(() => data.value?.months ?? []);
 const stats = computed(() => data.value?.stats ?? { totalJobs:"0",newSkills:0,avgSalary:"0",activeCities:0 });
 const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
 const dataQuality = computed(() => data.value?.dataQuality ?? null);
+const windowLabel = computed(() => data.value?.windowLabel ?? "近 3 个月");
 const coverageText = computed(() => {
   const quality = dataQuality.value;
   if (!quality?.coverage_start || !quality?.coverage_end) return "暂无可统计的岗位时间范围";
@@ -121,7 +144,7 @@ const coverageText = computed(() => {
 
 function loadTrends() {
   return store.load({
-    months: Number(timeRange.value),
+    window: timeRange.value,
     keyword: jobFilter.value.trim() || undefined,
     city: cityFilter.value || undefined,
   });
@@ -141,33 +164,33 @@ onMounted(() => {
 // ── Job demand option ──
 const jobDemandOption = computed(() => ({
   tooltip: { trigger: "axis" },
-  legend: { bottom: 0, textStyle: { fontSize: 12 } },
-  grid: { left: 12, right: 20, top: 8, bottom: 32 },
-  xAxis: { type: "category", data: months.value.slice(0, Number(timeRange.value)), axisLabel: { fontSize: 10 } },
+  legend: { bottom: 15, textStyle: { fontSize: 12 } },
+  grid: { left: 12, right: 20, top: 8, bottom: 60 },
+  xAxis: { type: "category", data: months.value, axisLabel: { fontSize: 10, hideOverlap: true } },
   yAxis: { type: "value", axisLabel: { fontSize: 10 } },
-  series: (data.value?.jobDemand ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values.slice(0,Number(timeRange.value)),smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
+  series: (data.value?.jobDemand ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values,smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
 }));
 
 // ── Salary option ──
 const salaryOption = computed(() => ({
   tooltip: { trigger: "axis" },
-  legend: { bottom: 0, textStyle: { fontSize: 12 } },
-  grid: { left: 12, right: 20, top: 8, bottom: 32 },
-  xAxis: { type: "category", data: months.value.slice(0, Number(timeRange.value)), axisLabel: { fontSize: 10 } },
+  legend: { bottom: 15, textStyle: { fontSize: 12 } },
+  grid: { left: 12, right: 20, top: 8, bottom: 60 },
+  xAxis: { type: "category", data: months.value, axisLabel: { fontSize: 10, hideOverlap: true } },
   yAxis: { type: "value", name: "K", axisLabel: { fontSize: 10 } },
-  series: (data.value?.salary ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values.slice(0,Number(timeRange.value)),smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
+  series: (data.value?.salary ?? []).map((series,index)=>({name:series.name,type:"line",data:series.values,smooth:true,lineStyle:{width:2},itemStyle:{color:PALETTE[index]}})),
 }));
 
 // ── Skill heat map ──
 const skillHeatOption = computed(() => ({
   tooltip: { formatter: (p: any) => `${p.value[1]} · ${p.value[0]} : ${p.value[2]} 次` },
   grid: { left: 80, right: 40, top: 8, bottom: 24 },
-  xAxis: { type: "category", data: months.value.slice(0, Number(timeRange.value)), axisLabel: { fontSize: 10 }, position: "top" },
+  xAxis: { type: "category", data: months.value, axisLabel: { fontSize: 10, hideOverlap: true }, position: "top" },
   yAxis: { type: "category", data: data.value?.heatmapSkills ?? [], axisLabel: { fontSize: 11 }, inverse: true },
   visualMap: { min: 0, max: 200, calculable: true, orient: "vertical", right: 0, top: 6, bottom: 6, textStyle: { fontSize: 10 }, inRange: { color: ["#f0f4ff","#c8d6fb","#8fa8f4","#4f6ef6","#1a3a8a"] } },
   series: [{
     type: "heatmap",
-    data: (data.value?.heatmap ?? []).filter((point)=>point.x<Number(timeRange.value)).map((point)=>[point.x,point.y,point.value]),
+    data: (data.value?.heatmap ?? []).map((point)=>[point.x,point.y,point.value]),
     label: { show: true, fontSize: 10 },
   }],
 }));
@@ -191,7 +214,7 @@ function sparkOption(row: any) {
     grid: { left: 0, right: 0, top: 0, bottom: 0 },
     xAxis: { type: "category", show: false, data: ["","","","","",""] },
     yAxis: { type: "value", show: false, min: 0 },
-    series: [{ type: "line", data: row.sparkline, smooth: true, lineStyle: { width: 1.5, color: row.growth > 0 ? "var(--color-success)" : "var(--color-danger)" }, showSymbol: false, areaStyle: { color: row.growth > 0 ? "rgba(52,179,126,.15)" : "rgba(232,93,93,.15)" } }],
+    series: [{ type: "line", data: row.sparkline, smooth: true, lineStyle: { width: 1.5, color: row.growth === null ? "var(--color-warning)" : row.growth > 0 ? "var(--color-success)" : "var(--color-danger)" }, showSymbol: false, areaStyle: { color: row.growth === null ? "rgba(245,158,75,.15)" : row.growth > 0 ? "rgba(52,179,126,.15)" : "rgba(232,93,93,.15)" } }],
   };
 }
 
@@ -201,5 +224,29 @@ function sparkOption(row: any) {
 .tr-quality-alert {
   margin: -4px 0 16px;
   border-radius: 12px;
+}
+.tr-evidence-strip {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:-4px 0 16px;
+}
+.tr-evidence-strip span {
+  padding:8px 12px;
+  border:1px solid var(--color-border);
+  border-radius:10px;
+  background:var(--color-bg-elevated);
+  color:var(--text-secondary);
+  font-size:12px;
+}
+.tr-evidence-strip strong {
+  margin-right:4px;
+  color:var(--color-brand);
+  font-family:var(--font-mono);
+}
+.trend-evidence-count {
+  color:var(--text-primary);
+  font-family:var(--font-mono);
+  font-weight:700;
 }
 </style>

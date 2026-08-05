@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useLearningStore } from '@/stores/learning'
-import { mockLearningPaths } from '@/mock/data/learning'
+import { useFavoritesStore } from '@/stores/favorites'
 import { learningApi } from '@/api/learning'
+import { assistantApi } from '@/api/assistant'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { LearningPath, LearningResource } from '@/types'
+import lujingIcon from '@/assets/icon/lujing.svg'
+import ziyuanIcon from '@/assets/icon/ziyuan.svg'
+import zixunIcon from '@/assets/icon/zixun.svg'
+import chajufenxiIcon from '@/assets/icon/chajufenxi.svg'
+import xuexiceshiIcon from '@/assets/icon/xuexiceshi.svg'
+import chongmingmingIcon from '@/assets/icon/chongmingming.svg'
 
 const learningStore = useLearningStore()
+const favoritesStore = useFavoritesStore()
 
 // ========== 路径展开 ==========
 const expandedId = ref<string | null>(null)
@@ -20,23 +28,65 @@ const dialogPathId = ref('')
 // ========== 对话框：学习测试 ==========
 const quizVisible = ref(false)
 const quizPathId = ref('')
+const quizStepTitle = ref('')
 const quizQuestions = ref<any[]>([])
 const quizAnswers = ref<Record<string, number>>({})
 const quizSubmitted = ref(false)
 const quizLoading = ref(false)
+const quizTargetStepIds = ref<string[]>([])
+const quizIsFinal = ref(false)
 
 // ========== AI 助手 ==========
-const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[] }[]>([])
+const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }[]>([])
 const chatInput = ref('')
 const chatLoading = ref(false)
 const chatContainerRef = ref<HTMLDivElement>()
+const flowState = ref<'idle' | 'awaiting_position' | 'awaiting_skill' | 'awaiting_scenario' | 'awaiting_target'>('idle')
+
+// ========== 面板拖拽分隔线 ==========
+const panelWidth = ref(380)
+const dragging = ref(false)
+const MIN_PANEL = 280
+const MAX_RATIO = 0.55
+
+const onDividerDown = (e: MouseEvent) => {
+  e.preventDefault()
+  dragging.value = true
+  document.addEventListener('mousemove', onDividerMove)
+  document.addEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+const onDividerMove = (e: MouseEvent) => {
+  if (!dragging.value) return
+  const container = (e.target as HTMLElement).closest('.learning-platform')
+  const rect = container?.getBoundingClientRect()
+  if (!rect) return
+  const w = e.clientX - rect.left
+  const maxW = rect.width * MAX_RATIO
+  panelWidth.value = Math.min(Math.max(w, MIN_PANEL), maxW)
+}
+
+const onDividerUp = () => {
+  dragging.value = false
+  document.removeEventListener('mousemove', onDividerMove)
+  document.removeEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onDividerMove)
+  document.removeEventListener('mouseup', onDividerUp)
+})
 
 // 预设快捷指令
 const presetCommands = [
-  { label: '生成学习路径', icon: '🎯', msg: '请根据 Java 开发工程师岗位，为我生成一份学习路径' },
-  { label: '推荐学习资源', icon: '📚', msg: '推荐 Spring Boot 和微服务的学习资源' },
-  { label: '学习路线咨询', icon: '🧭', msg: '我是一名后端开发，想转行 AI 智能体方向，应该怎么学？' },
-  { label: '技能差距分析', icon: '📊', msg: '分析我当前技能与目标岗位的差距' },
+  { label: '生成学习路径', icon: lujingIcon, msg: '请根据 Java 开发工程师岗位，为我生成一份学习路径' },
+  { label: '推荐学习资源', icon: ziyuanIcon, msg: '推荐 Spring Boot 和微服务的学习资源' },
+  { label: '学习路线咨询', icon: zixunIcon, msg: '我是一名后端开发，想转行 AI 智能体方向，应该怎么学？' },
+  { label: '技能差距分析', icon: chajufenxiIcon, msg: '分析我当前技能与目标岗位的差距' },
 ]
 
 // 资源类型图标映射
@@ -49,10 +99,11 @@ const resourceIcons: Record<string, string> = {
 }
 
 // ========== 初始化 ==========
-onMounted(() => {
+onMounted(async () => {
   if (learningStore.paths.length === 0) {
-    learningStore.paths = JSON.parse(JSON.stringify(mockLearningPaths))
+    await learningStore.fetchPaths()
   }
+  await favoritesStore.fetchAll()
 })
 
 // ========== 路径操作 ==========
@@ -95,14 +146,20 @@ const handleDeletePath = async (id: string, name: string) => {
 }
 
 // ========== 学习测试 ==========
-const openQuiz = async (path: LearningPath) => {
+const openQuiz = async (path: LearningPath, stepIds: string[], isFinal = false) => {
   quizPathId.value = path.id
+  quizTargetStepIds.value = stepIds
+  quizIsFinal.value = isFinal
+  const titles = isFinal
+    ? '综合测试'
+    : path.steps.filter(s => stepIds.includes(s.id)).map(s => s.title).join(' + ') || '当前步骤'
+  quizStepTitle.value = titles
   quizVisible.value = true
   quizSubmitted.value = false
   quizAnswers.value = {}
   quizLoading.value = true
   try {
-    const res: any = await learningApi.quiz({ pathId: path.id })
+    const res: any = await learningApi.quiz({ pathId: path.id, stepIds, questionCount: isFinal ? 5 : 3 })
     quizQuestions.value = res.data?.questions || []
   } catch {
     ElMessage.error('题目加载失败')
@@ -111,10 +168,38 @@ const openQuiz = async (path: LearningPath) => {
   }
 }
 
-const submitQuiz = () => {
+const submitQuiz = async () => {
   quizSubmitted.value = true
-  const correct = quizQuestions.value.filter((q: any, i: number) => quizAnswers.value[q.id] === q.correctAnswer).length
-  ElMessage.success(`测试完成：${correct} / ${quizQuestions.value.length} 正确`)
+  const correct = quizQuestions.value.filter((q: any) => quizAnswers.value[q.id] === q.correctAnswer).length
+  const total = quizQuestions.value.length
+  const passed = total > 0 && correct / total > 0.5
+  ElMessage[passed ? 'success' : 'warning'](
+    passed ? `测试通过：${correct} / ${total} 正确` : `测试未通过：${correct} / ${total} 正确（需正确率 > 50%）`
+  )
+
+  // 步骤测试：通过后标记 quizPassed 并持久化到后端
+  if (!quizIsFinal.value && passed) {
+    const path = learningStore.paths.find(p => p.id === quizPathId.value)
+    if (path) {
+      path.steps.forEach(s => {
+        if (quizTargetStepIds.value.includes(s.id)) s.quizPassed = true
+      })
+      try {
+        await learningApi.update(quizPathId.value, { steps: path.steps })
+      } catch {
+        ElMessage.error('状态保存失败')
+      }
+    }
+  }
+}
+
+const isStepUnlocked = (path: LearningPath, idx: number): boolean => {
+  if (idx === 0) return true
+  return path.steps[idx - 1]?.quizPassed === true
+}
+
+const allStepsPassed = (path: LearningPath): boolean => {
+  return path.steps.length > 0 && path.steps.every(s => s.quizPassed)
 }
 
 const getQuizOptionIcon = (qIdx: number, optIdx: number) => {
@@ -125,13 +210,17 @@ const getQuizOptionIcon = (qIdx: number, optIdx: number) => {
   return ''
 }
 
-// ========== AI 聊天 ==========
+// ========== AI 聊天（含学习路径生成流程）==========
 const scrollChatToBottom = () => {
   nextTick(() => {
     if (chatContainerRef.value) {
       chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
     }
   })
+}
+
+const addAssistantMsg = (content: string, extras?: { concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }) => {
+  chatMessages.value.push({ role: 'assistant', content, ...extras })
 }
 
 const sendMessage = async () => {
@@ -141,7 +230,97 @@ const sendMessage = async () => {
   chatMessages.value.push({ role: 'user', content: msg })
   chatLoading.value = true
   scrollChatToBottom()
-  try {
+
+  // ── Flow: user answered the clarifying question ──
+  const currentFlow = flowState.value
+  flowState.value = 'idle'
+
+  if (currentFlow === 'awaiting_position') {
+    const positionName = msg
+
+    // Show "generating" message
+    addAssistantMsg('正在联网搜索「' + positionName + '」的最新技能要求并生成学习路径，请稍候…（约15-30秒）')
+    scrollChatToBottom()
+
+    try {
+      const res: any = await assistantApi.generateLearningPath(positionName)
+      const data = res.data
+      if (!data || !data.steps || data.steps.length === 0) {
+        throw new Error('未生成有效路径')
+      }
+
+      // Build detailed step display
+      let reply = '## ' + data.pathName + '\n\n'
+      reply += '**目标岗位**：' + data.positionName + '\n'
+      reply += '**总时长**：' + data.totalDuration + '\n'
+      reply += '**信息来源**：' + data.sourceNote
+      if (data.searchResultsCount) {
+        reply += '（检索到 ' + data.searchResultsCount + ' 条相关信息）'
+      }
+      reply += '\n\n---\n\n'
+
+      for (let i = 0; i < data.steps.length; i++) {
+        const s = data.steps[i]
+        reply += '### ' + (i + 1) + '. ' + s.title + '（' + s.duration + '）\n'
+        reply += s.description + '\n\n'
+        if (s.resources && s.resources.length > 0) {
+          reply += '推荐资源：\n'
+          for (const r of s.resources) {
+            reply += '- ' + (resourceIcons[r.type] || '📌') + ' **' + r.title + '** @' + r.platform + '\n'
+          }
+          reply += '\n'
+        }
+      }
+
+      chatLoading.value = false
+      addAssistantMsg(reply, {
+        followUps: ['其他岗位推荐', '优化这个学习路径', '生成测试题'],
+        isPath: true,
+      })
+      scrollChatToBottom()
+
+      // Add to learning paths store (right panel)
+      const newPath: any = {
+        id: 'lp-gen-' + Date.now(),
+        name: data.pathName,
+        positionId: '',
+        positionName: data.positionName,
+        steps: data.steps.map((s: any, idx: number) => ({
+          id: 'step-gen-' + idx + '-' + Date.now(),
+          order: idx + 1,
+          title: s.title,
+          description: s.description,
+          duration: s.duration,
+          resources: (s.resources || []).map((r: any, ri: number) => ({
+            id: 'res-gen-' + idx + '-' + ri,
+            title: r.title,
+            type: r.type || 'course',
+            url: '',
+            platform: r.platform || '',
+          })),
+          completed: false,
+        })),
+        totalDuration: data.totalDuration,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      learningStore.paths.unshift(newPath)
+      nextTick(() => { expandedId.value = newPath.id })
+      ElMessage.success('学习路径已生成并添加到列表')
+      return
+    } catch (e: any) {
+      chatLoading.value = false
+      const errMsg = e?.response?.data?.detail?.message || e?.message || '生成失败'
+      addAssistantMsg('抱歉，生成学习路径时出错：' + errMsg + '\n\n请重试或换个岗位名称。', {
+        followUps: ['重新生成', '换个岗位'],
+      })
+      scrollChatToBottom()
+      return
+    }
+  }
+
+  	  // ── Normal AI chat (all flows reach here) ──
+	try {
     const res: any = await learningApi.chat({ message: msg })
     const data = res.data
     chatMessages.value.push({
@@ -160,13 +339,94 @@ const sendMessage = async () => {
 }
 
 const onPresetClick = (msg: string) => {
+  if (chatLoading.value) return
+
+  if (msg === '__gen_path__') {
+    flowState.value = 'awaiting_position'
+    chatMessages.value.push({ role: 'user', content: '生成学习路径' })
+    addAssistantMsg('好的！请问您想要生成**哪个岗位**的学习路径呢？\n\n例如：Java开发工程师、AI智能体开发、前端工程师、大数据工程师…')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__rec_resource__') {
+    flowState.value = 'awaiting_skill'
+    chatMessages.value.push({ role: 'user', content: '推荐学习资源' })
+    addAssistantMsg('好的！请问您想学习**哪个技能或技术方向**的资源？\n\n例如：Spring Boot、Python、Docker、机器学习…')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__career_advice__') {
+    flowState.value = 'awaiting_scenario'
+    chatMessages.value.push({ role: 'user', content: '学习路线咨询' })
+    addAssistantMsg('好的！请简单描述一下您的情况和问题，例如：\n\n- "我是一名后端开发，想转行 AI 方向，应该怎么学？"\n- "我是零基础，想学前端开发，从哪开始？"\n- "工作3年了，想提升系统架构能力，有什么路线？"')
+    scrollChatToBottom()
+    return
+  }
+
+  if (msg === '__gap_analysis__') {
+    flowState.value = 'awaiting_target'
+    chatMessages.value.push({ role: 'user', content: '技能差距分析' })
+    addAssistantMsg('好的！请问您的**目标岗位**是什么？我来对比您当前的技能进行分析。\n\n例如：Java后端工程师、AI算法工程师、全栈开发…')
+    scrollChatToBottom()
+    return
+  }
+
+  // Fallback: normal chat
   chatInput.value = msg
   sendMessage()
 }
 
 const onFollowUpClick = (msg: string) => {
+  if (chatLoading.value) return
   chatInput.value = msg
   sendMessage()
+}
+
+// 收藏学习资源
+const collectResource = async (res: LearningResource, stepTitle: string) => {
+  const itemId = `resource-${res.id}`
+  if (favoritesStore.isFavorited('learning_resource', itemId)) {
+    const fav = favoritesStore.allFavorites.find((f: any) => f.item_type === 'learning_resource' && f.item_id === itemId)
+    if (fav) { await favoritesStore.remove(fav.id); ElMessage.success('已取消收藏') }
+  } else {
+    await favoritesStore.add({
+      item_type: 'learning_resource',
+      item_id: itemId,
+      title: res.title,
+      summary: `${stepTitle} · ${res.type}`,
+      metadata: { resource_id: res.id, title: res.title, type: res.type, url: res.url, platform: res.platform },
+      tags: [res.type, res.platform],
+    })
+    ElMessage.success('已收藏学习资料')
+  }
+}
+
+// 加入错题本
+const addQuizError = async (q: any) => {
+  const userAnswer = quizAnswers.value[q.id]
+  if (userAnswer === undefined) return
+  const itemId = `quiz-${q.id}`
+  if (favoritesStore.isFavorited('quiz_error', itemId)) {
+    ElMessage.info('该题已在错题本中')
+    return
+  }
+  await favoritesStore.add({
+    item_type: 'quiz_error',
+    item_id: itemId,
+    title: q.question?.slice(0, 50) || '错题',
+    summary: `正确答案: ${q.options[q.correctAnswer]}`,
+    metadata: {
+      quiz_id: quizPathId.value,
+      question: q.question,
+      user_answer: q.options[userAnswer],
+      correct_answer: q.options[q.correctAnswer],
+      explanation: q.explanation,
+    },
+    tags: ['quiz'],
+  })
+  ElMessage.success('已加入错题本')
 }
 
 /** 简单 Markdown 渲染：处理 **粗体**、- 列表、> 引用、### 标题 */
@@ -184,7 +444,7 @@ const renderMarkdown = (text: string): string => {
 <template>
   <div class="learning-platform">
     <!-- ========== 左侧 AI 助手面板 ========== -->
-    <aside class="ai-panel">
+    <aside class="ai-panel" :style="{ width: panelWidth + 'px', minWidth: 'unset' }">
       <div class="ai-panel-header">
         <div class="ai-title-row">
           <span class="ai-icon">🤖</span>
@@ -204,7 +464,7 @@ const renderMarkdown = (text: string): string => {
             :disabled="chatLoading"
             @click="onPresetClick(cmd.msg)"
           >
-            <span class="preset-icon">{{ cmd.icon }}</span>
+            <img class="preset-icon" :src="cmd.icon" />
             <span>{{ cmd.label }}</span>
           </button>
         </div>
@@ -278,6 +538,9 @@ const renderMarkdown = (text: string): string => {
       </div>
     </aside>
 
+    <!-- 拖拽分隔线 -->
+    <div class="panel-divider" @mousedown="onDividerDown"></div>
+
     <!-- ========== 右侧主区域 ========== -->
     <main class="learning-main">
       <div class="page-head">
@@ -341,7 +604,7 @@ const renderMarkdown = (text: string): string => {
             <!-- 步骤详情时间线 -->
             <div class="timeline">
               <div
-                v-for="step in path.steps"
+                v-for="(step, idx) in path.steps"
                 :key="step.id"
                 class="tl-item"
                 :class="{ done: step.completed }"
@@ -353,6 +616,14 @@ const renderMarkdown = (text: string): string => {
                   <div class="tl-header">
                     <span class="tl-title">{{ step.title }}</span>
                     <span class="tl-duration">{{ step.duration }}</span>
+                    <!-- 步骤测试按钮：未解锁 / 已通过 / 可测试 -->
+                    <button v-if="!isStepUnlocked(path, idx)" class="step-quiz-btn locked" disabled>🔒 未解锁</button>
+                    <button v-else-if="step.quizPassed" class="step-quiz-btn passed" @click.stop="openQuiz(path, [step.id])">
+                      <img class="quiz-icon" :src="xuexiceshiIcon" /> 已通过
+                    </button>
+                    <button v-else class="step-quiz-btn" @click.stop="openQuiz(path, [step.id])">
+                      <img class="quiz-icon" :src="xuexiceshiIcon" /> 测试
+                    </button>
                   </div>
                   <p class="tl-desc">{{ step.description }}</p>
                   <!-- 步骤资源 -->
@@ -364,6 +635,14 @@ const renderMarkdown = (text: string): string => {
                       :title="`${res.platform} · ${res.title}`"
                     >
                       {{ resourceIcons[res.type] || '📌' }} {{ res.title }}
+                      <el-button
+                        text
+                        size="small"
+                        :type="favoritesStore.isFavorited('learning_resource', 'resource-' + res.id) ? 'warning' : 'default'"
+                        :icon="favoritesStore.isFavorited('learning_resource', 'resource-' + res.id) ? 'StarFilled' : 'Star'"
+                        @click.stop="collectResource(res, step.title)"
+                        style="margin-left: 4px; padding: 0 4px; font-size: 12px;"
+                      />
                     </span>
                   </div>
                 </div>
@@ -372,11 +651,11 @@ const renderMarkdown = (text: string): string => {
 
             <!-- 操作按钮 -->
             <div class="path-actions">
-              <button class="act-btn" @click.stop="openQuiz(path)">
-                📝 学习测试
+              <button v-if="allStepsPassed(path)" class="act-btn final-test" @click.stop="openQuiz(path, path.steps.map(s => s.id), true)">
+                <img class="btn-icon" :src="xuexiceshiIcon" /> 综合测试
               </button>
               <button class="act-btn" @click.stop="openRenameDialog(path)">
-                ✏️ 重命名
+                <img class="btn-icon" :src="chongmingmingIcon" /> 重命名
               </button>
               <button class="act-btn danger" @click.stop="handleDeletePath(path.id, path.name)">
                 🗑️ 删除
@@ -410,10 +689,15 @@ const renderMarkdown = (text: string): string => {
     <!-- ========== 学习测试对话框 ========== -->
     <el-dialog
       v-model="quizVisible"
-      title="📝 学习测试"
       width="640px"
       :close-on-click-modal="false"
     >
+      <template #header>
+        <div class="quiz-dialog-title">
+          <img :src="xuexiceshiIcon" class="quiz-title-icon" />
+          <span>学习测试：{{ quizStepTitle }}</span>
+        </div>
+      </template>
       <div v-if="quizLoading" class="quiz-loading">
         <p>正在生成题目…</p>
       </div>
@@ -449,6 +733,14 @@ const renderMarkdown = (text: string): string => {
           </div>
           <div v-if="quizSubmitted" class="quiz-explanation">
             💡 {{ q.explanation }}
+            <el-button
+              text size="small" type="danger"
+              :disabled="favoritesStore.isFavorited('quiz_error', 'quiz-' + q.id)"
+              @click="addQuizError(q)"
+              style="margin-top: 6px;"
+            >
+              {{ favoritesStore.isFavorited('quiz_error', 'quiz-' + q.id) ? '已加入错题本' : '+ 加入错题本' }}
+            </el-button>
           </div>
         </div>
       </div>
@@ -479,13 +771,31 @@ const renderMarkdown = (text: string): string => {
 /* ========== AI 面板 ========== */
 .ai-panel {
   width: 380px;
-  min-width: 340px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 面板拖拽分隔线 */
+.panel-divider {
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border-radius: 3px;
+  transition: background .2s;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.panel-divider:hover,
+.panel-divider:active {
+  background: var(--brand);
+  opacity: 0.5;
 }
 
 .ai-panel-header {
@@ -557,7 +867,7 @@ const renderMarkdown = (text: string): string => {
 }
 
 .preset-chip:disabled { opacity: .5; cursor: not-allowed; }
-.preset-icon { font-size: 13px; }
+.preset-icon { width: 14px; height: 14px; }
 
 /* 聊天区域 */
 .chat-messages {
@@ -1051,6 +1361,74 @@ const renderMarkdown = (text: string): string => {
   border-radius: 10px;
 }
 
+.step-quiz-btn {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background: #fff;
+  color: var(--brand);
+  cursor: pointer;
+  transition: all .15s;
+  margin-left: auto;
+}
+
+.step-quiz-btn:hover {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.step-quiz-btn.locked {
+  color: var(--weak);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.step-quiz-btn.passed {
+  color: #059669;
+  border-color: #34d399;
+  background: #f0fdf4;
+}
+
+.step-quiz-btn.passed:hover {
+  background: #34d399;
+  color: #fff;
+  border-color: #34d399;
+}
+
+.quiz-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+.quiz-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quiz-title-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.act-btn.final-test {
+  color: #059669;
+  border-color: #34d399;
+  background: #f0fdf4;
+}
+
+.act-btn.final-test:hover {
+  background: #34d399;
+  color: #fff;
+  border-color: #34d399;
+}
+
 .tl-desc {
   font-size: 13px;
   color: var(--muted);
@@ -1103,6 +1481,8 @@ const renderMarkdown = (text: string): string => {
   border-color: #ef4444;
   color: #ef4444;
 }
+
+.btn-icon { width: 14px; height: 14px; vertical-align: middle; margin-right: 2px; }
 
 /* ========== 测试对话框 ========== */
 .quiz-loading, .quiz-empty {

@@ -41,6 +41,17 @@ async def batch_match(
     return ApiResponse(data=results)
 
 
+@router.post("/auto/{resume_id}", response_model=ApiResponse[list[MatchResultResponse]])
+async def auto_match(
+    resume_id: int,
+    user: dict = Depends(get_current_user),
+    service: MatchService = Depends(get_match_service),
+):
+    """[Agent 3 智能匹配] 自动将简历与系统中所有岗位逐一匹配，按综合分数降序返回诊断报告列表"""
+    results = await service.auto_match(user["user_id"], resume_id)
+    return ApiResponse(data=results)
+
+
 @router.get("/result/{resume_id}/{position_id}", response_model=ApiResponse[MatchResultResponse])
 async def get_match_result(
     resume_id: int,

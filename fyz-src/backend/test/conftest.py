@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import tempfile
 
 os.environ["TESTING"] = "true"
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
@@ -11,6 +12,10 @@ os.environ.setdefault("INITIAL_ADMIN_ENABLED", "true")
 os.environ.setdefault("INITIAL_ADMIN_PASSWORD", "test-only-admin-password")
 # 测试必须不调用外部模型服务，也不能消耗开发者本地 .env 中的真实额度。
 os.environ["DEEPSEEK_API_KEY"] = ""
+# Keep tests isolated from the repository's private runtime storage and its
+# machine-specific ACLs. Resume API tests write only to this disposable root.
+_TEST_STORAGE = tempfile.TemporaryDirectory(prefix="jiebang-test-storage-")
+os.environ["LOCAL_STORAGE_PATH"] = _TEST_STORAGE.name
 
 import pytest
 from httpx import ASGITransport, AsyncClient

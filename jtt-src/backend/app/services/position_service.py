@@ -23,8 +23,14 @@ class PositionService:
             page=params.get("page", 1),
             page_size=params.get("page_size", 20),
         )
+        # 批量加载所有岗位的关联数据
+        pos_ids = [p.id for p in positions]
+        skills_map = await self.repo.get_skills_for_positions(pos_ids)
+        changes_map = await self.repo.get_skill_changes_for_positions(pos_ids)
+
         return {
-            "list": [self._position_to_dict(p) for p in positions],
+            "list": [self._position_to_dict(p, skills_map.get(p.id, []), changes_map.get(p.id, []))
+                     for p in positions],
             "total": total,
             "page": params.get("page", 1),
             "page_size": params.get("page_size", 20),
@@ -35,14 +41,12 @@ class PositionService:
         position = await self.repo.get_by_id(position_id)
         if not position:
             raise ResourceNotFoundError("岗位不存在")
-        return self._position_to_dict(position)
+        skills_map = await self.repo.get_skills_for_positions([position_id])
+        changes_map = await self.repo.get_skill_changes_for_positions([position_id])
+        return self._position_to_dict(position, skills_map.get(position_id, []), changes_map.get(position_id, []))
 
     async def get_graph_data(self, root_tech: str | None = None) -> dict:
-        """
-        获取知识图谱数据 —— 优先从 Neo4j 查询，测试模式返回示例结构。
-        返回五级节点和边的数据供前端渲染。
-        """
-        # 尝试从 Neo4j 查询图谱数据
+        """知识图谱数据，优先从 Neo4j 查询，否则返回示例数据"""
         try:
             nodes = run_read(
                 "MATCH (n) WHERE ($root IS NULL OR n.rootId = $root) "
@@ -57,29 +61,34 @@ class PositionService:
             if nodes:
                 return {"nodes": nodes, "edges": edges}
         except Exception:
-            pass  # Neo4j 不可用时降级为示例数据
-
-        # 降级：返回示例图谱数据（测试/开发模式）
+            pass
         return {"nodes": self._sample_nodes(root_tech), "edges": self._sample_edges(root_tech)}
 
-    def _position_to_dict(self, p) -> dict:
+    def _position_to_dict(self, p, skills: list | None = None, changes: list | None = None) -> dict:
         """将 JobPosition 模型转为 API 返回格式"""
+        if skills is None:
+            skills = []
+        required = [sk for sk in skills if sk.get("kind") == "required"]
+        preferred = [sk for sk in skills if sk.get("kind") == "preferred"]
+        if changes is None:
+            changes = []
+
         return {
             "id": p.id, "name": p.name, "category": p.category,
             "aliases": p.aliases or [], "summary": p.summary or "",
             "responsibilities": p.responsibilities or [],
-            "required_skills": [{"id": str(s.id), "name": s.name, "level": s.level, "category": s.category}
-                                for s in (p.required_skills or [])],
-            "preferred_skills": [{"id": str(s.id), "name": s.name, "level": s.level, "category": s.category}
-                                 for s in (p.preferred_skills or [])],
+            "required_skills": [{"id": str(s["id"]), "name": s["name"], "level": s["level"], "category": s["category"]}
+                                for s in required],
+            "preferred_skills": [{"id": str(s["id"]), "name": s["name"], "level": s["level"], "category": s["category"]}
+                                 for s in preferred],
             "industry_scenarios": p.industry_scenarios or [],
             "tech_stack": p.tech_stack or [],
             "career_level": p.career_level or "mid",
             "salary_range": p.salary_range,
-            "skill_changes": [{"id": str(sc.id), "skill_name": sc.skill_name,
-                               "type": sc.change_type, "date": sc.change_date,
-                               "description": sc.description, "source": sc.source}
-                              for sc in (p.skill_changes or [])],
+            "skill_changes": [{"id": str(sc["id"]), "skill_name": sc["skill_name"],
+                               "change_type": sc["change_type"], "date": sc["change_date"],
+                               "description": sc["description"], "source": sc["source"]}
+                              for sc in changes],
             "created_at": str(p.created_at) if p.created_at else None,
             "updated_at": str(p.updated_at) if p.updated_at else None,
         }

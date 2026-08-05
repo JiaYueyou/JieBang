@@ -50,6 +50,16 @@ async def get_talent(resume_id: int, principal: TokenPrincipal = Depends(get_cur
     return ApiResponse(data=await MatchingService(db).get_talent(resume_id, principal.user_id))
 
 
+@router.post("/matches/recalculate", response_model=ApiResponse[dict])
+async def recalculate_matches(
+    principal: TokenPrincipal = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return ApiResponse(
+        data=await MatchingService(db).recalculate_matches(principal.user_id)
+    )
+
+
 @router.post("/matches/{match_id}/explanation", response_model=ApiResponse[MatchExplanationResponse])
 async def explain_match(match_id: int, principal: TokenPrincipal = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return ApiResponse(data=await MatchingService(db).explain(match_id, principal.user_id))

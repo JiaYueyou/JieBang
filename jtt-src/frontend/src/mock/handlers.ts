@@ -5,6 +5,8 @@ import { mockResumes } from './data/resume'
 import { mockMatchResults, mockHistoryMatches } from './data/match'
 import { mockTailorSuggestions, generateOptimizedPhrases } from './data/tailor'
 import { mockLearningPaths } from './data/learning'
+import { mockNotes } from './data/notes'
+import { mockCareerAssessments, mockCareerPlans } from './data/career'
 
 const BASE = '/api'
 
@@ -234,6 +236,38 @@ export const handlers = [
   http.get(`${BASE}/match/history`, () =>
     HttpResponse.json({ code: 200, message: 'ok', data: mockHistoryMatches })),
 
+  http.post(`${BASE}/match/auto`, async ({ request }) => {
+    await delay(1200)
+    const body = await request.json() as any
+    const resumeId = body.resumeId
+    const allPositions = mockPositions
+    const results = allPositions.map((pos) => {
+      const key = `${resumeId}_${pos.id}`
+      const existing = mockMatchResults[key]
+      if (existing) return existing
+      const score = Math.floor(Math.random() * 40) + 40
+      return {
+        id: `m-auto-${resumeId}-${pos.id}`,
+        resumeId,
+        positionId: pos.id,
+        positionName: pos.name,
+        resumeName: '我的简历',
+        totalScore: score,
+        dimensions: [
+          { name: '技能匹配', score: Math.floor(score * 0.9), weight: 0.4, details: '' },
+          { name: '经验匹配', score: Math.floor(score * 0.8), weight: 0.3, details: '' },
+          { name: '学历匹配', score: Math.min(score + 10, 100), weight: 0.15, details: '' },
+          { name: '综合素质', score: Math.floor(score * 0.7), weight: 0.15, details: '' },
+        ],
+        gapAnalysis: { missingSkills: [], weakSkills: [], matchSkills: [] },
+        suggestions: [],
+        matchDate: new Date().toISOString(),
+      }
+    })
+    results.sort((a, b) => b.totalScore - a.totalScore)
+    return HttpResponse.json({ code: 200, message: 'ok', data: results })
+  }),
+
   // Tailor
   http.get(`${BASE}/tailor/suggestions/:resumeId/:positionId`, async () => {
     await delay(800)
@@ -254,12 +288,7 @@ export const handlers = [
     return HttpResponse.json({ code: 200, message: 'ok', data: { newResumeId: `r-${Date.now()}` } })
   }),
 
-  http.post(`${BASE}/tailor/optimize-phrase`, async ({ request }) => {
-    await delay(600)
-    const body = await request.json() as any
-    const suggestions = generateOptimizedPhrases(body.text, body.style)
-    return HttpResponse.json({ code: 200, message: 'ok', data: { suggestions } })
-  }),
+  // ── /api/learning/assistant/tailor/optimize-phrase handled by AI service (port 8001) ──
 
   // Learning Paths
   http.get(`${BASE}/learning/paths`, async () => {
@@ -283,88 +312,163 @@ export const handlers = [
     HttpResponse.json({ code: 200, message: 'ok', data: null })),
 
   // AI 学习助手
-  http.post(`${BASE}/learning/assistant/chat`, async ({ request }) => {
-    await delay(1200)
-    const body = await request.json() as any
-    const msg = body.message || ''
-    // 模拟 AI 回复
-    let reply = ''
-    if (msg.includes('Java') || msg.includes('java')) {
-      reply = `## Java 开发学习建议\n\n要成为一名合格的 Java 开发工程师，建议按以下路径学习：\n\n1. **Java 基础**（2-3周）：掌握面向对象编程、集合框架、IO流\n2. **数据库**（2周）：MySQL 增删改查、索引优化、事务管理\n3. **主流框架**（3-4周）：Spring Boot、MyBatis、Spring Cloud 微服务\n4. **中间件**（2周）：Redis 缓存、Kafka/RabbitMQ 消息队列\n5. **项目实战**（3-4周）：搭建一个完整的电商/企业应用后台\n\n> 建议配合实际项目练习，只看不练效果很差。`
-    } else if (msg.includes('Agent') || msg.includes('agent') || msg.includes('智能体')) {
-      reply = `## 什么是 AI Agent（智能体）？\n\n**Agent** 是一种能够自主感知环境、做出决策并执行行动的 AI 系统。\n\n与传统程序的区别：\n- 传统程序：按固定规则执行\n- Agent：自主推理 + 调用工具 + 记忆上下文\n\n**核心组成**：\n1. **LLM 大脑**：负责任务理解和规划\n2. **工具调用**：调用 API、数据库、代码执行等\n3. **记忆系统**：短期记忆（上下文）+ 长期记忆（向量库）\n\n**主流框架**：LangChain、AutoGPT、CrewAI\n\n想深入学习 Agent 开发，可以从 LangChain 入手。`
-    } else if (msg.includes('学习') || msg.includes('转行') || msg.includes('怎么学')) {
-      reply = `## 个性化学习建议\n\n根据你的目标岗位和当前简历，建议优先补齐以下技能：\n\n1. **微服务架构** — 这是你当前最大的短板，建议先学 Spring Cloud\n2. **缓存技术** — Redis 是面试高频考点\n3. **容器化** — Docker + K8s 是现代开发的标配\n\n预估学习周期：6-8 周\n\n需要我生成详细的学习路径吗？`
-    } else {
-      reply = `感谢你的提问！关于「${msg.slice(0, 20)}」这个问题：\n\n根据知识图谱中的信息，这个问题涉及到的技能领域包括多个方面。建议你：\n\n1. 明确你的目标岗位方向\n2. 查看该岗位的技能要求\n3. 对照自己的技能差距，制定学习计划\n\n你可以问我更具体的问题，比如：\n- "如何学习 Spring Boot？"\n- "转行 Java 开发需要学什么？"\n- "推荐 Docker 学习资源"`
-    }
+  // ── /api/learning/assistant/chat is now handled by AI service (port 8001) ──
 
-    // 模拟关联概念
-    const relatedConcepts = [
-      { name: 'Java', nodeId: 'root-java', relation: '核心技术' },
-      { name: 'Spring Boot', nodeId: 'kp-springboot', relation: '核心框架' },
-      { name: '微服务架构', nodeId: 'mod-microservice', relation: '相关技能' },
-    ]
+  // ── /api/learning/assistant/generate-path handled by AI service (port 8001) ──
 
-    const suggestedResources = [
-      { id: 'res-1', title: 'Spring Boot 实战课程', type: 'course', url: '', platform: '慕课网' },
-      { id: 'res-2', title: 'Java 核心编程', type: 'book', url: '', platform: '京东' },
-    ]
+  // ── /api/learning/assistant/recommend-resources handled by AI service (port 8001) ──
 
-    const followUpQuestions = ['学习周期大概多久？', '有哪些推荐的学习资源？', '这个技术的前景如何？']
+  // ── /api/assistant/chat is now handled by the standalone AI service (port 8001) ──
 
-    return HttpResponse.json({
-      code: 200, message: 'ok',
-      data: { reply, relatedConcepts, suggestedResources, followUpQuestions },
+  // Match auto-detect
+  http.post(`${BASE}/match/auto-detect`, async ({ request }) => {
+    await delay(800)
+    const body = await request.json() as { resumeId: string }
+    // 返回该简历对应所有已知匹配结果，未预计算的随机低分
+    const allPositions = mockPositions.map((pos) => {
+      const key = `${body.resumeId}_${pos.id}`
+      return mockMatchResults[key] || {
+        id: `m-auto-${Date.now()}-${pos.id}`,
+        resumeId: body.resumeId,
+        positionId: pos.id,
+        positionName: pos.name,
+        resumeName: mockResumes.find((r) => r.id === body.resumeId)?.name || '未知简历',
+        totalScore: Math.floor(Math.random() * 40) + 45,
+        dimensions: [
+          { name: '技能匹配', score: 65, weight: 0.4, details: '' },
+          { name: '经验匹配', score: 60, weight: 0.3, details: '' },
+          { name: '学历匹配', score: 75, weight: 0.15, details: '' },
+          { name: '综合素质', score: 55, weight: 0.15, details: '' },
+        ],
+        gapAnalysis: { missingSkills: [], weakSkills: [], matchSkills: [] },
+        suggestions: [],
+        matchDate: new Date().toISOString(),
+      }
     })
+    return HttpResponse.json({ code: 200, message: 'ok', data: allPositions })
   }),
 
-  http.post(`${BASE}/learning/assistant/generate-path`, async ({ request }) => {
-    await delay(2000)
-    const body = await request.json() as any
-    const path = {
-      id: `lp-ai-${Date.now()}`,
-      name: `${body.positionId === 'np-1' ? 'AI智能体开发' : 'Java工程师'}学习路径（AI生成）`,
-      positionId: body.positionId || 'ep-1',
-      positionName: 'Java开发工程师',
-      steps: [
-        { id: 'step-1', order: 1, title: 'Java 核心基础', description: '掌握面向对象、集合、并发编程', duration: '2-3周', resources: [
-          { id: 'r1', title: 'Java编程思想', type: 'book', url: '', platform: '京东' },
-          { id: 'r2', title: 'Java入门到精通', type: 'video', url: '', platform: 'B站' },
-        ], completed: false },
-        { id: 'step-2', order: 2, title: 'Spring Boot 框架', description: '学习依赖注入、自动配置、Web MVC', duration: '2-3周', resources: [
-          { id: 'r3', title: 'Spring Boot实战', type: 'course', url: '', platform: '慕课网' },
-        ], completed: false },
-        { id: 'step-3', order: 3, title: '数据库与中间件', description: 'MySQL优化、Redis缓存、消息队列', duration: '3-4周', resources: [
-          { id: 'r4', title: '高性能MySQL', type: 'book', url: '', platform: '当当' },
-          { id: 'r5', title: 'Redis实战', type: 'course', url: '', platform: 'Coursera' },
-        ], completed: false },
-        { id: 'step-4', order: 4, title: '微服务与分布式', description: 'Spring Cloud、Docker、K8s', duration: '3-4周', resources: [
-          { id: 'r6', title: '微服务架构设计', type: 'video', url: '', platform: 'YouTube' },
-        ], completed: false },
-        { id: 'step-5', order: 5, title: '项目实战', description: '完成一个电商后台项目，整合所有技能', duration: '3-4周', resources: [
-          { id: 'r7', title: '电商项目实战', type: 'project', url: '', platform: 'GitHub' },
-        ], completed: false },
-      ],
-      totalDuration: '13-18周',
+  // Learning: generate path from skill gaps
+  http.post(`${BASE}/learning/generate-from-gaps`, async ({ request }) => {
+    await delay(1500)
+    const body = await request.json() as { resumeId: string; positionId: string }
+    const position = mockPositions.find((p) => p.id === body.positionId)
+    const gapPath = {
+      id: `lp-gap-${Date.now()}`,
+      name: `${position?.name || '目标岗位'} 技能补齐路径`,
+      positionId: body.positionId,
+      positionName: position?.name || '',
+      steps: (position?.requiredSkills || []).map((skill, idx) => ({
+        id: `gap-step-${idx + 1}`,
+        order: idx + 1,
+        title: `学习 ${skill.name}`,
+        description: `掌握 ${skill.name}（${skill.category}）的核心知识和实践技能`,
+        duration: idx < 2 ? '1-2周' : '2-3周',
+        resources: [
+          { id: `gr-${idx}-1`, title: `${skill.name} 入门实战`, type: 'course' as const, url: '', platform: '慕课网' },
+          { id: `gr-${idx}-2`, title: `${skill.name} 官方文档`, type: 'article' as const, url: '', platform: '官网' },
+        ],
+        completed: false,
+      })),
+      totalDuration: `${(position?.requiredSkills?.length || 3) * 2}周`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    return HttpResponse.json({ code: 200, message: 'ok', data: path })
+    return HttpResponse.json({ code: 200, message: 'ok', data: gapPath })
   }),
 
-  http.post(`${BASE}/learning/assistant/recommend-resources`, async ({ request }) => {
-    await delay(800)
+  // Favorites
+  http.post(`${BASE}/favorites/position`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  http.get(`${BASE}/favorites/learning-paths`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: mockLearningPaths.map((p) => p.id) })
+  }),
+
+  http.post(`${BASE}/favorites/learning-path`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  http.get(`${BASE}/favorites/notes`, async () => {
+    await delay(200)
+    return HttpResponse.json({ code: 200, message: 'ok', data: mockNotes })
+  }),
+
+  http.post(`${BASE}/favorites/notes`, async ({ request }) => {
+    await delay(300)
     const body = await request.json() as any
-    const skills: Record<string, any[]> = {}
-    for (const skill of (body.skill_names || ['Java'])) {
-      skills[skill] = [
-        { id: `r-${Date.now()}-1`, title: `${skill} 实战课程`, type: 'course', url: '', platform: '慕课网' },
-        { id: `r-${Date.now()}-2`, title: `${skill} 权威指南`, type: 'book', url: '', platform: '京东' },
-        { id: `r-${Date.now()}-3`, title: `${skill} 项目实战`, type: 'project', url: '', platform: 'GitHub' },
-      ]
+    const note = {
+      id: `n-${Date.now()}`,
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
-    return HttpResponse.json({ code: 200, message: 'ok', data: { skills } })
+    mockNotes.unshift(note)
+    return HttpResponse.json({ code: 200, message: 'ok', data: note })
+  }),
+
+  http.put(`${BASE}/favorites/notes/:id`, async ({ params, request }) => {
+    await delay(300)
+    const body = await request.json() as any
+    const idx = mockNotes.findIndex((n) => n.id === params.id)
+    if (idx >= 0) {
+      mockNotes[idx] = { ...mockNotes[idx], ...body, updatedAt: new Date().toISOString() }
+      return HttpResponse.json({ code: 200, message: 'ok', data: mockNotes[idx] })
+    }
+    return HttpResponse.json({ code: 404, message: 'not found', data: null }, { status: 404 })
+  }),
+
+  http.delete(`${BASE}/favorites/notes/:id`, async ({ params }) => {
+    await delay(200)
+    const idx = mockNotes.findIndex((n) => n.id === params.id)
+    if (idx >= 0) mockNotes.splice(idx, 1)
+    return HttpResponse.json({ code: 200, message: 'ok', data: null })
+  }),
+
+  // Career
+  http.get(`${BASE}/career/plan`, async () => {
+    await delay(200)
+    const plan = mockCareerPlans[0] || null
+    return HttpResponse.json({ code: 200, message: 'ok', data: plan })
+  }),
+
+  http.post(`${BASE}/career/plan`, async ({ request }) => {
+    await delay(300)
+    const body = await request.json() as any
+    const plan = {
+      id: `cp-${Date.now()}`,
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    if (mockCareerPlans.length > 0) {
+      mockCareerPlans[0] = plan
+    } else {
+      mockCareerPlans.push(plan)
+    }
+    return HttpResponse.json({ code: 200, message: 'ok', data: plan })
+  }),
+
+  http.post(`${BASE}/career/assess`, async ({ request }) => {
+    await delay(1500)
+    const body = await request.json() as { resumeId: string; targetPositionId: string; budget: { weeklyHours: number; totalWeeks: number } }
+    const key = `${body.resumeId}_${body.targetPositionId}`
+    const assessment =
+      mockCareerAssessments[key] || {
+        currentMatchDegree: Math.floor(Math.random() * 30) + 45,
+        transferableSkills: [],
+        missingSkills: mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills || [],
+        recommendationReasons: ['该岗位与你的技能有一定关联', '行业发展前景良好'],
+        advantages: ['具备编程基础能力'],
+        risks: ['需要系统学习新领域知识', '学习成本较高'],
+        learningTimeline: `${Math.ceil((mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills.length || 4) / 2)}-${mockPositions.find((p) => p.id === body.targetPositionId)?.requiredSkills.length || 4}个月`,
+        feasibilityRating: 'medium' as const,
+      }
+    return HttpResponse.json({ code: 200, message: 'ok', data: assessment })
   }),
 
   http.post(`${BASE}/learning/assistant/quiz`, async () => {

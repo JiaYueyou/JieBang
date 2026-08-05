@@ -10,6 +10,7 @@ export const mockTailorSuggestions: Record<string, ImprovementSuggestion[]> = {
       suggested: '添加"LLM API 集成（OpenAI/讯飞星火）"到技能清单',
       reason: '该岗位已将LLM API集成列为必备技能',
       changeType: 'small',
+      verified: true,
       accepted: false,
     },
     {
@@ -20,6 +21,7 @@ export const mockTailorSuggestions: Record<string, ImprovementSuggestion[]> = {
       suggested: '负责电商平台订单系统后端开发，使用 Spring Boot + MySQL + Redis 技术栈，主导微服务拆分与 Docker/K8s 容器化部署，并接入 AI 能力实现智能订单路由。',
       reason: '增加对云原生和AI集成的描述',
       changeType: 'small',
+      verified: true,
       accepted: false,
     },
     {
@@ -30,6 +32,7 @@ export const mockTailorSuggestions: Record<string, ImprovementSuggestion[]> = {
       suggested: '主导核心模块的微服务架构重构，推动 Docker/K8s 全量容器化部署，资源利用率提升 40%',
       reason: '用量化结果增强经历的冲击力',
       changeType: 'small',
+      verified: true,
       accepted: false,
     },
     {
@@ -40,6 +43,7 @@ export const mockTailorSuggestions: Record<string, ImprovementSuggestion[]> = {
       suggested: '三年Java后端开发经验，熟悉企业级应用开发与微服务架构。持续学习AI技术，正在拓展LLM集成与智能体开发能力，致力于成为AI时代的技术全栈工程师。',
       reason: '展示对新技术的主动学习意愿',
       changeType: 'small',
+      verified: true,
       accepted: false,
     },
   ],

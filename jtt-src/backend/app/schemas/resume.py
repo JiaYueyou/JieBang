@@ -50,9 +50,16 @@ class ProjectSchema(BaseModel):
 
 
 class ResumeCreate(BaseModel):
-    """创建简历请求"""
+    """创建简历请求（与 ResumeUpdate 字段对齐，一次请求即可写入完整数据）"""
     name: str = Field(..., min_length=1, max_length=100, description="简历别名")
     target_position: str | None = None
+    personal_info: PersonalInfoSchema | None = None
+    job_intent: JobIntentSchema | None = None
+    education: list[EducationSchema] | None = None
+    work_experience: list[WorkExperienceSchema] | None = None
+    projects: list[ProjectSchema] | None = None
+    skills: list[dict] | None = None
+    self_evaluation: str | None = None
 
 
 class ResumeUpdate(BaseModel):

@@ -1,64 +1,122 @@
-# MySQL 与 Neo4j 数据迁移
+# 团队完整数据迁移：MySQL + ChromaDB + Neo4j
 
-这套脚本用于把一台开发机上的完整 MySQL 数据迁移到另一台开发机，并根据 MySQL 事实库重新构建 Neo4j。MySQL 是事实源；不会复制 Neo4j 的本地 `data/` 目录。
+本目录是一套可重复执行的数据迁移包。MySQL 是唯一事实源；ChromaDB 是由
+MySQL 中已保存的预计算向量物化出的检索索引；Neo4j 是由 MySQL 已验证事实
+重建的图查询模型。迁移不复制来源机器的 `.env`、Chroma 二进制目录或 Neo4j
+`data/` 目录，因此不依赖来源机器的绝对路径和数据库内部版本。
+
+## 当前快照（2026-08-01）
+
+| 项目 | 当前值 |
+| --- | --- |
+| Alembic revision | `20260801_0017` |
+| MySQL | 38 张表、4679 行 |
+| SQL 文件 | `mysql_snapshot.sql` |
+| SQL SHA-256 | 见 `mysql_snapshot_manifest.json` |
+| ChromaDB | 4 个有效 collection、646 条 3072 维向量 |
+| Neo4j 最近快照 | 474 个节点、817 条关系 |
+
+`mysql_snapshot.sql` 保存全部业务表数据，包含
+`retrieval_index_entry.embedding` 中的预计算向量；数据库结构由同一 Git 版本的
+Alembic migration 创建。两者共同构成“结构 + 数据”的完整 MySQL 迁移来源。
 
 ## 接收方准备
 
-1. 安装 `requirements.txt`，并进入项目的 `jiebang` Python 环境。
-2. 在 MySQL 中创建一个空数据库，例如：
+1. 拉取包含该 SQL、manifest 和 Alembic revision 的同一 Git 版本。
+2. 安装 `fyz-src/backend/requirements-dev.txt`，进入 Python 3.10 环境。
+3. 创建空 MySQL 数据库：
 
    ```sql
-   CREATE DATABASE jie_bang CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE jie_bang
+     CHARACTER SET utf8mb4
+     COLLATE utf8mb4_0900_ai_ci;
    ```
 
-3. 启动 Neo4j，并在 `fyz-src/backend/.env` 中配置目标机器自己的 `DB_*` 和 `NEO4J_*`。不要复制来源机器的 `.env`。
-4. 确认目标数据库允许被覆盖。第二步会删除目标库所有业务表中的现有行。
+4. 启动 MySQL 8.0 和 Neo4j 5.x。
+5. 从 `.env.example` 创建自己的 `fyz-src/backend/.env`，至少配置：
+   `DB_*`、`JWT_SECRET_KEY`、`NEO4J_*`、`CHROMA_MODE=persistent` 和本机
+   `CHROMA_PERSIST_PATH`。不要复制来源成员的 `.env`。
+6. 确认目标 MySQL 和目标 Chroma JieBang collection 可以被覆盖。
 
-## 按顺序执行
+导入现有向量不调用 OpenAI、DeepSeek 或其他外部模型，因此接收方不需要提供
+Embedding API Key。后续主动重建新索引时才需要与索引模型匹配的 provider 配置。
 
-从 `fyz-src/backend` 运行：
+## 一键导入（推荐）
+
+先激活项目 Python 环境，再从 `fyz-src/backend` 执行：
 
 ```powershell
-conda activate jiebang
-python scripts/01_prepare_mysql_schema.py
-python scripts/02_import_mysql_snapshot.py --replace
-python scripts/03_rebuild_neo4j.py
-python scripts/04_verify_database_import.py
+.\scripts\Import-TeamDatabase.ps1 -Replace
 ```
 
-也可以用一个命令执行完整流程：
+如果没有激活 Conda，可显式传入 Python：
 
 ```powershell
+.\scripts\Import-TeamDatabase.ps1 `
+  -Python "E:\Computer_tools\Anaconda\dld\envs\jiebang\python.exe" `
+  -Replace
+```
+
+跨平台或不使用 PowerShell 时：
+
+```text
 python scripts/run_database_import.py --replace
 ```
 
-各步骤含义：
+`--replace` / `-Replace` 是强制确认参数。脚本不会猜测目标连接，请在执行前检查
+`.env` 指向的是成员自己的目标数据库。
 
-1. 使用 Alembic 创建或升级全部 MySQL 表。
-2. 校验快照 SHA-256 和 Alembic 版本，然后在关闭外键检查的事务中导入所有表的数据，并逐表核对行数。
-3. 调用项目现有 `GraphService.sync(mode="full")`，仅重建 Neo4j 中 `namespace=jiebang` 的节点和关系；不会调用 DeepSeek。
-4. 校验 MySQL 表、快照版本、最新图谱快照以及 Neo4j 节点/关系数量。
+## 导入阶段
 
-> **数据库版本更新**：包含简历匹配能力的代码版本要求 Alembic revision `20260712_0006`。在导入快照前先确认步骤 1 的 `alembic current` 为 `20260712_0006 (head)`；若快照由旧 revision 导出，需由来源方升级数据库并重新导出快照，避免 `resume`、`match_record` 等表结构或 manifest 版本不一致。
+| 阶段 | 脚本 | 作用 |
+| --- | --- | --- |
+| 1/5 | `01_prepare_mysql_schema.py` | 执行 Alembic upgrade，建立或升级全部表结构 |
+| 2/5 | `02_import_mysql_snapshot.py` | 校验 SQL SHA-256 和 revision，事务式替换全部 MySQL 数据并逐表核数 |
+| 3/5 | `restore_chroma_from_mysql.py` | 校验向量维度与 checksum，从 MySQL 预计算向量复原 Chroma collection |
+| 4/5 | `03_rebuild_neo4j.py` | 通过 `GraphService.sync(mode="full")` 重建 `namespace=jiebang`，不调用 DeepSeek |
+| 5/5 | `04_verify_database_import.py` | 核对 MySQL 行数、Chroma collection/向量数和 Neo4j 节点/关系数 |
 
-## 来源方刷新数据快照
+Chroma 复原只删除名称以 `jiebang-evidence-` 开头的 collection。Neo4j 全量同步
+只清理 `namespace=jiebang`；两者都不会删除其他项目的命名空间数据。
 
-只有负责发布数据的来源方需要执行：
+## 来源方刷新快照
+
+当共享事实、审核状态、Agent 审计或向量索引变化后，来源方执行：
 
 ```powershell
-python scripts/export_mysql_snapshot.py
+cd fyz-src\backend
+python scripts\export_mysql_snapshot.py
+python scripts\restore_chroma_from_mysql.py --replace
+python scripts\04_verify_database_import.py
 ```
 
-该命令会重新生成：
+需同步提交：
 
-- `mysql_snapshot.sql`：全部 MySQL 基础表的数据，不包含数据库密码或连接串。
-- `mysql_snapshot_manifest.json`：表行数、Alembic 版本、生成时间和 SHA-256。
+- `mysql_snapshot.sql`：全部 MySQL 数据，包括预计算向量；
+- `mysql_snapshot_manifest.json`：revision、逐表行数、Chroma/Neo4j 摘要与 SQL SHA-256；
+- 新增或变化的 Alembic migration；
+- 本目录导入/校验脚本和本文档。
 
-刷新后必须重新执行测试，并检查快照中是否含有不应共享的真实用户信息、招聘内容或 Agent 输入。快照包含 `user` 表中的密码哈希，但不包含明文密码；不要把 `.env` 一并提交。
+不要只提交 SQL 而遗漏 manifest 或 migration；导入器会拒绝 checksum 或 revision
+不一致的组合。
 
-## 失败处理
+## 数据与安全边界
 
-- Alembic 版本不一致：确保双方使用相同 Git 提交，然后重新执行步骤 1。
-- 快照校验失败：来源方重新运行导出命令，并同时提交 SQL 和 manifest。
-- Neo4j 连接失败：检查服务状态、`NEO4J_URI`、用户名和密码。
-- 图谱数量不一致：重新执行步骤 3；`full` 同步具有命名空间隔离和幂等清理行为。
+- 快照含 `user` 密码哈希，不含明文密码；仍应按内部开发数据管理。
+- 当前快照含简历、浏览、收藏、匹配、Agent 输入/输出与来源证据等开发记录；
+  对外分享前必须重新检查脱敏和授权范围。
+- `.env`、API Key、本机 Chroma/Neo4j 数据目录、上传文件和日志不得放入迁移包。
+- MySQL 是事实源。不要直接修改 Chroma 或 Neo4j 后期待结果回写 MySQL。
+
+## 故障处理
+
+- **revision 不一致**：切换到与快照相同的 Git 版本并执行
+  `alembic upgrade head`，不要 `alembic stamp head` 跳过 DDL。
+- **SQL checksum 不一致**：来源方重新导出 SQL，并让 SQL 与 manifest 成对更新。
+- **Chroma collection 缺失/数量不符**：确认 `CHROMA_MODE=persistent` 与
+  `CHROMA_PERSIST_PATH`，重新执行 `restore_chroma_from_mysql.py --replace`。
+- **向量 checksum 或维度错误**：快照可能损坏或 migration 不匹配，禁止通过
+  重新请求 Embedding API 掩盖问题，应重新取得完整 SQL 快照。
+- **Neo4j 连接失败**：检查服务、Bolt 端口与 `NEO4J_URI/USER/PASSWORD`。
+- **图谱数量不一致**：重新执行 `03_rebuild_neo4j.py`；全量同步是命名空间隔离、
+  可重复执行的派生过程。

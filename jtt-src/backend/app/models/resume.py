@@ -9,7 +9,7 @@ from app.core.database import Base
 
 class Resume(Base):
     """简历主表"""
-    __tablename__ = "resume"
+    __tablename__ = "user_resume"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, comment="所属用户ID")
@@ -29,13 +29,15 @@ class Resume(Base):
     self_evaluation: Mapped[str] = mapped_column(Text, default="", comment="自我评价")
     # 来源文件
     source_file: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="上传的原始文件名")
+    source_file_path: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="上传文件的服务器存储路径")
+    raw_text: Mapped[str | None] = mapped_column(Text, nullable=True, comment="简历提取后的完整纯文本")
     # 关联的列表数据
     education_list: Mapped[list] = mapped_column(JSON, default=list, comment="教育经历列表")
     work_experience_list: Mapped[list] = mapped_column(JSON, default=list, comment="工作经历列表")
     project_list: Mapped[list] = mapped_column(JSON, default=list, comment="项目经历列表")
     skill_list: Mapped[list] = mapped_column(JSON, default=list, comment="技能列表")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
 # 以下三个类仅用于类型标注，实际数据以 JSON 形式存储在 Resume 表中

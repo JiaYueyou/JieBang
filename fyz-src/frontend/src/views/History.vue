@@ -152,6 +152,18 @@
           </el-button>
           <el-button v-else type="primary" @click="$router.push('/dashboard')">返回工作台</el-button>
         </div>
+
+        <div v-if="filteredRecords.length > pageSize" class="history-pagination">
+          <span>共 {{ filteredRecords.length }} 条足迹</span>
+          <el-pagination
+            v-model:current-page="currentPage"
+            size="small"
+            background
+            layout="prev, pager, next"
+            :page-size="pageSize"
+            :total="filteredRecords.length"
+          />
+        </div>
       </main>
 
       <aside class="history-aside">
@@ -206,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
@@ -224,6 +236,8 @@ const { records, insights, loading, error } = storeToRefs(store);
 const activeType = ref<FilterType>("all");
 const dateRange = ref<DateRange>("all");
 const keyword = ref("");
+const currentPage = ref(1);
+const pageSize = 8;
 
 const typeMeta: Record<HistoryType, { label: string; icon: string }> = {
   job: { label: "岗位", icon: "Briefcase" },
@@ -265,6 +279,11 @@ const filteredRecords = computed(() => {
   });
 });
 
+const pagedRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredRecords.value.slice(start, start + pageSize);
+});
+
 const groupedRecords = computed(() => {
   const order = ["today", "yesterday", "week", "month"];
   const labels: Record<string, string> = {
@@ -276,10 +295,14 @@ const groupedRecords = computed(() => {
 
   return order
     .map((key) => {
-      const items = filteredRecords.value.filter((item) => item.dateKey === key);
+      const items = pagedRecords.value.filter((item) => item.dateKey === key);
       return { key, label: labels[key], date: items[0]?.date || "", items };
     })
     .filter((group) => group.items.length);
+});
+
+watch([activeType, dateRange, keyword], () => {
+  currentPage.value = 1;
 });
 
 const focusStats = computed(() => insights.value.focusStats);
@@ -317,10 +340,18 @@ async function removeRecord(item: HistoryRecord) {
       cancelButtonText: "取消",
       type: "warning",
     });
-    await store.remove(item.id);
-    ElMessage.success("浏览记录已删除");
   } catch {
-    // User cancelled.
+    return;
+  }
+  try {
+    await store.remove(item.id);
+    currentPage.value = Math.min(
+      currentPage.value,
+      Math.max(1, Math.ceil(filteredRecords.value.length / pageSize)),
+    );
+    ElMessage.success("浏览记录已删除");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "浏览记录删除失败");
   }
 }
 
@@ -331,10 +362,15 @@ async function clearHistory() {
       cancelButtonText: "保留记录",
       type: "warning",
     });
-    await store.clear();
-    ElMessage.success("浏览足迹已清空");
   } catch {
-    // User cancelled.
+    return;
+  }
+  try {
+    await store.clear();
+    currentPage.value = 1;
+    ElMessage.success("浏览足迹已清空");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "浏览足迹清空失败");
   }
 }
 
@@ -342,6 +378,7 @@ function resetFilters() {
   activeType.value = "all";
   dateRange.value = "all";
   keyword.value = "";
+  currentPage.value = 1;
 }
 </script>
 
@@ -546,6 +583,24 @@ function resetFilters() {
 
 .history-stream {
   min-width: 0;
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 10px 14px;
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.history-pagination :deep(.el-pager li.is-active) {
+  background: var(--color-brand);
 }
 
 .stream-meta {

@@ -10,16 +10,20 @@ from app.models.skill import (
     AsyncTask,
     JobSkillFact,
     RawJobRecord,
+    JobDuplicateCluster,
     Skill,
     SourceDocument,
+    SourceTrustPolicy,
 )
 from app.models.graph import (
     GraphEnrichmentCandidate,
     GraphSnapshot,
     GraphSyncBatch,
     StandardJob,
+    StandardJobAlias,
     StandardJobSource,
 )
+from app.models.data_source import DataSource
 from app.models.analysis import AnalysisInsightDecision
 from app.models.matching import MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.models.internal_transfer import (
@@ -29,13 +33,26 @@ from app.models.internal_transfer import (
     TransferDecision,
     TransferRuleSet,
 )
+from app.models.user_activity import UserBrowseHistory, UserFavorite
+from app.models.retrieval import (
+    AgentClaimCitation,
+    EvidenceChunk,
+    RetrievalIndexEntry,
+    RetrievalIndexVersion,
+    RetrievalQueryLog,
+)
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
-    "Skill", "SourceDocument", "RawJobRecord", "JobSkillFact",
-    "AgentRun", "AsyncTask", "StandardJob", "StandardJobSource",
+    "Skill", "SourceDocument", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
+    "AgentRun", "AsyncTask", "StandardJob", "StandardJobAlias", "StandardJobSource",
+    "JobDuplicateCluster",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
+    "DataSource",
     "AnalysisInsightDecision",
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
+    "UserFavorite", "UserBrowseHistory",
+    "EvidenceChunk", "RetrievalIndexVersion", "RetrievalIndexEntry",
+    "RetrievalQueryLog", "AgentClaimCitation",
 ]

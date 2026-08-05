@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { MatchResult } from '@/types'
 import { mockMatchResults } from '@/mock/data/match'
+import { pageData } from '@/stores/pageContext'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,6 +12,11 @@ const result = ref<MatchResult | null>(null)
 onMounted(() => {
   const key = `${route.params.resumeId}_${route.params.positionId}`
   result.value = mockMatchResults[key] ?? mockMatchResults['r-1_ep-1']!
+})
+// Share match result with AI assistant
+watch(result, (r) => { pageData.match = r }, { immediate: true })
+onUnmounted(() => {
+  if (pageData.match?.id === result.value?.id) pageData.match = null
 })
 
 const getScoreColor = (score: number) => {

@@ -15,6 +15,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '深入理解 Java 集合框架、JVM 内存模型、并发编程',
         duration: '1-2周',
         completed: true,
+        quizPassed: true,
         resources: [
           { id: 'res-1', title: '《深入理解Java虚拟机》', type: 'book', url: '', platform: '京东读书' },
           { id: 'res-2', title: 'Java并发编程实战', type: 'course', url: '', platform: '慕课网' },
@@ -27,6 +28,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '掌握 Spring Cloud、服务注册与发现、网关、配置中心',
         duration: '3-5周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res-3', title: 'Spring Cloud 微服务实战', type: 'project', url: '', platform: 'GitHub' },
           { id: 'res-4', title: '微服务架构设计模式', type: 'book', url: '', platform: '异步社区' },
@@ -39,6 +41,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '容器化部署、K8s基础操作、Helm Charts',
         duration: '6-7周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res-5', title: 'Kubernetes 入门到实践', type: 'course', url: '', platform: '阿里云大学' },
         ],
@@ -50,6 +53,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '学习大模型 API 调用范式、RAG 系统搭建、LangChain 基础',
         duration: '8-10周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res-6', title: 'LangChain 实战指南', type: 'article', url: '', platform: '掘金' },
           { id: 'res-7', title: 'RAG 从零到一', type: 'video', url: '', platform: 'B站' },
@@ -62,6 +66,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '使用 Java + Spring Boot + LLM 构建智能后端系统',
         duration: '11-12周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res-8', title: 'AI-Native 应用开发指南', type: 'article', url: '', platform: '知乎专栏' },
         ],
@@ -84,6 +89,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '异步编程、装饰器、类型注解、性能优化',
         duration: '1-2周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res2-1', title: 'Fluent Python（第二版）', type: 'book', url: '', platform: 'O\'Reilly' },
         ],
@@ -95,6 +101,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '理解 LLM 工作原理、掌握提示工程方法论',
         duration: '3-4周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res2-2', title: 'Prompt Engineering Guide', type: 'course', url: '', platform: 'DeepLearning.AI' },
         ],
@@ -106,6 +113,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '掌握 LangChain/LangGraph、ReAct 模式、Tool Calling',
         duration: '5-7周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res2-3', title: 'LangChain: Chat with Your Data', type: 'course', url: '', platform: 'DeepLearning.AI' },
           { id: 'res2-4', title: 'Building Agentic Applications', type: 'video', url: '', platform: 'YouTube' },
@@ -118,6 +126,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '搭建企业级 RAG 系统、ChromaDB/Milvus 实践',
         duration: '8-9周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res2-5', title: '向量数据库实战', type: 'project', url: '', platform: 'GitHub' },
         ],
@@ -129,6 +138,7 @@ export const mockLearningPaths: LearningPath[] = [
         description: '构建多Agent协作系统，完成端到端项目',
         duration: '10周',
         completed: false,
+        quizPassed: false,
         resources: [
           { id: 'res2-6', title: 'AutoGen 实战教程', type: 'article', url: '', platform: '微软官方' },
         ],

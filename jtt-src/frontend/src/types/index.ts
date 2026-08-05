@@ -30,7 +30,20 @@ export interface JobPosition {
   techStack: string[]
   careerLevel: 'junior' | 'mid' | 'senior'
   salaryRange: string
-  skillChanges?: SkillChange[] // 仅既有岗位
+  skillChanges?: SkillChange[]
+  // 爬虫数据额外字段
+  company?: string
+  city?: string
+  experience?: string
+  education?: string
+  // 详情页额外字段
+  originalTitle?: string
+  jdText?: string
+  responsibilitiesText?: string
+  requirementsText?: string
+  postedAt?: string
+  stack?: string
+  stdJobName?: string
   createdAt: string
   updatedAt: string
 }
@@ -58,6 +71,38 @@ export interface GraphEdge {
 export interface KnowledgeGraph {
   nodes: GraphNode[]
   edges: GraphEdge[]
+}
+
+// ========== 新图谱（Neo4j fyz 数据模型） ==========
+export type Neo4jNodeType = 'Job' | 'SkillArea' | 'TechStack' | 'TechPoint' | 'KnowledgePoint' | 'SourceDocument' | 'GraphSnapshot'
+
+export interface Neo4jGraphNode {
+  id: string
+  name: string
+  type: Neo4jNodeType
+  stack: string | null
+  level: string | null
+  description: string
+  importance: number | null
+  frequency: number | null
+  properties: Record<string, unknown>
+}
+
+export interface Neo4jGraphEdge {
+  id: string
+  source: string
+  target: string
+  relation: string
+  properties: Record<string, unknown>
+}
+
+export interface Neo4jGraphSubgraph {
+  nodes: Neo4jGraphNode[]
+  edges: Neo4jGraphEdge[]
+  node_count: number
+  edge_count: number
+  snapshot_version: string | null
+  truncated: boolean
 }
 
 // ========== 简历相关 ==========
@@ -108,7 +153,9 @@ export interface ResumeData {
   projects: Project[]
   skills: Skill[]
   selfEvaluation: string
-  sourceFile?: string // 上传解析来源文件名
+  sourceFile?: string
+  sourceFilePath?: string
+  rawText?: string
   createdAt: string
   updatedAt: string
 }
@@ -130,6 +177,8 @@ export interface ImprovementSuggestion {
   reason: string
   changeType: 'small' | 'large' // 小改/大改
   accepted: boolean
+  verified: boolean // 是否通过知识图谱校验
+  warning?: string | null // 校验警告信息
 }
 
 export interface MatchResult {
@@ -158,6 +207,7 @@ export interface LearningStep {
   duration: string // 如 "1-2周"
   resources: LearningResource[]
   completed: boolean
+  quizPassed: boolean
 }
 
 export interface LearningResource {
@@ -193,7 +243,128 @@ export interface UserProfile {
   matchHistoryCount: number
 }
 
+// ========== 笔记 / 收藏相关 ==========
+export interface Note {
+  id: string
+  title: string
+  content: string
+  type: 'note' | 'link' | 'resource'
+  url?: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type FavoriteType = 'position' | 'learning_path' | 'note'
+
+export interface FavoriteItem {
+  id: string
+  itemType: FavoriteType
+  itemId: string
+  title: string
+  createdAt: string
+}
+
+// ========== 职业发展相关 ==========
+export interface CareerPreferences {
+  targetIndustry: string
+  targetRoleType: string
+  preferredCity: string
+  salaryExpectation: string
+}
+
+export interface LearningBudget {
+  weeklyHours: number
+  totalWeeks: number
+}
+
+export type FeasibilityRating = 'high' | 'medium' | 'low' | 'very_low'
+
+export interface CareerTransitionAssessment {
+  currentMatchDegree: number
+  transferableSkills: Skill[]
+  missingSkills: Skill[]
+  recommendationReasons: string[]
+  advantages: string[]
+  risks: string[]
+  learningTimeline: string
+  feasibilityRating: FeasibilityRating
+}
+
+export interface CareerPlan {
+  id: string
+  resumeId: string
+  preferences: CareerPreferences
+  budget: LearningBudget
+  targetPositionId: string
+  targetPositionName: string
+  assessment: CareerTransitionAssessment | null
+  createdAt: string
+  updatedAt: string
+}
+
 // ========== API 通用响应 ==========
+// ========== AI 助手相关 ==========
+export interface ChatAction {
+  label: string
+  to: string
+  icon?: string
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  images?: string[]
+  timestamp: number
+  relatedConcepts?: { name: string; nodeId: string; relation: string }[]
+  suggestedResources?: LearningResource[]
+  followUpQuestions?: string[]
+  actions?: ChatAction[]
+}
+
+export interface PageContext {
+  name: string
+  path: string
+  params?: Record<string, any>
+  positionId?: string
+  positionName?: string
+  resumeId?: string
+  /** 当前页面的简历数据（完整） */
+  resumeData?: {
+    name: string
+    targetPosition: string
+    skills: { name: string; level: string; category: string }[]
+    workExperience: { company: string; position: string; description: string; skills: string[] }[]
+    education: { school: string; degree: string; major: string }[]
+  }
+  /** 当前页面的匹配结果数据 */
+  matchData?: {
+    totalScore: number
+    positionName: string
+    resumeName: string
+    dimensions: { name: string; score: number; weight: number }[]
+    missingSkills: string[]
+    weakSkills: string[]
+    matchSkills: string[]
+  }
+}
+
+export interface AssistantChatRequest {
+  message: string
+  images?: string[]
+  pageContext?: PageContext
+  history?: { role: 'user' | 'assistant'; content: string }[]
+}
+
+export interface AssistantChatResponse {
+  reply: string
+  relatedConcepts?: { name: string; nodeId: string; relation: string }[]
+  suggestedResources?: LearningResource[]
+  followUpQuestions?: string[]
+  actions?: ChatAction[]
+}
+
 export interface ApiResponse<T> {
   code: number
   message: string

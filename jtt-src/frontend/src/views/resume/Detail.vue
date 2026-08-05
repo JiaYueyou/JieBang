@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResumeData } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
+import { pageData } from '@/stores/pageContext'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +11,11 @@ const resume = ref<ResumeData | null>(null)
 
 onMounted(() => {
   resume.value = mockResumes.find((r) => r.id === route.params.id) || null
+})
+// Share resume data with AI assistant
+watch(resume, (r) => { pageData.resume = r }, { immediate: true })
+onUnmounted(() => {
+  if (pageData.resume?.id === resume.value?.id) pageData.resume = null
 })
 </script>
 
@@ -22,7 +28,7 @@ onMounted(() => {
       </div>
       <div class="head-actions">
         <el-button @click="router.push(`/resume/editor/${resume.id}`)">编辑</el-button>
-        <el-button type="primary" @click="router.push(`/match?resumeId=${resume.id}`)">开始匹配</el-button>
+        <el-button type="primary" @click="router.push(`/diagnosis`)">开始诊断</el-button>
       </div>
     </div>
 

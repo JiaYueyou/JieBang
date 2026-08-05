@@ -1,5 +1,5 @@
 """
-岗位相关 Schema —— 岗位、技能、技能变化。
+岗位相关 Schema —— 岗位（来自爬虫数据）、技能、图谱数据。
 """
 from pydantic import BaseModel, Field
 
@@ -13,39 +13,62 @@ class SkillSchema(BaseModel):
 
 
 class SkillChangeSchema(BaseModel):
-    """技能变化记录"""
+    """技能变化记录（爬虫数据暂不使用，保留兼容）"""
     id: str | None = None
-    skill_name: str
-    change_type: str  # added / removed / modified
+    skill_name: str = ""
+    change_type: str = "modified"  # added / removed / modified
     date: str = ""
     description: str = ""
     source: str = ""
 
 
 class JobPositionResponse(BaseModel):
-    """岗位详情响应"""
-    id: int
+    """岗位列表项响应（来自 raw_job_record）"""
+    id: str
     name: str
-    category: str  # new / existing
-    aliases: list[str] = []
+    category: str  # new=新兴(ai), existing=既有(backend/data/devops)
     summary: str = ""
-    responsibilities: list[str] = []
+    # 核心字段
+    company: str = ""
+    city: str = ""
+    salary_range: str = ""
+    experience: str = ""
+    education: str = ""
+    # 技能（从 keywords 解析）
     required_skills: list[SkillSchema] = []
+    # 兼容旧接口的字段
+    aliases: list[str] = []
+    responsibilities: list[str] = []
     preferred_skills: list[SkillSchema] = []
     industry_scenarios: list[str] = []
     tech_stack: list[str] = []
     career_level: str = "mid"
-    salary_range: str | None = None
     skill_changes: list[SkillChangeSchema] | None = None
     created_at: str | None = None
     updated_at: str | None = None
+
+
+class JobPositionDetailResponse(JobPositionResponse):
+    """岗位详情响应（含 JD 全文等完整字段）"""
+    # 原始标题
+    original_title: str = ""
+    # 完整 JD
+    jd_text: str = ""
+    # 职责和要求
+    responsibilities_text: str = ""
+    requirements_text: str = ""
+    # 发布日期
+    posted_at: str = ""
+    # 技术栈标签
+    stack: str = ""  # ai / backend / data / devops
+    # 关联的标准岗位名
+    std_job_name: str = ""
 
 
 class JobPositionListQuery(BaseModel):
     """岗位列表查询参数"""
     category: str | None = None  # new / existing
     keyword: str | None = None
-    tech_stack: str | None = None
     page: int = 1
     page_size: int = 20
 

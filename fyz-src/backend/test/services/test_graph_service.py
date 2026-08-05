@@ -15,13 +15,69 @@ from app.models import (
     StandardJob,
 )
 from app.services.graph_service import GraphService
-from app.schemas.graph import GraphEnrichmentOutput, KnowledgePointOutput, TechPointOutput
 
 
 class DisabledProvider:
     enabled = False
     provider_name = "disabled"
     model_name = "disabled"
+
+
+async def test_subgraph_restores_nested_common_solutions_from_json():
+    async with async_session() as db:
+        service = GraphService(db, llm_provider=DisabledProvider())
+        subgraph = service._subgraph(
+            [{
+                "id": "knowledge:1",
+                "type": "KnowledgePoint",
+                "properties": {
+                    "name": "Flask 扩展机制",
+                    "common_solutions": (
+                        '[{"name":"Flask-Migrate","purpose":"数据库迁移"}]'
+                    ),
+                },
+            }],
+            [],
+        )
+
+        assert subgraph.nodes[0].properties["common_solutions"] == [
+            {"name": "Flask-Migrate", "purpose": "数据库迁移"}
+        ]
+
+
+class PagingGraph:
+    def query_overview_jobs(self, **kwargs):
+        assert kwargs["offset"] in {0, 2}
+        rows = [
+            {"id": f"job:{index}", "type": "Job", "properties": {"name": f"岗位{index}"}}
+            for index in range(kwargs["offset"] + 1, kwargs["offset"] + 4)
+        ]
+        return rows
+
+    def query_overview_context(self, job_ids, max_layer):
+        nodes = [
+            {"id": job_id, "type": "Job", "properties": {"name": job_id}}
+            for job_id in job_ids
+        ]
+        nodes.append({"id": "area:backend", "type": "SkillArea", "properties": {"name": "后端"}})
+        edges = [
+            {"source": job_id, "target": "area:backend", "relation": "REQUIRES_AREA", "properties": {}}
+            for job_id in job_ids
+        ]
+        return nodes, edges
+
+
+async def test_overview_uses_cursor_without_fixed_global_truncation():
+    async with async_session() as db:
+        service = GraphService(db, llm_provider=DisabledProvider())
+        service.graph = PagingGraph()
+        first = await service.overview(cursor=None, page_size=2, max_layer=3)
+        assert first.has_more is True
+        assert first.next_cursor
+        assert first.query_scope == "overview:L1-L3"
+        assert {node.id for node in first.nodes} == {"job:1", "job:2", "area:backend"}
+        second = await service.overview(cursor=first.next_cursor, page_size=2, max_layer=3)
+        assert {node.id for node in second.nodes} == {"job:3", "job:4", "area:backend"}
 
 
 async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
@@ -38,7 +94,7 @@ async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
         await db.flush()
         raws = []
         for index, title in enumerate(
-            ["高级 Python 后端开发工程师（双休）", "Python 后端开发工程师"],
+            ["高级 Python 后端开发工程师（双休）", "资深 Python 后端开发工程师"],
             1,
         ):
             document = SourceDocument(
@@ -52,6 +108,7 @@ async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
                 source_document_id=document.id, title=title, company="A", jd_text="Python Redis",
                 responsibilities="", requirements="", keywords="python",
                 dedup_status="unique", normalized_data={},
+                quality_status="accepted", quality_score=.9,
             )
             db.add(raw)
             await db.flush()
@@ -104,6 +161,7 @@ async def test_top_candidate_is_saved_unverified_without_llm():
                 source_document_id=document.id, title="Python 工程师", jd_text="Python",
                 responsibilities="", requirements="", keywords="python",
                 dedup_status="unique", normalized_data={},
+                quality_status="accepted", quality_score=.9,
             )
             db.add(raw)
             await db.flush()
@@ -122,47 +180,7 @@ async def test_top_candidate_is_saved_unverified_without_llm():
         await service._prepare_top_candidates(snapshot.id, user_id=1)
         candidate = (await db.execute(select(GraphEnrichmentCandidate))).scalar_one()
         assert candidate.verification_status == "unverified"
-        assert len(candidate.evidence_source_ids) == 2
+        # Phase 3 does not load evidence until the LLM path is enabled, and
+        # never falls back to direct fact-table prompt injection.
+        assert candidate.evidence_source_ids == []
         assert candidate.candidate_data["reason"] == "llm_disabled"
-
-
-def test_l45_filter_requires_allowed_ids_and_independent_sources():
-    output = GraphEnrichmentOutput(
-        skill_name="FastAPI",
-        job_directions=["Python 后端开发工程师"],
-        skill_area="Framework",
-        tech_points=[
-            TechPointOutput(
-                name="依赖注入",
-                detail="使用依赖注入组织请求上下文",
-                confidence=0.9,
-                source_ids=[1, 2],
-                knowledge_points=[
-                    KnowledgePointOutput(
-                        name="Depends 生命周期",
-                        description="依赖项的创建和清理",
-                        difficulty="medium",
-                        confidence=0.88,
-                        source_ids=[1, 99],
-                    )
-                ],
-            ),
-            TechPointOutput(
-                name="虚构技术点",
-                detail="只来自同一平台",
-                confidence=0.95,
-                source_ids=[1, 3],
-            ),
-        ],
-    )
-    evidence = [
-        {"source_id": 1, "source": "平台A", "text": "证据1"},
-        {"source_id": 2, "source": "平台B", "text": "证据2"},
-        {"source_id": 3, "source": "平台A", "text": "证据3"},
-    ]
-
-    filtered, confidence = GraphService._filter_verified_completion(output, evidence)
-
-    assert [point.name for point in filtered.tech_points] == ["依赖注入"]
-    assert filtered.tech_points[0].knowledge_points == []
-    assert confidence == 0.9

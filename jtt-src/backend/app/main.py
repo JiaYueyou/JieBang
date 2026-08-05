@@ -9,7 +9,7 @@ from app.core.config import TESTING, INITIAL_ADMIN_ENABLED, INITIAL_ADMIN_USERNA
 from app.core.database import engine, Base, async_session
 from app.core.neo4j import get_driver, close_driver
 from app.core.exceptions import register_exception_handlers
-from app.api.v1 import auth, positions, resume, match, tailor, learning, favorites
+from app.api.v1 import auth, graph, positions, resume, match, tailor, learning, favorites
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,13 @@ async def lifespan(app: FastAPI):
             await create_initial_admin()
         except Exception as e:
             logger.warning(f"创建初始管理员失败（可能数据库未就绪）: {e}")
+    # 种子数据（岗位、简历、学习路径、收藏），仅在表为空时填充
+    try:
+        from app.seed import seed_all
+        await seed_all()
+        logger.info("种子数据检查完成")
+    except Exception as e:
+        logger.warning(f"种子数据填充失败（可能数据库未就绪）: {e}")
     try:
         get_driver()  # 初始化 Neo4j 连接
     except Exception as e:
@@ -77,6 +84,7 @@ register_exception_handlers(app)
 
 # 注册所有 API 路由（统一前缀 /api/v1）
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(graph.router, prefix="/api/v1")
 app.include_router(positions.router, prefix="/api/v1")
 app.include_router(resume.router, prefix="/api/v1")
 app.include_router(match.router, prefix="/api/v1")

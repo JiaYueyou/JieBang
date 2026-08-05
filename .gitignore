@@ -75,3 +75,11 @@ CLAUDE.md
 # Root-level local Playwright MCP harness
 /package.json
 /package-lock.json
+
+# Generated data exports
+data/jiebang_graph.json
+scripts/l45_output.json
+fyz-src/backend/scripts/l45_output.json
+
+# Temporary development scripts
+fyz-src/backend/scripts/import_data.py

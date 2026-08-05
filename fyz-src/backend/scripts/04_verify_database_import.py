@@ -1,4 +1,4 @@
-"""Step 4: verify MySQL snapshot integrity and the rebuilt Neo4j counts."""
+"""Step 5: verify MySQL, Chroma and rebuilt Neo4j integrity."""
 
 from __future__ import annotations
 
@@ -19,8 +19,10 @@ from db_transfer_common import (  # noqa: E402
     table_counts,
 )
 from app.core.database import async_session, engine  # noqa: E402
+from app.core.config import CHROMA_MODE, CHROMA_PERSIST_PATH  # noqa: E402
 from app.core.neo4j import close_driver, health_detail  # noqa: E402
-from app.models import GraphSnapshot  # noqa: E402
+from app.models import GraphSnapshot, RetrievalIndexVersion  # noqa: E402
+from app.providers.vector_store import ChromaVectorStore  # noqa: E402
 from app.repositories.graph_repository import Neo4jGraphRepository  # noqa: E402
 
 DERIVED_TABLES = {
@@ -86,10 +88,54 @@ async def verify() -> None:
         if counts["nodes"] <= 0 or counts["edges"] <= 0:
             raise RuntimeError(f"Neo4j graph is unexpectedly empty: {counts}")
 
+        if CHROMA_MODE != "persistent":
+            raise RuntimeError(
+                "Chroma verification requires CHROMA_MODE=persistent."
+            )
+        async with async_session() as session:
+            chroma_indexes = list(
+                (
+                    await session.execute(
+                        select(RetrievalIndexVersion).where(
+                            RetrievalIndexVersion.backend == "chroma",
+                            RetrievalIndexVersion.status == "ready",
+                        )
+                    )
+                ).scalars()
+            )
+        try:
+            import chromadb
+            from chromadb.config import Settings
+        except ImportError as exc:
+            raise RuntimeError("chromadb is not installed") from exc
+        client = chromadb.PersistentClient(
+            path=CHROMA_PERSIST_PATH,
+            settings=Settings(anonymized_telemetry=False),
+        )
+        chroma_vectors = 0
+        for index in chroma_indexes:
+            collection_name = ChromaVectorStore.collection_name(index.version)
+            try:
+                collection = client.get_collection(name=collection_name)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Missing Chroma collection {collection_name} for "
+                    f"index {index.version}"
+                ) from exc
+            actual_count = int(collection.count())
+            if actual_count != index.entry_count:
+                raise RuntimeError(
+                    f"Chroma count mismatch for {index.version}: "
+                    f"expected={index.entry_count}, actual={actual_count}"
+                )
+            chroma_vectors += actual_count
+
         print(
-            f"[4/4] Verification passed: {len(actual)} MySQL tables, "
+            f"[5/5] Verification passed: {len(actual)} MySQL tables, "
             f"{sum(actual.values())} current rows, {counts['nodes']} Neo4j nodes, "
-            f"{counts['edges']} Neo4j relationships."
+            f"{counts['edges']} Neo4j relationships, "
+            f"{len(chroma_indexes)} Chroma collections and "
+            f"{chroma_vectors} vectors."
         )
     finally:
         close_driver()

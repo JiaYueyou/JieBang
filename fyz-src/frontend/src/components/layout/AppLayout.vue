@@ -69,7 +69,11 @@ const userStore = useUserStore();
 
 userStore.restore();
 
-const currentPath = computed(() => route.path);
+const currentPath = computed(() => (
+  (route.meta.activeMenu as string | undefined)
+  || route.matched.find((record) => allMenuItems.some((item) => item.path === record.path))?.path
+  || route.path
+));
 const breadcrumbs = computed(() => {
   const crumbs: { title: string; path: string }[] = [];
   // 如果当前路由 meta 有 parentTitle，先加父级
@@ -90,7 +94,7 @@ function updateTime() {
 onMounted(() => { updateTime(); timer = window.setInterval(updateTime, 30000); });
 onUnmounted(() => clearInterval(timer));
 
-const menuItems = [
+const allMenuItems = [
   { path: "/dashboard", title: "工作台",   icon: "Odometer" },
   { path: "/jobs",      title: "岗位管理", icon: "Briefcase" },
   { path: "/matching",  title: "人才匹配", icon: "Connection" },
@@ -101,6 +105,9 @@ const menuItems = [
   { path: "/history",   title: "浏览足迹", icon: "Clock" },
   { path: "/admin",     title: "系统管理", icon: "Setting" },
 ];
+const menuItems = computed(() => allMenuItems.filter(
+  (item) => item.path !== "/admin" || userStore.role === "admin",
+));
 
 function handleLogout() {
   userStore.logout();

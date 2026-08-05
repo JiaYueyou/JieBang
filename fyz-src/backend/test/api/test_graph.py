@@ -100,3 +100,37 @@ async def test_sync_graph_default_enrich_true(client, auth_headers):
         )
     assert response.status_code == 200
     assert mock_create.call_args.kwargs["enrich_top_skills"] is True
+
+
+async def test_enrichment_generation_runs_eager_task_in_background(client, auth_headers):
+    mock_response = _mock_task_status()
+    with patch(
+        "app.api.v1.graph.GraphTaskService.create_sync",
+        new=AsyncMock(return_value=mock_response),
+    ) as mock_create:
+        response = await client.post(
+            "/api/v1/graph/enrichment/generate", headers=auth_headers
+        )
+    assert response.status_code == 200
+    assert mock_create.call_args.kwargs["enrich_top_skills"] is True
+    assert mock_create.call_args.kwargs["run_eager_in_background"] is True
+
+
+async def test_enrichment_publication_runs_eager_task_in_background(client, auth_headers):
+    mock_response = _mock_task_status()
+    with patch(
+        "app.api.v1.graph.GraphService.prepare_enrichment_publication",
+        new=AsyncMock(return_value=2),
+    ), patch(
+        "app.api.v1.graph.GraphTaskService.create_sync",
+        new=AsyncMock(return_value=mock_response),
+    ) as mock_create:
+        response = await client.post(
+            "/api/v1/graph/enrichment/publish",
+            json={"candidate_ids": [1, 2]},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    assert mock_create.call_args.kwargs["enrich_top_skills"] is False
+    assert mock_create.call_args.kwargs["run_eager_in_background"] is True

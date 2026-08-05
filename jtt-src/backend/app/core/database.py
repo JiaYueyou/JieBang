@@ -7,12 +7,10 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import DATABASE_URL, TESTING
 
 if TESTING:
-    # 测试模式：SQLite 内存数据库，无需外部 MySQL
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
 else:
     engine = create_async_engine(DATABASE_URL, echo=False)
 
-# 异步 session 工厂
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -28,3 +26,5 @@ async def get_db():
             yield session
         finally:
             await session.close()
+
+

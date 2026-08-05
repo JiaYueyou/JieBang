@@ -19,6 +19,12 @@ class StandardJob(Base):
     aliases: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     stack: Mapped[str] = mapped_column(String(30), nullable=False, default="backend", index=True)
     level: Mapped[str] = mapped_column(String(20), nullable=False, default="middle", index=True)
+    role_family: Mapped[str | None] = mapped_column(String(40), index=True)
+    specialization_key: Mapped[str | None] = mapped_column(String(160), index=True)
+    occupation_code: Mapped[str | None] = mapped_column(String(220), index=True)
+    normalization_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="job-title-v1", index=True
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
@@ -26,6 +32,26 @@ class StandardJob(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+class StandardJobAlias(Base):
+    __tablename__ = "standard_job_alias"
+    __table_args__ = (
+        UniqueConstraint("standard_job_id", "alias_key", name="uq_standard_job_alias_key"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    standard_job_id: Mapped[int] = mapped_column(
+        ForeignKey("standard_job.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    alias: Mapped[str] = mapped_column(String(255), nullable=False)
+    alias_key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    source_type: Mapped[str] = mapped_column(String(30), nullable=False, default="raw")
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    normalization_version: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="job-title-v2"
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
 
 class StandardJobSource(Base):
@@ -82,9 +108,25 @@ class GraphEnrichmentCandidate(Base):
     snapshot_id: Mapped[str] = mapped_column(ForeignKey("graph_snapshot.id", ondelete="CASCADE"), nullable=False, index=True)
     skill_id: Mapped[int] = mapped_column(ForeignKey("skill.id"), nullable=False, index=True)
     candidate_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    evidence_source_ids: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list)
+    # Historical column name retained for compatibility; values are stable
+    # Phase 2 EvidenceChunk IDs from Phase 3 onward.
+    evidence_source_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     verification_status: Mapped[str] = mapped_column(String(20), nullable=False, default="unverified", index=True)
+    machine_validation_status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="pending", index=True
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    publication_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="draft", index=True
+    )
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    review_note: Mapped[str | None] = mapped_column(String(500))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime)
+    lock_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     agent_run_id: Mapped[str | None] = mapped_column(ForeignKey("agent_run.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())

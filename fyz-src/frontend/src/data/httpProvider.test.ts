@@ -60,10 +60,116 @@ describe("HTTP job and JD Agent provider contract", () => {
     vi.restoreAllMocks();
   });
 
-  it("unwraps job list responses", async () => {
-    vi.spyOn(request, "get").mockResolvedValue(response([job]) as never);
-    await expect(httpDataProvider.jobs.list()).resolves.toEqual([job]);
-    expect(request.get).toHaveBeenCalledWith("/jobs", { params: undefined });
+  it("loads public jobs with server pagination metadata", async () => {
+    vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: [job],
+        meta: { page: 2, page_size: 6, total: 13, total_pages: 3 },
+      },
+    } as never);
+    await expect(httpDataProvider.jobs.list({ page: 2, pageSize: 6, status: "open", keyword: "Java" })).resolves.toEqual({
+      items: [job],
+      page: 2,
+      pageSize: 6,
+      total: 13,
+      totalPages: 3,
+    });
+    expect(request.get).toHaveBeenCalledWith("/jobs", {
+      params: { page: 2, page_size: 6, status: "open", keyword: "Java" },
+    });
+  });
+
+  it("loads internal positions with server pagination metadata", async () => {
+    vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: [],
+        meta: { page: 1, page_size: 6, total: 0, total_pages: 0 },
+      },
+    } as never);
+    await expect(httpDataProvider.internalTransfer.listPositionsPage({
+      page: 1,
+      pageSize: 6,
+      status: "draft",
+      keyword: "平台",
+    })).resolves.toEqual({ items: [], page: 1, pageSize: 6, total: 0, totalPages: 0 });
+    expect(request.get).toHaveBeenCalledWith("/internal-transfer/positions", {
+      params: { page: 1, page_size: 6, status: "draft", keyword: "平台" },
+    });
+  });
+
+  it("loads paged observed jobs and their source evidence", async () => {
+    const observed = {
+      id: 7,
+      title: "Python 数据工程师",
+      standardized_title: "数据工程师",
+      company: "示例科技",
+      city: "合肥",
+      salary_text: "20K-30K",
+      experience_text: "3-5年",
+      education_text: "本科",
+      source: "zhaopin",
+      source_url: "https://example.test/jobs/7",
+      posted_at: "2026-07-01",
+      crawled_at: "2026-07-02",
+      dedup_status: "unique",
+      verified_skill_count: 1,
+      pending_skill_count: 0,
+    };
+    const get = vi.spyOn(request, "get")
+      .mockResolvedValueOnce({
+        data: {
+          code: 200,
+          message: "success",
+          data: [observed],
+          meta: { page: 1, page_size: 20, total: 1, total_pages: 1 },
+        },
+      } as never)
+      .mockResolvedValueOnce(response({
+        ...observed,
+        jd_text: "Python 数据处理",
+        responsibilities: "数据管道",
+        requirements: "熟悉 Python",
+        skills: [{
+          fact_id: 9,
+          skill_id: 3,
+          skill_name: "Python",
+          category: "backend",
+          kind: "required",
+          confidence: 0.95,
+          evidence_text: "熟悉 Python",
+          verification_status: "verified",
+          extraction_method: "rule",
+          source_count: 2,
+        }],
+      }) as never);
+
+    await expect(httpDataProvider.jobs.listObserved({
+      page: 1,
+      pageSize: 20,
+      keyword: "Python",
+      city: "合肥",
+    })).resolves.toEqual(expect.objectContaining({
+      items: [observed],
+      total: 1,
+      totalPages: 1,
+    }));
+    await expect(httpDataProvider.jobs.getObserved(7)).resolves.toEqual(
+      expect.objectContaining({ id: 7, skills: [expect.objectContaining({ skill_name: "Python" })] }),
+    );
+    expect(get).toHaveBeenNthCalledWith(1, "/jobs/observed", {
+      params: {
+        page: 1,
+        page_size: 20,
+        keyword: "Python",
+        city: "合肥",
+        source: undefined,
+      },
+    });
+    expect(get).toHaveBeenNthCalledWith(2, "/jobs/observed/7", { params: undefined });
   });
 
   it("does not send FormData with the global application/json content type", async () => {
@@ -149,6 +255,58 @@ describe("HTTP job and JD Agent provider contract", () => {
     expect(remove).toHaveBeenCalledWith(`/jobs/${job.id}`);
   });
 
+  it("uses real favorite toggle state and persists browsing history", async () => {
+    const favorite = {
+      id: 4,
+      target_type: "job" as const,
+      target_id: job.id,
+      title: job.title,
+      subtitle: "研发中心 · senior",
+      company: "智联职引",
+      location: "合肥",
+      salary: job.salary_range,
+      experience: "3-5年",
+      education: "本科",
+      skills: job.skills || [],
+      match: 88,
+      savedAt: "2026-07-30T10:00:00",
+      savedOrder: 1785405600,
+      note: "",
+    };
+    const historyInput = {
+      type: "job" as const,
+      targetId: job.id,
+      title: job.title,
+      description: "岗位详情",
+      source: "岗位管理",
+      tags: ["Java"],
+      url: `/jobs?record=${job.id}`,
+    };
+    const history = {
+      ...historyInput,
+      id: 6,
+      dateKey: "today" as const,
+      date: "2026-07-30",
+      time: "10:00",
+    };
+    const post = vi.spyOn(request, "post")
+      .mockResolvedValueOnce(response({ active: true }) as never)
+      .mockResolvedValueOnce(response(history) as never);
+    const get = vi.spyOn(request, "get").mockResolvedValueOnce(response([favorite]) as never);
+
+    await expect(httpDataProvider.favorites.toggle("job", job.id, job.title)).resolves.toBe(true);
+    await expect(httpDataProvider.favorites.list()).resolves.toEqual([favorite]);
+    await expect(httpDataProvider.history.record(historyInput)).resolves.toEqual(history);
+
+    expect(post).toHaveBeenNthCalledWith(1, "/favorites", {
+      target_type: "job",
+      target_id: job.id,
+      title: job.title,
+    });
+    expect(get).toHaveBeenCalledWith("/favorites", { params: undefined });
+    expect(post).toHaveBeenNthCalledWith(2, "/history", historyInput);
+  });
+
   it("uses async Agent tasks and preserves degraded career metadata", async () => {
     const result = {
       recommendations: [{
@@ -189,6 +347,23 @@ describe("HTTP job and JD Agent provider contract", () => {
     );
   });
 
+  it("runs a full graph sync without LLM enrichment and returns persisted counts", async () => {
+    const result = { node_count: 120, edge_count: 240, fact_count: 80 };
+    const post = vi.spyOn(request, "post").mockResolvedValue(response({
+      task_id: "graph-task",
+      status: "succeeded",
+      progress: 100,
+      result,
+      error_message: null,
+    }) as never);
+
+    await expect(httpDataProvider.graph.sync()).resolves.toEqual(result);
+    expect(post).toHaveBeenCalledWith("/graph/sync", {
+      mode: "full",
+      enrich_top_skills: false,
+    });
+  });
+
   it("surfaces the backend failure reason for an Agent task", async () => {
     vi.spyOn(request, "post").mockResolvedValue(response({
       task: { task_id: "match-task", status: "queued", progress: 0, result: null, error_message: null },
@@ -200,6 +375,58 @@ describe("HTTP job and JD Agent provider contract", () => {
     }) as never);
 
     await expect(httpDataProvider.talents.explain(3)).rejects.toThrow("模型服务限流，请稍后重试");
+  });
+
+  it("loads and reviews skill facts through the real review endpoints", async () => {
+    const fact = {
+      id: 31, skill_id: 8, skill_name: "Python", category: "programming",
+      kind: "required", importance: 0.9, frequency: 1, confidence: 0.88,
+      evidence_text: "熟练使用 Python", verification_status: "unverified",
+      extraction_method: "rule", source_count: 1, job_id: null,
+      raw_job_record_id: 12, job_title: "AI 工程师", company: "示例企业",
+      source: "智联招聘", source_url: "https://example.com/job/1",
+      reviewed_by: null, reviewer_name: null, reviewed_at: null,
+      review_note: null, created_at: "2026-07-29T10:00:00",
+    };
+    const get = vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200, message: "success",
+        data: {
+          items: [fact],
+          summary: { all: 1, unverified: 1, verified: 0, rejected: 0 },
+        },
+        meta: { page: 1, page_size: 12, total: 1, total_pages: 1 },
+      },
+    } as never);
+    const patch = vi.spyOn(request, "patch").mockResolvedValue(response({
+      ...fact,
+      verification_status: "verified",
+      reviewed_by: 1,
+      reviewer_name: "admin",
+      reviewed_at: "2026-07-29T11:00:00Z",
+      review_note: "证据充分",
+    }) as never);
+
+    await expect(httpDataProvider.skillReviews.list({
+      page: 1,
+      pageSize: 12,
+      status: "unverified",
+      keyword: "Python",
+    })).resolves.toEqual(expect.objectContaining({
+      items: [fact],
+      meta: { page: 1, page_size: 12, total: 1, total_pages: 1 },
+    }));
+    await expect(
+      httpDataProvider.skillReviews.review(31, "verified", "证据充分"),
+    ).resolves.toEqual(expect.objectContaining({ verification_status: "verified" }));
+
+    expect(get).toHaveBeenCalledWith("/skills/facts/reviews", {
+      params: { page: 1, page_size: 12, status: "unverified", keyword: "Python" },
+    });
+    expect(patch).toHaveBeenCalledWith(
+      "/skills/facts/31/review",
+      { decision: "verified", note: "证据充分" },
+    );
   });
 
   it("reports a completed Agent task without a result as an invalid response", async () => {
@@ -214,19 +441,40 @@ describe("HTTP job and JD Agent provider contract", () => {
   });
 
   it("maps the real analysis overview response and forwards trend filters", async () => {
+    const baseline = {
+      version: "standard-job-v1",
+      source_note: "MySQL baseline",
+      minimum_source_count: 2,
+      standard_job_count: 1,
+      technology_stack_count: 1,
+      verified_skill_count: 2,
+      verified_fact_count: 8,
+      baseline_at: "2026-06-30",
+      technology_stacks: [{ key: "backend", label: "后端开发", standard_job_count: 1, source_count: 4, top_skills: ["Java"] }],
+      job_standards: [],
+    };
     const dataQuality = {
       total_records: 18,
+      deduplicated_records: 16,
+      duplicate_records: 2,
+      independent_job_clusters: 5,
+      independent_companies: 8,
       valid_time_records: 15,
       fallback_time_records: 3,
       valid_salary_records: 12,
       verified_skill_facts: 28,
       observed_months: 6,
+      observed_periods: 6,
+      period_unit: "month",
       coverage_start: "2026-01",
       coverage_end: "2026-06",
       insufficient_data: false,
       notes: [],
     };
     const get = vi.spyOn(request, "get").mockResolvedValue(response({
+      window: "6m",
+      window_label: "近 6 个月",
+      granularity: "month",
       stats: { total_jobs: 18, new_skills: 2, average_salary_k: 27.5, active_cities: 3 },
       months: ["2026-05", "2026-06"],
       job_demand: [{ name: "Java", values: [7, 11] }],
@@ -236,30 +484,52 @@ describe("HTTP job and JD Agent provider contract", () => {
       locations: [{ city: "Hangzhou", value: 8 }],
       emerging_skills: [{ id: 1, skill: "LangChain", category: "AI", growth: 35, stage: "emerging", sparkline: [2, 5] }],
       data_quality: dataQuality,
+      baseline,
     }) as never);
 
     await expect(httpDataProvider.trends.getOverview({
-      months: 6,
+      window: "6m",
       keyword: "Java",
       city: "Hangzhou",
     })).resolves.toEqual(expect.objectContaining({
       stats: { totalJobs: "18", newSkills: 2, avgSalary: "27.5K", activeCities: 3 },
       jobDemand: [{ name: "Java", values: [7, 11] }],
       dataQuality,
+      baseline,
+      window: "6m",
+      windowLabel: "近 6 个月",
     }));
     expect(get).toHaveBeenCalledWith("/analysis/overview", {
-      params: { months: 6, keyword: "Java", city: "Hangzhou" },
+      params: { window: "6m", keyword: "Java", city: "Hangzhou" },
     });
   });
 
   it("loads job insights and persists an emerging-job decision", async () => {
+    const baseline = {
+      version: "standard-job-v1",
+      source_note: "MySQL baseline",
+      minimum_source_count: 2,
+      standard_job_count: 1,
+      technology_stack_count: 1,
+      verified_skill_count: 2,
+      verified_fact_count: 6,
+      baseline_at: "2026-06-30",
+      technology_stacks: [],
+      job_standards: [],
+    };
     const dataQuality = {
       total_records: 4,
+      deduplicated_records: 4,
+      duplicate_records: 0,
+      independent_job_clusters: 1,
+      independent_companies: 2,
       valid_time_records: 4,
       fallback_time_records: 0,
       valid_salary_records: 3,
       verified_skill_facts: 6,
       observed_months: 2,
+      observed_periods: 2,
+      period_unit: "month",
       coverage_start: "2026-05",
       coverage_end: "2026-06",
       insufficient_data: false,
@@ -277,6 +547,7 @@ describe("HTTP job and JD Agent provider contract", () => {
       emerging_jobs: [insight],
       capability_changes: [],
       data_quality: dataQuality,
+      baseline,
     }) as never);
     const put = vi.spyOn(request, "put").mockResolvedValue(response({
       standard_job_id: 9,
@@ -288,6 +559,7 @@ describe("HTTP job and JD Agent provider contract", () => {
       emergingJobs: [insight],
       capabilityChanges: [],
       dataQuality,
+      baseline,
     });
     await expect(httpDataProvider.jobs.decideInsight(9, "confirmed", "Review this week")).resolves.toBeUndefined();
 
@@ -331,5 +603,90 @@ describe("HTTP job and JD Agent provider contract", () => {
 
     expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", { params: { keyword: "15018", limit: 10 } });
     expect(post).toHaveBeenCalledWith("/internal-transfer/talents/from-directory/18", {});
+  });
+
+  it("maps the admin data-quality list and reversible decision contracts", async () => {
+    const item = {
+      id: 31,
+      title: "Java 平台工程师",
+      standard_job_id: 8,
+      standardized_title: "Java 工程师",
+      company: "示例科技",
+      source: "zhaopin",
+      source_url: "https://example.test/jobs/31",
+      posted_at: "2026-07-20T00:00:00Z",
+      crawled_at: "2026-07-21T00:00:00Z",
+      posted_at_text: "2026-07-20",
+      crawled_at_text: "2026-07-21",
+      quality_score: 0.71,
+      freshness_score: 0.9,
+      source_trust_score: 0.85,
+      quality_status: "warning" as const,
+      quality_flags: ["near_duplicate"],
+      dedup_status: "near_duplicate",
+      near_duplicate_group_id: "ndg-123",
+      near_duplicate_score: 0.94,
+      is_excluded: false,
+      exclusion_reason: null,
+      quality_evaluated_at: "2026-07-30T00:00:00Z",
+    };
+    const get = vi.spyOn(request, "get").mockResolvedValue({
+      data: {
+        code: 200,
+        message: "success",
+        data: {
+          items: [item],
+          summary: {
+            total: 1,
+            accepted: 0,
+            warning: 1,
+            rejected: 0,
+            pending: 0,
+            near_duplicates: 1,
+            excluded: 0,
+            average_quality_score: 0.71,
+            flag_counts: { near_duplicate: 1 },
+          },
+        },
+        meta: { page: 1, page_size: 20, total: 1, total_pages: 1 },
+      },
+    } as never);
+    const patch = vi.spyOn(request, "patch").mockResolvedValue(response({
+      ...item,
+      is_excluded: true,
+      exclusion_reason: "正文与同岗位记录高度重复",
+    }) as never);
+
+    await expect(httpDataProvider.admin.listQuality({
+      page: 1,
+      pageSize: 20,
+      qualityStatus: "warning",
+      source: "zhaopin",
+      excluded: false,
+    })).resolves.toEqual(expect.objectContaining({
+      items: [item],
+      meta: { page: 1, page_size: 20, total: 1, total_pages: 1 },
+    }));
+    await expect(httpDataProvider.admin.decideQuality(
+      31,
+      "exclude",
+      "正文与同岗位记录高度重复",
+    )).resolves.toEqual(expect.objectContaining({ is_excluded: true }));
+
+    expect(get).toHaveBeenCalledWith("/admin/data-quality/records", {
+      params: {
+        page: 1,
+        page_size: 20,
+        source: "zhaopin",
+        quality_status: "warning",
+        quality_flag: undefined,
+        near_duplicate_group_id: undefined,
+        excluded: false,
+      },
+    });
+    expect(patch).toHaveBeenCalledWith("/admin/data-quality/records/31", {
+      action: "exclude",
+      reason: "正文与同岗位记录高度重复",
+    });
   });
 });

@@ -13,7 +13,7 @@ class MatchResult(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, comment="用户ID")
-    resume_id: Mapped[int] = mapped_column(ForeignKey("resume.id"), nullable=False, comment="简历ID")
+    resume_id: Mapped[int] = mapped_column(ForeignKey("user_resume.id"), nullable=False, comment="简历ID")
     position_id: Mapped[int] = mapped_column(ForeignKey("job_position.id"), nullable=False, comment="岗位ID")
     position_name: Mapped[str] = mapped_column(String(100), default="", comment="岗位名称（冗余，方便查询）")
     resume_name: Mapped[str] = mapped_column(String(100), default="", comment="简历名称（冗余）")
@@ -22,8 +22,8 @@ class MatchResult(Base):
     dimensions: Mapped[list] = mapped_column(JSON, default=list, comment="各维度评分列表")
     gap_analysis: Mapped[dict] = mapped_column(JSON, default=dict, comment="差距分析结果")
     suggestions: Mapped[list] = mapped_column(JSON, default=list, comment="优化建议列表")
-    match_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="匹配时间")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    match_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="匹配时间")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 # 以下为 JSON 存储结构的类型说明，不映射数据库表

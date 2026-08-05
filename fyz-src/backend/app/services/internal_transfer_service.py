@@ -9,6 +9,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
+from app.core.time import utc_now_naive
+from app.schemas.common import PageMeta
 from app.models import (
     EnterpriseEmployeeDirectory,
     EnterpriseTalent,
@@ -192,7 +194,7 @@ class InternalTransferService:
             for field, value in values.items():
                 setattr(row, field, value)
             row.synced_by = user_id
-            row.synced_at = datetime.utcnow()
+            row.synced_at = utc_now_naive()
         await self.db.commit()
         await self.db.refresh(row)
         in_pool = await self.db.scalar(select(EnterpriseTalent.id).where(
@@ -256,11 +258,40 @@ class InternalTransferService:
         await self.db.refresh(row)
         return self.talent_summary(row)
 
-    async def list_positions(self) -> list[InternalPositionSummary]:
+    async def list_positions(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        status: InternalPositionStatus | None = None,
+        keyword: str | None = None,
+    ) -> tuple[list[InternalPositionSummary], PageMeta]:
+        filters = []
+        if status is not None:
+            filters.append(InternalPosition.status == status.value)
+        if keyword and keyword.strip():
+            pattern = f"%{keyword.strip()}%"
+            filters.append(or_(
+                InternalPosition.title.like(pattern),
+                InternalPosition.department.like(pattern),
+                InternalPosition.receiving_manager.like(pattern),
+            ))
+
+        statement = select(InternalPosition).where(*filters)
+        total_statement = select(func.count()).select_from(InternalPosition).where(*filters)
+        total = int((await self.db.execute(total_statement)).scalar_one())
         rows = list((await self.db.execute(
-            select(InternalPosition).order_by(InternalPosition.updated_at.desc(), InternalPosition.id.desc())
+            statement
+            .order_by(InternalPosition.updated_at.desc(), InternalPosition.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )).scalars())
-        return [self.position_summary(row) for row in rows]
+        return [self.position_summary(row) for row in rows], PageMeta(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=(total + page_size - 1) // page_size if total else 0,
+        )
 
     async def create_position(self, payload: InternalPositionCreate, *, user_id: int) -> InternalPositionSummary:
         if payload.status != InternalPositionStatus.draft:
@@ -285,7 +316,7 @@ class InternalTransferService:
         if status.value not in self.POSITION_TRANSITIONS.get(row.status, set()):
             raise InvalidParameterError(f"内部岗位不能从 {row.status} 直接变更为 {status.value}")
         row.status = status.value
-        row.updated_at = datetime.utcnow()
+        row.updated_at = utc_now_naive()
         await self.db.commit()
         return self.position_summary(row)
 
