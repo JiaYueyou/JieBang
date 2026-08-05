@@ -1,313 +1,183 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue'
-import { Graph } from '@antv/g6'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useGraphStore } from '@/stores/graph'
-import {
-  transformToG6, TYPE_COLORS, TYPE_SIZES, TYPE_LABELS,
-  isHierarchyEdge, isCrossEdge,
-} from '@/data/graphBuilder'
+import Graph3DCanvas from '@/components/graph/Graph3DCanvas.vue'
+import type { GraphNodeAttrs } from '@/components/graph/Graph3DCanvas.vue'
+import { TYPE_COLORS, TYPE_LABELS } from '@/data/graphBuilder'
 import type { Neo4jNodeType } from '@/types'
 
 const graphStore = useGraphStore()
-const containerRef = ref<HTMLDivElement>()
 
 // 过滤器状态
 const searchKeyword = ref('')
 const stackFilter = ref<string>('')
 const levelFilter = ref<string>('')
-const selectedNode = ref<any>(null)
+const selectedType = ref<string>('all')
 
-// 节点类型显示/隐藏
-const NODE_TYPES: Neo4jNodeType[] = ['Job', 'SkillArea', 'TechStack', 'TechPoint', 'KnowledgePoint']
-const typeVisibility = ref<Record<string, boolean>>({
-  Job: true, SkillArea: true, TechStack: true, TechPoint: false, KnowledgePoint: false,
-  SourceDocument: false, GraphSnapshot: false,
+// 图谱交互
+const activeNode = ref<GraphNodeAttrs | null>(null)
+const pinnedNodeIds = ref<string[]>([])
+const searchHighlightedNodeIds = computed(() => {
+  const query = searchKeyword.value.trim().toLocaleLowerCase()
+  if (!query || !graphStore.graph) return [] as string[]
+  const matched: string[] = []
+  graphStore.graph.forEachNode((id, attrs: any) => {
+    const searchable = [attrs.name, attrs.label, attrs.description, attrs.parent_skill, attrs.parent_tech_point]
+      .filter(Boolean).join(' ').toLocaleLowerCase()
+    if (searchable.includes(query)) matched.push(id)
+  })
+  return matched
 })
 
-let graph: Graph | null = null
+const layers = [
+  { type: 'Job' as Neo4jNodeType, label: 'Job', desc: '岗位', color: '#122d6e' },
+  { type: 'SkillArea' as Neo4jNodeType, label: 'SkillArea', desc: '技能领域', color: '#2f47b8' },
+  { type: 'TechStack' as Neo4jNodeType, label: 'TechStack', desc: '技术栈', color: '#3f5ae0' },
+  { type: 'TechPoint' as Neo4jNodeType, label: 'TechPoint', desc: '技术细节点', color: '#7893de' },
+  { type: 'KnowledgePoint' as Neo4jNodeType, label: 'KnowledgePoint', desc: '知识要点', color: '#b4c2f2' },
+]
 
-function getVisibleData() {
-  const { nodes: g6Nodes, edges: g6Edges } = transformToG6({
-    nodes: graphStore.nodes,
-    edges: graphStore.edges,
-    node_count: graphStore.nodeCount,
-    edge_count: graphStore.edgeCount,
-    snapshot_version: null,
-    truncated: false,
+const stackOptions = [
+  { label: '全部方向', value: '' },
+  { label: 'AI', value: 'ai' },
+  { label: '后端', value: 'backend' },
+  { label: '大数据', value: 'data' },
+  { label: 'DevOps', value: 'devops' },
+]
+
+const levelOptions = [
+  { label: '全部级别', value: '' },
+  { label: '初级', value: 'junior' },
+  { label: '中级', value: 'middle' },
+  { label: '高级', value: 'senior' },
+]
+
+const currentViewTitle = computed(() => {
+  const stack = stackOptions.find(s => s.value === stackFilter.value)?.label || '全部方向'
+  const level = levelOptions.find(l => l.value === levelFilter.value)?.label || '全部级别'
+  return `${stack} · ${level}`
+})
+
+// 上下级节点
+const parentNodes = computed(() => {
+  if (!activeNode.value || !graphStore.graph) return []
+  const ids = new Set<string>()
+  graphStore.graph.forEachEdge((_e, _a, source, target) => {
+    if (target === activeNode.value?.id) ids.add(source)
   })
-  const visibleTypes = new Set(
-    Object.entries(typeVisibility.value).filter(([, v]) => v).map(([k]) => k)
-  )
-  const filteredNodes = g6Nodes.filter(n => {
-    if (!visibleTypes.has(n.data.nodeType)) return false
-    if (stackFilter.value && n.data.stack !== stackFilter.value) return false
-    if (levelFilter.value && n.data.level !== levelFilter.value) return false
-    if (searchKeyword.value) {
-      const kw = searchKeyword.value.toLowerCase()
-      return n.data.label.toLowerCase().includes(kw) ||
-             n.data.description.toLowerCase().includes(kw)
-    }
-    return true
+  return Array.from(ids).map(id => graphStore.graph.getNodeAttributes(id)).filter(Boolean)
+})
+
+const childNodes = computed(() => {
+  if (!activeNode.value || !graphStore.graph) return []
+  const ids = new Set<string>()
+  graphStore.graph.forEachEdge((_e, _a, source, target) => {
+    if (source === activeNode.value?.id) ids.add(target)
   })
-  const filteredIds = new Set(filteredNodes.map(n => n.id))
-  const filteredEdges = g6Edges.filter(e => filteredIds.has(e.source) && filteredIds.has(e.target))
-  return { nodes: filteredNodes, edges: filteredEdges }
-}
+  return Array.from(ids).map(id => graphStore.graph.getNodeAttributes(id)).filter(Boolean)
+})
 
-function buildGraph() {
-  if (!containerRef.value) return
-  const container = containerRef.value
-  const width = container.clientWidth || 1000
-  const height = 780
+const isActiveNodePinned = computed(() =>
+  Boolean(activeNode.value && pinnedNodeIds.value.includes(activeNode.value.id))
+)
 
-  const { nodes: dataNodes, edges: dataEdges } = getVisibleData()
-
-  if (dataNodes.length === 0) {
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;">暂无图谱数据，请先执行图谱同步</div>'
-    return
-  }
-
-  graph = new Graph({
-    container,
-    width,
-    height,
-    autoFit: 'view',
-    background: '#f8f9fb',
-    data: { nodes: dataNodes, edges: dataEdges },
-    node: {
-      type: 'rect',
-      style: (d: any) => {
-        const t = (d.data?.nodeType || 'TechStack') as string
-        const size = TYPE_SIZES[t] || [64, 28]
-        const color = TYPE_COLORS[t] || '#64748b'
-        return {
-          size,
-          radius: Math.min(size[0], size[1]) / 2,
-          fill: color,
-          stroke: color,
-          lineWidth: 2,
-          labelText: d.data?.label || '',
-          labelFill: '#fff',
-          labelFontSize: 11,
-          labelFontWeight: 500,
-          labelPlacement: 'center',
-          cursor: 'pointer',
-        }
-      },
-      state: {
-        selected: {
-          stroke: '#f59e0b',
-          lineWidth: 4,
-          shadowColor: 'rgba(245,158,11,0.4)',
-          shadowBlur: 20,
-        },
-        highlighted: { opacity: 1 },
-        dimmed: { opacity: 0.08 },
-      },
-    },
-    edge: {
-      type: 'cubic-vertical',
-      style: (d: any) => {
-        const rel = d.data?.relation || ''
-        if (isCrossEdge(rel)) {
-          return {
-            stroke: 'rgba(245,158,11,0.4)',
-            lineWidth: 1,
-            lineDash: [5, 4],
-            endArrow: false,
-          }
-        }
-        return {
-          stroke: 'rgba(148,163,184,0.45)',
-          lineWidth: 1.5,
-          endArrow: true,
-        }
-      },
-      state: {
-        highlighted: {
-          stroke: 'rgba(79,110,246,0.5)',
-          lineWidth: 2.5,
-        },
-        dimmed: { opacity: 0.03 },
-      },
-    },
-    layout: {
-      type: 'dagre',
-      rankdir: 'TB',
-      ranksep: 80,
-      nodesep: 40,
-      animation: false,
-    },
-    behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
-  })
-
-  graph.on('node:click', async (evt: any) => {
-    const nodeId = evt.target?.id
-    if (!nodeId) return
-
-    // 点击 TechStack 节点 → 触发 LLM 生成 L4/L5
-    const clickedNode = graphStore.nodes.find(n => n.id === nodeId)
-    if (clickedNode && clickedNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(nodeId)) {
-      try {
-        await graphStore.enrichNode(nodeId)
-        typeVisibility.value.TechPoint = true
-        typeVisibility.value.KnowledgePoint = true
-        refreshGraph()
-        setTimeout(() => {
-          const n = graph?.getNodeData().find((x: any) => x.id === nodeId)
-          if (n && graph) graph.setElementState(nodeId, 'selected')
-        }, 100)
-      } catch (e) {
-        console.error('Enrich failed:', e)
-      }
-      return
-    }
-
-    const allEdges = graph!.getEdgeData()
-    const allNodes = graph!.getNodeData()
-
-    const connectedIds = new Set<string>([nodeId])
-    let changed = true
-    while (changed) {
-      changed = false
-      for (const e of allEdges) {
-        if (connectedIds.has(e.source) && !connectedIds.has(e.target)) {
-          connectedIds.add(e.target); changed = true
-        }
-        if (connectedIds.has(e.target) && !connectedIds.has(e.source)) {
-          connectedIds.add(e.source); changed = true
-        }
-      }
-    }
-
-    allNodes.forEach((n: any) => {
-      if (n.id === nodeId) graph!.setElementState(n.id, 'selected')
-      else if (connectedIds.has(n.id)) graph!.setElementState(n.id, 'highlighted')
-      else graph!.setElementState(n.id, 'dimmed')
-    })
-    allEdges.forEach((e: any) => {
-      if (connectedIds.has(e.source) && connectedIds.has(e.target)) graph!.setElementState(e.id, 'highlighted')
-      else graph!.setElementState(e.id, 'dimmed')
-    })
-
-    // 更新选中节点详情
-    const originalNode = graphStore.nodes.find(n => n.id === nodeId)
-    if (originalNode) {
-      selectedNode.value = originalNode
-    }
-  })
-
-  graph.on('canvas:click', () => {
-    const allNodes = graph!.getNodeData()
-    const allEdges = graph!.getEdgeData()
-    allNodes.forEach((n: any) => graph!.setElementState(n.id, []))
-    allEdges.forEach((e: any) => graph!.setElementState(e.id, []))
-    selectedNode.value = null
-  })
-
-  graph.render()
-}
-
-function destroyGraph() {
-  if (graph) { graph.destroy(); graph = null }
-}
-
-function refreshGraph() {
-  destroyGraph()
-  nextTick(() => buildGraph())
-}
-
-async function handleSearch() {
-  if (!searchKeyword.value.trim()) {
-    await loadPanorama()
-  } else {
-    await graphStore.search(searchKeyword.value.trim())
-    nextTick(() => buildGraph())
-  }
-}
-
-async function loadPanorama() {
+// 加载图谱
+async function loadGraph() {
   await graphStore.fetchPanorama({
     stack: stackFilter.value || undefined,
     level: levelFilter.value || undefined,
-    limit: 1000,
+    keyword: searchKeyword.value.trim() || undefined,
+    limit: graphStore.currentLimit,
   })
-  nextTick(() => buildGraph())
-}
-
-function toggleType(type: string) {
-  typeVisibility.value[type] = !typeVisibility.value[type]
-  refreshGraph()
-}
-
-function handleStackChange() {
-  loadPanorama()
-}
-
-function handleLevelChange() {
-  loadPanorama()
+  activeNode.value = null
+  pinnedNodeIds.value = []
 }
 
 async function handleLoadMore() {
   await graphStore.loadMore()
-  nextTick(() => buildGraph())
 }
 
 function handleReset() {
   searchKeyword.value = ''
   stackFilter.value = ''
   levelFilter.value = ''
-  selectedNode.value = null
-  Object.keys(typeVisibility.value).forEach(k => {
-    typeVisibility.value[k] = (k === 'Job' || k === 'SkillArea' || k === 'TechStack')
-  })
+  selectedType.value = 'all'
+  activeNode.value = null
+  pinnedNodeIds.value = []
   graphStore.currentLimit = 50
   graphStore.hasMore = true
-  loadPanorama()
+  loadGraph()
 }
 
-onMounted(async () => {
-  if (!graphStore.loaded) await loadPanorama()
-  else nextTick(() => buildGraph())
+// 节点交互
+function handleNodeClick(node: GraphNodeAttrs | null) {
+  activeNode.value = node
+}
+
+function handleNodePin(nodeId: string, pinned: boolean) {
+  if (pinned) {
+    pinnedNodeIds.value = [nodeId]
+  } else {
+    pinnedNodeIds.value = pinnedNodeIds.value.filter(id => id !== nodeId)
+  }
+}
+
+function toggleActiveNodePin() {
+  if (!activeNode.value) return
+  const pinned = !pinnedNodeIds.value.includes(activeNode.value.id)
+  handleNodePin(activeNode.value.id, pinned)
+}
+
+async function handleEnrichClick() {
+  if (!activeNode.value || activeNode.value.type !== 'TechStack') return
+  if (graphStore.enrichedNodeIds.has(activeNode.value.id)) return
+  try {
+    await graphStore.enrichNode(activeNode.value.id)
+  } catch (e) {
+    console.error('Enrich failed:', e)
+  }
+}
+
+function handleRelatedNodeClick(attrs: any) {
+  activeNode.value = attrs as GraphNodeAttrs
+}
+
+function handleStackChange() { loadGraph() }
+function handleLevelChange() { loadGraph() }
+
+// 搜索防抖
+let filterTimer: ReturnType<typeof setTimeout> | undefined
+watch([searchKeyword, stackFilter, levelFilter], () => {
+  clearTimeout(filterTimer)
+  filterTimer = setTimeout(() => loadGraph(), 250)
 })
 
-onUnmounted(() => destroyGraph())
+onMounted(async () => {
+  if (!graphStore.loaded) await loadGraph()
+})
+
+onUnmounted(() => clearTimeout(filterTimer))
 </script>
 
 <template>
   <div class="graph-page">
     <!-- 顶部工具栏 -->
-    <div class="graph-toolbar">
-      <div class="toolbar-left">
-        <h3>IT 岗位技能知识图谱</h3>
-        <span class="graph-stats">
-          {{ graphStore.nodeCount }} 节点 / {{ graphStore.edgeCount }} 边
-        </span>
+    <section class="graph-toolbar">
+      <div class="graph-search">
+        <input
+          v-model="searchKeyword"
+          placeholder="搜索岗位、技能领域、技术栈或知识点..."
+        />
       </div>
-      <div class="toolbar-right">
-        <div class="search-box">
-          <input
-            v-model="searchKeyword"
-            type="text"
-            placeholder="搜索节点..."
-            @keyup.enter="handleSearch"
-          />
-          <button class="btn-search" @click="handleSearch">搜索</button>
-        </div>
-        <select v-model="stackFilter" class="filter-select" @change="handleStackChange">
-          <option value="">全部技术栈</option>
-          <option value="backend">后端</option>
-          <option value="ai">AI</option>
-          <option value="data">数据</option>
-          <option value="devops">DevOps</option>
-        </select>
-        <select v-model="levelFilter" class="filter-select" @change="handleLevelChange">
-          <option value="">全部级别</option>
-          <option value="junior">初级</option>
-          <option value="middle">中级</option>
-          <option value="senior">高级</option>
-        </select>
-        <button class="btn-reset" @click="handleReset">重置</button>
+      <select v-model="stackFilter" class="filter-select" @change="handleStackChange">
+        <option v-for="s in stackOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
+      </select>
+      <select v-model="levelFilter" class="filter-select" @change="handleLevelChange">
+        <option v-for="l in levelOptions" :key="l.value" :value="l.value">{{ l.label }}</option>
+      </select>
+      <div class="graph-stats">
+        <span>{{ graphStore.nodeCount }} 节点</span>
+        <span>{{ graphStore.edgeCount }} 边</span>
         <button
           v-if="graphStore.hasMore"
           class="btn-load-more"
@@ -316,193 +186,166 @@ onUnmounted(() => destroyGraph())
         >
           {{ graphStore.loading ? '加载中...' : '加载更多' }}
         </button>
+        <button class="btn-reset" @click="handleReset">重置</button>
       </div>
-    </div>
+    </section>
 
-    <div class="graph-body">
-      <!-- 左侧：节点类型过滤器 -->
-      <div class="left-panel">
-        <div class="panel-title">节点类型</div>
-        <label
-          v-for="t in NODE_TYPES"
-          :key="t"
-          class="type-filter-item"
-        >
-          <input
-            type="checkbox"
-            :checked="typeVisibility[t]"
-            @change="toggleType(t)"
-          />
-          <span class="type-dot" :style="{ background: TYPE_COLORS[t] }"></span>
-          <span class="type-label">{{ TYPE_LABELS[t] || t }}</span>
-        </label>
-        <div class="panel-divider"></div>
-        <div class="enrich-hint" v-if="graphStore.enrichingNodeId">
+    <!-- 主体三栏布局 -->
+    <section class="graph-layout">
+      <!-- 左侧：层过滤 -->
+      <aside class="graph-side-card">
+        <div class="card-title">五层模型</div>
+        <div class="layer-list">
+          <button
+            v-for="layer in layers"
+            :key="layer.type"
+            class="layer-item"
+            :class="{ active: selectedType === layer.type }"
+            @click="selectedType = selectedType === layer.type ? 'all' : layer.type"
+          >
+            <span class="layer-dot" :style="{ background: layer.color }"></span>
+            <span>{{ layer.label }}</span>
+            <em>{{ layer.desc }}</em>
+          </button>
+        </div>
+        <div class="card-divider"></div>
+        <!-- 富化提示 -->
+        <div v-if="graphStore.enrichingNodeId" class="enrich-status">
           <span class="spinner"></span> AI 正在分析技能...
         </div>
-        <div class="enrich-hint enrich-hint--tip" v-else>
-          点击技术栈(TechStack)节点可展开深层技能点
-        </div>
-        <div class="panel-divider"></div>
-        <div class="panel-title">图例</div>
-        <div class="legend-section">
-          <div class="legend-row">
-            <span class="legend-line solid"></span>
-            <span>层级关系</span>
-          </div>
-          <div class="legend-row">
-            <span class="legend-line dash"></span>
-            <span>交叉关联</span>
+        <div v-else class="enrich-hint">点击技术栈节点可展开深层技能点</div>
+      </aside>
+
+      <!-- 中央：ECharts 画布 -->
+      <main class="graph-canvas-card">
+        <div class="canvas-head">
+          <div>
+            <span class="canvas-label">当前视图</span>
+            <h3>{{ currentViewTitle }}</h3>
           </div>
         </div>
-      </div>
-
-      <!-- 中央：G6 画布 -->
-      <div ref="containerRef" class="graph-canvas"></div>
-
-      <!-- 右侧：节点详情面板 -->
-      <div class="right-panel" v-if="selectedNode">
-        <div class="panel-title">节点详情</div>
-        <div class="detail-field">
-          <span class="field-label">名称</span>
-          <span class="field-value">{{ selectedNode.name }}</span>
+        <div class="graph-canvas">
+          <Graph3DCanvas
+            :graph="graphStore.graph"
+            :highlighted-node-ids="searchHighlightedNodeIds"
+            :pinned-node-ids="pinnedNodeIds"
+            @node-click="handleNodeClick"
+            @node-pin="handleNodePin"
+          />
         </div>
-        <div class="detail-field">
-          <span class="field-label">类型</span>
-          <span class="field-value">
-            <span class="type-badge" :style="{ background: TYPE_COLORS[selectedNode.type] || '#64748b' }">
-              {{ TYPE_LABELS[selectedNode.type] || selectedNode.type }}
+      </main>
+
+      <!-- 右侧：节点详情 -->
+      <aside class="graph-detail-card">
+        <div class="card-title">节点详情</div>
+        <div v-if="activeNode" class="detail-content">
+          <div class="detail-head">
+            <span class="detail-type" :style="{ color: TYPE_COLORS[activeNode.type] || '#64748b' }">
+              {{ TYPE_LABELS[activeNode.type] || activeNode.type }}
             </span>
-          </span>
+            <h3>{{ activeNode.name }}</h3>
+            <p>{{ activeNode.description }}</p>
+            <!-- TechStack 展开按钮 -->
+            <button
+              v-if="activeNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(activeNode.id)"
+              class="btn-enrich"
+              :disabled="!!graphStore.enrichingNodeId"
+              @click="handleEnrichClick"
+            >
+              {{ graphStore.enrichingNodeId === activeNode.id ? 'AI 分析中...' : '展开 L4/L5' }}
+            </button>
+            <button class="btn-pin" @click="toggleActiveNodePin">
+              {{ isActiveNodePinned ? '取消锁定' : '锁定节点' }}
+            </button>
+          </div>
+
+          <div class="detail-grid">
+            <div><strong>{{ activeNode.stack || '-' }}</strong><span>技术方向</span></div>
+            <div><strong>{{ activeNode.level || '-' }}</strong><span>层级</span></div>
+            <div><strong>{{ activeNode.frequency ?? activeNode.importance ?? '-' }}</strong><span>频次/权重</span></div>
+          </div>
+
+          <div class="card-title sub-title">上级节点</div>
+          <div class="related-list">
+            <button v-for="n in parentNodes" :key="n.id" @click="handleRelatedNodeClick(n)">
+              <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
+              {{ n.name }}
+            </button>
+            <em v-if="parentNodes.length === 0">暂无上级节点</em>
+          </div>
+
+          <div class="card-title sub-title">下级节点</div>
+          <div class="related-list">
+            <button v-for="n in childNodes" :key="n.id" @click="handleRelatedNodeClick(n)">
+              <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
+              {{ n.name }}
+            </button>
+            <em v-if="childNodes.length === 0">暂无下级节点</em>
+          </div>
         </div>
-        <div class="detail-field" v-if="selectedNode.description">
-          <span class="field-label">描述</span>
-          <span class="field-value desc-text">{{ selectedNode.description }}</span>
+        <div v-else class="detail-empty">
+          <p>点击图谱中的节点查看详情</p>
         </div>
-        <div class="detail-field" v-if="selectedNode.stack">
-          <span class="field-label">技术栈</span>
-          <span class="field-value">{{ selectedNode.stack }}</span>
-        </div>
-        <div class="detail-field" v-if="selectedNode.level">
-          <span class="field-label">级别</span>
-          <span class="field-value">{{ selectedNode.level === 'junior' ? '初级' : selectedNode.level === 'middle' ? '中级' : selectedNode.level === 'senior' ? '高级' : selectedNode.level }}</span>
-        </div>
-        <div class="detail-field" v-if="selectedNode.frequency">
-          <span class="field-label">出现频次</span>
-          <span class="field-value">{{ selectedNode.frequency }}</span>
-        </div>
-        <div class="detail-field" v-if="selectedNode.importance">
-          <span class="field-label">重要度</span>
-          <span class="field-value">{{ (selectedNode.importance * 100).toFixed(0) }}%</span>
-        </div>
-        <div class="detail-field" v-if="selectedNode.properties?.job_count">
-          <span class="field-label">关联岗位</span>
-          <span class="field-value">{{ selectedNode.properties.job_count }}</span>
-        </div>
-      </div>
-      <div class="right-panel right-panel--empty" v-else>
-        <div class="empty-hint">点击节点查看详情</div>
-      </div>
-    </div>
+      </aside>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .graph-page {
-  max-width: 1600px;
-  margin: 0 auto;
-  height: calc(100vh - 80px);
-  display: flex;
-  flex-direction: column;
+  /* simple wrapper — no viewport math, no negative margins */
 }
 
+/* ===== 工具栏 ===== */
 .graph-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.graph-search {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
-  padding: 10px 16px;
-  flex-shrink: 0;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
 }
 
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.graph-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #334155;
+  font-size: 14px;
 }
 
-.toolbar-left h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
+.graph-search input:focus { border-color: #4f6ef6; }
+
+.filter-select {
+  padding: 9px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  outline: none;
 }
 
 .graph-stats {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
   color: #94a3b8;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.search-box input {
-  border: none;
-  outline: none;
-  padding: 6px 10px;
-  font-size: 13px;
-  width: 160px;
-  background: #fff;
-}
-
-.btn-search {
-  padding: 6px 12px;
-  border: none;
-  background: #4f6ef6;
-  color: #fff;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.btn-search:hover { background: #3d5bd9; }
-
-.filter-select {
-  padding: 6px 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #475569;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-}
-
-.btn-reset {
-  padding: 6px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  color: #64748b;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.btn-reset:hover {
-  border-color: #4f6ef6;
-  color: #4f6ef6;
+  white-space: nowrap;
 }
 
 .btn-load-more {
@@ -514,95 +357,112 @@ onUnmounted(() => destroyGraph())
   font-size: 12px;
   cursor: pointer;
 }
-
 .btn-load-more:hover { background: #3d5bd9; }
 .btn-load-more:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
 
-.graph-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  gap: 0;
-}
-
-/* 左侧面板 */
-.left-panel {
-  width: 200px;
-  flex-shrink: 0;
-  padding: 16px 12px;
-  border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  background: #fafbfc;
-}
-
-.panel-title {
+.btn-reset {
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
   font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+.btn-reset:hover { border-color: #4f6ef6; color: #4f6ef6; }
+
+/* ===== 三栏布局 ===== */
+.graph-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 286px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.graph-side-card,
+.graph-canvas-card,
+.graph-detail-card {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+}
+
+.graph-side-card,
+.graph-canvas-card,
+.graph-detail-card {
+  height: 674px;
+}
+
+.graph-side-card,
+.graph-detail-card {
+  padding: 18px;
+  overflow: hidden;
+}
+
+/* ===== 左侧面板 ===== */
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
   margin-bottom: 10px;
 }
 
-.type-filter-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #475569;
-}
-
-.type-filter-item:hover { background: #f1f5f9; }
-
-.type-filter-item input[type="checkbox"] {
-  accent-color: #4f6ef6;
-}
-
-.type-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.panel-divider {
+.card-divider {
   height: 1px;
   background: #e2e8f0;
   margin: 12px 0;
 }
 
-.legend-section {
+.layer-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 12px;
 }
 
-.legend-row {
-  display: flex;
+.layer-item {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 8px 10px;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f1f5f9;
   color: #64748b;
+  text-align: left;
+  cursor: pointer;
 }
 
-.legend-line {
-  width: 20px;
-  height: 0;
-  flex-shrink: 0;
+.layer-item.active,
+.layer-item:hover {
+  border-color: rgba(79, 110, 246, 0.22);
+  background: #eef0ff;
 }
 
-.legend-line.solid {
-  border-top: 2px solid rgba(148, 163, 184, 0.5);
+.layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
-.legend-line.dash {
-  border-top: 2px dashed rgba(245, 158, 11, 0.5);
+.layer-item span:nth-child(2) {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.enrich-hint {
+.layer-item em {
+  grid-column: 2;
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: normal;
+}
+
+.enrich-status {
   font-size: 12px;
   color: #4f6ef6;
   padding: 8px 4px;
@@ -611,10 +471,11 @@ onUnmounted(() => destroyGraph())
   gap: 6px;
 }
 
-.enrich-hint--tip {
-  color: #94a3b8;
+.enrich-hint {
   font-size: 11px;
-  line-height: 1.4;
+  color: #94a3b8;
+  line-height: 1.5;
+  padding: 4px;
 }
 
 .spinner {
@@ -627,71 +488,223 @@ onUnmounted(() => destroyGraph())
   display: inline-block;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* 中央画布 */
-.graph-canvas {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  border-radius: 0;
+/* ===== 中央画布 ===== */
+.graph-canvas-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   overflow: hidden;
 }
 
-/* 右侧面板 */
-.right-panel {
-  width: 260px;
-  flex-shrink: 0;
-  padding: 16px 14px;
-  border-left: 1px solid #e2e8f0;
-  overflow-y: auto;
-  background: #fafbfc;
-}
-
-.right-panel--empty {
+.canvas-head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
 }
 
-.empty-hint {
+.canvas-label {
   color: #94a3b8;
-  font-size: 13px;
+  font-size: 14px;
 }
 
-.detail-field {
-  margin-bottom: 12px;
+.canvas-head h3 {
+  margin-top: 2px;
+  color: #1e293b;
+  font-size: 16px;
 }
 
-.field-label {
-  display: block;
-  font-size: 11px;
+/* matches fyz .graph-canvas */
+.graph-canvas {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+/* ===== 右侧面板 ===== */
+.graph-detail-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.detail-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  margin-top: 12px;
+  padding-right: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sub-title {
+  margin-top: 22px;
+  margin-bottom: 10px;
+}
+
+.detail-head { margin-bottom: 4px; }
+
+.detail-type {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.detail-head h3 {
+  margin-top: 4px;
+  color: #1e293b;
+  font-size: 20px;
+}
+
+.detail-head p {
+  margin-top: 8px;
+  padding-right: 4px;
   color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 3px;
+  font-size: 14px;
+  line-height: 1.7;
+  max-height: 104px;
+  overflow-y: auto;
 }
 
-.field-value {
+.btn-enrich {
+  width: 100%;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid #4f6ef6;
+  border-radius: 6px;
+  background: #eef0ff;
+  color: #4f6ef6;
   font-size: 13px;
-  color: #334155;
-  word-break: break-all;
+  cursor: pointer;
 }
+.btn-enrich:hover { background: #dfe3ff; }
+.btn-enrich:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.desc-text {
-  font-size: 12px;
-  line-height: 1.5;
+.btn-pin {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
   color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-pin:hover { border-color: #f59e0b; color: #f59e0b; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
 }
 
-.type-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 500;
+.detail-grid div {
+  padding: 10px;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.detail-grid strong {
+  display: block;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.detail-grid span {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.related-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: none;
+  padding-right: 4px;
+}
+
+.related-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  text-align: left;
+  cursor: pointer;
+}
+
+.related-list button:hover {
+  color: #4f6ef6;
+  background: #eef0ff;
+}
+
+.related-list button span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.related-list em {
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: normal;
+}
+
+.detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  flex: 1;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+@media (max-width: 1280px) {
+  .graph-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .graph-detail-card {
+    grid-column: 1 / -1;
+    height: 420px;
+  }
+}
+
+@media (max-width: 960px) {
+  .graph-toolbar,
+  .graph-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-side-card {
+    height: auto;
+  }
+
+  .graph-canvas-card {
+    height: 674px;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
