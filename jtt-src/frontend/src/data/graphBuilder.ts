@@ -90,16 +90,18 @@ export function applySmartLayout(graph: Graph): void {
   })
 
   // L1: 中心小圆
-  nodesByLevel['L1']?.forEach((nodeId, index) => {
-    const angle = (index / nodesByLevel['L1'].length) * Math.PI * 2 - Math.PI / 2
+  const l1Nodes = nodesByLevel['L1'] || []
+  l1Nodes.forEach((nodeId, index) => {
+    const angle = (index / l1Nodes.length) * Math.PI * 2 - Math.PI / 2
     graph.setNodeAttribute(nodeId, 'x', centerX + Math.cos(angle) * 50)
     graph.setNodeAttribute(nodeId, 'y', centerY + Math.sin(angle) * 50)
     graph.setNodeAttribute(nodeId, 'z', 50)
   })
 
   // L2: 中环
-  nodesByLevel['L2']?.forEach((nodeId, index) => {
-    const angle = (index / nodesByLevel['L2'].length) * Math.PI * 2 - Math.PI / 2
+  const l2Nodes = nodesByLevel['L2'] || []
+  l2Nodes.forEach((nodeId, index) => {
+    const angle = (index / l2Nodes.length) * Math.PI * 2 - Math.PI / 2
     graph.setNodeAttribute(nodeId, 'x', centerX + Math.cos(angle) * 200)
     graph.setNodeAttribute(nodeId, 'y', centerY + Math.sin(angle) * 200)
     graph.setNodeAttribute(nodeId, 'z', 40)
