@@ -12,7 +12,7 @@ TESTING = os.getenv("TESTING") == "true"
 if TESTING:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
 else:
-    engine = create_async_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
+    engine = create_async_engine(DATABASE_URL, echo=False, pool_recycle=3600)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

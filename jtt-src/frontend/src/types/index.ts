@@ -73,6 +73,38 @@ export interface KnowledgeGraph {
   edges: GraphEdge[]
 }
 
+// ========== 新图谱（Neo4j fyz 数据模型） ==========
+export type Neo4jNodeType = 'Job' | 'SkillArea' | 'TechStack' | 'TechPoint' | 'KnowledgePoint' | 'SourceDocument' | 'GraphSnapshot'
+
+export interface Neo4jGraphNode {
+  id: string
+  name: string
+  type: Neo4jNodeType
+  stack: string | null
+  level: string | null
+  description: string
+  importance: number | null
+  frequency: number | null
+  properties: Record<string, unknown>
+}
+
+export interface Neo4jGraphEdge {
+  id: string
+  source: string
+  target: string
+  relation: string
+  properties: Record<string, unknown>
+}
+
+export interface Neo4jGraphSubgraph {
+  nodes: Neo4jGraphNode[]
+  edges: Neo4jGraphEdge[]
+  node_count: number
+  edge_count: number
+  snapshot_version: string | null
+  truncated: boolean
+}
+
 // ========== 简历相关 ==========
 export interface Education {
   school: string

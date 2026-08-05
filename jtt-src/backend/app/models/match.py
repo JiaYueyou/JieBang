@@ -13,7 +13,7 @@ class MatchResult(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, comment="用户ID")
-    resume_id: Mapped[int] = mapped_column(ForeignKey("resume.id"), nullable=False, comment="简历ID")
+    resume_id: Mapped[int] = mapped_column(ForeignKey("user_resume.id"), nullable=False, comment="简历ID")
     position_id: Mapped[int] = mapped_column(ForeignKey("job_position.id"), nullable=False, comment="岗位ID")
     position_name: Mapped[str] = mapped_column(String(100), default="", comment="岗位名称（冗余，方便查询）")
     resume_name: Mapped[str] = mapped_column(String(100), default="", comment="简历名称（冗余）")

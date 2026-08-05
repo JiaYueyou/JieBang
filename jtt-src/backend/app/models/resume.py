@@ -9,7 +9,7 @@ from app.core.database import Base
 
 class Resume(Base):
     """简历主表"""
-    __tablename__ = "resume"
+    __tablename__ = "user_resume"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, comment="所属用户ID")
