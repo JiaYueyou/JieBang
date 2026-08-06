@@ -129,8 +129,6 @@ def tag_source(records: list[dict]) -> list[dict]:
         "zhilian": "zhilian",
         "智联": "zhilian",
         "zhaopin": "zhilian",
-        "bytedance": "bytedance",
-        "字节": "bytedance",
     }
     for r in records:
         src = (r.get("source") or "").lower()

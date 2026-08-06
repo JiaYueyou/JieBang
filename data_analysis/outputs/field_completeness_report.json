@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06",
+  "generated_at": "2026-07-21",
   "description": "所有数据源字段完整率报告",
   "standard_fields": [
     "title",
@@ -406,7 +406,7 @@
       "file": "科大讯飞.json",
       "label": "学长-科大讯飞官网(原始)",
       "total_records": 220,
-      "overall_completeness_pct": 68.2,
+      "overall_completeness_pct": 68.1,
       "field_completeness": {
         "title": {
           "filled": 220,
@@ -462,70 +462,6 @@
         },
         "crawled_at": {
           "filled": 220,
-          "rate_pct": 100.0
-        }
-      }
-    },
-    {
-      "file": "jd_crawl_bytedance.json",
-      "label": "成员D-字节跳动官网(新爬)",
-      "total_records": 2353,
-      "overall_completeness_pct": 91.0,
-      "field_completeness": {
-        "title": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "company": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "city": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "salary": {
-          "filled": 0,
-          "rate_pct": 0.0
-        },
-        "experience": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "education": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "jd_text": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "responsibilities": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "requirements": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "keywords": {
-          "filled": 1743,
-          "rate_pct": 74.1
-        },
-        "posted_at": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "url": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "source": {
-          "filled": 2353,
-          "rate_pct": 100.0
-        },
-        "crawled_at": {
-          "filled": 2353,
           "rate_pct": 100.0
         }
       }

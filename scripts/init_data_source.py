@@ -47,21 +47,6 @@ INITIAL_DATA_SOURCES = [
         },
     },
     {
-        "name": "字节跳动官网",
-        "source_type": "bytedance",
-        "entry_url": "https://jobs.bytedance.com/experienced/position",
-        "description": "字节跳动官方招聘网站（社会化招聘），近三个月岗位，需 Playwright 引导获取反爬签名",
-        "enabled": True,
-        "crawl_config": {
-            "method": "POST",
-            "base_url": "https://jobs.bytedance.com/api/v1/search/job/posts",
-            "total_pages": 10,
-            "page_size": 1000,
-            "months_back": 3,
-            "request_interval": 1.0,
-        },
-    },
-    {
         "name": "科大讯飞官网(原始存档)",
         "source_type": "iflytek",
         "entry_url": None,
