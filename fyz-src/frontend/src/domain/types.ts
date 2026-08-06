@@ -365,6 +365,13 @@ export interface MatchReport {
   missing: string[];
 }
 
+export interface DashboardQuery {
+  hotJobsPage?: number;
+  hotJobsPageSize?: number;
+  emergingPage?: number;
+  emergingPageSize?: number;
+}
+
 export interface DashboardOverview {
   heroCards: Array<{ value: string; label: string; change: string; up: boolean; color: string; action: string; link: string }>;
   kanban: Array<{
@@ -382,8 +389,10 @@ export interface DashboardOverview {
     stages: Array<{ name: string; kind: "high" | "progress" | "gap" | "pending"; count: number }>;
   }>;
   highMatches: TalentSummary[];
-  hotJobs: Array<{ job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[] }>;
+  hotJobs: Array<{ job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[]; core_skills: string[] }>;
+  hotJobsTotal: number;
   emergingSkills: Array<{ id: EntityId; name: string; combo: string; growth: number; confidence: number }>;
+  emergingSkillsTotal: number;
 }
 
 export interface LearningStep {
@@ -623,6 +632,10 @@ export interface TrendQuery {
   window: "15d" | "1m" | "3m" | "6m";
   keyword?: string;
   city?: string;
+  emergingPage?: number;
+  emergingPageSize?: number;
+  newJobPage?: number;
+  newJobPageSize?: number;
 }
 
 export interface TrendOverview {
@@ -649,6 +662,18 @@ export interface TrendOverview {
     previous_companies: number;
     evidence_note: string;
   }>;
+  emergingTotal: number;
+  newJobs: Array<{
+    id: EntityId;
+    name: string;
+    core_skills: string[];
+    description: string;
+    confidence: number;
+    source_count: number;
+    first_seen_at: string;
+    decision: string | null;
+  }>;
+  newJobsTotal: number;
   dataQuality: AnalysisDataQuality;
   baseline: AnalysisBaseline;
 }

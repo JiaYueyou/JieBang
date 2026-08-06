@@ -1,5 +1,5 @@
 import type {
-  AdminOverview, AdminResourceSnapshot, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
+  AdminOverview, AdminResourceSnapshot, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, DashboardOverview, DashboardQuery, JobImportResult,
   DataQualityPage, DataQualityQuery, RawJobQualityItem,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphAsyncTask, GraphEnrichmentCandidate, GraphEnrichmentCandidatePage, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline,
@@ -10,7 +10,7 @@ import type {
 } from "@/domain/types";
 
 export interface DataProvider {
-  dashboard: { getOverview(): Promise<DashboardOverview> };
+  dashboard: { getOverview(query?: DashboardQuery): Promise<DashboardOverview> };
   jobs: {
     list(query?: { page?: number; pageSize?: number; status?: JobSummary["status"]; keyword?: string }): Promise<PageResult<JobSummary>>;
     listObserved(query: {

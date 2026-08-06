@@ -5,6 +5,8 @@ import type { GraphAsyncTask } from "@/domain/types";
 export type GraphTaskKind = "sync" | "enrichment" | "publication";
 
 const STORAGE_KEY = "fyz:graph-tasks:v1";
+/** queued 状态超过该时长视为任务未被 Worker 执行 */
+const QUEUED_TIMEOUT_MS = 5 * 60 * 1000;
 const tasks = reactive<Partial<Record<GraphTaskKind, GraphAsyncTask>>>({});
 const polling = new Set<GraphTaskKind>();
 
@@ -15,8 +17,23 @@ function persist() {
 async function poll(kind: GraphTaskKind) {
   if (polling.has(kind)) return;
   polling.add(kind);
+  const startedAt = Date.now();
   try {
     while (tasks[kind] && ["queued", "running"].includes(tasks[kind]!.status)) {
+      if (
+        tasks[kind]!.status === "queued"
+        && Date.now() - startedAt > QUEUED_TIMEOUT_MS
+      ) {
+        tasks[kind] = {
+          ...tasks[kind]!,
+          status: "failed",
+          error_message:
+            "同步任务长时间停留在排队状态，可能未被后台 Worker 执行，"
+            + "请检查 CELERY_TASK_ALWAYS_EAGER 配置或 Celery/Redis 是否已启动",
+        };
+        persist();
+        break;
+      }
       await new Promise(resolve => window.setTimeout(resolve, 1200));
       tasks[kind] = await dataProvider.graph.getTask(tasks[kind]!.task_id);
       persist();
