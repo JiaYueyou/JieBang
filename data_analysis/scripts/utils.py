@@ -23,6 +23,7 @@ DATA_FILES = [
     DATA_DIR / "jd_crawl_ifly.json",
     DATA_DIR / "jd_crawl_zl.json",
     DATA_DIR / "jd_crawl2.json",
+    DATA_DIR / "jd_crawl_bytedance.json",
 ]
 
 OUTPUT_MERGED = OUTPUT_DIR / "merged_jobs.json"

@@ -41,6 +41,7 @@ ALLOWED_FILES = {
     "jd_crawl_ifly.json", "jd_crawl_zl.json", "jd_crawl2.json",
     "jd_crawl_ifly_full.json", "jd_crawl_ifly_merged.json",
     "jd_crawl_zl_new.json",
+    "jd_crawl_bytedance.json",
 }
 ALLOWED_FILE_PATTERNS = (
     re.compile(r"iflytek_\d+\.json"),

@@ -1,25 +1,68 @@
 {
-  "total_skills": 101,
-  "total_mentions": 817,
+  "total_skills": 130,
+  "total_mentions": 5468,
   "category_distribution": {
-    "框架": 23,
-    "AI/机器学习": 16,
-    "工具/平台": 15,
-    "编程语言": 12,
-    "数据库": 12,
-    "领域知识": 12,
-    "云计算": 6,
+    "框架": 24,
+    "工具/平台": 23,
+    "领域知识": 20,
+    "编程语言": 18,
+    "AI/机器学习": 17,
+    "数据库": 14,
+    "云计算": 9,
     "软技能": 5
   },
   "skills": [
     {
+      "name": "大模型",
+      "category": "ai_ml",
+      "total_mentions": 1025,
+      "job_count": 935,
+      "as_core": 976,
+      "as_bonus": 49,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "沟通能力",
+      "category": "soft_skill",
+      "total_mentions": 433,
+      "job_count": 400,
+      "as_core": 429,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
       "name": "Python",
       "category": "programming_language",
-      "total_mentions": 86,
-      "job_count": 68,
-      "as_core": 81,
-      "as_bonus": 5,
+      "total_mentions": 390,
+      "job_count": 341,
+      "as_core": 358,
+      "as_bonus": 32,
       "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "项目管理",
+      "category": "soft_skill",
+      "total_mentions": 332,
+      "job_count": 295,
+      "as_core": 318,
+      "as_bonus": 14,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -28,141 +71,151 @@
     {
       "name": "C++",
       "category": "programming_language",
-      "total_mentions": 49,
-      "job_count": 45,
-      "as_core": 45,
-      "as_bonus": 4,
+      "total_mentions": 321,
+      "job_count": 292,
+      "as_core": 307,
+      "as_bonus": 14,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.93
+    },
+    {
+      "name": "LLM",
+      "category": "ai_ml",
+      "total_mentions": 222,
+      "job_count": 207,
+      "as_core": 190,
+      "as_bonus": 32,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "SQL",
+      "category": "programming_language",
+      "total_mentions": 219,
+      "job_count": 201,
+      "as_core": 178,
+      "as_bonus": 41,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.89
     },
     {
       "name": "Java",
       "category": "programming_language",
-      "total_mentions": 48,
-      "job_count": 40,
-      "as_core": 47,
-      "as_bonus": 1,
+      "total_mentions": 166,
+      "job_count": 147,
+      "as_core": 162,
+      "as_bonus": 4,
       "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "大模型",
-      "category": "ai_ml",
-      "total_mentions": 45,
-      "job_count": 41,
-      "as_core": 44,
-      "as_bonus": 1,
-      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
       "avg_confidence": 0.94
     },
     {
-      "name": "沟通能力",
-      "category": "soft_skill",
-      "total_mentions": 36,
-      "job_count": 35,
-      "as_core": 36,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "深度学习",
+      "name": "机器学习",
       "category": "ai_ml",
-      "total_mentions": 27,
-      "job_count": 22,
-      "as_core": 26,
-      "as_bonus": 1,
+      "total_mentions": 141,
+      "job_count": 125,
+      "as_core": 129,
+      "as_bonus": 12,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.93
     },
     {
-      "name": "MySQL",
-      "category": "database",
-      "total_mentions": 25,
-      "job_count": 20,
-      "as_core": 23,
-      "as_bonus": 2,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "JavaScript",
+      "name": "Go",
       "category": "programming_language",
-      "total_mentions": 21,
-      "job_count": 17,
-      "as_core": 20,
-      "as_bonus": 1,
+      "total_mentions": 130,
+      "job_count": 122,
+      "as_core": 123,
+      "as_bonus": 7,
       "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "RAG",
+      "category": "ai_ml",
+      "total_mentions": 122,
+      "job_count": 112,
+      "as_core": 114,
+      "as_bonus": 8,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
       "avg_confidence": 0.95
     },
     {
-      "name": "需求分析",
+      "name": "团队管理",
       "category": "soft_skill",
-      "total_mentions": 20,
-      "job_count": 16,
-      "as_core": 20,
-      "as_bonus": 0,
+      "total_mentions": 117,
+      "job_count": 103,
+      "as_core": 106,
+      "as_bonus": 11,
       "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "深度学习",
+      "category": "ai_ml",
+      "total_mentions": 108,
+      "job_count": 99,
+      "as_core": 105,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.94
     },
     {
       "name": "Linux",
       "category": "tool",
-      "total_mentions": 20,
-      "job_count": 20,
-      "as_core": 19,
-      "as_bonus": 1,
+      "total_mentions": 102,
+      "job_count": 92,
+      "as_core": 99,
+      "as_bonus": 3,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.79
     },
     {
-      "name": "物联网",
-      "category": "domain_knowledge",
-      "total_mentions": 20,
-      "job_count": 18,
-      "as_core": 19,
-      "as_bonus": 1,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Spring",
-      "category": "framework",
-      "total_mentions": 19,
-      "job_count": 13,
-      "as_core": 19,
+      "name": "需求分析",
+      "category": "soft_skill",
+      "total_mentions": 88,
+      "job_count": 78,
+      "as_core": 88,
       "as_bonus": 0,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -171,51 +224,39 @@
     {
       "name": "PyTorch",
       "category": "framework",
-      "total_mentions": 19,
-      "job_count": 15,
-      "as_core": 18,
-      "as_bonus": 1,
+      "total_mentions": 82,
+      "job_count": 72,
+      "as_core": 79,
+      "as_bonus": 3,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.87
     },
     {
-      "name": "技术文档",
-      "category": "soft_skill",
-      "total_mentions": 19,
-      "job_count": 15,
-      "as_core": 19,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "机器学习",
+      "name": "数据科学",
       "category": "ai_ml",
-      "total_mentions": 18,
-      "job_count": 15,
-      "as_core": 17,
-      "as_bonus": 1,
+      "total_mentions": 68,
+      "job_count": 57,
+      "as_core": 47,
+      "as_bonus": 21,
       "sources": [
-        "iflytek",
+        "bytedance",
         "zhilian"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "SQL",
-      "category": "programming_language",
-      "total_mentions": 18,
-      "job_count": 16,
-      "as_core": 16,
-      "as_bonus": 2,
+      "name": "数据挖掘",
+      "category": "ai_ml",
+      "total_mentions": 60,
+      "job_count": 56,
+      "as_core": 53,
+      "as_bonus": 7,
       "sources": [
-        "iflytek",
+        "bytedance",
         "zhilian"
       ],
       "avg_confidence": 0.96
@@ -223,11 +264,403 @@
     {
       "name": "TensorFlow",
       "category": "framework",
-      "total_mentions": 16,
-      "job_count": 13,
-      "as_core": 16,
+      "total_mentions": 56,
+      "job_count": 47,
+      "as_core": 54,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.95
+    },
+    {
+      "name": "MySQL",
+      "category": "database",
+      "total_mentions": 52,
+      "job_count": 41,
+      "as_core": 49,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.86
+    },
+    {
+      "name": "大数据",
+      "category": "domain_knowledge",
+      "total_mentions": 51,
+      "job_count": 49,
+      "as_core": 43,
+      "as_bonus": 8,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "强化学习",
+      "category": "ai_ml",
+      "total_mentions": 46,
+      "job_count": 45,
+      "as_core": 42,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "JavaScript",
+      "category": "programming_language",
+      "total_mentions": 43,
+      "job_count": 39,
+      "as_core": 42,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "Redis",
+      "category": "database",
+      "total_mentions": 41,
+      "job_count": 32,
+      "as_core": 39,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.95
+    },
+    {
+      "name": "技术文档",
+      "category": "soft_skill",
+      "total_mentions": 39,
+      "job_count": 34,
+      "as_core": 39,
       "as_bonus": 0,
       "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "NLP",
+      "category": "ai_ml",
+      "total_mentions": 38,
+      "job_count": 34,
+      "as_core": 33,
+      "as_bonus": 5,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.93
+    },
+    {
+      "name": "云原生",
+      "category": "cloud",
+      "total_mentions": 37,
+      "job_count": 35,
+      "as_core": 33,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.93
+    },
+    {
+      "name": "React",
+      "category": "framework",
+      "total_mentions": 34,
+      "job_count": 33,
+      "as_core": 30,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "Kubernetes",
+      "category": "tool",
+      "total_mentions": 30,
+      "job_count": 30,
+      "as_core": 26,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "Spark",
+      "category": "domain_knowledge",
+      "total_mentions": 28,
+      "job_count": 27,
+      "as_core": 24,
+      "as_bonus": 4,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.93
+    },
+    {
+      "name": "推荐系统",
+      "category": "ai_ml",
+      "total_mentions": 27,
+      "job_count": 27,
+      "as_core": 21,
+      "as_bonus": 6,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "LangChain",
+      "category": "framework",
+      "total_mentions": 25,
+      "job_count": 22,
+      "as_core": 18,
+      "as_bonus": 7,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "自然语言处理",
+      "category": "ai_ml",
+      "total_mentions": 25,
+      "job_count": 23,
+      "as_core": 19,
+      "as_bonus": 6,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Hive",
+      "category": "database",
+      "total_mentions": 25,
+      "job_count": 25,
+      "as_core": 20,
+      "as_bonus": 5,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "计算机视觉",
+      "category": "ai_ml",
+      "total_mentions": 24,
+      "job_count": 21,
+      "as_core": 22,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Kafka",
+      "category": "domain_knowledge",
+      "total_mentions": 23,
+      "job_count": 19,
+      "as_core": 21,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.95
+    },
+    {
+      "name": "CV",
+      "category": "ai_ml",
+      "total_mentions": 23,
+      "job_count": 20,
+      "as_core": 22,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "R",
+      "category": "programming_language",
+      "total_mentions": 23,
+      "job_count": 18,
+      "as_core": 18,
+      "as_bonus": 5,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Rust",
+      "category": "programming_language",
+      "total_mentions": 23,
+      "job_count": 21,
+      "as_core": 23,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "嵌入式",
+      "category": "domain_knowledge",
+      "total_mentions": 22,
+      "job_count": 21,
+      "as_core": 17,
+      "as_bonus": 5,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "TypeScript",
+      "category": "programming_language",
+      "total_mentions": 22,
+      "job_count": 21,
+      "as_core": 19,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Spring",
+      "category": "framework",
+      "total_mentions": 21,
+      "job_count": 15,
+      "as_core": 20,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.89
+    },
+    {
+      "name": "物联网",
+      "category": "domain_knowledge",
+      "total_mentions": 21,
+      "job_count": 19,
+      "as_core": 20,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "自动驾驶",
+      "category": "domain_knowledge",
+      "total_mentions": 18,
+      "job_count": 18,
+      "as_core": 11,
+      "as_bonus": 7,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "CI/CD",
+      "category": "tool",
+      "total_mentions": 17,
+      "job_count": 16,
+      "as_core": 16,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "微服务",
+      "category": "cloud",
+      "total_mentions": 17,
+      "job_count": 17,
+      "as_core": 15,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.88
+    },
+    {
+      "name": "Node.js",
+      "category": "framework",
+      "total_mentions": 17,
+      "job_count": 17,
+      "as_core": 17,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.87
+    },
+    {
+      "name": "Vue",
+      "category": "framework",
+      "total_mentions": 16,
+      "job_count": 16,
+      "as_core": 15,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -236,36 +669,134 @@
     {
       "name": "Django",
       "category": "framework",
-      "total_mentions": 14,
-      "job_count": 10,
-      "as_core": 13,
+      "total_mentions": 16,
+      "job_count": 11,
+      "as_core": 15,
       "as_bonus": 1,
       "sources": [
+        "bytedance",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.95
     },
     {
-      "name": "Redis",
-      "category": "database",
-      "total_mentions": 12,
-      "job_count": 10,
-      "as_core": 11,
-      "as_bonus": 1,
+      "name": "网络安全",
+      "category": "domain_knowledge",
+      "total_mentions": 16,
+      "job_count": 16,
+      "as_core": 16,
+      "as_bonus": 0,
       "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.95
+    },
+    {
+      "name": "Shell",
+      "category": "programming_language",
+      "total_mentions": 15,
+      "job_count": 13,
+      "as_core": 15,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "LangGraph",
+      "category": "framework",
+      "total_mentions": 15,
+      "job_count": 14,
+      "as_core": 12,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "Docker",
+      "category": "tool",
+      "total_mentions": 14,
+      "job_count": 13,
+      "as_core": 11,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.77
+    },
+    {
+      "name": "Oracle",
+      "category": "database",
+      "total_mentions": 14,
+      "job_count": 11,
+      "as_core": 14,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "MongoDB",
+      "category": "database",
+      "total_mentions": 14,
+      "job_count": 10,
+      "as_core": 12,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "Oracle",
-      "category": "database",
-      "total_mentions": 12,
-      "job_count": 9,
-      "as_core": 12,
+      "name": "HTML",
+      "category": "programming_language",
+      "total_mentions": 14,
+      "job_count": 12,
+      "as_core": 14,
       "as_bonus": 0,
       "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.88
+    },
+    {
+      "name": "Elasticsearch",
+      "category": "database",
+      "total_mentions": 13,
+      "job_count": 10,
+      "as_core": 11,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "CSS",
+      "category": "programming_language",
+      "total_mentions": 13,
+      "job_count": 11,
+      "as_core": 13,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -274,23 +805,63 @@
     {
       "name": "Flask",
       "category": "framework",
+      "total_mentions": 13,
+      "job_count": 9,
+      "as_core": 12,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "Pandas",
+      "category": "framework",
+      "total_mentions": 12,
+      "job_count": 12,
+      "as_core": 12,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "Hadoop",
+      "category": "domain_knowledge",
       "total_mentions": 11,
-      "job_count": 8,
+      "job_count": 11,
+      "as_core": 9,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.94
+    },
+    {
+      "name": "Flink",
+      "category": "domain_knowledge",
+      "total_mentions": 11,
+      "job_count": 10,
       "as_core": 10,
       "as_bonus": 1,
       "sources": [
-        "zhilian"
+        "bytedance"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "大数据",
-      "category": "domain_knowledge",
+      "name": "MyBatis",
+      "category": "framework",
       "total_mentions": 10,
-      "job_count": 10,
-      "as_core": 9,
-      "as_bonus": 1,
+      "job_count": 7,
+      "as_core": 10,
+      "as_bonus": 0,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -307,29 +878,56 @@
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.84
     },
     {
-      "name": "MyBatis",
+      "name": "NumPy",
       "category": "framework",
-      "total_mentions": 9,
-      "job_count": 6,
-      "as_core": 9,
+      "total_mentions": 10,
+      "job_count": 10,
+      "as_core": 10,
       "as_bonus": 0,
       "sources": [
-        "iflytek",
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "PHP",
+      "category": "programming_language",
+      "total_mentions": 10,
+      "job_count": 9,
+      "as_core": 10,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
         "zhilian"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "Pandas",
-      "category": "framework",
+      "name": "Swift",
+      "category": "programming_language",
+      "total_mentions": 10,
+      "job_count": 9,
+      "as_core": 10,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.92
+    },
+    {
+      "name": "知识图谱",
+      "category": "ai_ml",
       "total_mentions": 9,
       "job_count": 9,
       "as_core": 9,
       "as_bonus": 0,
       "sources": [
+        "bytedance",
+        "iflytek",
         "zhilian"
       ],
       "avg_confidence": 0.96
@@ -345,93 +943,160 @@
         "iflytek",
         "zhilian"
       ],
+      "avg_confidence": 0.85
+    },
+    {
+      "name": "Nginx",
+      "category": "tool",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 6,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.87
+    },
+    {
+      "name": "PostgreSQL",
+      "category": "database",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 5,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.93
+    },
+    {
+      "name": "Prometheus",
+      "category": "tool",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 6,
+      "as_bonus": 2,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.87
+    },
+    {
+      "name": "神经网络",
+      "category": "ai_ml",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 7,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "WebSocket",
+      "category": "domain_knowledge",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 8,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
       "avg_confidence": 0.96
     },
     {
-      "name": "Go",
-      "category": "programming_language",
-      "total_mentions": 7,
+      "name": "gRPC",
+      "category": "domain_knowledge",
+      "total_mentions": 8,
       "job_count": 7,
+      "as_core": 7,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.87
+    },
+    {
+      "name": "Kotlin",
+      "category": "programming_language",
+      "total_mentions": 8,
+      "job_count": 8,
+      "as_core": 8,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "语音识别",
+      "category": "ai_ml",
+      "total_mentions": 7,
+      "job_count": 6,
       "as_core": 6,
       "as_bonus": 1,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.89
     },
     {
-      "name": "计算机视觉",
-      "category": "ai_ml",
-      "total_mentions": 7,
-      "job_count": 7,
-      "as_core": 7,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "自然语言处理",
-      "category": "ai_ml",
-      "total_mentions": 7,
-      "job_count": 7,
-      "as_core": 7,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "NumPy",
+      "name": "FastAPI",
       "category": "framework",
       "total_mentions": 7,
+      "job_count": 6,
+      "as_core": 6,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.86
+    },
+    {
+      "name": "DevOps",
+      "category": "cloud",
+      "total_mentions": 7,
+      "job_count": 7,
+      "as_core": 4,
+      "as_bonus": 3,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Figma",
+      "category": "tool",
+      "total_mentions": 7,
       "job_count": 7,
       "as_core": 7,
       "as_bonus": 0,
       "sources": [
-        "zhilian"
+        "bytedance"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "Docker",
-      "category": "tool",
+      "name": "MATLAB",
+      "category": "programming_language",
       "total_mentions": 6,
-      "job_count": 6,
-      "as_core": 3,
-      "as_bonus": 3,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "MongoDB",
-      "category": "database",
-      "total_mentions": 6,
-      "job_count": 6,
-      "as_core": 4,
-      "as_bonus": 2,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "嵌入式",
-      "category": "domain_knowledge",
-      "total_mentions": 6,
-      "job_count": 6,
+      "job_count": 5,
       "as_core": 5,
       "as_bonus": 1,
       "sources": [
+        "bytedance",
+        "iflytek",
         "zhilian"
       ],
       "avg_confidence": 0.96
@@ -447,20 +1112,7 @@
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "PostgreSQL",
-      "category": "database",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 3,
-      "as_bonus": 2,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.91
     },
     {
       "name": "SpringMVC",
@@ -473,245 +1125,17 @@
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "项目管理",
-      "category": "soft_skill",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 5,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "LangChain",
-      "category": "framework",
-      "total_mentions": 5,
-      "job_count": 4,
-      "as_core": 3,
-      "as_bonus": 2,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "RAG",
-      "category": "ai_ml",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 3,
-      "as_bonus": 2,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "NLP",
-      "category": "ai_ml",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 5,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Shell",
-      "category": "programming_language",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 5,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Kubernetes",
-      "category": "tool",
-      "total_mentions": 5,
-      "job_count": 5,
-      "as_core": 2,
-      "as_bonus": 3,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.94
-    },
-    {
-      "name": "CSS",
-      "category": "programming_language",
-      "total_mentions": 5,
-      "job_count": 4,
-      "as_core": 5,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "HTML",
-      "category": "programming_language",
-      "total_mentions": 5,
-      "job_count": 4,
-      "as_core": 5,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "CI/CD",
-      "category": "tool",
-      "total_mentions": 4,
-      "job_count": 4,
-      "as_core": 4,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "MATLAB",
-      "category": "programming_language",
-      "total_mentions": 4,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 1,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "强化学习",
-      "category": "ai_ml",
-      "total_mentions": 4,
-      "job_count": 4,
-      "as_core": 4,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "LLM",
-      "category": "ai_ml",
-      "total_mentions": 4,
-      "job_count": 4,
-      "as_core": 4,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.91
     },
     {
       "name": "ZooKeeper",
       "category": "domain_knowledge",
-      "total_mentions": 4,
-      "job_count": 4,
-      "as_core": 4,
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 5,
       "as_bonus": 0,
       "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "FastAPI",
-      "category": "framework",
-      "total_mentions": 4,
-      "job_count": 4,
-      "as_core": 4,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Nginx",
-      "category": "tool",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "微服务",
-      "category": "cloud",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 2,
-      "as_bonus": 1,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Spark",
-      "category": "domain_knowledge",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Hadoop",
-      "category": "domain_knowledge",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Hive",
-      "category": "database",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
+        "bytedance",
         "iflytek"
       ],
       "avg_confidence": 0.96
@@ -719,24 +1143,140 @@
     {
       "name": "Scikit-learn",
       "category": "framework",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 5,
       "as_bonus": 0,
       "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
-      "avg_confidence": 0.95
+      "avg_confidence": 0.94
     },
     {
-      "name": "React",
+      "name": "Angular",
       "category": "framework",
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 4,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "IoT",
+      "category": "domain_knowledge",
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 5,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Webpack",
+      "category": "tool",
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 5,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.91
+    },
+    {
+      "name": "Grafana",
+      "category": "tool",
+      "total_mentions": 5,
+      "job_count": 5,
+      "as_core": 4,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Serverless",
+      "category": "cloud",
+      "total_mentions": 4,
+      "job_count": 3,
+      "as_core": 3,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Vite",
+      "category": "tool",
+      "total_mentions": 4,
+      "job_count": 4,
+      "as_core": 4,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.84
+    },
+    {
+      "name": "RESTful API",
+      "category": "domain_knowledge",
+      "total_mentions": 3,
+      "job_count": 2,
+      "as_core": 3,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.8
+    },
+    {
+      "name": "HBase",
+      "category": "database",
       "total_mentions": 3,
       "job_count": 3,
       "as_core": 2,
       "as_bonus": 1,
       "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Zabbix",
+      "category": "tool",
+      "total_mentions": 3,
+      "job_count": 3,
+      "as_core": 2,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance",
+        "iflytek",
+        "zhilian"
+      ],
+      "avg_confidence": 0.88
+    },
+    {
+      "name": "Maven",
+      "category": "tool",
+      "total_mentions": 3,
+      "job_count": 3,
+      "as_core": 3,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
         "iflytek",
         "zhilian"
       ],
@@ -755,18 +1295,6 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "Node.js",
-      "category": "framework",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.93
-    },
-    {
       "name": "Postman",
       "category": "tool",
       "total_mentions": 3,
@@ -779,64 +1307,16 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "R",
-      "category": "programming_language",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "IoT",
+      "name": "ROS",
       "category": "domain_knowledge",
       "total_mentions": 3,
       "job_count": 3,
       "as_core": 3,
       "as_bonus": 0,
       "sources": [
-        "zhilian"
+        "bytedance"
       ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "网络安全",
-      "category": "domain_knowledge",
-      "total_mentions": 3,
-      "job_count": 3,
-      "as_core": 3,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Elasticsearch",
-      "category": "database",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.92
-    },
-    {
-      "name": "Kafka",
-      "category": "domain_knowledge",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.72
     },
     {
       "name": "Tomcat",
@@ -847,58 +1327,6 @@
       "as_bonus": 0,
       "sources": [
         "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "云原生",
-      "category": "cloud",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "语音识别",
-      "category": "ai_ml",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "知识图谱",
-      "category": "ai_ml",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Zabbix",
-      "category": "tool",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek",
-        "zhilian"
       ],
       "avg_confidence": 0.96
     },
@@ -916,112 +1344,90 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "Maven",
+      "name": "RabbitMQ",
+      "category": "domain_knowledge",
+      "total_mentions": 2,
+      "job_count": 2,
+      "as_core": 2,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "iflytek"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "JIRA",
       "category": "tool",
       "total_mentions": 2,
       "job_count": 2,
       "as_core": 2,
       "as_bonus": 0,
       "sources": [
-        "iflytek",
+        "bytedance",
         "zhilian"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "Vue",
-      "category": "framework",
+      "name": "Milvus",
+      "category": "database",
       "total_mentions": 2,
       "job_count": 2,
-      "as_core": 1,
-      "as_bonus": 1,
+      "as_core": 2,
+      "as_bonus": 0,
       "sources": [
-        "iflytek",
+        "bytedance",
         "zhilian"
       ],
       "avg_confidence": 0.96
     },
     {
-      "name": "华为云",
+      "name": "联邦学习",
+      "category": "ai_ml",
+      "total_mentions": 2,
+      "job_count": 2,
+      "as_core": 2,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance",
+        "zhilian"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Perl",
+      "category": "programming_language",
+      "total_mentions": 2,
+      "job_count": 1,
+      "as_core": 2,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "AWS",
       "category": "cloud",
       "total_mentions": 2,
       "job_count": 2,
       "as_core": 2,
       "as_bonus": 0,
       "sources": [
-        "zhilian"
+        "bytedance"
       ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.72
     },
     {
-      "name": "自动驾驶",
-      "category": "domain_knowledge",
+      "name": "Azure",
+      "category": "cloud",
       "total_mentions": 2,
       "job_count": 2,
       "as_core": 2,
       "as_bonus": 0,
       "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "数据挖掘",
-      "category": "ai_ml",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "数据科学",
-      "category": "ai_ml",
-      "total_mentions": 2,
-      "job_count": 2,
-      "as_core": 2,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "团队管理",
-      "category": "soft_skill",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "RESTful API",
-      "category": "domain_knowledge",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "CV",
-      "category": "ai_ml",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
+        "bytedance"
       ],
       "avg_confidence": 0.96
     },
@@ -1035,35 +1441,11 @@
       "sources": [
         "iflytek"
       ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "HBase",
-      "category": "database",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
+      "avg_confidence": 0.72
     },
     {
       "name": "Keras",
       "category": "framework",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Prometheus",
-      "category": "tool",
       "total_mentions": 1,
       "job_count": 1,
       "as_core": 1,
@@ -1086,43 +1468,7 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "RabbitMQ",
-      "category": "domain_knowledge",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Angular",
-      "category": "framework",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 0,
-      "as_bonus": 1,
-      "sources": [
-        "iflytek"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
       "name": "Jenkins",
-      "category": "tool",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "JIRA",
       "category": "tool",
       "total_mentions": 1,
       "job_count": 1,
@@ -1158,56 +1504,8 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "LangGraph",
-      "category": "framework",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "Milvus",
-      "category": "database",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "DevOps",
-      "category": "cloud",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
       "name": "达梦",
       "category": "database",
-      "total_mentions": 1,
-      "job_count": 1,
-      "as_core": 1,
-      "as_bonus": 0,
-      "sources": [
-        "zhilian"
-      ],
-      "avg_confidence": 0.96
-    },
-    {
-      "name": "PHP",
-      "category": "programming_language",
       "total_mentions": 1,
       "job_count": 1,
       "as_core": 1,
@@ -1254,8 +1552,8 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "神经网络",
-      "category": "ai_ml",
+      "name": "华为云",
+      "category": "cloud",
       "total_mentions": 1,
       "job_count": 1,
       "as_core": 1,
@@ -1266,14 +1564,146 @@
       "avg_confidence": 0.96
     },
     {
-      "name": "联邦学习",
-      "category": "ai_ml",
+      "name": "Scala",
+      "category": "programming_language",
       "total_mentions": 1,
       "job_count": 1,
       "as_core": 1,
       "as_bonus": 0,
       "sources": [
-        "zhilian"
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "VS Code",
+      "category": "tool",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Express",
+      "category": "framework",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 0,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.72
+    },
+    {
+      "name": "Dubbo",
+      "category": "domain_knowledge",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "GraphQL",
+      "category": "domain_knowledge",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Confluence",
+      "category": "tool",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Ansible",
+      "category": "tool",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "区块链",
+      "category": "domain_knowledge",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "FPGA",
+      "category": "domain_knowledge",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "ELK",
+      "category": "tool",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 0,
+      "as_bonus": 1,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "InfluxDB",
+      "category": "database",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
+      ],
+      "avg_confidence": 0.96
+    },
+    {
+      "name": "Neo4j",
+      "category": "database",
+      "total_mentions": 1,
+      "job_count": 1,
+      "as_core": 1,
+      "as_bonus": 0,
+      "sources": [
+        "bytedance"
       ],
       "avg_confidence": 0.96
     }
