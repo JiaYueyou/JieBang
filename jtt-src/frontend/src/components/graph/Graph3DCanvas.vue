@@ -24,6 +24,7 @@ const props = defineProps<{
   highlightedPath?: string[]
   highlightedNodeIds?: string[]
   pinnedNodeIds?: string[]
+  selectedType?: string
 }>()
 
 const emit = defineEmits<{
@@ -105,8 +106,17 @@ function buildOption(): any {
   const searchMatches = new Set(props.highlightedNodeIds || [])
   const hasSearchMatches = searchMatches.size > 0
 
+  // 按左侧层级按钮过滤：Job→L1, SkillArea→L2, TechStack→L3
+  const typeToLevel: Record<string, string> = { Job: 'L1', SkillArea: 'L2', TechStack: 'L3' }
+  const filterLevel = typeToLevel[props.selectedType || ''] || null
+
+  const filteredNodeIds = new Set<string>()
+
   props.graph?.forEachNode((nodeId: string, attrs: any) => {
     const level = attrs.level || 'L3'
+    // 层级过滤：点击 Job→L1, SkillArea→L2, TechStack→L3
+    if (filterLevel && level !== filterLevel) return
+    filteredNodeIds.add(nodeId)
     const size = attrs.size || levelSizes[level] || 20
     const color = attrs.color || levelColors[level] || '#4f6ef6'
     const categoryIndex = levelToCategoryIndex[level] || 2
@@ -164,6 +174,8 @@ function buildOption(): any {
   })
 
   props.graph?.forEachEdge((_edgeId: string, attrs: any, source: string, target: string) => {
+    // 只显示两端都在过滤后节点集中的边
+    if (filterLevel && (!filteredNodeIds.has(source) || !filteredNodeIds.has(target))) return
     const sourcePinned = pinnedNodes.value.has(source)
     const targetPinned = pinnedNodes.value.has(target)
     const hasPinnedNode = sourcePinned || targetPinned
@@ -308,6 +320,14 @@ watch(() => props.pinnedNodeIds, async (ids) => {
   await nextTick()
   updateChart()
 }, { deep: true })
+
+watch(() => props.selectedType, async () => {
+  await nextTick()
+  if (chartInstance && props.graph) {
+    chartInstance.dispose(); chartInstance = null
+    await initChart()
+  }
+})
 </script>
 
 <template>

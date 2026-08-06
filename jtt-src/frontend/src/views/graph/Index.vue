@@ -30,9 +30,11 @@ const searchHighlightedNodeIds = computed(() => {
 })
 
 const layers = [
-  { type: 'Job' as Neo4jNodeType, label: 'Job', desc: '岗位', color: '#122d6e' },
-  { type: 'SkillArea' as Neo4jNodeType, label: 'SkillArea', desc: '技能领域', color: '#2f47b8' },
-  { type: 'TechStack' as Neo4jNodeType, label: 'TechStack', desc: '技术栈', color: '#3f5ae0' },
+  { type: 'Job' as Neo4jNodeType, label: 'Job', desc: '岗位', color: '#122d6e', level: 'L1' },
+  { type: 'SkillArea' as Neo4jNodeType, label: 'SkillArea', desc: '技能领域', color: '#2f47b8', level: 'L2' },
+  { type: 'TechStack' as Neo4jNodeType, label: 'TechStack', desc: '技术栈', color: '#3f5ae0', level: 'L3' },
+  { type: 'TechPoint' as Neo4jNodeType, label: 'TechPoint', desc: '技术点', color: '#7893de', level: 'L4' },
+  { type: 'KnowledgePoint' as Neo4jNodeType, label: 'KnwlPoint', desc: '知识点', color: '#b4c2f2', level: 'L5' },
 ]
 
 const stackOptions = [
@@ -197,7 +199,7 @@ onUnmounted(() => clearTimeout(filterTimer))
       </div>
     </section>
 
-    <!-- 主体三栏布局 -->
+    <!-- 主体布局：左侧过滤 + 右侧画布（内含节点详情） -->
     <section class="graph-layout">
       <!-- 左侧：层过滤 -->
       <aside class="graph-side-card">
@@ -223,7 +225,7 @@ onUnmounted(() => clearTimeout(filterTimer))
         <div v-else class="enrich-hint">点击技术栈节点可展开深层技能点</div>
       </aside>
 
-      <!-- 中央：ECharts 画布 -->
+      <!-- 右侧：画布 + 节点详情 -->
       <main class="graph-canvas-card">
         <div class="canvas-head">
           <div>
@@ -231,79 +233,82 @@ onUnmounted(() => clearTimeout(filterTimer))
             <h3>{{ currentViewTitle }}</h3>
           </div>
         </div>
-        <div class="graph-canvas">
-          <Graph3DCanvas
-            :graph="graphStore.graph"
-            :highlighted-node-ids="searchHighlightedNodeIds"
-            :pinned-node-ids="pinnedNodeIds"
-            @node-click="handleNodeClick"
-            @node-pin="handleNodePin"
-          />
+        <div class="canvas-body">
+          <div class="graph-canvas">
+            <Graph3DCanvas
+              :graph="graphStore.graph"
+              :highlighted-node-ids="searchHighlightedNodeIds"
+              :pinned-node-ids="pinnedNodeIds"
+              :selected-type="selectedType"
+              @node-click="handleNodeClick"
+              @node-pin="handleNodePin"
+            />
+          </div>
+
+          <!-- 节点详情（画布右侧） -->
+          <aside class="graph-detail-card">
+            <div class="card-title">节点详情</div>
+            <div v-if="activeNode" class="detail-content">
+              <div class="detail-head">
+                <span class="detail-type" :style="{ color: TYPE_COLORS[activeNode.type] || '#64748b' }">
+                  {{ TYPE_LABELS[activeNode.type] || activeNode.type }}
+                </span>
+                <h3>{{ activeNode.name }}</h3>
+                <p>{{ activeNode.description }}</p>
+                <!-- TechStack 展开按钮 -->
+                <button
+                  v-if="activeNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(activeNode.id)"
+                  class="btn-enrich"
+                  :disabled="!!graphStore.enrichingNodeId"
+                  @click="handleEnrichClick"
+                >
+                  {{ graphStore.enrichingNodeId === activeNode.id ? 'AI 分析中...' : '展开 L4/L5' }}
+                </button>
+                <button class="btn-pin" @click="toggleActiveNodePin">
+                  {{ isActiveNodePinned ? '取消锁定' : '锁定节点' }}
+                </button>
+              </div>
+
+              <div class="detail-grid">
+                <div><strong>{{ activeNode.stack || '-' }}</strong><span>技术方向</span></div>
+                <div><strong>{{ activeNode.level || '-' }}</strong><span>层级</span></div>
+                <div><strong>{{ activeNode.frequency ?? activeNode.importance ?? '-' }}</strong><span>频次/权重</span></div>
+              </div>
+
+              <div class="card-title sub-title">上级节点</div>
+              <div class="related-list">
+                <button v-for="n in parentNodes" :key="n.id" class="related-node-btn" @click="handleRelatedNodeClick(n)">
+                  <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
+                  {{ n.name }}
+                </button>
+                <em v-if="parentNodes.length === 0">暂无上级节点</em>
+              </div>
+
+              <div class="card-title sub-title">下级节点</div>
+              <div class="related-list">
+                <div v-for="n in childNodes" :key="n.id" class="child-node-row">
+                  <button class="related-node-btn" @click="handleRelatedNodeClick(n)">
+                    <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
+                    {{ n.name }}
+                  </button>
+                  <button
+                    v-if="n.type === 'TechStack' && !graphStore.enrichedNodeIds.has(n.id)"
+                    class="btn-enrich-child"
+                    :disabled="!!graphStore.enrichingNodeId"
+                    @click.stop="handleEnrichChildClick(n.id)"
+                  >
+                    {{ graphStore.enrichingNodeId === n.id ? '生成中...' : '生成L4/L5' }}
+                  </button>
+                </div>
+                <em v-if="childNodes.length === 0">暂无下级节点</em>
+              </div>
+            </div>
+            <div v-else class="detail-empty">
+              <p>点击图谱中的节点查看详情</p>
+            </div>
+          </aside>
         </div>
       </main>
-
-      <!-- 右侧：节点详情 -->
-      <aside class="graph-detail-card">
-        <div class="card-title">节点详情</div>
-        <div v-if="activeNode" class="detail-content">
-          <div class="detail-head">
-            <span class="detail-type" :style="{ color: TYPE_COLORS[activeNode.type] || '#64748b' }">
-              {{ TYPE_LABELS[activeNode.type] || activeNode.type }}
-            </span>
-            <h3>{{ activeNode.name }}</h3>
-            <p>{{ activeNode.description }}</p>
-            <!-- TechStack 展开按钮 -->
-            <button
-              v-if="activeNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(activeNode.id)"
-              class="btn-enrich"
-              :disabled="!!graphStore.enrichingNodeId"
-              @click="handleEnrichClick"
-            >
-              {{ graphStore.enrichingNodeId === activeNode.id ? 'AI 分析中...' : '展开 L4/L5' }}
-            </button>
-            <button class="btn-pin" @click="toggleActiveNodePin">
-              {{ isActiveNodePinned ? '取消锁定' : '锁定节点' }}
-            </button>
-          </div>
-
-          <div class="detail-grid">
-            <div><strong>{{ activeNode.stack || '-' }}</strong><span>技术方向</span></div>
-            <div><strong>{{ activeNode.level || '-' }}</strong><span>层级</span></div>
-            <div><strong>{{ activeNode.frequency ?? activeNode.importance ?? '-' }}</strong><span>频次/权重</span></div>
-          </div>
-
-          <div class="card-title sub-title">上级节点</div>
-          <div class="related-list">
-            <button v-for="n in parentNodes" :key="n.id" class="related-node-btn" @click="handleRelatedNodeClick(n)">
-              <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
-              {{ n.name }}
-            </button>
-            <em v-if="parentNodes.length === 0">暂无上级节点</em>
-          </div>
-
-          <div class="card-title sub-title">下级节点</div>
-          <div class="related-list">
-            <div v-for="n in childNodes" :key="n.id" class="child-node-row">
-              <button class="related-node-btn" @click="handleRelatedNodeClick(n)">
-                <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
-                {{ n.name }}
-              </button>
-              <button
-                v-if="n.type === 'TechStack' && !graphStore.enrichedNodeIds.has(n.id)"
-                class="btn-enrich-child"
-                :disabled="!!graphStore.enrichingNodeId"
-                @click.stop="handleEnrichChildClick(n.id)"
-              >
-                {{ graphStore.enrichingNodeId === n.id ? '生成中...' : '生成L4/L5' }}
-              </button>
-            </div>
-            <em v-if="childNodes.length === 0">暂无下级节点</em>
-          </div>
-        </div>
-        <div v-else class="detail-empty">
-          <p>点击图谱中的节点查看详情</p>
-        </div>
-      </aside>
     </section>
   </div>
 </template>
@@ -388,17 +393,16 @@ onUnmounted(() => clearTimeout(filterTimer))
 }
 .btn-reset:hover { border-color: #4f6ef6; color: #4f6ef6; }
 
-/* ===== 三栏布局 ===== */
+/* ===== 两栏布局：左侧过滤 + 右侧画布（内含节点详情） ===== */
 .graph-layout {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 286px;
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
 }
 
 .graph-side-card,
-.graph-canvas-card,
-.graph-detail-card {
+.graph-canvas-card {
   min-width: 0;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -407,13 +411,11 @@ onUnmounted(() => clearTimeout(filterTimer))
 }
 
 .graph-side-card,
-.graph-canvas-card,
-.graph-detail-card {
+.graph-canvas-card {
   height: 674px;
 }
 
-.graph-side-card,
-.graph-detail-card {
+.graph-side-card {
   padding: 18px;
   overflow: hidden;
 }
@@ -523,6 +525,7 @@ onUnmounted(() => clearTimeout(filterTimer))
   padding: 18px 20px;
   border-bottom: 1px solid #e2e8f0;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .canvas-label {
@@ -536,18 +539,30 @@ onUnmounted(() => clearTimeout(filterTimer))
   font-size: 16px;
 }
 
-/* matches fyz .graph-canvas */
-.graph-canvas {
-  width: 100%;
+/* 画布主体：左侧图谱 + 右侧详情 */
+.canvas-body {
+  display: flex;
   min-height: 0;
   flex: 1;
 }
 
-/* ===== 右侧面板 ===== */
+.graph-canvas {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ===== 节点详情（画布右侧嵌入） ===== */
 .graph-detail-card {
+  width: 280px;
+  flex-shrink: 0;
   display: flex;
   min-height: 0;
   flex-direction: column;
+  padding: 18px;
+  border-left: 1px solid #e2e8f0;
+  background: #fff;
+  overflow: hidden;
 }
 
 .detail-content {
@@ -731,13 +746,8 @@ onUnmounted(() => clearTimeout(filterTimer))
 }
 
 @media (max-width: 1280px) {
-  .graph-layout {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
-
   .graph-detail-card {
-    grid-column: 1 / -1;
-    height: 420px;
+    width: 260px;
   }
 }
 
@@ -753,6 +763,17 @@ onUnmounted(() => clearTimeout(filterTimer))
 
   .graph-canvas-card {
     height: 674px;
+  }
+
+  .canvas-body {
+    flex-direction: column;
+  }
+
+  .graph-detail-card {
+    width: 100%;
+    height: 380px;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
   }
 }
 
