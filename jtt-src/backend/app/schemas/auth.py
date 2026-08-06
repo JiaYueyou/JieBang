@@ -27,7 +27,7 @@ class UserProfileResponse(BaseModel):
     """用户个人信息"""
     id: int
     username: str
-    email: str
+    email: str | None = None
     nickname: str | None = None
     phone: str | None = None
     city: str | None = None
