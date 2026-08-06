@@ -1,12 +1,22 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import JobPosting, JobSkillFact, MatchRecord, Resume, Skill
+from app.models import (
+    JobPosting,
+    JobSkillFact,
+    MatchRecord,
+    RawJobRecord,
+    Resume,
+    Skill,
+    SourceDocument,
+    StandardJob,
+    StandardJobSource,
+)
 
 
 class DashboardService:
@@ -15,7 +25,15 @@ class DashboardService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def overview(self, *, user_id: int) -> dict:
+    async def overview(
+        self,
+        *,
+        user_id: int,
+        hot_jobs_page: int = 1,
+        hot_jobs_page_size: int = 10,
+        emerging_page: int = 1,
+        emerging_page_size: int = 10,
+    ) -> dict:
         now = datetime.utcnow()
         week_start = now - timedelta(days=7)
         month_start = now - timedelta(days=30)
@@ -188,15 +206,27 @@ class DashboardService:
         )
 
         high_match_talents = self._talent_summaries(resumes, matches_by_resume)
-        hot_jobs = self._hot_jobs(open_jobs, matches_by_job, now)
+        hot_jobs = await self._hot_jobs()
+        hot_jobs_total = len(hot_jobs)
+        hot_jobs = hot_jobs[
+            (hot_jobs_page - 1) * hot_jobs_page_size :
+            (hot_jobs_page - 1) * hot_jobs_page_size + hot_jobs_page_size
+        ]
         emerging_skills = self._emerging_skills(verified_facts, month_start)
+        emerging_skills_total = len(emerging_skills)
+        emerging_skills = emerging_skills[
+            (emerging_page - 1) * emerging_page_size :
+            (emerging_page - 1) * emerging_page_size + emerging_page_size
+        ]
 
         return {
             "heroCards": hero_cards,
             "kanban": kanban[:20],
             "highMatches": high_match_talents[:20],
-            "hotJobs": hot_jobs[:12],
-            "emergingSkills": emerging_skills[:20],
+            "hotJobs": hot_jobs,
+            "hotJobsTotal": hot_jobs_total,
+            "emergingSkills": emerging_skills,
+            "emergingSkillsTotal": emerging_skills_total,
         }
 
     @staticmethod
@@ -238,36 +268,103 @@ class DashboardService:
             )
         return sorted(result, key=lambda item: (-item["score"], item["id"]))
 
-    @staticmethod
-    def _hot_jobs(
-        jobs: list[JobPosting],
-        matches_by_job: dict[int, list[MatchRecord]],
-        now: datetime,
-    ) -> list[dict]:
-        month_keys: list[tuple[int, int]] = []
-        year, month = now.year, now.month
-        for offset in range(5, -1, -1):
-            absolute_month = year * 12 + month - 1 - offset
-            month_keys.append((absolute_month // 12, absolute_month % 12 + 1))
+    async def _hot_jobs(self) -> list[dict]:
+        """热门岗位：基于爬取数据（RawJobRecord）经标准岗位聚合，按独立来源数排序。
 
-        result = []
-        for job in jobs:
-            job_matches = matches_by_job[job.id]
-            monthly = defaultdict(int)
-            for match in job_matches:
-                monthly[(match.created_at.year, match.created_at.month)] += 1
-            spark = [monthly[key] for key in month_keys]
-            result.append(
-                {
-                    "job_id": job.id,
-                    "title": job.title,
-                    "demand": len(job_matches),
-                    "city": job.location or "待确认",
-                    "trend": spark[-1] - spark[-2],
-                    "spark": spark,
-                }
+        数据源为质量达标、未排除的爬取岗位记录，按 StandardJobSource 映射
+        聚合到标准岗位；demand=独立来源数，spark=近 6 个月来源数，
+        trend=最近一个月来源数差，core_skills=该岗位已确认事实 Top 技能。
+        """
+        rows = list((await self.db.execute(
+            select(RawJobRecord, StandardJobSource.standard_job_id)
+            .join(
+                StandardJobSource,
+                (StandardJobSource.source_type == "raw")
+                & (StandardJobSource.source_id == RawJobRecord.id),
             )
-        return sorted(result, key=lambda item: (-item["demand"], item["job_id"]))
+            .where(
+                RawJobRecord.quality_status.in_(("accepted", "warning")),
+                RawJobRecord.is_excluded.is_(False),
+                RawJobRecord.standard_job_id.is_not(None),
+            )
+        )).all())
+        if not rows:
+            return []
+
+        now = datetime.utcnow()
+        month_keys: list[tuple[int, int]] = []
+        for offset in range(5, -1, -1):
+            absolute_month = now.year * 12 + now.month - 1 - offset
+            month_keys.append((absolute_month // 12, absolute_month % 12 + 1))
+        month_index = {key: index for index, key in enumerate(month_keys)}
+
+        grouped: dict[int, dict] = {}
+        raw_ids: set[int] = set()
+        for raw, standard_job_id in rows:
+            item = grouped.setdefault(standard_job_id, {
+                "job_id": standard_job_id,
+                "title": "",
+                "demand": 0,
+                "city": "",
+                "city_counts": Counter(),
+                "spark": [0] * 6,
+                "raw_ids": [],
+            })
+            item["demand"] += 1
+            item["raw_ids"].append(raw.id)
+            raw_ids.add(raw.id)
+            if raw.city:
+                item["city_counts"][raw.city] += 1
+            observed = raw.posted_at or raw.crawled_at or raw.created_at
+            if observed is not None:
+                key = (observed.year, observed.month)
+                if key in month_index:
+                    item["spark"][month_index[key]] += 1
+
+        standard_rows = list((await self.db.execute(
+            select(StandardJob).where(StandardJob.id.in_(grouped.keys()))
+        )).scalars())
+        standard_names = {standard.id: standard.name for standard in standard_rows}
+
+        skills_by_raw: dict[int, list[str]] = defaultdict(list)
+        if raw_ids:
+            facts = list((await self.db.execute(
+                select(JobSkillFact, Skill)
+                .join(Skill, Skill.id == JobSkillFact.skill_id)
+                .where(
+                    JobSkillFact.raw_job_record_id.in_(raw_ids),
+                    JobSkillFact.verification_status == "verified",
+                )
+            )).all())
+            for fact, skill in facts:
+                if fact.raw_job_record_id:
+                    skills_by_raw[fact.raw_job_record_id].append(skill.name)
+
+        result: list[dict] = []
+        for standard_job_id, item in grouped.items():
+            skill_counts = Counter(
+                skill_name
+                for raw_id in item["raw_ids"]
+                for skill_name in skills_by_raw.get(raw_id, [])
+            )
+            spark = item["spark"]
+            result.append({
+                "job_id": standard_job_id,
+                "title": standard_names.get(standard_job_id) or f"标准岗位 #{standard_job_id}",
+                "demand": item["demand"],
+                "city": (
+                    item["city_counts"].most_common(1)[0][0]
+                    if item["city_counts"]
+                    else "全国"
+                ),
+                "trend": spark[-1] - spark[-2],
+                "spark": spark,
+                "core_skills": [name for name, _ in skill_counts.most_common(5)],
+            })
+        return sorted(
+            result,
+            key=lambda item: (-item["demand"], -item["trend"], item["job_id"]),
+        )
 
     @staticmethod
     def _emerging_skills(

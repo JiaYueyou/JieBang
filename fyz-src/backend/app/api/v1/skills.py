@@ -15,15 +15,39 @@ from app.schemas.skill import (
     SkillFactReviewList,
     SkillFactReviewRequest,
     SkillSummary,
+    TaskStatusResponse,
     VerificationStatus,
 )
-from app.services import SkillService
+from app.services import GraphTaskService, SkillService
 
 router = APIRouter(prefix="/skills", tags=["标准技能"])
 
 
 def get_skill_service(db: AsyncSession = Depends(get_db)) -> SkillService:
     return SkillService(db)
+
+
+def get_graph_task_service(db: AsyncSession = Depends(get_db)) -> GraphTaskService:
+    return GraphTaskService(db)
+
+
+async def _auto_sync_graph_after_review(
+    *,
+    processed: int,
+    decision: VerificationStatus,
+    principal: TokenPrincipal,
+    task_service: GraphTaskService,
+) -> TaskStatusResponse | None:
+    """事实审核确认后自动触发 L1~L3 图谱增量同步（进程内异步，不依赖 Celery）。
+
+    同步会写入审核通过事实对应的 Job/SkillArea/TechStack 节点，
+    实现"事实审核通过即入库可查询"。
+    """
+    if processed <= 0 or decision != VerificationStatus.verified:
+        return None
+    return await task_service.create_sync_in_background(
+        mode="incremental", enrich_top_skills=False, user_id=principal.user_id,
+    )
 
 
 @router.get("", response_model=ApiResponse[list[SkillSummary]])
@@ -71,6 +95,7 @@ async def review_fact(
     payload: SkillFactReviewRequest,
     principal: TokenPrincipal = Depends(require_admin),
     service: SkillService = Depends(get_skill_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
 ) -> ApiResponse[SkillFactReviewItem]:
     row = await service.review_fact(
         fact_id,
@@ -79,7 +104,16 @@ async def review_fact(
         reviewer_id=principal.user_id,
     )
     action = "确认" if payload.decision == VerificationStatus.verified else "驳回"
-    return ApiResponse(message=f"技能事实已{action}", data=row)
+    message = f"技能事实已{action}"
+    task = await _auto_sync_graph_after_review(
+        processed=1 if payload.decision == VerificationStatus.verified else 0,
+        decision=payload.decision,
+        principal=principal,
+        task_service=task_service,
+    )
+    if task is not None:
+        message += f"；已自动触发图谱增量同步（任务 {task.task_id[:8]}）"
+    return ApiResponse(message=message, data=row)
 
 
 @router.post(
@@ -90,6 +124,7 @@ async def batch_review_facts(
     payload: SkillFactBatchReviewRequest,
     principal: TokenPrincipal = Depends(require_admin),
     service: SkillService = Depends(get_skill_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
 ) -> ApiResponse[SkillFactBatchReviewResult]:
     fact_ids, skipped = await service.review_facts(
         fact_ids=payload.fact_ids,
@@ -98,8 +133,17 @@ async def batch_review_facts(
         note=payload.note,
         reviewer_id=principal.user_id,
     )
+    message = f"已批量处理 {len(fact_ids)} 条技能事实"
+    task = await _auto_sync_graph_after_review(
+        processed=len(fact_ids),
+        decision=payload.decision,
+        principal=principal,
+        task_service=task_service,
+    )
+    if task is not None:
+        message += f"；已自动触发图谱增量同步（任务 {task.task_id[:8]}）"
     return ApiResponse(
-        message=f"已批量处理 {len(fact_ids)} 条技能事实",
+        message=message,
         data=SkillFactBatchReviewResult(
             processed_count=len(fact_ids), skipped_count=skipped, fact_ids=fact_ids
         ),
@@ -114,6 +158,7 @@ async def approve_all_fact_reviews(
     payload: SkillFactApproveAllRequest,
     principal: TokenPrincipal = Depends(require_admin),
     service: SkillService = Depends(get_skill_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
 ) -> ApiResponse[SkillFactBatchReviewResult]:
     fact_ids, _ = await service.review_facts(
         fact_ids=None,
@@ -122,8 +167,17 @@ async def approve_all_fact_reviews(
         note="管理员一键同意",
         reviewer_id=principal.user_id,
     )
+    message = f"已同意 {len(fact_ids)} 条待审核技能事实"
+    task = await _auto_sync_graph_after_review(
+        processed=len(fact_ids),
+        decision=VerificationStatus.verified,
+        principal=principal,
+        task_service=task_service,
+    )
+    if task is not None:
+        message += f"；已自动触发图谱增量同步（任务 {task.task_id[:8]}）"
     return ApiResponse(
-        message=f"已同意 {len(fact_ids)} 条待审核技能事实",
+        message=message,
         data=SkillFactBatchReviewResult(
             processed_count=len(fact_ids), skipped_count=0, fact_ids=fact_ids
         ),

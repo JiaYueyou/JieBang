@@ -134,3 +134,65 @@ async def test_enrichment_publication_runs_eager_task_in_background(client, auth
     assert response.status_code == 200
     assert mock_create.call_args.kwargs["enrich_top_skills"] is False
     assert mock_create.call_args.kwargs["run_eager_in_background"] is True
+
+
+def _mock_candidate_response(review_status: str) -> dict:
+    now = datetime.utcnow()
+    return {
+        "id": 1, "snapshot_id": "snap-1", "skill_id": 1, "skill_name": "Python",
+        "candidate_data": {}, "evidence_source_ids": ["1", "2"],
+        "confidence": 0.88, "machine_validation_status": "passed",
+        "review_status": review_status,
+        "publication_status": "approved" if review_status == "approved" else "draft",
+        "review_note": "ok", "reviewed_at": now, "published_at": None,
+        "lock_version": 1, "agent_run_id": None, "created_at": now, "updated_at": now,
+    }
+
+
+async def test_review_enrichment_approve_triggers_auto_publication(client, auth_headers):
+    mock_task = _mock_task_status()
+    with patch(
+        "app.api.v1.graph.GraphService.review_enrichment_candidate",
+        new=AsyncMock(return_value=_mock_candidate_response("approved")),
+    ), patch(
+        "app.api.v1.graph.GraphService.prepare_enrichment_publication",
+        new=AsyncMock(return_value=1),
+    ) as mock_prepare, patch(
+        "app.api.v1.graph.GraphTaskService.create_sync_in_background",
+        new=AsyncMock(return_value=mock_task),
+    ) as mock_sync:
+        response = await client.patch(
+            "/api/v1/graph/enrichment/candidates/1/review",
+            json={"action": "approve", "note": "ok", "lock_version": 0},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    assert "自动触发 L4/L5 图谱发布" in response.json()["message"]
+    assert mock_prepare.await_args.args == ([1],)
+    assert mock_sync.await_count == 1
+    assert mock_sync.await_args.kwargs["mode"] == "incremental"
+    assert mock_sync.await_args.kwargs["enrich_top_skills"] is False
+
+
+async def test_review_enrichment_reject_does_not_trigger_sync(client, auth_headers):
+    with patch(
+        "app.api.v1.graph.GraphService.review_enrichment_candidate",
+        new=AsyncMock(return_value=_mock_candidate_response("rejected")),
+    ), patch(
+        "app.api.v1.graph.GraphTaskService.create_sync_in_background",
+        new=AsyncMock(),
+    ) as mock_sync, patch(
+        "app.api.v1.graph.GraphService.prepare_enrichment_publication",
+        new=AsyncMock(),
+    ) as mock_prepare:
+        response = await client.patch(
+            "/api/v1/graph/enrichment/candidates/1/review",
+            json={"action": "reject", "note": "证据不足", "lock_version": 0},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "候选已驳回"
+    assert mock_sync.await_count == 0
+    assert mock_prepare.await_count == 0

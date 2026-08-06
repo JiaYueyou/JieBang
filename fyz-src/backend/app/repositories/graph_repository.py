@@ -24,7 +24,7 @@ GRAPH_LABELS = {
 }
 GRAPH_RELATIONS = {
     "REQUIRES_AREA", "CONTAINS", "REFINES_TO", "HAS_KNOWLEDGE",
-    "RELATED_TO", "PREREQUISITE", "SUPPORTS", "HAS_SNAPSHOT",
+    "SUPPORTS", "HAS_SNAPSHOT",
 }
 
 logger = logging.getLogger(__name__)
@@ -175,9 +175,7 @@ class Neo4jGraphRepository:
         return run_read(
             "MATCH (n {namespace:$namespace}) "
             "WHERE ($keyword IS NULL OR toLower(coalesce(n.name,'')) CONTAINS toLower($keyword) "
-            "OR toLower(coalesce(n.description,'')) CONTAINS toLower($keyword) "
-            "OR toLower(coalesce(n.parent_skill,'')) CONTAINS toLower($keyword) "
-            "OR toLower(coalesce(n.parent_tech_point,'')) CONTAINS toLower($keyword)) "
+            "OR toLower(coalesce(n.description,'')) CONTAINS toLower($keyword)) "
             "AND ($stack IS NULL OR n.stack=$stack) "
             "AND ($level IS NULL OR n.level=$level) "
             "AND ($node_type IS NULL OR $node_type IN labels(n)) "
@@ -329,6 +327,9 @@ class Neo4jGraphRepository:
     def query_neighbors(
         self, *, node_id: str, offset: int, page_size: int, max_layer: int,
     ) -> tuple[list[dict], list[dict]]:
+        # 语义澄清：max_layer 是"允许返回的最大节点层级（标签白名单上限）"，
+        # 不是"以 root 为起点的扩展深度"。前端传入节点类型对应的层级上限：
+        # Job/SkillArea→3，TechStack（L3）→5 才能拿到 L4/L5 邻居。
         allowed = ["Job", "SkillArea", "TechStack"]
         if max_layer >= 4:
             allowed.append("TechPoint")
@@ -372,7 +373,7 @@ class Neo4jGraphRepository:
     def expand(self, node_id: str, depth: int, limit: int) -> tuple[list[dict], list[dict]]:
         rows = run_read(
             f"MATCH p=(root {{namespace:$namespace, id:$node_id}})"
-            f"-[:REQUIRES_AREA|CONTAINS|REFINES_TO|HAS_KNOWLEDGE|RELATED_TO|PREREQUISITE*0..{depth}]-(n) "
+            f"-[:REQUIRES_AREA|CONTAINS|REFINES_TO|HAS_KNOWLEDGE*0..{depth}]-(n) "
             "WHERE all(x IN nodes(p) WHERE x.namespace=$namespace) "
             "WITH p LIMIT $limit "
             "UNWIND nodes(p) AS node "
@@ -390,7 +391,7 @@ class Neo4jGraphRepository:
     def path(self, from_id: str, to_id: str, max_depth: int) -> tuple[list[dict], list[dict]]:
         rows = run_read(
             f"MATCH p=shortestPath((a {{namespace:$namespace,id:$from_id}})"
-            f"-[:REQUIRES_AREA|CONTAINS|REFINES_TO|HAS_KNOWLEDGE|RELATED_TO|PREREQUISITE*..{max_depth}]-(b "
+            f"-[:REQUIRES_AREA|CONTAINS|REFINES_TO|HAS_KNOWLEDGE*..{max_depth}]-(b "
             "{namespace:$namespace,id:$to_id})) "
             "RETURN [n IN nodes(p) | {id:n.id,type:labels(n)[0],properties:properties(n)}] AS nodes, "
             "[r IN relationships(p) | {source:startNode(r).id,target:endNode(r).id,"
@@ -465,7 +466,7 @@ class Neo4jGraphRepository:
             {
                 "namespace": self.namespace,
                 "skill_ids": skill_ids,
-                "relation_types": ["REFINES_TO", "HAS_KNOWLEDGE", "PREREQUISITE"],
+                "relation_types": ["REFINES_TO", "HAS_KNOWLEDGE"],
             },
         )
         nodes, edges = [], []

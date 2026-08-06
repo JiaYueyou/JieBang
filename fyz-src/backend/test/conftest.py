@@ -59,6 +59,22 @@ def _setup_db():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _disable_auto_graph_sync_execution(monkeypatch):
+    """审核自动流转的图谱同步在测试中不真正执行 Neo4j 写入。
+
+    create_sync_in_background 仍会创建 AsyncTask（可断言任务存在），但后台
+    协程被替换为 noop——避免后台任务与 SQLite 内存库共享连接
+    （SingletonThreadPool）产生并发干扰（MissingGreenlet / 连接占用）。
+    """
+    async def _noop_graph_sync(*_args, **_kwargs) -> dict:
+        return {"skipped": True}
+
+    monkeypatch.setattr(
+        "app.tasks.graph_sync._process_graph_sync", _noop_graph_sync
+    )
+
+
 @pytest.fixture
 async def client():
     """异步 HTTP 客户端"""

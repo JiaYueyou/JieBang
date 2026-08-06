@@ -35,11 +35,23 @@ async def overview(
     window: TrendWindow = Query(default=TrendWindow.months_3),
     keyword: str | None = Query(default=None, max_length=120),
     city: str | None = Query(default=None, max_length=100),
+    emerging_page: int = Query(default=1, ge=1),
+    emerging_page_size: int = Query(default=10, ge=1, le=50),
+    new_job_page: int = Query(default=1, ge=1),
+    new_job_page_size: int = Query(default=10, ge=1, le=50),
     _principal: TokenPrincipal = Depends(get_current_user),
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[AnalysisOverview]:
     return ApiResponse(
-        data=await service.overview(window=window, keyword=keyword, city=city)
+        data=await service.overview(
+            window=window,
+            keyword=keyword,
+            city=city,
+            emerging_page=emerging_page,
+            emerging_page_size=emerging_page_size,
+            new_job_page=new_job_page,
+            new_job_page_size=new_job_page_size,
+        )
     )
 
 

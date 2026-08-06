@@ -50,6 +50,7 @@ async def sync_graph(
         mode=payload.mode.value,
         enrich_top_skills=payload.enrich_top_skills,
         user_id=principal.user_id,
+        run_eager_in_background=True,
     )
     logger.info(
         "graph_sync_created task_id=%s mode=%s enrich=%s user_id=%s",
@@ -113,11 +114,23 @@ async def review_enrichment_candidate(
     payload: GraphEnrichmentReviewRequest,
     principal: TokenPrincipal = Depends(require_admin),
     service: GraphService = Depends(get_graph_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
 ):
-    return ApiResponse(data=await service.review_enrichment_candidate(
+    candidate = await service.review_enrichment_candidate(
         candidate_id, action=payload.action, note=payload.note,
         lock_version=payload.lock_version, user_id=principal.user_id,
-    ))
+    )
+    message = "候选已批准" if payload.action == "approve" else "候选已驳回"
+    if payload.action == "approve":
+        # 批准后即发布：将候选置为可发布，并自动触发 L4/L5 增量写 Neo4j
+        # （进程内异步，不依赖 Celery；_append_verified_deep_nodes 会读取
+        #   publication_status=approved 的候选写入 TechPoint/KnowledgePoint）
+        await service.prepare_enrichment_publication([candidate_id])
+        task = await task_service.create_sync_in_background(
+            mode="incremental", enrich_top_skills=False, user_id=principal.user_id,
+        )
+        message += f"；已自动触发 L4/L5 图谱发布（任务 {task.task_id[:8]}）"
+    return ApiResponse(message=message, data=candidate)
 
 
 @router.post("/enrichment/publish", response_model=ApiResponse[TaskStatusResponse])

@@ -117,6 +117,9 @@ class AnalysisOverview(BaseModel):
     heatmap: list[HeatmapPoint]
     locations: list[LocationDemand]
     emerging_skills: list[EmergingSkill]
+    emerging_total: int = 0
+    new_jobs: list["EmergingJobInsight"] = Field(default_factory=list)
+    new_jobs_total: int = 0
     data_quality: AnalysisDataQuality
     baseline: AnalysisBaseline
 
