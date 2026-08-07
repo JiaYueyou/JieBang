@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,12 +103,24 @@ class AnalysisService:
         window: TrendWindow,
         keyword: str | None,
         city: str | None,
+        emerging_page: int = 1,
+        emerging_page_size: int = 10,
+        new_job_page: int = 1,
+        new_job_page_size: int = 10,
     ) -> AnalysisOverview:
         observed = await self._load_observed_jobs(keyword=keyword, city=city)
         window_label, granularity, length = self.WINDOW_CONFIG[window]
         labels = self._window_labels(observed, granularity, length)
-        raw_in_window = [
-            item for item in observed if item.bucket(granularity) in labels
+        # 窗口起始时间：观察窗口之前的完整历史数据作为固定基线
+        anchor = max((item.observed_at for item in observed), default=utc_now_naive())
+        if granularity == "day":
+            window_start = anchor - timedelta(days=length - 1)
+        else:
+            total = anchor.year * 12 + anchor.month - 1 - (length - 1)
+            window_start = datetime(total // 12, total % 12 + 1, 1)
+        raw_in_window = [item for item in observed if item.observed_at >= window_start]
+        baseline_observed = [
+            item for item in observed if item.observed_at < window_start
         ]
         in_window = self._deduplicate_observed(raw_in_window, granularity)
         facts = await self._load_verified_facts({item.row.id for item in raw_in_window})
@@ -117,25 +129,58 @@ class AnalysisService:
             {item.row.id: item for item in raw_in_window},
             granularity,
         )
+        # 历史基线：窗口之前全部历史中的已确认事实（固定基线集合）
+        baseline_facts = await self._load_verified_facts(
+            {item.row.id for item in baseline_observed}
+        )
+        baseline_counts = self._fact_month_counts(
+            baseline_facts,
+            {item.row.id: item for item in baseline_observed},
+            granularity,
+        )
+        baseline_months = max(len({item.month for item in baseline_observed}), 1)
+        baseline_skill_names = set(baseline_counts.keys())
+        baseline_totals = {
+            name: sum(monthly.values()) for name, monthly in baseline_counts.items()
+        }
         emerging = self._emerging_skills(
             facts,
             fact_counts,
             labels,
             {item.row.id: item for item in raw_in_window},
             granularity,
+            baseline_skill_names=baseline_skill_names,
+            baseline_totals=baseline_totals,
+            baseline_months=baseline_months,
+            baseline_facts=baseline_facts,
+            baseline_observed_by_raw={
+                item.row.id: item for item in baseline_observed
+            },
         )
+        new_jobs = await self._new_jobs(raw_in_window, baseline_observed)
+        # 分页：统计/排序仍基于全量（算法依赖），仅响应与渲染按页截断
+        emerging_total = len(emerging)
+        heatmap_skills = [item.skill for item in emerging[:8]] or self._top_skill_names(facts, 8)
+        emerging = emerging[
+            (emerging_page - 1) * emerging_page_size :
+            (emerging_page - 1) * emerging_page_size + emerging_page_size
+        ]
+        new_jobs_total = len(new_jobs)
+        new_jobs = new_jobs[
+            (new_job_page - 1) * new_job_page_size :
+            (new_job_page - 1) * new_job_page_size + new_job_page_size
+        ]
         quality = self._quality(
             observed=raw_in_window,
             deduplicated=in_window,
             facts=facts,
             granularity=granularity,
         )
-        if fact_counts and not self._has_comparison_baseline(fact_counts, labels):
+        if not fact_counts:
             quality.insufficient_data = True
             quality.notes.append(
-                "对比期缺少已确认技能事实，不输出新兴技能增长结论。"
+                "当前窗口缺少已确认技能事实，无法输出新兴技能结论。"
             )
-        heatmap_skills = [item.skill for item in emerging[:8]] or self._top_skill_names(facts, 8)
         salaries = [item.salary_k for item in in_window if item.salary_k is not None]
         return AnalysisOverview(
             window=window,
@@ -143,7 +188,7 @@ class AnalysisService:
             granularity=granularity,
             stats=AnalysisStats(
                 total_jobs=len(in_window),
-                new_skills=len(emerging),
+                new_skills=emerging_total,
                 average_salary_k=(
                     round(sum(salaries) / len(salaries), 1) if salaries else None
                 ),
@@ -161,6 +206,9 @@ class AnalysisService:
                 ).most_common(10)
             ],
             emerging_skills=emerging,
+            emerging_total=emerging_total,
+            new_jobs=new_jobs,
+            new_jobs_total=new_jobs_total,
             data_quality=quality,
             baseline=await self._load_reference_baseline(),
         )
@@ -319,20 +367,36 @@ class AnalysisService:
                 continue
             if city_filter and city_filter != (row.city or "").casefold():
                 continue
+            # 时间解析优先级：已解析的 datetime 字段（posted_at/crawled_at）
+            # > 文本字段 > 来源元数据 > 导入时间（最后兜底并标记）。
             raw_time = (
-                row.posted_at_text
-                or document.source_meta.get("posted_at")
-                or row.crawled_at_text
-                or document.source_meta.get("crawled_at")
+                row.posted_at
+                or row.crawled_at
+                or self.parse_datetime(
+                    row.posted_at_text
+                    or document.source_meta.get("posted_at")
+                    or row.crawled_at_text
+                    or document.source_meta.get("crawled_at")
+                )
             )
-            observed_at = self.parse_datetime(raw_time)
+            observed_at = (
+                raw_time
+                if isinstance(raw_time, datetime)
+                else self.parse_datetime(raw_time)
+            )
+            used_fallback_time = observed_at is None
+            if observed_at is None:
+                observed_at = row.created_at
+            elif observed_at.tzinfo is not None:
+                # 统一为 naive（UTC）时间，避免 aware/naive 混用比较
+                observed_at = observed_at.astimezone(timezone.utc).replace(tzinfo=None)
             title_key = self._normalize_key(row.standardized_title or row.title)
             company_key = self._normalize_key(row.company or document.company)
             city_key = self._normalize_key(row.city)
             result.append(ObservedJob(
                 row=row,
-                observed_at=observed_at or row.created_at,
-                used_fallback_time=observed_at is None,
+                observed_at=observed_at,
+                used_fallback_time=used_fallback_time,
                 salary_k=self.parse_salary_k(row.salary_text),
                 cluster_key=(
                     f"standard:{mappings[row.id]}"
@@ -684,72 +748,71 @@ class AnalysisService:
         labels: list[str],
         observed_by_raw: dict[int, ObservedJob],
         granularity: str,
+        *,
+        baseline_skill_names: set[str],
+        baseline_totals: dict[str, int],
+        baseline_months: int,
+        baseline_facts: list[tuple[JobSkillFact, Skill]],
+        baseline_observed_by_raw: dict[int, ObservedJob],
     ) -> list[EmergingSkill]:
-        if not self._has_comparison_baseline(counts, labels):
-            return []
-        window = min(3, max(1, len(labels) // 2))
-        current_labels = labels[-window:]
-        previous_labels = labels[-2 * window:-window]
+        """基于固定历史基线判定新增/成长技能。
+
+        - 基线 = 观察窗口之前的完整历史（固定基线集合）；
+        - 窗口内出现、但历史基线中不存在 → 新增技能（新出现）；
+        - 基线与窗口都出现、窗口规模高于基线月均且增长 ≥50% → 成长期；
+        - 其余已确认技能 → 成熟期。
+        """
+        current_labels = set(labels)
         skill_by_name = {skill.name: skill for _, skill in facts}
         result: list[EmergingSkill] = []
         for name, monthly in counts.items():
-            current = sum(monthly[label] for label in current_labels)
-            previous = sum(monthly[label] for label in previous_labels)
-            if current < self.MIN_EMERGING_COUNT or current <= previous:
+            current = sum(monthly[label] for label in labels)
+            if current < self.MIN_EMERGING_COUNT:
                 continue
-            current_companies: set[str] = set()
-            previous_companies: set[str] = set()
-            for fact, fact_skill in facts:
-                if fact_skill.name != name:
-                    continue
-                observed = observed_by_raw.get(fact.raw_job_record_id or -1)
-                if observed is None or observed.company_key.startswith("unknown:"):
-                    continue
-                observed_period = observed.bucket(granularity)
-                if observed_period in current_labels:
-                    current_companies.add(observed.company_key)
-                if observed_period in previous_labels:
-                    previous_companies.add(observed.company_key)
-            # A zero count has no denominator, while a single-company
-            # comparison is too fragile to support a market growth claim.
-            # Preserve the observation and its evidence, but withhold the
-            # percentage until both periods have independent-company support.
-            comparable = (
-                previous > 0
-                and len(previous_companies) >= 2
-                and len(current_companies) >= 2
+            baseline_total = baseline_totals.get(name, 0)
+            baseline_avg = round(baseline_total / max(baseline_months, 1), 2)
+            current_companies = self._evidence_companies(
+                facts, name, observed_by_raw, current_labels, granularity
             )
+            baseline_companies = self._evidence_companies(
+                baseline_facts, name, baseline_observed_by_raw, None, granularity
+            )
+            is_new = name not in baseline_skill_names
+            window_months = max(len(labels), 1)
+            current_avg = round(current / window_months, 2)
             growth = (
-                round((current - previous) * 100 / previous, 1)
-                if comparable
+                round((current_avg - baseline_avg) * 100 / baseline_avg, 1)
+                if baseline_avg > 0
                 else None
             )
+            stage = (
+                "新出现"
+                if is_new
+                else "成长期"
+                if growth is not None and growth >= 50
+                else "成熟期"
+            )
+            note = (
+                f"本期 {current} 个独立岗位簇、{len(current_companies)} 家企业；"
+                f"历史基线期共 {baseline_total} 个岗位簇、"
+                f"{len(baseline_companies)} 家企业（约 {baseline_months} 个月）"
+            )
+            if is_new:
+                note += "；历史基线中未出现，判定为新增技能"
+            elif growth is None or growth < 50:
+                note += "；历史基线已有该技能，属既有技能"
             result.append(EmergingSkill(
                 id=skill_by_name[name].id,
                 skill=name,
                 category=skill_by_name[name].category,
                 growth=growth,
-                stage=(
-                    "新出现"
-                    if previous == 0
-                    else "待观察"
-                    if growth is None
-                    else "成长期" if growth >= 50 else "成熟期"
-                ),
+                stage=stage,
                 sparkline=[monthly[label] for label in labels[-6:]],
                 current_count=current,
-                previous_count=previous,
+                previous_count=baseline_total,
                 current_companies=len(current_companies),
-                previous_companies=len(previous_companies),
-                evidence_note=(
-                    f"本期 {current} 个独立岗位簇、{len(current_companies)} 家企业；"
-                    f"上期 {previous} 个独立岗位簇、{len(previous_companies)} 家企业"
-                    + (
-                        "；独立企业不足 2 家，暂不计算增长率"
-                        if previous > 0 and not comparable
-                        else ""
-                    )
-                ),
+                previous_companies=len(baseline_companies),
+                evidence_note=note,
             ))
         return sorted(
             result,
@@ -762,25 +825,90 @@ class AnalysisService:
         )
 
     @staticmethod
-    def _has_comparison_baseline(
-        counts: dict[str, Counter[str]],
-        labels: list[str],
-    ) -> bool:
-        if len(labels) < 2:
-            return False
-        observed_fact_months = {
-            month
-            for monthly in counts.values()
-            for month, count in monthly.items()
-            if count > 0
+    def _evidence_companies(
+        facts: list[tuple[JobSkillFact, Skill]],
+        skill_name: str,
+        observed_by_raw: dict[int, ObservedJob],
+        labels: set[str] | None,
+        granularity: str,
+    ) -> set[str]:
+        """统计某技能在指定时段（labels=None 表示全部）出现的独立企业集合。"""
+        companies: set[str] = set()
+        for fact, fact_skill in facts:
+            if fact_skill.name != skill_name:
+                continue
+            observed = observed_by_raw.get(fact.raw_job_record_id or -1)
+            if observed is None or observed.company_key.startswith("unknown:"):
+                continue
+            if labels is None or observed.bucket(granularity) in labels:
+                companies.add(observed.company_key)
+        return companies
+
+    async def _new_jobs(
+        self,
+        window_observed: list[ObservedJob],
+        baseline_observed: list[ObservedJob],
+    ) -> list[EmergingJobInsight]:
+        """窗口内出现、但历史基线中不存在的标准岗位 → 新增岗位。
+
+        标准岗位维度使用 ObservedJob.cluster_key（"standard:{id}"），
+        与 _load_observed_jobs 的 StandardJobSource 映射保持一致。
+        """
+        baseline_ids = {
+            int(item.cluster_key.split(":", 1)[1])
+            for item in baseline_observed
+            if item.cluster_key.startswith("standard:")
         }
-        window = min(3, max(1, len(labels) // 2))
-        current_labels = set(labels[-window:])
-        previous_labels = set(labels[-2 * window:-window])
-        return bool(
-            observed_fact_months & current_labels
-            and observed_fact_months & previous_labels
+        window_by_standard: dict[int, list[ObservedJob]] = defaultdict(list)
+        for item in window_observed:
+            if not item.cluster_key.startswith("standard:"):
+                continue
+            standard_id = int(item.cluster_key.split(":", 1)[1])
+            if standard_id not in baseline_ids:
+                window_by_standard[standard_id].append(item)
+        if not window_by_standard:
+            return []
+        standards = list((await self.db.execute(
+            select(StandardJob).where(StandardJob.id.in_(window_by_standard.keys()))
+        )).scalars())
+        raw_ids = {
+            item.row.id
+            for items in window_by_standard.values()
+            for item in items
+        }
+        facts = await self._load_verified_facts(raw_ids)
+        skills_by_raw: dict[int, list[str]] = defaultdict(list)
+        for fact, skill in facts:
+            if fact.raw_job_record_id:
+                skills_by_raw[fact.raw_job_record_id].append(skill.name)
+        result: list[EmergingJobInsight] = []
+        for standard in standards:
+            items = window_by_standard[standard.id]
+            skill_counts = Counter(
+                skill_name
+                for item in items
+                for skill_name in skills_by_raw.get(item.row.id, [])
+            )
+            result.append(EmergingJobInsight(
+                id=standard.id,
+                name=standard.name,
+                core_skills=[name for name, _ in skill_counts.most_common(8)],
+                description=standard.description or "",
+                confidence=min(100, standard.source_count * 10),
+                source_count=standard.source_count,
+                first_seen_at=standard.first_seen_at,
+                decision=None,
+            ))
+        # 稳定排序：最新出现优先、来源数多优先，保证分页顺序确定
+        result.sort(
+            key=lambda item: (
+                item.first_seen_at,
+                item.source_count,
+                item.id,
+            ),
+            reverse=True,
         )
+        return result
 
     @staticmethod
     def _heatmap(

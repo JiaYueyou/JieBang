@@ -77,6 +77,9 @@ interface AnalysisOverviewResponse {
   heatmap: Array<{ x: number; y: number; value: number }>;
   locations: Array<{ city: string; value: number }>;
   emerging_skills: TrendOverview["emergingSkills"];
+  emerging_total?: number;
+  new_jobs?: TrendOverview["newJobs"];
+  new_jobs_total?: number;
   data_quality: AnalysisDataQuality;
   baseline: AnalysisBaseline;
 }
@@ -108,6 +111,9 @@ function mapTrendOverview(raw: AnalysisOverviewResponse): TrendOverview {
     heatmap: raw.heatmap,
     locations: raw.locations,
     emergingSkills: raw.emerging_skills,
+    emergingTotal: raw.emerging_total ?? raw.emerging_skills.length,
+    newJobs: raw.new_jobs ?? [],
+    newJobsTotal: raw.new_jobs_total ?? raw.new_jobs?.length ?? 0,
     dataQuality: raw.data_quality,
     baseline: raw.baseline,
   };
@@ -201,7 +207,14 @@ async function patch<T>(url: string, data?: unknown): Promise<T> {
 }
 
 export const httpDataProvider: DataProvider = {
-  dashboard: { getOverview: () => get("/dashboard/overview") },
+  dashboard: {
+    getOverview: (query) => get("/dashboard/overview", {
+      hot_jobs_page: query?.hotJobsPage || 1,
+      hot_jobs_page_size: query?.hotJobsPageSize || 10,
+      emerging_page: query?.emergingPage || 1,
+      emerging_page_size: query?.emergingPageSize || 10,
+    }),
+  },
   jobs: {
     list: async (query = {}) => {
       const page = query.page ?? 1;
@@ -414,7 +427,15 @@ export const httpDataProvider: DataProvider = {
   },
   trends: {
     getOverview: async (query) => mapTrendOverview(
-      await get<AnalysisOverviewResponse>("/analysis/overview", query),
+      await get<AnalysisOverviewResponse>("/analysis/overview", {
+        window: query.window,
+        keyword: query.keyword || undefined,
+        city: query.city || undefined,
+        emerging_page: query.emergingPage || 1,
+        emerging_page_size: query.emergingPageSize || 10,
+        new_job_page: query.newJobPage || 1,
+        new_job_page_size: query.newJobPageSize || 10,
+      }),
     ),
   },
   skillReviews: {

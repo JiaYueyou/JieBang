@@ -22,7 +22,7 @@ async def test_dashboard_overview_uses_persisted_jobs_and_matches(
     job_id = job_response.json()["data"]["id"]
 
     from app.core.database import async_session
-    from app.models import MatchRecord, Resume
+    from app.models import MatchRecord, RawJobRecord, Resume, Skill, SourceDocument, StandardJob, StandardJobSource, JobSkillFact
 
     async with async_session() as db:
         resume = Resume(
@@ -48,6 +48,46 @@ async def test_dashboard_overview_uses_persisted_jobs_and_matches(
                 created_by=1,
             )
         )
+        # 爬取数据：热门岗位数据源（2 条同标准岗位记录 + 1 条技能事实）
+        standard = StandardJob(
+            name="数据仓库工程师", canonical_key="data-warehouse-dashboard-test",
+            aliases=[], stack="data", level="middle", description="",
+            source_count=2, status="active",
+        )
+        skill = Skill(
+            name="SQL", canonical_name="SQL", canonical_key="sql-dashboard-test",
+            category="database", aliases=[],
+        )
+        db.add_all([standard, skill])
+        await db.flush()
+        for index, source_name in enumerate(("来源A", "来源B"), start=1):
+            document = SourceDocument(
+                source=source_name, url=f"https://dash.test/{index}",
+                title="数据仓库工程师", content_fingerprint=f"dash-{index:064d}",
+                content_summary="SQL", source_meta={"posted_at": "2026-07-15"},
+            )
+            db.add(document)
+            await db.flush()
+            raw = RawJobRecord(
+                source_document_id=document.id, title="数据仓库工程师",
+                standardized_title="数据仓库工程师", company="数据企业",
+                city="北京", jd_text="SQL 数据仓库建模", responsibilities="",
+                requirements="SQL", keywords="SQL", posted_at_text="2026-07-15",
+                dedup_status="unique", quality_status="accepted",
+                standard_job_id=standard.id, normalized_data={},
+            )
+            db.add(raw)
+            await db.flush()
+            db.add(StandardJobSource(
+                standard_job_id=standard.id, source_type="raw",
+                source_id=raw.id, original_title=raw.title, confidence=0.95,
+            ))
+            db.add(JobSkillFact(
+                raw_job_record_id=raw.id, skill_id=skill.id, kind="required",
+                importance=0.9, frequency=1, confidence=0.96,
+                evidence_text="SQL", verification_status="verified",
+                extraction_method="rule", source_count=2,
+            ))
         await db.commit()
 
     response = await client.get("/api/v1/dashboard/overview", headers=auth_headers)
@@ -66,8 +106,12 @@ async def test_dashboard_overview_uses_persisted_jobs_and_matches(
     assert data["kanban"][0]["skills"] == ["Python", "SQL"]
     assert sum(stage["count"] for stage in data["kanban"][0]["stages"]) == 1
     assert data["highMatches"][0]["name"] == "真实候选人"
-    assert data["hotJobs"][0]["job_id"] == job_id
-    assert data["hotJobs"][0]["demand"] == 1
+    # 热门岗位来自爬取数据（RawJobRecord → 标准岗位聚合）
+    assert data["hotJobs"][0]["title"] == "数据仓库工程师"
+    assert data["hotJobs"][0]["demand"] == 2
+    assert data["hotJobs"][0]["city"] == "北京"
+    assert "SQL" in data["hotJobs"][0]["core_skills"]
+    assert data["hotJobsTotal"] >= 1
 
 
 async def test_dashboard_marks_unmatched_talent_as_pending_and_excludes_stale_job_matches(
@@ -158,3 +202,60 @@ async def test_dashboard_marks_unmatched_talent_as_pending_and_excludes_stale_jo
 async def test_dashboard_requires_authentication(client):
     response = await client.get("/api/v1/dashboard/overview")
     assert response.status_code == 401
+
+
+async def test_dashboard_hot_jobs_and_emerging_skills_pagination(client, auth_headers):
+    """热门岗位与技能涌现两区块支持分页参数，返回 total 与切片。"""
+    from app.core.database import async_session
+    from app.models import RawJobRecord, Skill, SourceDocument, StandardJob, StandardJobSource
+
+    async with async_session() as db:
+        for i, (title, canonical) in enumerate(
+            (("分页岗位甲", "page-job-a"), ("分页岗位乙", "page-job-b"))
+        ):
+            standard = StandardJob(
+                name=title, canonical_key=canonical, aliases=[],
+                stack="backend", level="middle", description="",
+                source_count=1, status="active",
+            )
+            skill = Skill(
+                name=f"技能{i}", canonical_name=f"技能{i}",
+                canonical_key=f"page-skill-{i}", category="backend", aliases=[],
+            )
+            db.add_all([standard, skill])
+            await db.flush()
+            document = SourceDocument(
+                source="分页来源", url=f"https://page.test/{i}",
+                title=title, content_fingerprint=f"page-{i:064d}",
+                content_summary="", source_meta={"posted_at": "2026-07-15"},
+            )
+            db.add(document)
+            await db.flush()
+            raw = RawJobRecord(
+                source_document_id=document.id, title=title,
+                standardized_title=title, company="分页企业", city="上海",
+                jd_text=f"{title} 技能", responsibilities="", requirements="",
+                keywords="", posted_at_text="2026-07-15", dedup_status="unique",
+                quality_status="accepted", standard_job_id=standard.id,
+                normalized_data={},
+            )
+            db.add(raw)
+            await db.flush()
+            db.add(StandardJobSource(
+                standard_job_id=standard.id, source_type="raw",
+                source_id=raw.id, original_title=title, confidence=0.95,
+            ))
+        await db.commit()
+
+    response = await client.get(
+        "/api/v1/dashboard/overview",
+        headers=auth_headers,
+        params={"hot_jobs_page": 1, "hot_jobs_page_size": 1,
+                "emerging_page": 1, "emerging_page_size": 1},
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data["hotJobs"]) == 1
+    assert data["hotJobsTotal"] >= 2
+    assert len(data["emergingSkills"]) <= 1
+    assert data["emergingSkillsTotal"] >= 0

@@ -155,7 +155,7 @@ async def test_overview_deduplicates_reposted_jobs_by_cluster_and_company(
     assert data["stats"]["new_skills"] == 0
     assert data["emerging_skills"] == []
     assert quality["insufficient_data"] is True
-    assert any("对比期" in note for note in quality["notes"])
+    assert any("样本" in note for note in quality["notes"])
     assert max(point["value"] for point in data["heatmap"]) == 1
 
 

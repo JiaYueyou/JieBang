@@ -381,6 +381,24 @@ class ImportService:
             candidate.near_duplicate_group_id
             or near_duplicate_group_id(fingerprint, candidate_fingerprint)
         )
+        # 先确保 cluster 存在，再给 raw 赋值 duplicate_cluster_id。
+        # db.get 会触发 autoflush：若先赋值 FK 再 get，autoflush 会把引用
+        # 尚不存在 cluster 的 UPDATE 抢先刷出 → MySQL 1452 外键失败。
+        # （此处 get 只 flush 无外键依赖的改动，安全。）
+        cluster = await self.db.get(JobDuplicateCluster, group_id)
+        if cluster is None:
+            cluster = JobDuplicateCluster(
+                id=group_id,
+                standard_job_id=raw.standard_job_id,
+                representative_raw_job_id=candidate.id,
+                company_key=raw.company_key if raw.company_key == candidate.company_key else None,
+                city_code=raw.city_code if raw.city_code == candidate.city_code else None,
+                member_count=2,
+            )
+            self.db.add(cluster)
+            cluster_exists = False
+        else:
+            cluster_exists = True
         for item in (candidate, raw):
             item.dedup_status = "near_duplicate"
             item.near_duplicate_group_id = group_id
@@ -396,18 +414,9 @@ class ImportService:
                 similarity,
             )
             item.duplicate_cluster_id = group_id
-        cluster = await self.db.get(JobDuplicateCluster, group_id)
-        if cluster is None:
-            cluster = JobDuplicateCluster(
-                id=group_id,
-                standard_job_id=raw.standard_job_id,
-                representative_raw_job_id=candidate.id,
-                company_key=raw.company_key if raw.company_key == candidate.company_key else None,
-                city_code=raw.city_code if raw.city_code == candidate.city_code else None,
-                member_count=2,
-            )
-            self.db.add(cluster)
-        else:
+        if cluster_exists:
+            # 重新统计 member_count：必须在 duplicate_cluster_id 赋值之后，
+            # 计数才包含当前 candidate 与 raw 两条。
             cluster.member_count = int(await self.db.scalar(
                 select(func.count(RawJobRecord.id)).where(
                     RawJobRecord.duplicate_cluster_id == group_id

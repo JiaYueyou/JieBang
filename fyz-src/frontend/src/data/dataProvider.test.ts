@@ -12,7 +12,9 @@ const dashboardOverview = {
   kanban: [],
   highMatches: [],
   hotJobs: [],
+  hotJobsTotal: 0,
   emergingSkills: [],
+  emergingSkillsTotal: 0,
 };
 
 describe("unified mock data provider", () => {
@@ -107,7 +109,14 @@ describe("unified mock data provider", () => {
     } as never);
     expect(providerMode).toBe("http");
     await expect(dataProvider.dashboard.getOverview()).resolves.toEqual(dashboardOverview);
-    expect(getSpy).toHaveBeenCalledWith("/dashboard/overview", { params: undefined });
+    expect(getSpy).toHaveBeenCalledWith("/dashboard/overview", {
+      params: {
+        hot_jobs_page: 1,
+        hot_jobs_page_size: 10,
+        emerging_page: 1,
+        emerging_page_size: 10,
+      },
+    });
   });
 
   it("always loads admin monitoring from the real backend even in mock mode", async () => {

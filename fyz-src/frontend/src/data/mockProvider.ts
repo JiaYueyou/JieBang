@@ -1,6 +1,6 @@
 import type { DataProvider } from "./provider";
 import { loadMockDatabase, saveMockDatabase } from "./mockDatabase";
-import type { CareerRecommendation, FavoriteRecord, FavoriteTargetType, JobSummary, TalentSummary } from "@/domain/types";
+import type { CareerRecommendation, DashboardOverview, FavoriteRecord, FavoriteTargetType, JobSummary, TalentSummary } from "@/domain/types";
 
 const delay = <T>(value: T, ms = 30) => new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
 const db = () => loadMockDatabase();
@@ -60,9 +60,35 @@ function favoriteFromEntity(type: FavoriteTargetType, targetId: number, title?: 
 
 export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer" | "skillReviews" | "admin"> = {
   dashboard: {
-    async getOverview() {
+    async getOverview(query) {
       const data = db();
       const openJobs = data.jobs.filter((job) => job.status === "open");
+      const hotJobs = data.jobs.slice(0, 12).map((job, index) => ({
+        job_id: job.id,
+        title: job.title,
+        demand: [243, 156, 187, 132, 108, 165][index] ?? 100,
+        city: job.location || "全国",
+        trend: [-5, 23, 8, 18, 15, -3][index] ?? 0,
+        spark: [[260, 255, 250, 248, 245, 243], [30, 45, 62, 85, 110, 156], [140, 148, 155, 165, 175, 187], [40, 55, 68, 85, 108, 132], [35, 48, 60, 75, 92, 108], [170, 172, 168, 166, 164, 165]][index] ?? [0, 0, 0, 0, 0, 0],
+        core_skills: (job.skills ?? []).slice(0, 5),
+      }));
+      const hotJobsPage = query?.hotJobsPage || 1;
+      const hotJobsPageSize = query?.hotJobsPageSize || 10;
+      const emergingPage = query?.emergingPage || 1;
+      const emergingPageSize = query?.emergingPageSize || 10;
+      const hotJobsSlice = hotJobs.slice(
+        (hotJobsPage - 1) * hotJobsPageSize,
+        (hotJobsPage - 1) * hotJobsPageSize + hotJobsPageSize,
+      );
+      const emergingSkills: DashboardOverview["emergingSkills"] = [
+        { id: 1, name: "LangChain", combo: "AI 应用开发", growth: 12, confidence: 87 },
+        { id: 2, name: "RAG", combo: "AI 应用开发", growth: 9, confidence: 82 },
+        { id: 3, name: "向量数据库", combo: "数据工程", growth: 7, confidence: 78 },
+      ];
+      const emergingSlice = emergingSkills.slice(
+        (emergingPage - 1) * emergingPageSize,
+        (emergingPage - 1) * emergingPageSize + emergingPageSize,
+      );
       return delay({
         heroCards: [
           { value: String(openJobs.length), label: "在招岗位", change: "+12.5%", up: true, color: "brand", action: "发布岗位", link: "/jobs" },
@@ -97,8 +123,10 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
           };
         }),
         highMatches: [...data.talents].sort((a,b)=>b.score-a.score).slice(0,6),
-        hotJobs: data.jobs.slice(0,6).map((job,index)=>({job_id:job.id,title:job.title,demand:[243,156,187,132,108,165][index],city:job.location||"全国",trend:[-5,23,8,18,15,-3][index],spark:[[260,255,250,248,245,243],[30,45,62,85,110,156],[140,148,155,165,175,187],[40,55,68,85,108,132],[35,48,60,75,92,108],[170,172,168,166,164,165]][index]})),
-        emergingSkills: [],
+        hotJobs: hotJobsSlice,
+        hotJobsTotal: hotJobs.length,
+        emergingSkills: emergingSlice,
+        emergingSkillsTotal: emergingSkills.length,
       });
     },
   },

@@ -4,10 +4,12 @@ import json
 import tempfile
 from pathlib import Path
 
-from sqlalchemy import func, select
+import pytest
+from sqlalchemy import event, func, select
 
-from app.core.database import async_session
+from app.core.database import async_session, engine
 from app.models import (
+    JobDuplicateCluster,
     JobSkillFact,
     RawJobRecord,
     Skill,
@@ -16,6 +18,24 @@ from app.models import (
 )
 from app.services import ImportService
 import app.services.import_service as import_module
+
+
+@pytest.fixture
+def enforce_foreign_keys():
+    """临时对 SQLite 连接启用外键检查（连接级 PRAGMA）。
+
+    SQLite 默认不检查外键，导致 `_mark_near_duplicate` 的 flush 时序错误
+    只在 MySQL 上暴露（1452）。启用后回归测试能在 SQLite 上复现该语义。
+    """
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _enable(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    yield
+    event.remove(engine.sync_engine, "connect", _enable)
 
 
 async def test_import_is_idempotent_without_cross_validating_different_jobs(monkeypatch):
@@ -174,7 +194,7 @@ async def test_same_standard_job_cross_validates_independent_sources(monkeypatch
             assert len({raw.standard_job_id for raw in raws}) == 1
 
 
-async def test_near_duplicate_is_retained_and_downweighted(monkeypatch):
+async def test_near_duplicate_is_retained_and_downweighted(monkeypatch, enforce_foreign_keys):
     records = [
         {
             "title": "Python 开发工程师",
@@ -219,6 +239,63 @@ async def test_near_duplicate_is_retained_and_downweighted(monkeypatch):
             assert all("near_duplicate" in raw.quality_flags for raw in raws)
             assert len({raw.duplicate_cluster_id for raw in raws}) == 1
             assert raws[0].normalization_version == "job-title-v2"
+
+            # 外键检查开启下 cluster 必须完整存在（1452 回归）
+            group_id = raws[0].duplicate_cluster_id
+            clusters = (
+                await db.execute(select(JobDuplicateCluster))
+            ).scalars().all()
+            assert len(clusters) == 1
+            assert clusters[0].id == group_id
+            assert clusters[0].member_count == 2
+            assert clusters[0].representative_raw_job_id == raws[0].id
+
+
+async def test_near_duplicate_cluster_member_count_increments(monkeypatch, enforce_foreign_keys):
+    """同一近重复组追加记录：cluster 只建一次，member_count 递增。"""
+    base = {
+        "company": "A",
+        "jd_text": "负责 Python 服务开发、MySQL 数据建模和 FastAPI 接口维护。",
+        "crawled_at": "2026-07-29T10:00:00+08:00",
+        "keywords": ["Python", "MySQL"],
+    }
+    first_two = [
+        {**base, "title": "Python 开发工程师", "source": "来源A",
+         "url": "https://a/python", "posted_at": "2026-07-20"},
+        {**base, "title": "Python 研发工程师", "source": "来源B",
+         "url": "https://b/python", "posted_at": "2026-07-21"},
+    ]
+    third = {
+        **base, "title": "Python 研发工程师", "source": "来源C",
+        "url": "https://c/python", "posted_at": "2026-07-22",
+    }
+    with tempfile.TemporaryDirectory(dir="test") as directory:
+        test_dir = Path(directory)
+        (test_dir / "test.json").write_text(
+            json.dumps(first_two, ensure_ascii=False), encoding="utf-8"
+        )
+        (test_dir / "test2.json").write_text(
+            json.dumps([third], ensure_ascii=False), encoding="utf-8"
+        )
+        monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
+        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json", "test2.json"})
+
+        async with async_session() as db:
+            first = await ImportService(db).import_files(["test.json"])
+            assert first["imported"] == 2
+            second = await ImportService(db).import_files(["test2.json"])
+            assert second["imported"] == 1
+
+            raws = (
+                await db.execute(select(RawJobRecord).order_by(RawJobRecord.id))
+            ).scalars().all()
+            assert len({raw.duplicate_cluster_id for raw in raws}) == 1
+            clusters = (
+                await db.execute(select(JobDuplicateCluster))
+            ).scalars().all()
+            assert len(clusters) == 1
+            assert clusters[0].member_count == 3
+            assert clusters[0].id == raws[0].duplicate_cluster_id
 
 
 async def test_import_rejects_invalid_job_v1(monkeypatch):

@@ -70,7 +70,7 @@
 
     <!-- Emerging skills -->
     <div class="dash-card anim-fade-up anim-delay-3" style="margin-top:16px;">
-      <div class="dash-card-header"><span class="dash-card-title">新兴技能一览</span><span class="dash-card-badge">{{ emergingSkills.length }} 项</span></div>
+      <div class="dash-card-header"><span class="dash-card-title">新兴技能一览</span><span class="dash-card-badge">{{ emergingTotal }} 项</span></div>
       <div class="dash-card-body" style="padding-top:12px;">
         <el-table :data="emergingSkills" style="width:100%" size="default" stripe>
           <el-table-column prop="skill" label="技能名称" min-width="160" />
@@ -83,11 +83,11 @@
           <el-table-column prop="growth" label="增长率" width="100" align="center">
             <template #default="{ row }">
               <span :style="{ color: row.growth === null ? 'var(--color-warning)' : row.growth > 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
-                {{ row.growth === null ? (row.previous_count === 0 ? '新出现' : '基线不足') : `${row.growth > 0 ? '+' : ''}${row.growth}%` }}
+                {{ row.growth === null ? (row.previous_count === 0 ? '新出现' : '待观察') : `${row.growth > 0 ? '+' : ''}${row.growth}%` }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="本期 / 上期" width="120" align="center">
+          <el-table-column label="本期 / 基线期" width="120" align="center">
             <template #default="{ row }">
               <span class="trend-evidence-count">{{ row.current_count }} / {{ row.previous_count }}</span>
             </template>
@@ -102,6 +102,46 @@
             </template>
           </el-table-column>
         </el-table>
+        <div class="tr-pagination-row">
+          <el-pagination
+            v-model:current-page="emergingPage"
+            :page-size="emergingPageSize"
+            :total="emergingTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadTrends"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- New jobs -->
+    <div class="dash-card anim-fade-up anim-delay-3" style="margin-top:16px;">
+      <div class="dash-card-header">
+        <span class="dash-card-title">新增岗位一览（历史基线之外）</span>
+        <span class="dash-card-badge">{{ newJobsTotal }} 项</span>
+      </div>
+      <div class="dash-card-body" style="padding-top:12px;">
+        <el-table :data="newJobs" style="width:100%" size="default" stripe>
+          <el-table-column prop="name" label="岗位名称" min-width="180" />
+          <el-table-column label="核心技能" min-width="220">
+            <template #default="{ row }">
+              <span v-for="skill in (row.core_skills || [])" :key="skill" class="tr-skill-chip">{{ skill }}</span>
+              <span v-if="!(row.core_skills || []).length" class="tr-hint">暂无已确认技能</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="source_count" label="独立来源" width="100" align="center" />
+          <el-table-column prop="description" label="说明" min-width="240" show-overflow-tooltip />
+        </el-table>
+        <div v-if="!newJobsTotal" class="tr-hint" style="padding:8px 2px;">当前窗口内未发现历史基线之外的新增岗位</div>
+        <div v-else class="tr-pagination-row">
+          <el-pagination
+            v-model:current-page="newJobPage"
+            :page-size="newJobPageSize"
+            :total="newJobsTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadTrends"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -134,6 +174,9 @@ const { data, loading, error } = storeToRefs(store);
 const months = computed(() => data.value?.months ?? []);
 const stats = computed(() => data.value?.stats ?? { totalJobs:"0",newSkills:0,avgSalary:"0",activeCities:0 });
 const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
+const emergingTotal = computed(() => data.value?.emergingTotal ?? 0);
+const newJobs = computed(() => data.value?.newJobs ?? []);
+const newJobsTotal = computed(() => data.value?.newJobsTotal ?? 0);
 const dataQuality = computed(() => data.value?.dataQuality ?? null);
 const windowLabel = computed(() => data.value?.windowLabel ?? "近 3 个月");
 const coverageText = computed(() => {
@@ -142,16 +185,28 @@ const coverageText = computed(() => {
   return `覆盖 ${quality.coverage_start.slice(0, 10)} 至 ${quality.coverage_end.slice(0, 10)} · ${quality.total_records} 条岗位`;
 });
 
+const emergingPage = ref(1);
+const emergingPageSize = ref(10);
+const newJobPage = ref(1);
+const newJobPageSize = ref(10);
+
 function loadTrends() {
   return store.load({
     window: timeRange.value,
     keyword: jobFilter.value.trim() || undefined,
     city: cityFilter.value || undefined,
+    emergingPage: emergingPage.value,
+    emergingPageSize: emergingPageSize.value,
+    newJobPage: newJobPage.value,
+    newJobPageSize: newJobPageSize.value,
   });
 }
 
 let filterTimer: number | undefined;
 watch([timeRange, jobFilter, cityFilter], () => {
+  // 筛选条件变化时回到第一页，避免停留在越界页
+  emergingPage.value = 1;
+  newJobPage.value = 1;
   window.clearTimeout(filterTimer);
   filterTimer = window.setTimeout(loadTrends, 350);
 });
@@ -248,5 +303,20 @@ function sparkOption(row: any) {
   color:var(--text-primary);
   font-family:var(--font-mono);
   font-weight:700;
+}
+.tr-skill-chip {
+  display:inline-block;
+  margin:2px 6px 2px 0;
+  padding:2px 10px;
+  border-radius:999px;
+  background:var(--color-bg-elevated);
+  border:1px solid var(--color-border);
+  color:var(--color-brand);
+  font-size:12px;
+}
+.tr-pagination-row {
+  display:flex;
+  justify-content:flex-end;
+  margin-top:12px;
 }
 </style>

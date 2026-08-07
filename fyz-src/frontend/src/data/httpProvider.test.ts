@@ -500,7 +500,15 @@ describe("HTTP job and JD Agent provider contract", () => {
       windowLabel: "近 6 个月",
     }));
     expect(get).toHaveBeenCalledWith("/analysis/overview", {
-      params: { window: "6m", keyword: "Java", city: "Hangzhou" },
+      params: {
+        window: "6m",
+        keyword: "Java",
+        city: "Hangzhou",
+        emerging_page: 1,
+        emerging_page_size: 10,
+        new_job_page: 1,
+        new_job_page_size: 10,
+      },
     });
   });
 

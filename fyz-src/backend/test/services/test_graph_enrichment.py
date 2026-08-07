@@ -756,3 +756,265 @@ async def test_machine_validated_candidate_requires_review_before_publication():
         assert reviewed["lock_version"] == 1
         assert reviewed["evidence_source_ids"] == ["1", "2"]
         assert await service.prepare_enrichment_publication([candidate.id]) == 1
+
+
+def test_dedupe_by_name_keeps_first_and_ignores_blank():
+    points = [
+        TechPointOutput(name="Spring Boot", detail="a", confidence=0.9, evidence_ids=["e1", "e2"]),
+        TechPointOutput(name="spring boot", detail="b", confidence=0.8, evidence_ids=["e3", "e4"]),
+        TechPointOutput(name="", detail="blank", confidence=0.9, evidence_ids=["e5", "e6"]),
+        TechPointOutput(name="MyBatis", detail="c", confidence=0.85, evidence_ids=["e7", "e8"]),
+    ]
+    deduped = GraphService._dedupe_by_name(points)
+    assert [p.name for p in deduped] == ["Spring Boot", "MyBatis"]
+    assert deduped[0].detail == "a"  # 保留首次出现
+
+
+def test_filter_grounded_completion_dedupes_same_name_points():
+    output = GraphEnrichmentOutput(
+        skill_name="Java",
+        job_directions=["Java 后端开发工程师"],
+        skill_area="Programming Language",
+        tech_points=[
+            TechPointOutput(
+                name="MyBatis", detail="ORM 框架", confidence=0.85,
+                evidence_ids=["evidence-a", "evidence-b"],
+            ),
+            TechPointOutput(
+                name="mybatis", detail="重复技术点", confidence=0.82,
+                evidence_ids=["evidence-a", "evidence-b"],
+            ),
+            TechPointOutput(
+                name="Spring Boot", detail="微服务框架", confidence=0.88,
+                evidence_ids=["evidence-a", "evidence-b"],
+            ),
+        ],
+    )
+    filtered, _ = GraphService._filter_grounded_completion(
+        output,
+        _grounding_report(accepted={"tech:0", "tech:1", "tech:2"}),
+    )
+    assert [p.name for p in filtered.tech_points] == ["MyBatis", "Spring Boot"]
+
+
+async def test_append_verified_deep_nodes_dedupes_same_name_points():
+    async with async_session() as db:
+        skill = await _seed_python_skill(db)
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="dedup-v1", snapshot_type="incremental", status="running",
+        )
+        db.add(snapshot)
+        await db.flush()
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id,
+            skill_id=skill.id,
+            verification_status="verified",
+            review_status="approved",
+            publication_status="approved",
+            evidence_source_ids=["evidence-a", "evidence-b"],
+            candidate_data=_make_output([
+                TechPointOutput(
+                    name="Flask", category="framework",
+                    detail="Python 轻量级 Web 框架", confidence=0.85,
+                    evidence_ids=["evidence-a", "evidence-b"],
+                    knowledge_points=[
+                        KnowledgePointOutput(
+                            name="请求上下文", description="隔离单次请求数据", difficulty="medium",
+                            confidence=0.80,
+                            evidence_ids=["evidence-a", "evidence-b"],
+                        ),
+                        KnowledgePointOutput(
+                            name="请求上下文", description="重复知识点", difficulty="medium",
+                            confidence=0.78,
+                            evidence_ids=["evidence-a", "evidence-b"],
+                        ),
+                    ],
+                ),
+                TechPointOutput(
+                    name="flask", category="framework",
+                    detail="重复技术点", confidence=0.80,
+                    evidence_ids=["evidence-a", "evidence-b"],
+                ),
+            ]).model_dump(mode="json"),
+            confidence=0.85,
+        )
+        db.add(candidate)
+        await db.commit()
+
+        service = GraphService(db, llm_provider=_MockProvider())
+        nodes = {"TechPoint": [], "KnowledgePoint": []}
+        edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
+        tech_count, knowledge_count, _ = await service._append_verified_deep_nodes(
+            snapshot.id, nodes, edges
+        )
+        assert tech_count == 1  # Flask / flask 同名去重
+        assert knowledge_count == 1  # 请求上下文 同名去重
+        point_names = [node["properties"]["name"] for node in nodes["TechPoint"]]
+        assert point_names == ["Flask"]
+        knowledge_names = [
+            node["properties"]["name"] for node in nodes["KnowledgePoint"]
+        ]
+        assert knowledge_names == ["请求上下文"]
+        assert len(edges["REFINES_TO"]) == 1
+        assert len(edges["HAS_KNOWLEDGE"]) == 1
+
+
+async def test_append_verified_deep_nodes_merges_same_name_across_skills():
+    """跨技能候选生成同名 TechPoint 时合并为同一节点（多 skill 通过 REFINES_TO 共享）。
+
+    这是"3 个 mybatis / 2 个 spring boot"重复的根治验证：id 基于名称 hash，
+    不同 skill 的同名技术点 MERGE 到同一节点。
+    """
+    async with async_session() as db:
+        skill_a = await _seed_python_skill(db)
+        java = Skill(
+            name="Java", canonical_name="Java", canonical_key="java-merge-test",
+            category="programming_language", aliases=[],
+        )
+        db.add(java)
+        await db.flush()
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="merge-v1",
+            snapshot_type="incremental", status="running",
+        )
+        db.add(snapshot)
+        await db.flush()
+
+        def make_candidate(skill_id: int, point_name: str) -> GraphEnrichmentCandidate:
+            return GraphEnrichmentCandidate(
+                snapshot_id=snapshot.id,
+                skill_id=skill_id,
+                verification_status="verified",
+                review_status="approved",
+                publication_status="approved",
+                evidence_source_ids=["evidence-a", "evidence-b"],
+                candidate_data=_make_output([
+                    TechPointOutput(
+                        name=point_name, category="framework",
+                        detail="持久层框架", confidence=0.85,
+                        evidence_ids=["evidence-a", "evidence-b"],
+                    )
+                ]).model_dump(mode="json"),
+                confidence=0.85,
+            )
+
+        db.add(make_candidate(skill_a.id, "MyBatis"))
+        db.add(make_candidate(java.id, "MyBatis"))
+        await db.commit()
+
+        service = GraphService(db, llm_provider=_MockProvider())
+        nodes = {"TechPoint": [], "KnowledgePoint": []}
+        edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
+        tech_count, _, _ = await service._append_verified_deep_nodes(
+            snapshot.id, nodes, edges
+        )
+        # 两个候选生成同 key 技术点 → 全局收集合并为 1 个唯一节点
+        assert tech_count == 1
+        assert len({node["id"] for node in nodes["TechPoint"]}) == 1
+        assert nodes["TechPoint"][0]["properties"]["name"] == "MyBatis"
+        # 两个 skill 的 REFINES_TO 指向同一节点（多父共享）
+        assert len(edges["REFINES_TO"]) == 2
+        sources = {edge["source"] for edge in edges["REFINES_TO"]}
+        assert sources == {f"skill:{skill_a.id}", f"skill:{java.id}"}
+        assert len({edge["target"] for edge in edges["REFINES_TO"]}) == 1
+
+
+def test_name_key_is_deterministic_and_case_insensitive():
+    assert GraphService._name_key("Spring Boot") == GraphService._name_key("spring boot")
+    assert GraphService._name_key("MyBatis").startswith("point") is False
+    assert len(GraphService._name_key("MyBatis")) == 12
+    assert GraphService._name_key("") == GraphService._name_key("  ")
+
+
+def test_normalize_name_key_merges_suffix_variants():
+    """'MyBatis' 与 'MyBatis持久层框架' 归一为同一 key（L4 变体合并）。"""
+    assert GraphService._normalize_name_key(
+        "MyBatis", level="tech_point"
+    ) == GraphService._normalize_name_key("MyBatis持久层框架", level="tech_point")
+    assert GraphService._normalize_name_key(
+        "MySQL", level="tech_point"
+    ) == GraphService._normalize_name_key("MySQL 数据库开发与优化", level="tech_point")
+    assert GraphService._normalize_name_key(
+        "Python", level="tech_point"
+    ) == GraphService._normalize_name_key("Python 后端与 Web 开发", level="tech_point")
+    assert GraphService._normalize_name_key(
+        "Redis", level="tech_point"
+    ) == GraphService._normalize_name_key("Redis 中间件使用", level="tech_point")
+
+
+def test_normalize_name_key_preserves_concept_phrases_for_l5():
+    """L5 概念短语不误剥（仅剥课程式后缀）。"""
+    l5_key = GraphService._normalize_name_key("Git 三区模型", level="knowledge_point")
+    assert l5_key != GraphService._normalize_name_key("Git", level="knowledge_point")
+    assert GraphService._normalize_name_key(
+        "请求上下文", level="knowledge_point"
+    ) == GraphService._normalize_name_key("请求上下文", level="knowledge_point")
+    # 课程式后缀在 L5 可剥
+    assert GraphService._normalize_name_key(
+        "MyBatis 入门", level="knowledge_point"
+    ) == GraphService._normalize_name_key("MyBatis", level="knowledge_point")
+
+
+def test_normalize_name_key_guard_never_empties():
+    """守卫：纯后缀/过短名称不剥成空，key 仍确定。"""
+    for name in ("框架", "开发", "ab", "A"):
+        key = GraphService._normalize_name_key(name, level="tech_point")
+        assert len(key) == 12
+    assert GraphService._normalize_name_key(
+        "框架", level="tech_point"
+    ) == GraphService._normalize_name_key("框架", level="tech_point")
+
+
+async def test_append_verified_deep_nodes_merges_suffix_variant_across_skills():
+    """跨技能候选生成"MyBatis"与"MyBatis持久层框架"变体时合并为同一节点。
+
+    这是用户报告的"MyBatis 与 MyBatis持久层框架 同时存在"的根治验证：
+    归一化 key 剥离修饰后缀后两者同 key → MERGE 到同一节点。
+    """
+    async with async_session() as db:
+        skill_a = await _seed_python_skill(db)
+        java = Skill(
+            name="Java", canonical_name="Java", canonical_key="java-variant-test",
+            category="programming_language", aliases=[],
+        )
+        db.add(java)
+        await db.flush()
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="variant-v1",
+            snapshot_type="incremental", status="running",
+        )
+        db.add(snapshot)
+        await db.flush()
+
+        def make_candidate(skill_id: int, point_name: str) -> GraphEnrichmentCandidate:
+            return GraphEnrichmentCandidate(
+                snapshot_id=snapshot.id,
+                skill_id=skill_id,
+                verification_status="verified",
+                review_status="approved",
+                publication_status="approved",
+                evidence_source_ids=["evidence-a", "evidence-b"],
+                candidate_data=_make_output([
+                    TechPointOutput(
+                        name=point_name, category="framework",
+                        detail="持久层 ORM 框架", confidence=0.85,
+                        evidence_ids=["evidence-a", "evidence-b"],
+                    )
+                ]).model_dump(mode="json"),
+                confidence=0.85,
+            )
+
+        db.add(make_candidate(skill_a.id, "MyBatis"))
+        db.add(make_candidate(java.id, "MyBatis持久层框架"))
+        await db.commit()
+
+        service = GraphService(db, llm_provider=_MockProvider())
+        nodes = {"TechPoint": [], "KnowledgePoint": []}
+        edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
+        tech_count, _, _ = await service._append_verified_deep_nodes(
+            snapshot.id, nodes, edges
+        )
+        # 变体名称归一为同一 key → 全局收集只生成 1 个唯一节点，两个 skill 共享
+        assert tech_count == 1
+        assert len({node["id"] for node in nodes["TechPoint"]}) == 1
+        assert len(edges["REFINES_TO"]) == 2

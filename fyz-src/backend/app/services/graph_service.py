@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import logging
 import time
@@ -23,6 +24,7 @@ from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now, utc_now_naive
 from app.domain.job_standardizer import CATEGORY_STACK, normalize_job_title
+from app.domain.skill_dictionary import canonical_key
 from app.domain.statuses import AgentRunStatus, TaskStatus
 from app.models import (
     AgentRun,
@@ -47,6 +49,8 @@ from app.schemas.graph import (
     GraphNode,
     GraphSnapshotResponse,
     GraphSubgraph,
+    KnowledgePointOutput,
+    TechPointOutput,
 )
 from app.schemas.retrieval import RetrievalSearchRequest, RetrievalSearchResponse
 from app.schemas.skill import TaskStatusResponse
@@ -63,6 +67,25 @@ logger = logging.getLogger(__name__)
 
 
 class GraphService:
+    # L4 技术点名称可剥离的复合修饰后缀（最长匹配优先，基于快照真实样本校准）
+    _L4_COMPOUND_SUFFIXES = (
+        "持久层框架", "数据库开发与优化", "开发与多语言协同", "开发基础与工程规范",
+        "基础与简单编程配置", "语言核心与工程应用", "后端与web开发",
+        "基本数据库操作", "项目研发经验", "项目开发实践", "提交与对象模型",
+        "分支与合并机制", "基本语法与结构", "基础语法与常用类库",
+        "环境下的应用与嵌入式编程", "中间件使用", "脚本编写",
+    )
+    # L4 技术点名称可剥离的单修饰后缀（守卫保证剥离后长度 ≥2）
+    _L4_SUFFIXES = (
+        "框架", "技术", "原理", "详解", "实战", "开发", "优化", "调优",
+        "基础", "工程", "规范", "应用", "使用", "操作", "编写", "配置",
+        "实现", "设计", "分析", "维护", "部署", "协同", "经验", "实践",
+        "机制", "模型", "核心", "中间件", "模块", "方案", "组件", "库",
+        "平台", "数据库", "编程",
+    )
+    # L5 知识点仅剥课程式后缀，避免误伤概念短语（如 "Git 三区模型"）
+    _L5_SUFFIXES = ("详解", "实战", "入门", "进阶", "原理", "教程")
+
     def __init__(
         self,
         db: AsyncSession,
@@ -713,8 +736,9 @@ class GraphService:
             confidences.extend(
                 item.confidence for item in accepted_knowledge
             )
+        deduped_points = GraphService._dedupe_by_name(accepted_points)
         return (
-            output.model_copy(update={"tech_points": accepted_points}),
+            output.model_copy(update={"tech_points": deduped_points}),
             min(confidences, default=0),
         )
 
@@ -912,6 +936,10 @@ class GraphService:
         knowledge_points = 0
         candidate_ids: list[int] = []
         skills = skills or {}
+        # 跨候选全局收集：同一归一化 key（含变体 "MyBatis" vs "MyBatis持久层框架"）
+        # 节点只生成一个（最短展示名），但每个 skill 各保留一条 REFINES_TO（多父共享）。
+        point_entries: dict[str, list[tuple[Skill, TechPointOutput]]] = defaultdict(list)
+        collected_knowledge: dict[tuple[str, str], tuple[str, KnowledgePointOutput]] = {}
         for candidate in candidates:
             skill = skills.get(candidate.skill_id) or await self.db.get(Skill, candidate.skill_id)
             if not skill:
@@ -919,44 +947,136 @@ class GraphService:
                 continue
             output = GraphEnrichmentOutput.model_validate(candidate.candidate_data)
             candidate_ids.append(candidate.id)
-            for point_index, point in enumerate(output.tech_points):
-                point_id = f"point:{skill.id}:{point_index}"
-                nodes["TechPoint"].append(self._node(
-                    point_id, name=point.name, canonicalKey=point_id,
-                    stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
-                    description=point.detail, importance=point.confidence,
-                    evidence_ids=list(dict.fromkeys(point.evidence_ids)),
-                    source_count=len(set(point.evidence_ids)),
-                ))
-                edges["REFINES_TO"].append(self._edge(
-                    f"skill:{skill.id}", point_id, confidence=point.confidence,
-                    sourceCount=len(set(point.evidence_ids)),
-                ))
-                tech_points += 1
-                for knowledge_index, knowledge in enumerate(point.knowledge_points):
+            for point in self._dedupe_by_name(output.tech_points):
+                point_key = self._normalize_name_key(
+                    point.name, level="tech_point"
+                )
+                point_entries[point_key].append((skill, point))
+            for point in self._dedupe_by_name(output.tech_points):
+                point_key = self._normalize_name_key(
+                    point.name, level="tech_point"
+                )
+                for knowledge in self._dedupe_by_name(
+                    point.knowledge_points, level="knowledge_point"
+                ):
                     if knowledge.confidence < 0.75 or len(set(knowledge.evidence_ids)) < 2:
                         continue
-                    knowledge_id = f"knowledge:{skill.id}:{point_index}:{knowledge_index}"
-                    nodes["KnowledgePoint"].append(self._node(
-                        knowledge_id, name=knowledge.name, canonicalKey=knowledge_id,
-                        stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
-                        description=knowledge.description, difficulty=knowledge.difficulty,
-                        core_stack=knowledge.core_stack,
-                        common_solutions=[solution.model_dump(mode="json") for solution in knowledge.common_solutions],
-                        importance=knowledge.confidence,
-                        evidence_ids=list(dict.fromkeys(knowledge.evidence_ids)),
-                        source_count=len(set(knowledge.evidence_ids)),
-                    ))
-                    edges["HAS_KNOWLEDGE"].append(self._edge(
-                        point_id, knowledge_id, confidence=knowledge.confidence,
-                        sourceCount=len(set(knowledge.evidence_ids)),
-                    ))
-                    knowledge_points += 1
+                    knowledge_key = self._normalize_name_key(
+                        knowledge.name, level="knowledge_point"
+                    )
+                    k_id = (point_key, knowledge_key)
+                    existing = collected_knowledge.get(k_id)
+                    if existing is None or len(knowledge.name or "") < len(existing[1].name or ""):
+                        collected_knowledge[k_id] = (point_key, knowledge)
+        for point_key, entries in point_entries.items():
+            # 展示名取同 key 组内最短（更接近标准专有名），stack 取该条目
+            skill, point = min(entries, key=lambda e: len(e[1].name or ""))
+            # L4 节点 id 基于归一化名称的确定性 hash：跨技能候选生成同名
+            # 或同义变体技术点时 MERGE 到同一节点（多 skill 通过 REFINES_TO 共享）
+            point_id = f"point:{point_key}"
+            nodes["TechPoint"].append(self._node(
+                point_id, name=point.name, canonicalKey=point_id,
+                stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
+                description=point.detail, importance=point.confidence,
+                evidence_ids=list(dict.fromkeys(point.evidence_ids)),
+                source_count=len(set(point.evidence_ids)),
+            ))
+            edges["REFINES_TO"].extend(
+                self._edge(
+                    f"skill:{entry_skill.id}", point_id,
+                    confidence=entry_point.confidence,
+                    sourceCount=len(set(entry_point.evidence_ids)),
+                )
+                for entry_skill, entry_point in entries
+            )
+            tech_points += 1
+            for (point_key2, knowledge_key), (_, knowledge) in collected_knowledge.items():
+                if point_key2 != point_key:
+                    continue
+                # L5 节点 id 在所属 L4 下按归一化名称 hash 唯一
+                knowledge_id = f"knowledge:{point_key}:{knowledge_key}"
+                nodes["KnowledgePoint"].append(self._node(
+                    knowledge_id, name=knowledge.name, canonicalKey=knowledge_id,
+                    stack=CATEGORY_STACK.get(skill.category, "backend"), level="middle",
+                    description=knowledge.description, difficulty=knowledge.difficulty,
+                    core_stack=knowledge.core_stack,
+                    common_solutions=[solution.model_dump(mode="json") for solution in knowledge.common_solutions],
+                    importance=knowledge.confidence,
+                    evidence_ids=list(dict.fromkeys(knowledge.evidence_ids)),
+                    source_count=len(set(knowledge.evidence_ids)),
+                ))
+                edges["HAS_KNOWLEDGE"].append(self._edge(
+                    point_id, knowledge_id, confidence=knowledge.confidence,
+                    sourceCount=len(set(knowledge.evidence_ids)),
+                ))
+                knowledge_points += 1
         logger.info(
             "graph_enrichment: appended tech_points=%d knowledge_points=%d for snapshot=%s",
             tech_points, knowledge_points, snapshot_id,
         )
         return tech_points, knowledge_points, candidate_ids
+
+    @staticmethod
+    def _name_key(name: str) -> str:
+        """L4 技术点名称的全局唯一 key（默认层级，兼容旧调用）。"""
+        return GraphService._normalize_name_key(name, level="tech_point")
+
+    @staticmethod
+    def _normalize_name_key(name: str, *, level: str) -> str:
+        """L4/L5 名称归一化 key：strip+casefold → 按层级剥修饰后缀 →
+        canonical_key 字符压缩 → sha256 前缀（12 hex）。
+
+        - tech_point：剥复合/单修饰后缀（"MyBatis持久层框架"→"MyBatis"）；
+        - knowledge_point：仅剥课程式后缀（详解/实战/入门/进阶/原理），
+          避免误伤概念短语（如 "Git 三区模型" 不剥"模型"）；
+        - 守卫：剥离后非空且剩余长度 ≥2。
+        """
+        normalized = (name or "").strip().casefold().replace(" ", "")
+        if not normalized:
+            return ""
+        stripped = normalized
+        suffixes: tuple[str, ...] = ()
+        if level == "tech_point":
+            for suffix in GraphService._L4_COMPOUND_SUFFIXES:
+                if stripped.endswith(suffix) and len(stripped) - len(suffix) >= 2:
+                    stripped = stripped[: -len(suffix)]
+                    break
+            for suffix in GraphService._L4_SUFFIXES:
+                if stripped.endswith(suffix) and len(stripped) - len(suffix) >= 2:
+                    stripped = stripped[: -len(suffix)]
+                    break
+        else:
+            for suffix in GraphService._L5_SUFFIXES:
+                if stripped.endswith(suffix) and len(stripped) - len(suffix) >= 2:
+                    stripped = stripped[: -len(suffix)]
+                    break
+        key = canonical_key(stripped) if stripped else stripped
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+
+    @staticmethod
+    def _dedupe_by_name(items, *, level: str = "tech_point") -> list:
+        """按归一化名称 key 去重（保留首次出现）。
+
+        L4/L5 节点的 id 由规范化名称 hash 构成，Neo4j MERGE 只认该 id——
+        同名/同义变体（"MyBatis" vs "MyBatis持久层框架"）会生成多个独立
+        节点。写入前按归一化 key 去重可根治图谱重复技术点。
+        """
+        seen: dict[str, object] = {}
+        for item in items:
+            key = GraphService._normalize_name_key(
+                item.name or "", level=level
+            )
+            if not key:
+                continue
+            existing = seen.get(key)
+            if existing is None:
+                seen[key] = item
+                continue
+            # 同 key 变体（"MyBatis" vs "MyBatis持久层框架"）：
+            # 优先保留更短名称（更接近标准专有名的展示名）
+            if len(item.name or "") < len(existing.name or ""):
+                seen[key] = item
+        return list(seen.values())
 
     async def list_enrichment_candidates(
         self, *, page: int, page_size: int, review_status: str | None,
@@ -1298,6 +1418,43 @@ class GraphTaskService:
                 await _process_graph_sync(task.id, mode, enrich_top_skills, user_id)
         else:
             process_graph_sync.delay(task.id, mode, enrich_top_skills, user_id)
+        await self.db.refresh(task)
+        return TaskStatusResponse(
+            task_id=task.id, task_type=task.task_type, status=task.status,
+            progress=task.progress, result=task.result, error_code=task.error_code,
+            error_message=task.error_message, created_at=task.created_at,
+            started_at=task.started_at, finished_at=task.finished_at,
+        )
+
+    async def create_sync_in_background(
+        self, *, mode: str, enrich_top_skills: bool, user_id: int,
+    ) -> TaskStatusResponse:
+        """审核通过后的自动流转：进程内后台执行图谱同步，不依赖 Celery/Redis。
+
+        与 create_sync 的区别：无论 CELERY_TASK_ALWAYS_EAGER 如何配置，都使用
+        asyncio.create_task 在 FastAPI 进程内异步执行 _process_graph_sync，
+        保证"审核通过即入库可查询"不因 Celery Worker 未启动而卡在 queued。
+        """
+        from app.tasks.graph_sync import _process_graph_sync
+
+        task = AsyncTask(
+            id=str(uuid.uuid4()), task_type="graph_sync",
+            status=TaskStatus.queued.value, progress=0,
+            request_data={
+                "mode": mode,
+                "enrich_top_skills": enrich_top_skills,
+                "auto_triggered": True,
+            },
+            created_by=user_id,
+        )
+        self.db.add(task)
+        await self.db.commit()
+        local_task = asyncio.create_task(
+            _process_graph_sync(task.id, mode, enrich_top_skills, user_id),
+            name=f"graph-sync-auto-{task.id}",
+        )
+        _local_graph_tasks.add(local_task)
+        local_task.add_done_callback(self._finish_local_task)
         await self.db.refresh(task)
         return TaskStatusResponse(
             task_id=task.id, task_type=task.task_type, status=task.status,

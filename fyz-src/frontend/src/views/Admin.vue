@@ -844,7 +844,7 @@ async function reviewGraphCandidate(candidate: GraphEnrichmentCandidate, action:
     await dataProvider.graph.reviewEnrichment(candidate.id, {
       action, note, lockVersion: candidate.lock_version,
     });
-    ElMessage.success(action === "approve" ? "候选已批准，等待发布" : "候选已驳回");
+    ElMessage.success(action === "approve" ? "候选已批准，已自动触发 L4/L5 图谱发布，稍后可在技能图谱页查看" : "候选已驳回");
     await loadGraphCandidates();
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "候选审核失败");
@@ -919,12 +919,14 @@ async function runCrawler(crawler: any) {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         const result = res.result;
         if (result?.returncode !== 0) {
-          // 失败：展示 stderr 里的错误
-          const errMsg = result?.stderr || result?.stdout || "未知错误";
+          // 运行失败：优先展示后端结构化可读消息，回退 stderr
+          const errMsg = result?.message || result?.stderr || result?.stdout || "未知错误";
           ElMessage.error(`${crawler.name}采集失败：${errMsg.slice(0, 200)}`);
         } else {
-          if (!result?.filename) {
-            ElMessage.warning(`${crawler.name}采集完成，但没有生成新的数据文件`);
+          if (!result?.filename || result?.error_category === "no_data") {
+            // 静默失败：展示后端细分的具体原因（反爬/超时/内容无变化）
+            const noDataMsg = result?.message || "没有生成新的数据文件，请检查站点可访问性";
+            ElMessage.warning(`${crawler.name}采集完成但未产生新数据：${noDataMsg}`);
           } else {
             ElMessage.info(`${crawler.name}采集完成，正在执行 job-v1 校验和入库`);
             try {
@@ -1065,7 +1067,7 @@ async function batchApproveFacts() {
     factReviewing.value = true;
     const result = await reviewStore.reviewBatch(selectedFactIds.value, "verified", "证据充分，管理员批量确认");
     selectedFactIds.value = [];
-    ElMessage.success(`已同意 ${result.processed_count} 条技能事实`);
+    ElMessage.success(`已同意 ${result.processed_count} 条技能事实，已自动触发图谱增量同步，稍后可在技能图谱页查看`);
   } catch (value) {
     if (value !== "cancel" && value !== "close") ElMessage.error(errorMessage(value, "批量审核失败"));
   } finally {
@@ -1108,7 +1110,7 @@ async function approveAllFacts() {
     factReviewing.value = true;
     const result = await reviewStore.approveAll();
     selectedFactIds.value = [];
-    ElMessage.success(`已同意 ${result.processed_count} 条技能事实`);
+    ElMessage.success(`已同意 ${result.processed_count} 条技能事实，已自动触发图谱增量同步，稍后可在技能图谱页查看`);
   } catch (value) {
     if (value !== "cancel" && value !== "close") ElMessage.error(errorMessage(value, "一键同意失败"));
   } finally {
@@ -1124,7 +1126,7 @@ async function approveFact(item: SkillFactReviewItem) {
     );
     factReviewing.value = true;
     await reviewStore.review(item, "verified", "证据充分，人工确认");
-    ElMessage.success("技能事实已确认");
+    ElMessage.success("技能事实已确认，已自动触发图谱增量同步，稍后可在技能图谱页查看");
   } catch (value) {
     if (value !== "cancel" && value !== "close") {
       ElMessage.error(errorMessage(value, "审核操作失败"));
