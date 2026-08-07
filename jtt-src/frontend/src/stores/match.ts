@@ -80,17 +80,29 @@ export const useMatchStore = defineStore('match', () => {
   const batchLoading = ref(false)
   const selectedBatchResult = ref<MatchResult | null>(null)
 
+  const batchStats = ref<{
+    totalMatched: number; educationFiltered: number; scoreFiltered: number; dataSource: string
+  } | null>(null)
+
   const doAutoMatch = async (resumeId: string) => {
     batchLoading.value = true
     try {
       const res: any = await matchApi.autoMatch(resumeId)
-      batchResults.value = (res.data || []).map(matchResultFromApi)
+      const data = res.data || {}
+      // 新版 API 返回 { results, total_matched, education_filtered, score_filtered, data_source }
+      batchResults.value = (data.results || data || []).map(matchResultFromApi)
         .sort((a: MatchResult, b: MatchResult) => b.totalScore - a.totalScore)
+      batchStats.value = {
+        totalMatched: data.total_matched ?? batchResults.value.length,
+        educationFiltered: data.education_filtered ?? 0,
+        scoreFiltered: data.score_filtered ?? 0,
+        dataSource: data.data_source ?? '',
+      }
       // 自动展开第一名
       if (batchResults.value.length > 0 && !selectedBatchResult.value) {
         const first = batchResults.value[0]!
         selectedBatchResult.value = first
-        fetchAiSuggestions(resumeId, first.positionId)
+        fetchAiSuggestions(resumeId, String(first.positionId))
       }
       return batchResults.value
     } finally {
@@ -109,7 +121,7 @@ export const useMatchStore = defineStore('match', () => {
     aiSuggestions, suggestionsLoading, optimizing, optimizeResult,
     fetchAiSuggestions, applyOptimization, toggleAiSuggestion,
     // 自动匹配
-    batchResults, batchLoading, selectedBatchResult,
+    batchResults, batchStats, batchLoading, selectedBatchResult,
     doAutoMatch, selectBatchResult,
   }
 })

@@ -106,8 +106,8 @@ function buildOption(): any {
   const searchMatches = new Set(props.highlightedNodeIds || [])
   const hasSearchMatches = searchMatches.size > 0
 
-  // 按左侧层级按钮过滤：Job→L1, SkillArea→L2, TechStack→L3
-  const typeToLevel: Record<string, string> = { Job: 'L1', SkillArea: 'L2', TechStack: 'L3' }
+  // 按左侧层级按钮过滤：Job→L1, SkillArea→L2, TechStack→L3, Technoint→L4, KnowledgePoint→L5
+  const typeToLevel: Record<string, string> = { Job: 'L1', SkillArea: 'L2', TechStack: 'L3', TechPoint: 'L4', KnowledgePoint: 'L5' }
   const filterLevel = typeToLevel[props.selectedType || ''] || null
 
   const filteredNodeIds = new Set<string>()

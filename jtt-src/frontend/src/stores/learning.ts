@@ -64,12 +64,14 @@ export const useLearningStore = defineStore('learning', () => {
     return Math.round((done / path.steps.length) * 100)
   }
 
-  const generateFromGaps = async (resumeId: string, positionId: string) => {
+  const generateFromGaps = async (positionName: string, missingSkills: string[], matchedSkills: string[], resumeId: string) => {
     loading.value = true
     try {
       const res: any = await learningApi.generatePath({
-        positionId: Number(positionId),
-        resumeId: Number(resumeId),
+        position_name: positionName,
+        missing_skills: missingSkills,
+        matched_skills: matchedSkills,
+        resume_id: Number(resumeId),
       })
       if (res.data) paths.value.push(pathFromApi(res.data))
       return res.data

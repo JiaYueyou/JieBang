@@ -4,9 +4,8 @@ import { useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
 import { useMatchStore } from '@/stores/match'
 import { useLearningStore } from '@/stores/learning'
-import { mockPositions } from '@/mock/data/positions'
 import type { ResumeData, MatchResult } from '@/types'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const resumeStore = useResumeStore()
@@ -18,11 +17,10 @@ const activeMode = ref<'known' | 'unknown'>('known')
 
 // Form
 const resumes = ref<ResumeData[]>([])
-const positions = ref(mockPositions)
 const selectedResumeId = ref('')
-const selectedPositionId = ref('')
+const positionKeyword = ref('')
 const matching = ref(false)
-const generatingPath = ref(false)
+const generatingForId = ref<string | null>(null) // which card's button is loading
 
 // Match results
 const matchResults = ref<MatchResult[]>([])
@@ -32,7 +30,6 @@ onMounted(async () => {
   try {
     await resumeStore.fetchList()
     resumes.value = resumeStore.resumes
-
   } catch { /* use mock fallback */ }
   if (resumes.value.length === 0) {
     const { mockResumes } = await import('@/mock/data/resume')
@@ -43,34 +40,40 @@ onMounted(async () => {
   }
 })
 
-// Current selection info
-const currentMatchResult = computed(() => {
-  if (!selectedPositionId.value) return null
-  return matchResults.value.find((r) => r.positionId === selectedPositionId.value) || null
+// Mode A: results filtered by user-input keyword
+const filteredResults = computed(() => {
+  const kw = positionKeyword.value.trim().toLowerCase()
+  if (!kw) return matchResults.value
+  return matchResults.value.filter(r =>
+    r.positionName.toLowerCase().includes(kw)
+  )
 })
-
-const selectedPosition = computed(() =>
-  positions.value.find((p) => p.id === selectedPositionId.value),
-)
 
 const selectedResumeName = computed(() => {
   const r = resumes.value.find((r) => r.id === selectedResumeId.value)
   return r?.name || ''
 })
 
-// Mode A: Analyze skill gap for known target position
+const emptyHintForKeyword = computed(() =>
+  `未找到与「${positionKeyword.value}」相关的岗位，请尝试其他关键词`
+)
+
+// Mode A: Analyze skill gap for user-input target position
 const analyzeGap = async () => {
-  if (!selectedResumeId.value || !selectedPositionId.value) {
-    ElMessage.warning('请选择简历和目标岗位')
+  if (!selectedResumeId.value || !positionKeyword.value.trim()) {
+    ElMessage.warning('请选择简历并输入目标岗位')
     return
   }
   matching.value = true
   try {
     await matchStore.doAutoMatch(selectedResumeId.value)
     matchResults.value = matchStore.batchResults
-    ElMessage.success('技能差距分析完成')
+    if (filteredResults.value.length === 0) {
+      ElMessage.info(`未找到与 "${positionKeyword.value}" 相关的岗位，请尝试其他关键词`)
+    } else {
+      ElMessage.success(`找到 ${filteredResults.value.length} 个相关岗位`)
+    }
   } catch {
-    // Fallback to mock
     const { mockHistoryMatches } = await import('@/mock/data/match')
     matchResults.value = mockHistoryMatches.slice(0, 5)
     ElMessage.warning('使用离线数据')
@@ -91,7 +94,23 @@ const recommendPositions = async () => {
     matchResults.value = matchStore.batchResults
     if (matchResults.value.length === 0) {
       ElMessage.info('暂无匹配的岗位推荐')
+      return
     }
+    // Popup: summarize matches before showing cards
+    const top5 = matchResults.value.slice(0, 5)
+    const lines = top5.map(r =>
+      `<div style="margin:6px 0;font-size:14px"><strong>${r.positionName}</strong> — <span style="color:${getScoreColor(r.totalScore)};font-weight:600">${r.totalScore}分</span></div>`
+    ).join('')
+    ElMessageBox({
+      title: '匹配完成',
+      dangerouslyUseHTMLString: true,
+      message: `<p style="margin-bottom:12px">你的 <strong>${selectedResumeName.value}</strong> 简历匹配到了 <strong>${matchResults.value.length}</strong> 个岗位：</p>${lines}`,
+      showCancelButton: true,
+      confirmButtonText: '查看详情（跳转诊断报告）',
+      cancelButtonText: '关闭',
+    }).then(() => {
+      router.push('/diagnosis')
+    }).catch(() => {})
   } catch {
     const { mockHistoryMatches } = await import('@/mock/data/match')
     matchResults.value = mockHistoryMatches.slice(0, 5)
@@ -102,29 +121,33 @@ const recommendPositions = async () => {
 }
 
 const selectPosition = (positionId: string) => {
-  selectedPositionId.value = positionId
   expandedPositionId.value = expandedPositionId.value === positionId ? null : positionId
 }
 
 // Generate learning path from skill gaps
-const generateLearningPath = async () => {
-  if (!selectedResumeId.value || !selectedPositionId.value) return
-  generatingPath.value = true
+const generateLearningPath = async (mr: MatchResult) => {
+  if (!selectedResumeId.value) return
+  generatingForId.value = mr.positionId
   try {
-    await learningStore.generateFromGaps(selectedResumeId.value, selectedPositionId.value)
+    const missing = [
+      ...mr.gapAnalysis.missingSkills.map((s: any) => s.name),
+      ...mr.gapAnalysis.weakSkills.map((s: any) => s.name),
+    ]
+    const matched = mr.gapAnalysis.matchSkills.map((s: any) => s.name)
+    await learningStore.generateFromGaps(mr.positionName, missing, matched, selectedResumeId.value)
     ElMessage.success('学习路径已生成！')
     router.push('/learning')
   } catch {
     ElMessage.error('生成学习路径失败，请重试')
   } finally {
-    generatingPath.value = false
+    generatingForId.value = null
   }
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return 'var(--success)'
-  if (score >= 50) return 'var(--warning)'
-  return 'var(--danger)'
+  if (score >= 85) return '#16a34a'
+  if (score >= 70) return '#4f6ef6'
+  return '#f59e0b'
 }
 </script>
 
@@ -168,9 +191,12 @@ const getScoreColor = (score: number) => {
           </el-col>
           <el-col :span="12">
             <el-form-item label="目标岗位">
-              <el-select v-model="selectedPositionId" placeholder="选择目标岗位" filterable style="width: 100%">
-                <el-option v-for="p in positions" :key="p.id" :label="`${p.name} (${p.salaryRange})`" :value="p.id" />
-              </el-select>
+              <el-input
+                v-model="positionKeyword"
+                placeholder="输入想从事的岗位，如 Java后端开发"
+                clearable
+                @keyup.enter="analyzeGap"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -179,76 +205,10 @@ const getScoreColor = (score: number) => {
         </el-button>
       </div>
 
-      <!-- Gap Result -->
-      <div v-if="currentMatchResult" class="result-card">
-        <div class="result-hero">
-          <div class="score-circle" :style="{ borderColor: getScoreColor(currentMatchResult.totalScore) }">
-            <span class="score-num">{{ currentMatchResult.totalScore }}</span>
-            <span class="score-label">匹配分</span>
-          </div>
-          <div class="hero-info">
-            <h4>{{ selectedResumeName }} → {{ selectedPosition?.name }}</h4>
-            <p class="hero-note">匹配度越高，转岗所需的学习成本越低</p>
-          </div>
-        </div>
-
-        <div class="gap-section">
-          <div class="gap-block">
-            <span class="gap-label danger">缺失技能</span>
-            <div class="gap-tags">
-              <el-tag v-for="sk in currentMatchResult.gapAnalysis.missingSkills" :key="sk.id" type="danger" size="small" effect="plain">{{ sk.name }}</el-tag>
-              <span v-if="!currentMatchResult.gapAnalysis.missingSkills.length" class="no-data">无</span>
-            </div>
-          </div>
-          <div class="gap-block">
-            <span class="gap-label warning">需加强</span>
-            <div class="gap-tags">
-              <el-tag v-for="sk in currentMatchResult.gapAnalysis.weakSkills" :key="sk.id" type="warning" size="small" effect="plain">{{ sk.name }}</el-tag>
-              <span v-if="!currentMatchResult.gapAnalysis.weakSkills.length" class="no-data">无</span>
-            </div>
-          </div>
-          <div class="gap-block">
-            <span class="gap-label success">已匹配</span>
-            <div class="gap-tags">
-              <el-tag v-for="sk in currentMatchResult.gapAnalysis.matchSkills" :key="sk.id" type="success" size="small" effect="plain">{{ sk.name }}</el-tag>
-              <span v-if="!currentMatchResult.gapAnalysis.matchSkills.length" class="no-data">--</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="path-action">
-          <el-button type="success" :loading="generatingPath" @click="generateLearningPath">
-            生成学习路径
-          </el-button>
-        </div>
-      </div>
-
-      <div v-else-if="!matching" class="empty-hint">
-        <el-empty description="选择目标岗位并点击「分析技能差距」查看分析结果" :image-size="80" />
-      </div>
-    </div>
-
-    <!-- ========== Mode B: Recommend Positions ========== -->
-    <div v-if="activeMode === 'unknown'" class="mode-panel">
-      <div class="form-card">
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="我的简历">
-              <el-select v-model="selectedResumeId" placeholder="选择简历" style="width: 100%">
-                <el-option v-for="r in resumes" :key="r.id" :label="r.name" :value="r.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-button type="primary" :loading="matching" @click="recommendPositions" style="margin-top: 20px;">
-          开始匹配推荐
-        </el-button>
-      </div>
-
-      <!-- Position Cards -->
-      <div v-if="matchResults.length > 0" class="position-cards">
+      <!-- Filtered position cards -->
+      <div v-if="filteredResults.length > 0" class="position-cards">
         <div
-          v-for="mr in matchResults"
+          v-for="mr in filteredResults"
           :key="mr.positionId"
           class="pos-card"
           :class="{ expanded: expandedPositionId === mr.positionId }"
@@ -259,12 +219,7 @@ const getScoreColor = (score: number) => {
             </div>
             <div class="pos-info">
               <h4>{{ mr.positionName }}</h4>
-              <p>
-                {{ positions.find(p => p.id === mr.positionId)?.salaryRange || '' }}
-                <el-tag size="small" effect="plain" style="margin-left:8px">
-                  {{ positions.find(p => p.id === mr.positionId)?.category === 'new' ? '新兴岗位' : '现有岗位' }}
-                </el-tag>
-              </p>
+              <p>{{ mr.matchDate }}</p>
             </div>
             <div class="pos-expand-icon">
               <el-icon :size="16"><ArrowDown /></el-icon>
@@ -309,7 +264,99 @@ const getScoreColor = (score: number) => {
             </div>
 
             <div class="path-action">
-              <el-button type="success" :loading="generatingPath" @click.stop="generateLearningPath">
+              <el-button type="success" :loading="generatingForId === mr.positionId" @click.stop="generateLearningPath(mr)">
+                生成学习路径
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!matching && matchResults.length > 0" class="empty-hint">
+        <el-empty :description="emptyHintForKeyword" :image-size="80" />
+      </div>
+      <div v-else-if="!matching" class="empty-hint">
+        <el-empty description="输入目标岗位名称并点击「分析技能差距」查看相关岗位的匹配结果" :image-size="80" />
+      </div>
+    </div>
+
+    <!-- ========== Mode B: Recommend Positions ========== -->
+    <div v-if="activeMode === 'unknown'" class="mode-panel">
+      <div class="form-card">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="我的简历">
+              <el-select v-model="selectedResumeId" placeholder="选择简历" style="width: 100%">
+                <el-option v-for="r in resumes" :key="r.id" :label="r.name" :value="r.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-button type="primary" :loading="matching" @click="recommendPositions" style="margin-top: 20px;">
+          开始匹配推荐
+        </el-button>
+      </div>
+
+      <!-- Position Cards -->
+      <div v-if="matchResults.length > 0" class="position-cards">
+        <div
+          v-for="mr in matchResults"
+          :key="mr.positionId"
+          class="pos-card"
+          :class="{ expanded: expandedPositionId === mr.positionId }"
+        >
+          <div class="pos-card-main" @click="selectPosition(mr.positionId)">
+            <div class="pos-score" :style="{ background: getScoreColor(mr.totalScore), color: '#fff' }">
+              {{ mr.totalScore }}
+            </div>
+            <div class="pos-info">
+              <h4>{{ mr.positionName }}</h4>
+              <p>{{ mr.matchDate }}</p>
+            </div>
+            <div class="pos-expand-icon">
+              <el-icon :size="16"><ArrowDown /></el-icon>
+            </div>
+          </div>
+
+          <!-- Expanded Gap Analysis -->
+          <div v-if="expandedPositionId === mr.positionId" class="pos-card-detail">
+            <div class="gap-section">
+              <div class="gap-block">
+                <span class="gap-label danger">缺失技能</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.missingSkills" :key="sk.id" type="danger" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.missingSkills.length" class="no-data">无</span>
+                </div>
+              </div>
+              <div class="gap-block">
+                <span class="gap-label warning">需加强</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.weakSkills" :key="sk.id" type="warning" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.weakSkills.length" class="no-data">无</span>
+                </div>
+              </div>
+              <div class="gap-block">
+                <span class="gap-label success">已匹配</span>
+                <div class="gap-tags">
+                  <el-tag v-for="sk in mr.gapAnalysis.matchSkills" :key="sk.id" type="success" size="small" effect="plain">{{ sk.name }}</el-tag>
+                  <span v-if="!mr.gapAnalysis.matchSkills.length" class="no-data">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dimensions -->
+            <div v-if="mr.dimensions.length > 0" class="dim-section">
+              <div v-for="d in mr.dimensions" :key="d.name" class="dim-item">
+                <span class="dim-name">{{ d.name }}</span>
+                <div class="dim-bar-bg">
+                  <div class="dim-bar-fill" :style="{ width: d.score + '%', background: getScoreColor(d.score) }"></div>
+                </div>
+                <span class="dim-score">{{ d.score }}</span>
+              </div>
+            </div>
+
+            <div class="path-action">
+              <el-button type="success" :loading="generatingForId === mr.positionId" @click.stop="generateLearningPath(mr)">
                 生成学习路径
               </el-button>
             </div>
@@ -368,38 +415,6 @@ const getScoreColor = (score: number) => {
 }
 .form-card .el-form-item { margin-bottom: 0; }
 
-/* Result Card */
-.result-card {
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.result-hero {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 24px;
-}
-
-.score-circle {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  border: 4px solid;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.score-num { font-size: 24px; font-weight: 800; color: var(--ink); }
-.score-label { font-size: 12px; color: var(--muted); }
-
-.hero-info h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-.hero-note { font-size: 13px; color: var(--muted); }
-
 /* Gap Analysis */
 .gap-section {
   padding: 0 24px 16px;
@@ -444,7 +459,7 @@ const getScoreColor = (score: number) => {
 
 .empty-hint { padding: 40px 0; }
 
-/* Position Cards (Mode B) */
+/* Position Cards */
 .position-cards {
   display: flex;
   flex-direction: column;

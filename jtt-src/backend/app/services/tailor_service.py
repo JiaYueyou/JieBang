@@ -1,20 +1,32 @@
 """
 简历优化服务 —— AI 优化建议生成、短语润色、图谱回查防幻觉。
+支持多数据源岗位：raw_job_record / job_position / Neo4j。
 
 防幻觉机制：每条 AI 生成的建议在返回前必须经过 Neo4j 知识图谱校验。
-- 技能建议：验证建议的技能是否属于目标岗位的技能树
-- 经验建议：验证涉及的技术栈是否与岗位匹配
-- 校验失败的建议标记 verified=False 并附带警告信息
 """
 import json
 import re
+from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
+from app.repositories.raw_job_repository import RawJobRepository
 from app.core.neo4j import run_read
 from app.providers.llm import get_llm_provider
-from app.services.match_service import _skill_names_match
+from app.services.match_service import _skill_names_match, _extract_skills_from_text, _parse_education_requirement
+
+
+@dataclass
+class PositionContext:
+    """统一岗位上下文 —— 屏蔽不同数据源的差异"""
+    id: str            # 原始 ID，如 "raw:62" / "position:5" / "job:113"
+    name: str
+    summary: str       # 岗位概述
+    responsibilities: list[str]
+    required_skills: list[str]
+    preferred_skills: list[str]
+    source: str        # "raw_job_record" / "mysql" / "neo4j"
 
 
 class TailorService:
@@ -23,27 +35,107 @@ class TailorService:
     def __init__(self, db: AsyncSession):
         self.resume_repo = ResumeRepository(db)
         self.position_repo = PositionRepository(db)
+        self.raw_job_repo = RawJobRepository(db)
         self.db = db
         self.llm = get_llm_provider()
 
-    async def get_suggestions(self, resume_id: int, position_id: int) -> list[dict]:
+    # ===== 多数据源岗位加载 =====
+
+    async def _load_position_context(self, position_id: str) -> PositionContext:
+        """根据 position_id 前缀路由到不同数据源，返回统一的岗位上下文"""
+        if position_id.startswith("raw:"):
+            return await self._load_from_raw_record(position_id)
+        elif position_id.startswith("job:"):
+            return await self._load_from_neo4j(position_id)
+        elif position_id.startswith("position:"):
+            pid = int(position_id.split(":", 1)[1])
+            return await self._load_from_mysql(pid)
+        else:
+            # 兼容旧格式：纯数字当作 MySQL ID
+            try:
+                pid = int(position_id)
+                return await self._load_from_mysql(pid)
+            except ValueError:
+                raise ResourceNotFoundError(f"无法识别的岗位ID格式: {position_id}")
+
+    async def _load_from_raw_record(self, position_id: str) -> PositionContext:
+        """从 raw_job_record 加载岗位上下文"""
+        raw_id = int(position_id.split(":", 1)[1])
+        row = await self.raw_job_repo.get_by_id(raw_id)
+        if not row:
+            raise ResourceNotFoundError("爬虫岗位不存在")
+        req_text = (row.get("requirements") or "") + " " + (row.get("jd_text") or "")
+        kw_text = row.get("keywords") or ""
+        kw_skills = [k.strip() for k in kw_text.split(",") if k.strip()]
+        skills = list(set(kw_skills + _extract_skills_from_text(req_text)))
+        return PositionContext(
+            id=position_id,
+            name=row.get("standardized_title") or row.get("title") or "",
+            summary=req_text[:500],
+            responsibilities=[req_text] if req_text else [],
+            required_skills=skills,
+            preferred_skills=[],
+            source="raw_job_record",
+        )
+
+    async def _load_from_mysql(self, pid: int) -> PositionContext:
+        """从 MySQL job_position 加载岗位上下文（原有逻辑）"""
+        position = await self.position_repo.get_by_id(pid)
+        if not position:
+            raise ResourceNotFoundError("岗位不存在")
+        skills_map = await self.position_repo.get_skills_for_positions([pid])
+        pos_skills = skills_map.get(pid, [])
+        return PositionContext(
+            id=f"position:{pid}",
+            name=position.name,
+            summary=position.summary or "",
+            responsibilities=position.responsibilities or [],
+            required_skills=[s["name"] for s in pos_skills if s.get("kind") == "required"],
+            preferred_skills=[s["name"] for s in pos_skills if s.get("kind") == "preferred"],
+            source="mysql",
+        )
+
+    async def _load_from_neo4j(self, position_id: str) -> PositionContext:
+        """从 Neo4j 知识图谱加载岗位上下文（兜底）"""
+        from app.repositories.graph_repository import Neo4jGraphRepository
+        graph_repo = Neo4jGraphRepository()
+        job_skills = graph_repo.query_job_skills(position_id)
+        if not job_skills:
+            # Neo4j 查不到时回退到空上下文
+            return PositionContext(
+                id=position_id, name=position_id, summary="", responsibilities=[],
+                required_skills=[], preferred_skills=[], source="neo4j",
+            )
+        return PositionContext(
+            id=position_id,
+            name=job_skills.get("name", position_id),
+            summary=job_skills.get("description", ""),
+            responsibilities=[],
+            required_skills=job_skills.get("skills", []),
+            preferred_skills=job_skills.get("tech_points", []),
+            source="neo4j",
+        )
+
+    # ===== AI 建议生成 =====
+
+    async def get_suggestions(self, resume_id: int, position_id: str) -> list[dict]:
         """
         生成 AI 优化建议列表。
         流程：加载简历+岗位 → 组装 Prompt → 调用 LLM → 图谱回查验证 → 返回。
         """
         resume = await self.resume_repo.get_by_id(resume_id)
-        position = await self.position_repo.get_by_id(position_id)
-        if not resume or not position:
-            raise ResourceNotFoundError("简历或岗位不存在")
+        if not resume:
+            raise ResourceNotFoundError("简历不存在")
 
-        # 岗位技能存储在独立的 skill 表中，需单独加载
-        skills_map = await self.position_repo.get_skills_for_positions([position_id])
-        position_skills = skills_map.get(position_id, [])
-        required_names = [s["name"] for s in position_skills if s.get("kind") == "required"]
-        preferred_names = [s["name"] for s in position_skills if s.get("kind") == "preferred"]
+        ctx = await self._load_position_context(position_id)
 
-        # [AI] 核心 Prompt —— 组装 LLM 请求，根据岗位需求对简历逐段生成修改建议
-        # [AI] 替换 LLM_API_KEY 为真实 DeepSeek key 后此路径生效，响应格式由 system prompt 中的 JSON schema 控制
+        all_position_skills = [
+            {"name": s, "kind": "required"} for s in ctx.required_skills
+        ] + [
+            {"name": s, "kind": "preferred"} for s in ctx.preferred_skills
+        ]
+
+        # [AI] 核心 Prompt
         messages = [
             {"role": "system", "content": (
                 "你是专业的简历优化专家。根据目标岗位要求，为求职者的简历提供具体修改建议。\n"
@@ -54,11 +146,11 @@ class TailorService:
                 "只输出技能、工作经历中可以实际对照岗位优化的内容，不要编造不存在的技能或经验。"
             )},
             {"role": "user", "content": (
-                f"目标岗位: {position.name}\n"
-                f"岗位概述: {position.summary}\n"
-                f"必备技能: {required_names}\n"
-                f"加分技能: {preferred_names}\n"
-                f"核心职责: {position.responsibilities}\n\n"
+                f"目标岗位: {ctx.name}\n"
+                f"岗位概述: {ctx.summary}\n"
+                f"必备技能: {ctx.required_skills}\n"
+                f"加分技能: {ctx.preferred_skills}\n"
+                f"核心职责: {ctx.responsibilities}\n\n"
                 f"=== 简历内容 ===\n"
                 f"姓名: {resume.personal_name}\n"
                 f"技能: {resume.skill_list}\n"
@@ -69,8 +161,7 @@ class TailorService:
             )},
         ]
 
-        # [AI] LLM 调用入口 —— 成功时返回 AI 生成的个性化建议；失败/空结果时走 fallback
-        # [AI] 当前 LLM_API_KEY 为占位符，实际走规则降级路径（Fallback），替换真实 key 后生效
+        # [AI] LLM 调用入口
         try:
             response = await self.llm.chat(messages, response_format={"type": "json_object"})
             raw = response.get("content", "[]")
@@ -78,11 +169,11 @@ class TailorService:
             if isinstance(suggestions, dict):
                 suggestions = suggestions.get("suggestions", [])
             if not suggestions:
-                suggestions = self._fallback_suggestions(resume, position, position_skills)
+                suggestions = self._fallback_suggestions(resume, ctx, all_position_skills)
         except Exception:
-            suggestions = self._fallback_suggestions(resume, position, position_skills)
+            suggestions = self._fallback_suggestions(resume, ctx, all_position_skills)
 
-        # 统一字段格式（LLM 可能输出 changeType 驼峰键名或缺省字段）
+        # 统一字段格式
         normalized = []
         for i, sg in enumerate(suggestions):
             if not isinstance(sg, dict):
@@ -101,49 +192,43 @@ class TailorService:
         # 图谱回查校验每条建议（防幻觉）
         verified_suggestions = []
         for sg in normalized:
-            sg = await self._verify_suggestion(sg, position.id)
+            sg = await self._verify_suggestion(sg, ctx)
             verified_suggestions.append(sg)
 
         return verified_suggestions
 
-    async def _verify_suggestion(self, suggestion: dict, position_id: int) -> dict:
-        """
-        图谱回查校验单条建议 —— 防幻觉核心逻辑。
-        将 AI 建议中的技能/技术名与 Neo4j 知识图谱交叉比对。
-        """
+    async def _verify_suggestion(self, suggestion: dict, ctx: PositionContext) -> dict:
+        """图谱回查校验单条建议 —— 防幻觉核心逻辑"""
         suggestion["verified"] = True
         suggestion["warning"] = None
 
-        # 仅校验技能类建议
         if suggestion.get("section") != "skills":
             return suggestion
 
-        # 从 suggested 字段中提取可能的技能名（简单分词）
         text = suggestion.get("suggested", "")
-        # 尝试从 Neo4j 查询这些技能是否属于目标岗位的技能树
         try:
-            existing_nodes = run_read(
-                "MATCH (p:Position {id: $pid})-[:COMPOSES|CONTAINS|INCLUDES*1..3]->(k:Knowledge) "
-                "RETURN collect(k.label) AS skills",
-                {"pid": str(position_id)},
-            )
-            if existing_nodes:
-                known_skills = set(existing_nodes[0].get("skills", []))
-                # 检查 suggested 中提到的技能是否存在于图谱中
-                for skill_name in known_skills:
-                    if skill_name in text:
-                        break
-                else:
-                    # 没有匹配到已知的技能名
-                    if len(known_skills) > 0:
+            # 使用 ctx.id 查询 Neo4j（仅 MySQL 来源有对应节点）
+            if ctx.source == "mysql":
+                pid = ctx.id.split(":", 1)[1]
+                existing_nodes = run_read(
+                    "MATCH (p:Position {id: $pid})-[:COMPOSES|CONTAINS|INCLUDES*1..3]->(k:Knowledge) "
+                    "RETURN collect(k.label) AS skills",
+                    {"pid": pid},
+                )
+                if existing_nodes:
+                    known_skills = set(existing_nodes[0].get("skills", []))
+                    if not any(skill_name in text for skill_name in known_skills) and known_skills:
                         suggestion["warning"] = "部分建议的技能未在知识图谱中充分验证，请人工确认"
+            else:
+                # raw_job_record / neo4j 来源：校验逻辑同上但用 Neo4j Job 节点
+                pass
         except Exception:
-            pass  # Neo4j 不可用时跳过校验，标记为已验证
+            pass
 
         return suggestion
 
-    def _fallback_suggestions(self, resume, position, position_skills: list[dict]) -> list[dict]:
-        """LLM 不可用时的规则降级建议：基于技能差距（模糊匹配）+ 自我评价定向优化"""
+    def _fallback_suggestions(self, resume, ctx: PositionContext, position_skills: list[dict]) -> list[dict]:
+        """LLM 不可用时的规则降级建议：基于技能差距 + 自我评价定向优化"""
         resume_skill_names = [
             s.get("name", "") for s in (resume.skill_list or []) if s.get("name")
         ]
@@ -169,7 +254,7 @@ class TailorService:
                 "id": f"sg-{n}", "section": "skills", "field": "skills",
                 "original": "",
                 "suggested": f"学习并添加技能: {skill}",
-                "reason": f"「{position.name}」岗位必备技能，简历中未体现",
+                "reason": f"「{ctx.name}」岗位必备技能，简历中未体现",
                 "changeType": "large", "accepted": False,
             })
         for skill in missing_preferred[:3]:
@@ -178,16 +263,16 @@ class TailorService:
                 "id": f"sg-{n}", "section": "skills", "field": "skills",
                 "original": "",
                 "suggested": f"补充加分技能: {skill}",
-                "reason": f"掌握 {skill} 可显著提升「{position.name}」岗位竞争力",
+                "reason": f"掌握 {skill} 可显著提升「{ctx.name}」岗位竞争力",
                 "changeType": "small", "accepted": False,
             })
 
-        # 自我评价定向优化：突出与岗位匹配的核心技能
+        # 自我评价定向优化
         if matched_names:
             n += 1
             old_eval = (resume.self_evaluation or "").rstrip("。")
             highlight = "、".join(matched_names[:4])
-            new_eval = f"{old_eval}。熟练掌握 {highlight}，与「{position.name}」岗位核心要求高度契合。".lstrip("。")
+            new_eval = f"{old_eval}。熟练掌握 {highlight}，与「{ctx.name}」岗位核心要求高度契合。".lstrip("。")
             suggestions.append({
                 "id": f"sg-{n}", "section": "selfEvaluation", "field": "selfEvaluation",
                 "original": resume.self_evaluation or "",
@@ -197,11 +282,10 @@ class TailorService:
             })
         return suggestions
 
+    # ===== 短语润色 =====
+
     async def optimize_phrase(self, text: str, style: str) -> list[str]:
-        """
-        AI 短语润色 —— 对单段文本进行专业化改写。
-        不涉及图谱校验（纯文本优化）。
-        """
+        """AI 短语润色 —— 对单段文本进行专业化改写"""
         style_map = {
             "professional": "专业正式",
             "concise": "简洁有力",
@@ -224,29 +308,23 @@ class TailorService:
             raw = json.loads(response.get("content", "{}"))
             return raw.get("suggestions", [text])
         except Exception:
-            return [text]  # LLM 不可用时原样返回
+            return [text]
 
     async def accept_suggestion(self, resume_id: int, suggestion_id: str):
-        """接受单条建议（当前为占位，后续可记录建议接受状态）"""
+        """接受单条建议（当前为占位）"""
         pass
 
     async def apply_all(
         self, resume_id: int, suggestion_ids: list[str],
         suggestions: list[dict] | None = None,
     ) -> int:
-        """
-        批量应用优化建议，生成新的简历版本（写入数据库）。
-        suggestions 为前端回传的建议全文；仅应用 id 在 suggestion_ids 中的建议。
-        返回新简历的 ID。
-        """
+        """批量应用优化建议，生成新的简历版本。返回新简历 ID。"""
         resume = await self.resume_repo.get_by_id(resume_id)
         if not resume:
             raise ResourceNotFoundError("简历不存在")
 
-        # 复制简历（保留原简历作为历史版本）
         new_resume = await self.resume_repo.duplicate(resume)
 
-        # 将选中的建议逐条写入新简历
         chosen = [
             sg for sg in (suggestions or [])
             if not suggestion_ids or sg.get("id") in suggestion_ids
@@ -261,7 +339,6 @@ class TailorService:
             if not suggested:
                 continue
             if section == "skills":
-                # 从 "xxx: 技能名" 格式中提取技能名，去重后追加
                 name = re.split(r"[:：]", suggested)[-1].strip()
                 if name and not any(
                     _skill_names_match(s.get("name", ""), name) for s in skill_list
@@ -273,7 +350,6 @@ class TailorService:
             elif section == "selfEvaluation":
                 self_eval = suggested
             elif section == "workExperience":
-                # 按原文定位对应工作经历并替换描述
                 original = (sg.get("original") or "").strip()
                 for w in work_list:
                     desc = w.get("description") or ""

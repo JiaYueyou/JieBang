@@ -128,25 +128,6 @@ function toggleActiveNodePin() {
   handleNodePin(activeNode.value.id, pinned)
 }
 
-async function handleEnrichClick() {
-  if (!activeNode.value || activeNode.value.type !== 'TechStack') return
-  if (graphStore.enrichedNodeIds.has(activeNode.value.id)) return
-  try {
-    await graphStore.enrichNode(activeNode.value.id)
-  } catch (e) {
-    console.error('Enrich failed:', e)
-  }
-}
-
-async function handleEnrichChildClick(nodeId: string) {
-  if (graphStore.enrichingNodeId) return
-  try {
-    await graphStore.enrichNode(nodeId)
-  } catch (e) {
-    console.error('Enrich child failed:', e)
-  }
-}
-
 function handleRelatedNodeClick(attrs: any) {
   activeNode.value = attrs as GraphNodeAttrs
 }
@@ -218,11 +199,7 @@ onUnmounted(() => clearTimeout(filterTimer))
           </button>
         </div>
         <div class="card-divider"></div>
-        <!-- 富化提示 -->
-        <div v-if="graphStore.enrichingNodeId" class="enrich-status">
-          <span class="spinner"></span> AI 正在分析技能...
-        </div>
-        <div v-else class="enrich-hint">点击技术栈节点可展开深层技能点</div>
+        <div class="enrich-hint">点击节点查看详情，点击层级按钮聚焦对应层级</div>
       </aside>
 
       <!-- 右侧：画布 + 节点详情 -->
@@ -255,15 +232,6 @@ onUnmounted(() => clearTimeout(filterTimer))
                 </span>
                 <h3>{{ activeNode.name }}</h3>
                 <p>{{ activeNode.description }}</p>
-                <!-- TechStack 展开按钮 -->
-                <button
-                  v-if="activeNode.type === 'TechStack' && !graphStore.enrichedNodeIds.has(activeNode.id)"
-                  class="btn-enrich"
-                  :disabled="!!graphStore.enrichingNodeId"
-                  @click="handleEnrichClick"
-                >
-                  {{ graphStore.enrichingNodeId === activeNode.id ? 'AI 分析中...' : '展开 L4/L5' }}
-                </button>
                 <button class="btn-pin" @click="toggleActiveNodePin">
                   {{ isActiveNodePinned ? '取消锁定' : '锁定节点' }}
                 </button>
@@ -290,14 +258,6 @@ onUnmounted(() => clearTimeout(filterTimer))
                   <button class="related-node-btn" @click="handleRelatedNodeClick(n)">
                     <span :style="{ background: TYPE_COLORS[n.type] || '#94a3b8' }"></span>
                     {{ n.name }}
-                  </button>
-                  <button
-                    v-if="n.type === 'TechStack' && !graphStore.enrichedNodeIds.has(n.id)"
-                    class="btn-enrich-child"
-                    :disabled="!!graphStore.enrichingNodeId"
-                    @click.stop="handleEnrichChildClick(n.id)"
-                  >
-                    {{ graphStore.enrichingNodeId === n.id ? '生成中...' : '生成L4/L5' }}
                   </button>
                 </div>
                 <em v-if="childNodes.length === 0">暂无下级节点</em>
@@ -481,33 +441,12 @@ onUnmounted(() => clearTimeout(filterTimer))
   font-style: normal;
 }
 
-.enrich-status {
-  font-size: 12px;
-  color: #4f6ef6;
-  padding: 8px 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .enrich-hint {
   font-size: 11px;
   color: #94a3b8;
   line-height: 1.5;
   padding: 4px;
 }
-
-.spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #4f6ef6;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== 中央画布 ===== */
 .graph-canvas-card {
@@ -604,22 +543,6 @@ onUnmounted(() => clearTimeout(filterTimer))
   overflow-y: auto;
 }
 
-.btn-enrich {
-  display: block;
-  width: 140px;
-  margin-top: 14px;
-  padding: 8px 0;
-  border: 1px solid #4f6ef6;
-  border-radius: 6px;
-  background: #eef0ff;
-  color: #4f6ef6;
-  font-size: 13px;
-  text-align: center;
-  cursor: pointer;
-}
-.btn-enrich:hover { background: #dfe3ff; }
-.btn-enrich:disabled { opacity: 0.6; cursor: not-allowed; }
-
 .btn-pin {
   display: block;
   width: 140px;
@@ -704,28 +627,6 @@ onUnmounted(() => clearTimeout(filterTimer))
 .child-node-row .related-node-btn {
   flex: 1;
   min-width: 0;
-}
-
-.btn-enrich-child {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border: 1px solid #4f6ef6;
-  border-radius: 4px;
-  background: #eef0ff;
-  color: #4f6ef6;
-  font-size: 11px;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-
-.btn-enrich-child:hover {
-  background: #dfe3ff;
-}
-
-.btn-enrich-child:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .related-list em {

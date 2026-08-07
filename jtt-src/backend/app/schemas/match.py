@@ -49,7 +49,7 @@ class MatchResultResponse(BaseModel):
     """匹配结果响应"""
     id: int
     resume_id: int
-    position_id: int
+    position_id: str  # Neo4j 如 "job:113"，MySQL 如 "position:5"
     position_name: str = ""
     resume_name: str = ""
     total_score: int = 0
@@ -57,3 +57,12 @@ class MatchResultResponse(BaseModel):
     gap_analysis: GapAnalysisSchema = GapAnalysisSchema()
     suggestions: list[SuggestionSchema] = []
     match_date: str | None = None
+
+
+class AutoMatchResponse(BaseModel):
+    """自动匹配响应（Agent 3）"""
+    results: list[MatchResultResponse] = []
+    total_matched: int = 0
+    education_filtered: int = 0
+    score_filtered: int = 0
+    data_source: str = ""

@@ -4,25 +4,53 @@ import { useRoute, useRouter } from 'vue-router'
 import type { MatchResult } from '@/types'
 import { mockMatchResults } from '@/mock/data/match'
 import { pageData } from '@/stores/pageContext'
+import { tailorApi } from '@/api/tailor'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const result = ref<MatchResult | null>(null)
+const optimizing = ref(false)
 
 onMounted(() => {
   const key = `${route.params.resumeId}_${route.params.positionId}`
   result.value = mockMatchResults[key] ?? mockMatchResults['r-1_ep-1']!
 })
-// Share match result with AI assistant
 watch(result, (r) => { pageData.match = r }, { immediate: true })
 onUnmounted(() => {
   if (pageData.match?.id === result.value?.id) pageData.match = null
 })
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return 'var(--success)'
-  if (score >= 50) return 'var(--warning)'
-  return 'var(--danger)'
+  if (score >= 85) return '#16a34a'
+  if (score >= 70) return '#4f6ef6'
+  return '#f59e0b'
+}
+
+const fetchTailorSuggestions = async () => {
+  if (!result.value || optimizing.value) return
+  optimizing.value = true
+  try {
+    const res: any = await tailorApi.getSuggestions(
+      String(result.value.resumeId), String(result.value.positionId)
+    )
+    const aiSuggestions = (res.data || []).map((s: any) => ({
+      ...s,
+      id: `ai-${s.id}`,
+      accepted: false,
+      verified: s.verified ?? true,
+      warning: s.warning ?? null,
+      changeType: s.change_type ?? s.changeType ?? 'small',
+    }))
+    result.value.suggestions = [...aiSuggestions, ...result.value.suggestions.filter(
+      (s: any) => !s.id.startsWith('ai-')
+    )]
+    ElMessage.success(`AI 已生成 ${aiSuggestions.length} 条优化建议`)
+  } catch {
+    ElMessage.error('AI 优化请求失败，请稍后重试')
+  } finally {
+    optimizing.value = false
+  }
 }
 </script>
 
@@ -37,7 +65,9 @@ const getScoreColor = (score: number) => {
         <h3>{{ result.resumeName }} → {{ result.positionName }}</h3>
         <p>匹配日期：{{ result.matchDate }}</p>
         <div class="score-actions">
-          <el-button type="primary" @click="router.push(`/resume/tailor/${result.resumeId}/${result.positionId}`)">一键优化简历</el-button>
+          <el-button type="primary" :loading="optimizing" @click="fetchTailorSuggestions">
+            {{ optimizing ? 'AI 分析中...' : '一键优化简历' }}
+          </el-button>
           <el-button @click="router.push(`/resume/editor/${result.resumeId}`)">手动编辑</el-button>
         </div>
       </div>

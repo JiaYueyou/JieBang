@@ -65,6 +65,11 @@ class RawJobRepository:
 
         return [dict(r) for r in rows], total
 
+    async def get_all_ids(self) -> list[int]:
+        """获取所有 raw_job_record 的 ID 列表"""
+        result = await self.db.execute(text("SELECT id FROM raw_job_record ORDER BY id"))
+        return [row[0] for row in result]
+
     async def get_by_id(self, job_id: int) -> dict | None:
         """根据 ID 获取单条爬虫岗位详情（含 stack 分类）"""
         query_sql = text(f"""

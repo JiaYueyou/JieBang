@@ -27,7 +27,7 @@ class LearningStepSchema(BaseModel):
 class LearningPathCreate(BaseModel):
     """创建学习路径"""
     name: str = Field(..., min_length=1, max_length=100)
-    position_id: int
+    position_id: str = ""
 
 
 class LearningPathUpdate(BaseModel):
@@ -40,7 +40,7 @@ class LearningPathResponse(BaseModel):
     """学习路径响应"""
     id: int
     name: str
-    position_id: int
+    position_id: str = ""
     position_name: str = ""
     steps: list[LearningStepSchema] = []
     total_duration: str = ""
@@ -65,9 +65,11 @@ class ChatResponse(BaseModel):
 
 
 class GeneratePathRequest(BaseModel):
-    """生成学习路径请求"""
-    position_id: int
-    resume_id: int | None = None  # 可选，传入则做个性化
+    """生成学习路径请求 —— 传入缺失技能列表，由 LLM 直接规划"""
+    position_name: str
+    missing_skills: list[str] = []     # 缺失的技能
+    matched_skills: list[str] = []     # 已匹配的技能（可选，提供已有基础上下文）
+    resume_id: int | None = None       # 可选，传入则读取简历已有技能做个性化
 
 
 class RecommendResourcesRequest(BaseModel):
