@@ -2,7 +2,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
+import { useMatchStore } from '@/stores/match'
 import type { MatchResult, ImprovementSuggestion } from '@/types'
+import { tailorApi } from '@/api/tailor'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
@@ -17,10 +19,12 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const learningStore = useLearningStore()
+const matchStore = useMatchStore()
 
 const activePosIdx = ref(0)
 const generatingPath = ref(false)
 const applying = ref(false)
+const optimizing = ref(false)
 
 const currentResult = computed(() => props.results[activePosIdx.value] ?? null)
 
@@ -49,14 +53,35 @@ const applyAccepted = async () => {
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return 'var(--success)'
-  if (score >= 50) return 'var(--warning)'
-  return 'var(--danger)'
+  if (score >= 85) return '#16a34a'
+  if (score >= 70) return '#4f6ef6'
+  return '#f59e0b'
 }
 
-const goTailor = () => {
+const fetchTailorSuggestions = async () => {
   const r = currentResult.value
-  if (r) router.push(`/resume/tailor/${props.resumeId}/${r.positionId}`)
+  if (!r || optimizing.value) return
+  optimizing.value = true
+  try {
+    const res: any = await tailorApi.getSuggestions(props.resumeId, r.positionId)
+    const aiSuggestions = (res.data || []).map((s: any) => ({
+      ...s,
+      id: `ai-${s.id}`,
+      accepted: false,
+      verified: s.verified ?? true,
+      warning: s.warning ?? null,
+      changeType: s.change_type ?? s.changeType ?? 'small',
+    }))
+    // 替换为 LLM 精修建议，保留原有的作为备选
+    r.suggestions = [...aiSuggestions, ...r.suggestions.filter(
+      (s: ImprovementSuggestion) => !s.id.startsWith('ai-')
+    )]
+    ElMessage.success(`AI 已生成 ${aiSuggestions.length} 条优化建议`)
+  } catch {
+    ElMessage.error('AI 优化请求失败，请稍后重试')
+  } finally {
+    optimizing.value = false
+  }
 }
 
 const generateLearningPath = async () => {
@@ -64,7 +89,15 @@ const generateLearningPath = async () => {
   if (!r) return
   generatingPath.value = true
   try {
-    await learningStore.generateFromGaps(props.resumeId, r.positionId)
+    const missing = r.gapAnalysis.missingSkills.map((s: any) => s.name)
+    const weak = r.gapAnalysis.weakSkills.map((s: any) => s.name)
+    const matched = r.gapAnalysis.matchSkills.map((s: any) => s.name)
+    await learningStore.generateFromGaps(
+      r.positionName,
+      [...missing, ...weak],
+      matched,
+      props.resumeId,
+    )
     ElMessage.success('学习路径已生成！前往学习路径页面查看')
     router.push('/learning')
   } catch {
@@ -77,6 +110,18 @@ const generateLearningPath = async () => {
 
 <template>
   <div class="match-panel" v-if="currentResult">
+    <!-- 过滤统计 -->
+    <div v-if="matchStore.batchStats" class="filter-stats">
+      共匹配 <strong>{{ matchStore.batchStats.totalMatched }}</strong> 个岗位
+      <template v-if="matchStore.batchStats.educationFiltered > 0">
+        ，<span class="stat-warn">{{ matchStore.batchStats.educationFiltered }} 个因学历不达标被过滤</span>
+      </template>
+      <template v-if="matchStore.batchStats.scoreFiltered > 0">
+        ，<span class="stat-warn">{{ matchStore.batchStats.scoreFiltered }} 个低于 50 分未展示</span>
+      </template>
+      <span class="stat-src">（数据源: {{ matchStore.batchStats.dataSource === 'raw_job_record' ? '招聘记录' : matchStore.batchStats.dataSource === 'neo4j' ? '知识图谱' : 'MySQL' }}）</span>
+    </div>
+
     <!-- Position tabs -->
     <div class="panel-tabs">
       <div
@@ -101,7 +146,9 @@ const generateLearningPath = async () => {
         <h4>{{ currentResult.resumeName }} → {{ currentResult.positionName }}</h4>
         <p>{{ currentResult.matchDate }}</p>
         <div class="hero-actions">
-          <el-button type="primary" @click="goTailor">一键优化简历</el-button>
+          <el-button type="primary" :loading="optimizing" @click="fetchTailorSuggestions">
+            {{ optimizing ? 'AI 分析中...' : '一键优化简历' }}
+          </el-button>
           <el-button type="success" :loading="generatingPath" @click="generateLearningPath">生成学习路径</el-button>
           <el-button @click="emit('edit', resumeId)">编辑简历</el-button>
         </div>
@@ -156,9 +203,10 @@ const generateLearningPath = async () => {
         <h5 class="section-title">优化建议</h5>
         <span v-if="acceptedCount > 0" class="accepted-badge">已选 {{ acceptedCount }} 条</span>
       </div>
-      <div v-for="sg in currentResult.suggestions" :key="sg.id" class="sg-item" :class="{ accepted: sg.accepted }">
+      <div v-for="sg in currentResult.suggestions" :key="sg.id" class="sg-item" :class="{ accepted: sg.accepted, 'ai-suggestion': sg.id.startsWith('ai-') }">
         <div class="sg-head">
           <span class="sg-tag">{{ sg.section }}</span>
+          <el-tag v-if="sg.id.startsWith('ai-')" type="primary" size="small" effect="dark" class="ai-badge">AI</el-tag>
           <el-tag :type="sg.changeType === 'small' ? 'success' : 'warning'" size="small" effect="plain">
             {{ sg.changeType === 'small' ? '小改' : '大改' }}
           </el-tag>
@@ -207,6 +255,17 @@ const generateLearningPath = async () => {
   box-shadow: var(--shadow);
   overflow: hidden;
 }
+
+.filter-stats {
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--muted);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--hairline);
+}
+.filter-stats strong { color: var(--ink); }
+.stat-warn { color: #f59e0b; }
+.stat-src { color: var(--weak); font-size: 11px; margin-left: 4px; }
 
 .panel-tabs {
   display: flex;
@@ -302,6 +361,8 @@ const generateLearningPath = async () => {
 .sg-arrow { color: var(--muted); flex-shrink: 0; }
 .sg-suggested { color: var(--success); flex: 1; word-break: break-all; }
 
+.ai-badge { font-size: 10px; padding: 0 4px; }
+.ai-suggestion { border-left: 3px solid var(--brand); padding-left: 8px; }
 .sg-actions { display: flex; gap: 6px; margin-top: 8px; }
 
 .section-header { display: flex; align-items: center; gap: 12px; }

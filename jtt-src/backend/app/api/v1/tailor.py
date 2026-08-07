@@ -24,7 +24,7 @@ def get_tailor_service(db: AsyncSession = Depends(get_db)) -> TailorService:
 @router.get("/suggestions/{resume_id}/{position_id}", response_model=ApiResponse[list[SuggestionResponse]])
 async def get_suggestions(
     resume_id: int,
-    position_id: int,
+    position_id: str,
     service: TailorService = Depends(get_tailor_service),
 ):
     """获取 AI 优化建议列表（含图谱回查防幻觉校验）"""

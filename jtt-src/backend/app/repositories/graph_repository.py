@@ -96,6 +96,71 @@ class Neo4jGraphRepository:
             {"namespace": self.namespace, "ids": node_ids},
         )
 
+    # ===== 匹配诊断用：Job + 技能树查询 =====
+
+    def query_jobs_for_matching(self) -> list[dict]:
+        """查询所有 Job 节点及其关联技能名称列表，供匹配引擎使用"""
+        rows = run_read(
+            "MATCH (job:Job {namespace:$namespace}) "
+            "OPTIONAL MATCH (job)-[:REQUIRES_AREA {namespace:$namespace}]->(area:SkillArea) "
+            "OPTIONAL MATCH (area)-[:CONTAINS {namespace:$namespace}]->(skill:TechStack) "
+            "OPTIONAL MATCH (skill)-[:REFINES_TO {namespace:$namespace}]->(tp:TechPoint) "
+            "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE {namespace:$namespace}]->(kp:KnowledgePoint) "
+            "RETURN "
+            "job.id AS id, job.name AS name, job.description AS description, "
+            "job.stack AS stack, job.level AS level, "
+            "collect(DISTINCT area.name) AS areas, "
+            "collect(DISTINCT skill.name) AS skills, "
+            "collect(DISTINCT tp.name) AS tech_points, "
+            "collect(DISTINCT kp.name) AS knowledge_points "
+            "ORDER BY job.name",
+            {"namespace": self.namespace},
+        )
+        return [
+            {
+                "id": row["id"], "name": row["name"] or "",
+                "description": row.get("description") or "",
+                "stack": row.get("stack") or "",
+                "level": row.get("level") or "",
+                "areas": [s for s in (row.get("areas") or []) if s],
+                "skills": [s for s in (row.get("skills") or []) if s],
+                "tech_points": [s for s in (row.get("tech_points") or []) if s],
+                "knowledge_points": [s for s in (row.get("knowledge_points") or []) if s],
+            }
+            for row in rows
+        ]
+
+    def query_job_skills(self, job_id: str) -> dict | None:
+        """查询单个 Job 节点的完整技能树"""
+        rows = run_read(
+            "MATCH (job:Job {namespace:$namespace, id:$job_id}) "
+            "OPTIONAL MATCH (job)-[:REQUIRES_AREA {namespace:$namespace}]->(area:SkillArea) "
+            "OPTIONAL MATCH (area)-[:CONTAINS {namespace:$namespace}]->(skill:TechStack) "
+            "OPTIONAL MATCH (skill)-[:REFINES_TO {namespace:$namespace}]->(tp:TechPoint) "
+            "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE {namespace:$namespace}]->(kp:KnowledgePoint) "
+            "RETURN "
+            "job.name AS name, job.description AS description, "
+            "job.stack AS stack, job.level AS level, "
+            "collect(DISTINCT area.name) AS areas, "
+            "collect(DISTINCT skill.name) AS skills, "
+            "collect(DISTINCT tp.name) AS tech_points, "
+            "collect(DISTINCT kp.name) AS knowledge_points",
+            {"namespace": self.namespace, "job_id": job_id},
+        )
+        if not rows or not rows[0].get("name"):
+            return None
+        row = rows[0]
+        return {
+            "id": job_id, "name": row["name"] or "",
+            "description": row.get("description") or "",
+            "stack": row.get("stack") or "",
+            "level": row.get("level") or "",
+            "areas": [s for s in (row.get("areas") or []) if s],
+            "skills": [s for s in (row.get("skills") or []) if s],
+            "tech_points": [s for s in (row.get("tech_points") or []) if s],
+            "knowledge_points": [s for s in (row.get("knowledge_points") or []) if s],
+        }
+
     def expand(self, node_id: str, depth: int, limit: int) -> tuple[list[dict], list[dict]]:
         rows = run_read(
             f"MATCH p=(root {{namespace:$namespace, id:$node_id}})"

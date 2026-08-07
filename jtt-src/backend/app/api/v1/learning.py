@@ -98,9 +98,10 @@ async def generate_path(
     user: dict = Depends(get_current_user),
     service: LearningService = Depends(get_learning_service),
 ):
-    """AI 自动生成个性化学习路径 —— 基于目标岗位和用户简历"""
-    plan = await service.generate_path(req.position_id, req.resume_id)
-    # 将生成的路径保存到用户的学习路径中
+    """AI 自动生成个性化学习路径 —— 根据缺失技能列表由 LLM 规划"""
+    plan = await service.generate_path(
+        req.position_name, req.missing_skills, req.matched_skills, req.resume_id
+    )
     path = await service.repo.create(user["user_id"], plan)
     await service.db.commit()
     return ApiResponse(data=service._path_to_dict(path))

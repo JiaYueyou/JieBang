@@ -140,75 +140,56 @@ class LearningService:
             "follow_up_questions": self._generate_follow_ups(message),
         }
 
-    async def generate_path(self, position_id: int, resume_id: int | None = None) -> dict:
+    async def generate_path(self, position_name: str, missing_skills: list[str],
+                            matched_skills: list[str] = None, resume_id: int | None = None) -> dict:
         """
-        AI 自动生成学习路径 —— 根据目标岗位和用户现状生成个性化学习计划。
-        图谱提供技能依赖关系 → 决定学习顺序；LLM 生成步骤描述和资源推荐。
+        AI 自动生成学习路径 —— 直接根据缺失技能列表由 LLM 规划学习顺序和步骤。
+        不需要 Neo4j 依赖关系，LLM 具备技能先后顺序的知识。
         """
-        position = await self.position_repo.get_by_id(position_id)
-        if not position:
-            raise ResourceNotFoundError("岗位不存在")
+        matched_skills = matched_skills or []
 
-        # 从 Neo4j 查询岗位的技能树（含依赖关系）
-        skill_tree = []
-        try:
-            skill_tree = run_read(
-                "MATCH (p:Position {id: $pid})-[:COMPOSES]->(s:SkillsetBranch)-[:CONTAINS]->(m:Module)"
-                "-[:INCLUDES]->(k:Knowledge) "
-                "RETURN s.label AS skillset, m.label AS module, collect(k.label) AS knowledge",
-                {"pid": str(position_id)},
-            )
-        except Exception:
-            pass
-
-        # 获取用户已有技能
-        user_skills = set()
+        # 获取用户已有技能（可选）
+        user_skills = set(matched_skills)
         if resume_id:
             resume = await self.resume_repo.get_by_id(resume_id)
             if resume:
-                user_skills = set(s.get("name", "") for s in (resume.skill_list or []))
+                for s in (resume.skill_list or []):
+                    user_skills.add(s.get("name", ""))
 
-        # 岗位技能存储在独立的 skill 表中，需单独加载
-        skills_map = await self.position_repo.get_skills_for_positions([position_id])
-        position_skills = skills_map.get(position_id, [])
-
-        # 组装 Prompt
-        required_skills_str = ", ".join(
-            s["name"] for s in position_skills if s.get("kind") == "required"
-        )
-        skill_tree_str = json.dumps(skill_tree, ensure_ascii=False) if skill_tree else "暂无图谱数据"
-        user_skills_str = ", ".join(user_skills) if user_skills else "未知"
+        missing_str = ", ".join(missing_skills) if missing_skills else "无特定缺失"
+        matched_str = ", ".join(user_skills) if user_skills else "未知"
 
         messages = [
             {"role": "system", "content": (
-                "你是学习路径设计师。根据目标岗位的技能要求、知识图谱的技能依赖关系、"
-                "以及用户现有技能，设计一个分步骤的学习路径。\n"
+                "你是学习路径设计师。根据目标岗位和用户需要学习的技能，"
+                "设计一个由浅入深、循序渐进的分步骤学习路径。\n"
                 "输出 JSON: {\"name\": \"路径名\", \"steps\": [{\"title\": \"步骤名\", "
-                "\"description\": \"描述\", \"duration\": \"X周\", "
-                "\"resources\": [{\"title\": \"资源名\", \"type\": \"course/book/article/video\", "
-                "\"url\": \"\", \"platform\": \"推荐平台\"}]}]}"
+                "\"description\": \"详细描述（含学习目标和实践建议）\", \"duration\": \"X周\", "
+                "\"resources\": [{\"title\": \"资源名\", \"type\": \"course/book/article/project/video\", "
+                "\"url\": \"\", \"platform\": \"推荐平台\"}]}]}\n"
+                "注意事项：\n"
+                "1. 按技能本身的依赖关系排序（先基础后进阶）\n"
+                "2. 4-6 个步骤，每步 1-3 周\n"
+                "3. 最后一步为综合实战项目\n"
+                "4. 资源推荐要具体、可搜索到"
             )},
             {"role": "user", "content": (
-                f"目标岗位: {position.name}\n"
-                f"必备技能: {required_skills_str}\n"
-                f"图谱技能树: {skill_tree_str}\n"
-                f"用户已有技能: {user_skills_str}\n"
-                f"请设计学习路径（4-6 个步骤，按技能依赖关系排序，先基础后进阶）。"
+                f"目标岗位: {position_name}\n"
+                f"需要学习的技能: {missing_str}\n"
+                f"用户已掌握的技能: {matched_str}\n"
+                f"请设计个性化学习路径（4-6 个步骤）。"
             )},
         ]
 
-        # [AI] 学习路径 LLM 生成入口 —— 成功时返回个性化学习计划，失败时走规则降级
-        # [AI] 替换 LLM_API_KEY 为真实 DeepSeek key 后生效（当前走 fallback，基于技能差距生成步骤）
         try:
             response = await self.llm.chat(messages, response_format={"type": "json_object"})
             plan = json.loads(response.get("content", "{}"))
             if isinstance(plan, list):
-                plan = {"name": f"{position.name}学习路径", "steps": plan}
+                plan = {"name": f"{position_name}学习路径", "steps": plan}
             if not plan.get("steps"):
-                plan = self._fallback_plan(position, position_skills, user_skills)
+                plan = self._fallback_plan_from_skills(position_name, missing_skills)
         except Exception:
-            # [AI] LLM 不可用时的规则降级：基于技能差距生成学习步骤
-            plan = self._fallback_plan(position, position_skills, user_skills)
+            plan = self._fallback_plan_from_skills(position_name, missing_skills)
 
         # 为每个 step 生成 ID
         steps = []
@@ -223,7 +204,6 @@ class LearningService:
                 if "id" not in res:
                     res["id"] = f"res-{uuid.uuid4().hex[:8]}"
             steps.append(step)
-            # 估算时长
             dur = step.get("duration", "1周")
             try:
                 total_weeks += int(dur.replace("周", "").split("-")[0])
@@ -231,36 +211,33 @@ class LearningService:
                 total_weeks += 1
 
         return {
-            "name": plan.get("name", f"{position.name}学习路径"),
-            "position_id": position_id,
-            "position_name": position.name,
+            "name": plan.get("name", f"{position_name}学习路径"),
+            "position_id": "",
+            "position_name": position_name,
             "steps": steps,
             "total_duration": f"{total_weeks}周",
         }
 
-    def _fallback_plan(self, position, position_skills: list[dict], user_skills: set) -> dict:
-        """LLM 不可用时的规则降级：按 必备→加分 顺序为缺失技能生成学习步骤"""
-        def covered(name: str) -> bool:
-            return any(_skill_names_match(us, name) for us in user_skills)
-
-        missing_required = [
-            s["name"] for s in position_skills
-            if s.get("kind") == "required" and not covered(s["name"])
-        ]
-        missing_preferred = [
-            s["name"] for s in position_skills
-            if s.get("kind") == "preferred" and not covered(s["name"])
-        ]
-        ordered = missing_required + missing_preferred
-        if not ordered:
-            # 没有差距时按岗位技能做进阶复习
-            ordered = [s["name"] for s in position_skills][:4]
+    def _fallback_plan_from_skills(self, position_name: str, missing_skills: list[str]) -> dict:
+        """LLM 不可用时的规则降级：按缺失技能顺序生成学习步骤"""
+        if not missing_skills:
+            return {
+                "name": f"{position_name}学习路径",
+                "steps": [{
+                    "title": "技能巩固与综合实战",
+                    "description": f"你的技能与「{position_name}」岗位基本匹配，建议通过实战项目巩固已有技能。",
+                    "duration": "2周",
+                    "resources": [
+                        {"title": f"{position_name} 综合实战指南", "type": "article", "url": "", "platform": "掘金 / 知乎"},
+                    ],
+                }],
+            }
 
         steps = []
-        for name in ordered[:5]:
+        for name in missing_skills[:5]:
             steps.append({
-                "title": f"掌握 {name}",
-                "description": f"系统学习 {name} 的核心概念与实践方法，完成配套练习，达到「{position.name}」岗位要求。",
+                "title": f"学习 {name}",
+                "description": f"系统学习 {name} 的核心概念、最佳实践与常见应用场景，完成配套练习和项目实战。",
                 "duration": "2周",
                 "resources": [
                     {"title": f"{name} 入门到实战", "type": "course", "url": "", "platform": "慕课网 / B站"},
@@ -269,13 +246,13 @@ class LearningService:
             })
         steps.append({
             "title": "综合实战与作品集",
-            "description": f"综合运用以上技能，完成一个面向「{position.name}」岗位的实战项目，沉淀为可展示的作品集。",
+            "description": f"综合运用所学技能，完成一个面向「{position_name}」岗位的完整实战项目，沉淀为可展示的作品集。",
             "duration": "2周",
             "resources": [
                 {"title": "岗位综合实战指南", "type": "article", "url": "", "platform": "掘金 / 知乎"},
             ],
         })
-        return {"name": f"{position.name}学习路径", "steps": steps}
+        return {"name": f"{position_name}学习路径", "steps": steps}
 
     async def recommend_resources(self, skill_names: list[str]) -> dict:
         """根据技能名称推荐学习资源"""

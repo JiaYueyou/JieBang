@@ -1,6 +1,8 @@
 """
 匹配服务 —— 人岗匹配评分算法、差距分析。
+数据源：raw_job_record 优先，Neo4j 知识图谱次之，MySQL job_position 兜底。
 """
+import logging
 import re
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +10,100 @@ from app.core.exceptions import ResourceNotFoundError
 from app.repositories.match_repository import MatchRepository
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
+from app.repositories.raw_job_repository import RawJobRepository
+from app.repositories.graph_repository import Neo4jGraphRepository
+
+logger = logging.getLogger(__name__)
+
+# 学历排序权重，用于比较学历高低
+EDUCATION_RANK = {"博士": 5, "硕士": 4, "本科": 3, "大专": 2, "高中": 1, "中专": 1}
+
+# 从 JD 文本中提取的技术关键词（大小写不敏感，含英文和中国技术词）
+TECH_KEYWORDS = [
+    # 编程语言
+    "Python", "Java\\b(?!\\s*Script)", "C\\+\\+", "C#", "Go\\b(?!\\s*lang)", "Golang",
+    "Rust", "JavaScript", "TypeScript", "Shell", "Bash", "Scala", "Kotlin",
+    "MATLAB", "PHP", "Ruby", "Perl", "Lua", "Swift", "Objective-C",
+    "SQL", "R\\b(?!\\w)", "Verilog",
+    # Java 生态
+    "Spring Boot", "Spring Cloud", "Spring MVC", "Spring",
+    "MyBatis", "Mybatis", "Hibernate", "JPA", "Struts", "Netty",
+    "Maven", "Gradle", "JVM", "Tomcat", "Jetty",
+    # Python 生态
+    "Django", "Flask", "FastAPI", "Tornado", "Celery",
+    "NumPy", "Pandas", "Scikit-learn", "Scipy",
+    # 前端
+    "Vue", "React", "Angular", "Node\\.js", "Next\\.js", "Nuxt",
+    "Webpack", "Vite", "Babel", "ES6", "HTML5", "CSS3", "Sass", "Less",
+    "Electron", "Flutter", "React Native", "小程序",
+    # 数据库 / 存储
+    "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "ES\\b",
+    "Oracle", "SQLite", "MariaDB", "Cassandra", "HBase", "Hive",
+    "ClickHouse", "TiDB", "InfluxDB", "Neo4j", "MinIO", "Ceph",
+    "Memcache", "ETCD",
+    # 消息 / 中间件
+    "Docker", "Kubernetes", "K8s", "Jenkins", "Git", "GitLab", "GitHub",
+    "Nginx", "Apache", "RabbitMQ", "Kafka", "RocketMQ", "ZooKeeper",
+    "Nacos", "Consul", "Apollo", "SkyWalking", "Prometheus", "Grafana",
+    "ELK", "Logstash", "Kibana",
+    # 大数据
+    "Hadoop", "Spark", "Flink", "Storm", "HDFS", "YARN",
+    "Hive", "Presto", "Druid", "Kylin", "Airflow", "DolphinScheduler",
+    # AI / ML
+    "TensorFlow", "PyTorch", "Keras", "Caffe", "MXNet",
+    "NLP", "CV", "RAG", "LangChain", "LLM", "Agent", "Transformer",
+    "机器学习", "深度学习", "自然语言处理", "计算机视觉", "大模型",
+    "强化学习", "迁移学习", "知识图谱",
+    # 通信 / 协议
+    "TCP/IP", "HTTP", "HTTPS", "REST", "RESTful", "gRPC", "WebSocket",
+    "MQTT", "Protobuf", "JSON", "XML",
+    # 云平台
+    "AWS", "Azure", "GCP", "阿里云", "腾讯云", "华为云",
+    # 操作系统
+    "Linux", "Unix", "CentOS", "Ubuntu", "Windows Server",
+    "Android", "iOS", "嵌入式", "RTOS",
+    # 通用技术概念/架构
+    "微服务", "分布式", "高并发", "多线程", "云原生", "容器化",
+    "CI/CD", "DevOps", "敏捷开发", "TDD", "DDD",
+    "JWT", "OAuth", "SSO", "RBAC",
+    # 芯片/硬件
+    "ARM", "FPGA", "GPU", "CUDA", "DSP",
+    # 音视频
+    "FFmpeg", "WebRTC", "OpenGL", "OpenCV",
+    # 项目管理
+    "Jira", "Confluence", "禅道",
+]
+
+# 编译正则：只匹配独立技术词（非单词片段）
+_TECH_RE = re.compile(
+    r'\b(' + '|'.join(TECH_KEYWORDS) + r')\b',
+    re.IGNORECASE,
+)
+
+# 中文技术词单独匹配（无单词边界）
+_CHINESE_TECH = ["微服务", "分布式", "高并发", "多线程", "云原生", "机器学习", "深度学习", "自然语言处理", "计算机视觉"]
+_CHINESE_TECH_RE = re.compile('|'.join(_CHINESE_TECH))
+
+
+def _extract_skills_from_text(text: str) -> list[str]:
+    """从文本中提取技术关键词，返回去重后的技能名列表"""
+    if not text:
+        return []
+    # 英文技术词（用单词边界匹配）
+    english_matches = [m.group(0).strip() for m in _TECH_RE.finditer(text)]
+    # 中文技术词
+    chinese_matches = _CHINESE_TECH_RE.findall(text) if text else []
+    # 去重并规范大小写
+    seen = set()
+    result = []
+    for skill in english_matches + chinese_matches:
+        norm = skill.lower()
+        # 统一几个常见缩写
+        norm = norm.replace("k8s", "kubernetes")
+        if norm not in seen:
+            seen.add(norm)
+            result.append(skill)
+    return result
 
 
 def _skill_tokens(name: str) -> set[str]:
@@ -40,6 +136,42 @@ def _skill_names_match(resume_skill: str, position_skill: str) -> bool:
     return False
 
 
+def _parse_education_requirement(text: str) -> str:
+    """从文本中提取学历要求，返回 '博士'/'硕士'/'本科'/'大专'/'高中' 或空字符串"""
+    if not text:
+        return ""
+    for keyword in ["博士", "硕士", "本科", "大专", "高中", "中专"]:
+        if keyword in text:
+            return keyword
+    return ""
+
+
+def _education_meets(requirement: str, resume_education: str) -> bool:
+    """检查简历学历是否满足岗位学历要求"""
+    if not requirement:
+        return True
+    req_rank = EDUCATION_RANK.get(requirement, 0)
+    resume_rank = max(
+        (EDUCATION_RANK.get(edu.get("degree", ""), 0) for edu in ([{"degree": resume_education}] if resume_education else [])),
+        default=0,
+    )
+    return resume_rank >= req_rank
+
+
+# ---------------- [AI] 预留占位方法（后续智能体接入） ----------------
+
+def _evaluate_experience_relevance(_resume_work_list: list, _job_name: str) -> float:
+    """[AI] 评估工作经验与目标岗位的相关性，返回 0.0-1.0 的系数"""
+    return 1.0
+
+
+def _semantic_skill_match(_resume_skill: str, _job_skill: str) -> bool:
+    """[AI] 语义级技能匹配（如 "懂 Python 数据分析" ↔ "Pandas/NumPy 经验"）"""
+    return False
+
+# ----------------------------------------------------------------
+
+
 class MatchService:
     """人岗匹配业务逻辑"""
 
@@ -47,46 +179,146 @@ class MatchService:
         self.match_repo = MatchRepository(db)
         self.resume_repo = ResumeRepository(db)
         self.position_repo = PositionRepository(db)
+        self.raw_job_repo = RawJobRepository(db)
+        self.graph_repo = Neo4jGraphRepository()
         self.db = db
 
-    async def do_match(self, user_id: int, resume_id: int, position_id: int) -> dict:
-        """
-        执行单次人岗匹配。
-        算法：多维度加权评分 + 语义理解 + 图谱推理（当前为基础版实现）。
-        """
-        # 加载简历和岗位数据
+    # ===== 数据源加载 =====
+
+    async def _load_jobs_from_raw_record(self) -> list[dict]:
+        """从 MySQL raw_job_record 加载所有岗位为匹配用的标准化格式"""
+        all_ids = await self.raw_job_repo.get_all_ids()
+        jobs = []
+        for jid in all_ids:
+            row = await self.raw_job_repo.get_by_id(jid)
+            if row:
+                jobs.append(self._normalize_raw_job(row))
+        return jobs
+
+    def _load_jobs_from_neo4j(self) -> list[dict]:
+        """从 Neo4j 加载所有 Job 节点为匹配用的标准化格式"""
+        neo4j_jobs = self.graph_repo.query_jobs_for_matching()
+        return [self._normalize_neo4j_job(j) for j in neo4j_jobs]
+
+    async def _load_jobs_from_mysql(self) -> list[dict]:
+        """从 MySQL job_position 加载所有岗位为匹配用的标准化格式"""
+        all_ids = await self.position_repo.get_all_ids()
+        positions = []
+        for pid in all_ids:
+            pos = await self.position_repo.get_by_id(pid)
+            if not pos:
+                continue
+            skills = await self.position_repo.get_skills_for_positions([pid])
+            pos_skills = skills.get(pid, [])
+            positions.append(self._normalize_mysql_job(pos, pos_skills))
+        return positions
+
+    def _normalize_raw_job(self, row: dict) -> dict:
+        """将 raw_job_record 行转为标准岗位格式"""
+        # 从 requirements 文本提取详细技能
+        req_text = (row.get("requirements") or "") + " " + (row.get("jd_text") or "")
+        extracted_skills = _extract_skills_from_text(req_text)
+        # 合并 keywords（逗号分隔）和提取的技能
+        kw_text = (row.get("keywords") or "")
+        kw_skills = [k.strip() for k in kw_text.split(",") if k.strip()]
+        all_skills = list(set(kw_skills + extracted_skills))
+        # 学历：优先用 education_text，否则从 requirements 解析
+        edu_text = row.get("education_text") or ""
+        education_req = _parse_education_requirement(edu_text) or _parse_education_requirement(req_text)
+        return {
+            "id": f"raw:{row['id']}",
+            "name": row.get("standardized_title") or row.get("title") or "",
+            "description": req_text,
+            "stack": row.get("stack", ""),
+            "education_requirement": education_req,
+            "required_skills": all_skills,
+            "preferred_skills": [],
+            "all_skills": all_skills,
+            "source": "raw_job_record",
+        }
+
+    def _normalize_neo4j_job(self, job: dict) -> dict:
+        """将 Neo4j 节点转为标准岗位格式"""
+        all_skills = list(set(job["skills"] + job["tech_points"] + job["knowledge_points"]))
+        description = job.get("description", "")
+        return {
+            "id": job["id"],
+            "name": job["name"],
+            "description": description,
+            "stack": job.get("stack", ""),
+            "education_requirement": _parse_education_requirement(description),
+            "required_skills": job["skills"],
+            "preferred_skills": job["tech_points"],
+            "all_skills": all_skills,
+            "source": "neo4j",
+        }
+
+    def _normalize_mysql_job(self, position, position_skills: list[dict]) -> dict:
+        """将 MySQL 岗位 + 技能转为标准岗位格式"""
+        required = [s["name"] for s in position_skills if s.get("kind") == "required"]
+        preferred = [s["name"] for s in position_skills if s.get("kind") == "preferred"]
+        description = (position.summary or "") + " " + " ".join(position.responsibilities or [])
+        return {
+            "id": f"position:{position.id}",
+            "name": position.name,
+            "description": description,
+            "stack": "",
+            "education_requirement": _parse_education_requirement(description),
+            "required_skills": required,
+            "preferred_skills": preferred,
+            "all_skills": required + preferred,
+            "source": "mysql",
+        }
+
+    # ===== 学历筛选 =====
+
+    def _get_resume_highest_education(self, resume) -> str:
+        """从简历教育经历中提取最高学历"""
+        edu_list = resume.education_list or []
+        best_rank = 0
+        best_edu = ""
+        for edu in edu_list:
+            degree = edu.get("degree", "") if isinstance(edu, dict) else ""
+            rank = EDUCATION_RANK.get(degree, 0)
+            if rank > best_rank:
+                best_rank = rank
+                best_edu = degree
+        return best_edu
+
+    # ===== 核心匹配 =====
+
+    async def do_match(self, user_id: int, resume_id: int, job: dict, persist: bool = True) -> dict | None:
+        """执行单次人岗匹配。job 为标准化格式的岗位字典。返回 None 表示被学历过滤。
+        persist=False 时只计算不持久化（用于批量实时匹配）。"""
         resume = await self.resume_repo.get_by_id(resume_id)
-        position = await self.position_repo.get_by_id(position_id)
         if not resume:
             raise ResourceNotFoundError("简历不存在")
-        if not position:
-            raise ResourceNotFoundError("岗位不存在")
 
-        # 岗位技能存储在独立的 skill 表中，需单独查询（模型上无 ORM 关系）
-        skills_map = await self.position_repo.get_skills_for_positions([position_id])
-        position_skills = skills_map.get(position_id, [])
-        # 技能名 -> 分类 映射，用于差距分析展示
-        skill_category = {s["name"]: (s.get("category") or "未分类") for s in position_skills}
+        # 学历硬筛选
+        resume_edu = self._get_resume_highest_education(resume)
+        if not _education_meets(job.get("education_requirement", ""), resume_edu):
+            return None
 
         resume_skill_names = [
             s.get("name", "") for s in (resume.skill_list or []) if s.get("name")
         ]
-        required_skills = {s["name"] for s in position_skills if s.get("kind") == "required"}
-        preferred_skills = {s["name"] for s in position_skills if s.get("kind") == "preferred"}
+        required_skills = set(job.get("required_skills", []))
+        preferred_skills = set(job.get("preferred_skills", []))
         all_position_skills = required_skills | preferred_skills
 
-        # 1) 技能匹配评分 (40%) —— 逐个岗位技能与简历技能做模糊匹配
-        # [AI] 此处可接入 LLM 对技能进行语义级匹配（如 "懂 Python 数据分析" ↔ "Pandas/NumPy 经验"），当前为规则模糊匹配
-        matched = {
-            ps for ps in all_position_skills
-            if any(_skill_names_match(rs, ps) for rs in resume_skill_names)
-        }
+        # 1) 技能匹配评分 (50%)
+        matched = set()
+        for ps in all_position_skills:
+            for rs in resume_skill_names:
+                if _skill_names_match(rs, ps) or _semantic_skill_match(rs, ps):
+                    matched.add(ps)
+                    break
+
         missing = all_position_skills - matched
         required_matched = required_skills & matched
         required_missing = required_skills - matched
 
         if all_position_skills:
-            # 必备技能权重 70%，加分技能权重 30%
             req_ratio = len(required_matched) / len(required_skills) if required_skills else 1.0
             pref_ratio = (
                 len(preferred_skills & matched) / len(preferred_skills)
@@ -96,111 +328,193 @@ class MatchService:
         else:
             skill_score = 70
 
-        # 2) 经验匹配评分 (30%) — 基于工作经历数量
-        work_count = len(resume.work_experience_list or [])
-        exp_score = min(100, 40 + work_count * 20) if work_count > 0 else 30
+        # 2) 经验匹配评分 (35%)
+        work_list = resume.work_experience_list or []
+        work_count = len(work_list)
+        relevance = _evaluate_experience_relevance(work_list, job.get("name", ""))
+        base_exp = min(100, 40 + work_count * 20) if work_count > 0 else 30
+        exp_score = int(base_exp * (0.5 + 0.5 * relevance))
 
-        # 3) 学历匹配评分 (15%) — 基于教育经历
-        edu_count = len(resume.education_list or [])
-        edu_score = min(100, 60 + edu_count * 20) if edu_count > 0 else 50
-
-        # 4) 综合素质评分 (15%) — 基于项目经历和自我评价
+        # 3) 综合素质评分 (15%)
         proj_count = len(resume.project_list or [])
         has_eval = bool(resume.self_evaluation and len(resume.self_evaluation) > 20)
         quality_score = min(100, proj_count * 25 + (25 if has_eval else 0))
 
-        # 加权总分
+        # 加权总分（技能 50% + 经验 35% + 综合素质 15%）
         total_score = int(
-            skill_score * 0.4 + exp_score * 0.3 + edu_score * 0.15 + quality_score * 0.15
+            skill_score * 0.50 + exp_score * 0.35 + quality_score * 0.15
         )
+
+        # 构建维度详情
+        position_name = job["name"]
+        edu_status = (
+            f"{resume_edu or '未知'} {'≥' if resume_edu else ''}{job.get('education_requirement', '无要求')}"
+            if job.get("education_requirement") else "无硬性要求"
+        )
+        dimensions = [
+            {"name": "技能匹配", "score": skill_score, "weight": 0.50,
+             "details": f"匹配 {len(matched)}/{len(all_position_skills)} 项技能，缺失 {len(missing)} 项"},
+            {"name": "经验匹配", "score": exp_score, "weight": 0.35,
+             "details": f"{work_count} 段工作经历"},
+            {"name": "综合素质", "score": quality_score, "weight": 0.15,
+             "details": f"{proj_count} 个项目{'，有自我评价' if has_eval else ''}"},
+            {"name": "学历要求", "score": 100 if resume_edu else 0, "weight": 0,
+             "details": edu_status},
+        ]
 
         # 构建差距分析
         gap_analysis = {
             "missing_skills": [
-                {"name": s, "level": "required", "category": skill_category.get(s, "未分类")}
+                {"name": s, "level": "required", "category": ""}
                 for s in required_missing
             ],
             "weak_skills": [
-                {"name": s, "level": "preferred", "category": skill_category.get(s, "未分类")}
+                {"name": s, "level": "preferred", "category": ""}
                 for s in (preferred_skills - matched)
             ],
             "match_skills": [
-                {"name": s, "level": "required" if s in required_skills else "preferred",
-                 "category": skill_category.get(s, "未分类")}
+                {"name": s, "level": "required" if s in required_skills else "preferred", "category": ""}
                 for s in matched
             ],
         }
 
-        # 构建维度详情
-        # [AI] 此处可接入 LLM 对各维度生成自然语言解读（如 "您的 Python 技能完全满足要求，但缺少 LangChain 框架经验"）
-        dimensions = [
-            {"name": "技能匹配", "score": skill_score, "weight": 0.4,
-             "details": f"匹配 {len(matched)}/{len(all_position_skills)} 项技能，缺失 {len(missing)} 项"},
-            {"name": "经验匹配", "score": exp_score, "weight": 0.3,
-             "details": f"{work_count} 段工作经历"},
-            {"name": "学历匹配", "score": edu_score, "weight": 0.15,
-             "details": f"{edu_count} 段教育经历"},
-            {"name": "综合素质", "score": quality_score, "weight": 0.15,
-             "details": f"{proj_count} 个项目{'，有自我评价' if has_eval else ''}"},
-        ]
-
-        # 生成优化建议（基础版规则生成，前端会另行调用 AI 建议接口增强）
-        # [AI] 此处可接入 LLM 生成更个性化的优化建议（当前为规则降级，前端调用 /tailor/suggestions 获取 AI 增强版）
+        # 生成规则优化建议
         suggestions = []
         for i, skill_name in enumerate(required_missing):
             suggestions.append({
                 "id": f"sg-{i+1}",
-                "section": "skills",
-                "field": "skills",
-                "original": "",
-                "suggested": f"建议学习并添加技能: {skill_name}",
+                "section": "skills", "field": "skills",
+                "original": "", "suggested": f"建议学习并添加技能: {skill_name}",
                 "reason": f"该岗位要求掌握 {skill_name}",
-                "change_type": "large",
-                "accepted": False,
-                "verified": True,
-                "warning": None,
+                "change_type": "large", "accepted": False,
+                "verified": True, "warning": None,
             })
         for j, skill_name in enumerate(preferred_skills - matched):
             suggestions.append({
                 "id": f"sg-p{j+1}",
-                "section": "skills",
-                "field": "skills",
-                "original": "",
-                "suggested": f"建议补充加分技能: {skill_name}",
+                "section": "skills", "field": "skills",
+                "original": "", "suggested": f"建议补充加分技能: {skill_name}",
                 "reason": f"掌握 {skill_name} 可显著提升该岗位竞争力",
-                "change_type": "small",
-                "accepted": False,
-                "verified": True,
-                "warning": None,
+                "change_type": "small", "accepted": False,
+                "verified": True, "warning": None,
             })
 
-        # 保存匹配结果
-        match_data = {
-            "resume_id": resume_id,
-            "position_id": position_id,
-            "position_name": position.name,
-            "resume_name": resume.name,
-            "total_score": total_score,
-            "dimensions": dimensions,
-            "gap_analysis": gap_analysis,
-            "suggestions": suggestions,
-            "match_date": datetime.now(),
-        }
-        result = await self.match_repo.create(user_id, match_data)
-        await self.db.commit()
+        # 持久化（仅 MySQL 单次匹配需要保存，批量实时匹配不落库）
+        result_id = 0
+        if persist:
+            try:
+                position_id_str = job["id"].split(":", 1)[1]
+                position_id = int(position_id_str)
+            except (IndexError, ValueError):
+                position_id = hash(job["id"]) % 100000
 
-        # 直接从已有数据构建返回结果，避免访问 ORM server_default 列触发懒加载
+            match_data = {
+                "resume_id": resume_id,
+                "position_id": position_id,
+                "position_name": position_name,
+                "resume_name": resume.name,
+                "total_score": total_score,
+                "dimensions": dimensions,
+                "gap_analysis": gap_analysis,
+                "suggestions": suggestions,
+                "match_date": datetime.now(),
+            }
+            result = await self.match_repo.create(user_id, match_data)
+            await self.db.commit()
+            result_id = result.id
+
         return {
-            "id": result.id,
+            "id": result_id,
             "resume_id": resume_id,
-            "position_id": position_id,
-            "position_name": position.name,
+            "position_id": job["id"],
+            "position_name": position_name,
             "resume_name": resume.name,
             "total_score": total_score,
             "dimensions": dimensions,
             "gap_analysis": gap_analysis,
             "suggestions": suggestions,
-            "match_date": str(match_data["match_date"]),
+            "match_date": str(datetime.now()),
+        }
+
+    async def do_match_by_mysql_id(self, user_id: int, resume_id: int, position_id: int) -> dict | None:
+        """通过 MySQL position_id 执行匹配（兼容旧接口），加载 MySQL 岗位数据后委托给 do_match"""
+        position = await self.position_repo.get_by_id(position_id)
+        if not position:
+            raise ResourceNotFoundError("岗位不存在")
+        skills_map = await self.position_repo.get_skills_for_positions([position_id])
+        pos_skills = skills_map.get(position_id, [])
+        job = self._normalize_mysql_job(position, pos_skills)
+        return await self.do_match(user_id, resume_id, job)
+
+    # ===== 批量 / 自动匹配 =====
+
+    async def batch_match(self, user_id: int, resume_id: int, position_ids: list[int]) -> list[dict]:
+        """批量匹配（一份简历 vs 多个 MySQL 岗位），兼容旧接口"""
+        results = []
+        for pid in position_ids:
+            try:
+                result = await self.do_match_by_mysql_id(user_id, resume_id, pid)
+                if result is not None:
+                    results.append(result)
+            except ResourceNotFoundError:
+                continue
+        return results
+
+    async def auto_match(self, user_id: int, resume_id: int) -> dict:
+        """
+        自动匹配简历与所有岗位，按综合分数降序返回诊断报告列表。
+        数据源：raw_job_record 优先 → Neo4j 降级 → MySQL job_position 兜底。
+        只返回 total_score >= 50 的结果。
+        """
+        jobs: list[dict] = []
+        data_source = ""
+
+        # 1) 优先 raw_job_record（190条，全有技能关键词）
+        try:
+            jobs = await self._load_jobs_from_raw_record()
+            data_source = "raw_job_record"
+            logger.info(f"auto_match: 从 raw_job_record 加载 {len(jobs)} 个岗位")
+        except Exception as e:
+            logger.warning(f"auto_match: raw_job_record 加载失败 ({e})，尝试 Neo4j")
+            # 2) 降级 Neo4j
+            try:
+                jobs = self._load_jobs_from_neo4j()
+                data_source = "neo4j"
+                logger.info(f"auto_match: 从 Neo4j 加载 {len(jobs)} 个岗位")
+            except Exception as e2:
+                logger.warning(f"auto_match: Neo4j 加载失败 ({e2})，回退到 MySQL")
+                # 3) 兜底 MySQL job_position
+                try:
+                    jobs = await self._load_jobs_from_mysql()
+                    data_source = "mysql"
+                    logger.info(f"auto_match: 从 MySQL 加载 {len(jobs)} 个岗位")
+                except Exception as e3:
+                    logger.error(f"auto_match: 所有数据源加载失败: {e3}")
+                    raise RuntimeError("无法加载岗位数据")
+
+        # 逐岗匹配
+        results = []
+        education_filtered = 0
+        for job in jobs:
+            result = await self.do_match(user_id, resume_id, job, persist=False)
+            if result is None:
+                education_filtered += 1
+            else:
+                results.append(result)
+
+        # 按分数降序排列
+        results.sort(key=lambda r: r["total_score"], reverse=True)
+
+        # 分数 >= 50 过滤
+        low_score_count = sum(1 for r in results if r["total_score"] < 50)
+        results = [r for r in results if r["total_score"] >= 50]
+
+        return {
+            "results": results,
+            "total_matched": len(jobs),
+            "education_filtered": education_filtered,
+            "score_filtered": low_score_count,
+            "data_source": data_source,
         }
 
     async def get_result(self, resume_id: int, position_id: int) -> dict:
@@ -214,23 +528,6 @@ class MatchService:
         """获取匹配历史"""
         results = await self.match_repo.get_history(user_id)
         return [self._to_dict(r) for r in results]
-
-    async def batch_match(self, user_id: int, resume_id: int, position_ids: list[int]) -> list[dict]:
-        """批量匹配（一份简历 vs 多个岗位）"""
-        results = []
-        for pid in position_ids:
-            result = await self.do_match(user_id, resume_id, pid)
-            results.append(result)
-        return results
-
-    # [Agent 3] 智能匹配 —— 自动将简历与系统中所有岗位逐一匹配，按分数降序返回
-    # [AI] 此处可接入 LLM 对匹配结果进行语义排序和自然语言解读（当前为分数降序排列）
-    async def auto_match(self, user_id: int, resume_id: int) -> list[dict]:
-        """自动匹配简历与所有岗位，按综合分数降序返回诊断报告列表"""
-        all_ids = await self.position_repo.get_all_ids()
-        results = await self.batch_match(user_id, resume_id, all_ids)
-        results.sort(key=lambda r: r["total_score"], reverse=True)
-        return results
 
     def _to_dict(self, m) -> dict:
         """将 MatchResult 模型转为 API 返回格式"""
