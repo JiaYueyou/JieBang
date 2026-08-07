@@ -14,10 +14,12 @@ export const learningApi = {
   // AI 学习助手（LLM 调用可能较慢，放宽超时）
   chat: (data: { message: string; context?: Record<string, any>; history?: Record<string, any>[] }) =>
     api.post('/learning/assistant/chat', data, { timeout: 90000 }),
-  generatePath: (data: { positionId: number; resumeId?: number }) =>
+  generatePath: (data: { position_name: string; missing_skills: string[]; matched_skills: string[]; resume_id: number }) =>
     api.post('/learning/assistant/generate-path', {
-      position_id: data.positionId,
-      resume_id: data.resumeId ?? null,
+      position_name: data.position_name,
+      missing_skills: data.missing_skills,
+      matched_skills: data.matched_skills,
+      resume_id: data.resume_id,
     }, { timeout: 90000 }),
   recommendResources: (skillNames: string[]) =>
     api.post('/learning/assistant/recommend-resources', { skill_names: skillNames }, { timeout: 90000 }),
