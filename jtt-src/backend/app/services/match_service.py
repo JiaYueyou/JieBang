@@ -2,11 +2,13 @@
 匹配服务 —— 人岗匹配评分算法、差距分析。
 数据源：raw_job_record 优先，Neo4j 知识图谱次之，MySQL job_position 兜底。
 """
+import json
 import logging
 import re
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
+from app.providers.llm import get_llm_provider
 from app.repositories.match_repository import MatchRepository
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
@@ -158,18 +160,6 @@ def _education_meets(requirement: str, resume_education: str) -> bool:
     return resume_rank >= req_rank
 
 
-# ---------------- [AI] 预留占位方法（后续智能体接入） ----------------
-
-def _evaluate_experience_relevance(_resume_work_list: list, _job_name: str) -> float:
-    """[AI] 评估工作经验与目标岗位的相关性，返回 0.0-1.0 的系数"""
-    return 1.0
-
-
-def _semantic_skill_match(_resume_skill: str, _job_skill: str) -> bool:
-    """[AI] 语义级技能匹配（如 "懂 Python 数据分析" ↔ "Pandas/NumPy 经验"）"""
-    return False
-
-# ----------------------------------------------------------------
 
 
 class MatchService:
@@ -287,6 +277,82 @@ class MatchService:
 
     # ===== 核心匹配 =====
 
+        # ── [Agent 3] 技能语义匹配（LLM）──
+    async def _semantic_skill_match(self, resume_skills: list[str], position_skills: list[str]) -> set[str]:
+        """
+        使用 LLM 对技能进行语义匹配：判断岗位技能是否被简历技能语义覆盖。
+        例："懂 Python 数据分析" ↔ "Pandas/NumPy 经验"、"微服务" ↔ "Spring Cloud 分布式"。
+        返回被覆盖的岗位技能集合。LLM 不可用时降级为规则模糊匹配。
+        """
+        try:
+            provider = get_llm_provider()
+            prompt = (
+                "你是人岗匹配专家。判断以下候选人的技能是否能覆盖目标岗位的技能要求。\n"
+                "忽略字面差异，只判断**语义上的覆盖关系**。例如：\n"
+                "- 候选人技能 'Python 数据分析' 能覆盖岗位技能 'Pandas/NumPy 经验'\n"
+                "- 候选人技能 'Spring Boot' 能覆盖岗位技能 '微服务开发'\n\n"
+                f"候选人技能：{', '.join(resume_skills) or '无'}\n\n"
+                f"目标岗位技能：{', '.join(position_skills) or '无'}\n\n"
+                '输出严格的 JSON：{"matched": ["被覆盖的岗位技能名", ...]}\n'
+                "只返回确实被覆盖的岗位技能，不要编造。"
+            )
+            result = await provider.chat(
+                [{"role": "system", "content": prompt}],
+                response_format={"type": "json_object"},
+            )
+            parsed = json.loads(result["content"])
+            candidates = set(parsed.get("matched", []) or [])
+            # 防幻觉：只保留确实存在于岗位技能列表中的结果
+            valid = candidates & set(position_skills)
+            if valid:
+                return valid
+            raise ValueError("LLM 未返回有效匹配")
+        except Exception:
+            # 降级为规则模糊匹配
+            return {
+                ps for ps in position_skills
+                if any(_skill_names_match(rs, ps) for rs in resume_skills)
+            }
+
+    # ── [Agent 3] 经验相关性评估（LLM）──
+    async def _assess_experience_relevance(
+        self, work_experience: list[dict], position_name: str, position_skills: list[str]
+    ) -> int:
+        """
+        使用 LLM 评估工作经历与目标岗位的相关性，返回 0-100 分。
+        考虑：行业是否对口、职责是否匹配、经验年限、技能相关性。
+        无工作经历返回 0。LLM 不可用时降级为基于经历数量的评分。
+        """
+        if not work_experience:
+            return 0
+        try:
+            provider = get_llm_provider()
+            exp_text = "\n".join(
+                f"- {e.get('position', '')} @ {e.get('company', '')}: {e.get('description', '')}"
+                for e in work_experience
+            )
+            prompt = (
+                "你是人岗匹配专家。评估以下候选人的工作经历与目标岗位的相关性，给出 0-100 分。\n"
+                "考虑：行业是否对口、职责是否匹配、经验年限、技能相关性。\n\n"
+                f"目标岗位：{position_name}\n"
+                f"岗位技能要求：{', '.join(position_skills) or '无'}\n\n"
+                f"候选人工作经历：\n{exp_text}\n\n"
+                '输出严格的 JSON：{"score": 0到100的整数, "reason": "简要理由"}'
+            )
+            result = await provider.chat(
+                [{"role": "system", "content": prompt}],
+                response_format={"type": "json_object"},
+            )
+            parsed = json.loads(result["content"])
+            score = parsed.get("score")
+            if not isinstance(score, (int, float)) or not (0 <= score <= 100):
+                raise ValueError("LLM 未返回有效分数")
+            return int(score)
+        except Exception:
+            # 降级：基于经历数量
+            work_count = len(work_experience)
+            return min(100, 40 + work_count * 20) if work_count > 0 else 30
+
     async def do_match(self, user_id: int, resume_id: int, job: dict, persist: bool = True) -> dict | None:
         """执行单次人岗匹配。job 为标准化格式的岗位字典。返回 None 表示被学历过滤。
         persist=False 时只计算不持久化（用于批量实时匹配）。"""
@@ -306,14 +372,8 @@ class MatchService:
         preferred_skills = set(job.get("preferred_skills", []))
         all_position_skills = required_skills | preferred_skills
 
-        # 1) 技能匹配评分 (50%)
-        matched = set()
-        for ps in all_position_skills:
-            for rs in resume_skill_names:
-                if _skill_names_match(rs, ps) or _semantic_skill_match(rs, ps):
-                    matched.add(ps)
-                    break
-
+        # 1) 技能匹配评分 (50%) —— LLM 语义匹配，降级为规则模糊匹配
+        matched = await self._semantic_skill_match(resume_skill_names, list(all_position_skills))
         missing = all_position_skills - matched
         required_matched = required_skills & matched
         required_missing = required_skills - matched
@@ -328,12 +388,20 @@ class MatchService:
         else:
             skill_score = 70
 
-        # 2) 经验匹配评分 (35%)
-        work_list = resume.work_experience_list or []
-        work_count = len(work_list)
-        relevance = _evaluate_experience_relevance(work_list, job.get("name", ""))
-        base_exp = min(100, 40 + work_count * 20) if work_count > 0 else 30
-        exp_score = int(base_exp * (0.5 + 0.5 * relevance))
+        # 2) 经验匹配评分 (35%) —— LLM 评估相关性，降级为基于经历数量
+        work_experience = [
+            {
+                "company": e.get("company", ""),
+                "position": e.get("position", ""),
+                "description": e.get("description", ""),
+                "skills": e.get("skills", []),
+            }
+            for e in (resume.work_experience_list or [])
+        ]
+        work_count = len(work_experience)
+        exp_score = await self._assess_experience_relevance(
+            work_experience, job.get("name", ""), list(all_position_skills)
+        )
 
         # 3) 综合素质评分 (15%)
         proj_count = len(resume.project_list or [])

@@ -29,6 +29,17 @@ export interface GeneratePathResponse {
   searchResultsCount: number
 }
 
+export interface GeneratedResource {
+  title: string
+  type: string
+  url: string
+  platform: string
+}
+
+export interface GenerateLinksResponse {
+  resources: GeneratedResource[]
+}
+
 export const assistantApi = {
   chat: (data: AssistantChatRequest): Promise<{ code: number; message: string; data: AssistantChatResponse }> =>
     api.post('/assistant/chat', data),
@@ -37,5 +48,8 @@ export const assistantApi = {
     api.post('/assistant/optimize-phrase', data),
 
   generateLearningPath: (positionName: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
-    api.post('/assistant/generate-learning-path', { positionName }),
+    api.post('/assistant/generate-learning-path', { positionName }, { timeout: 90000 }),
+
+  generateLinks: (topic: string): Promise<{ code: number; message: string; data: GenerateLinksResponse }> =>
+    api.post('/assistant/generate-links', { message: topic }, { timeout: 90000 }),
 }
