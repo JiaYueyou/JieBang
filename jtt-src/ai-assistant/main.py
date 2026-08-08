@@ -313,6 +313,84 @@ async def recommend_resources(req: ChatRequest):
         raise HTTPException(status_code=500, detail={"code": 500, "message": "推荐失败", "data": None})
 
 
+@app.post("/api/assistant/generate-links")
+async def generate_links(req: ChatRequest):
+    """按主题联网搜索学习资源，返回带 URL 的链接列表。"""
+    if not DEEPSEEK_API_KEY:
+        raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
+    topic = req.message or "Java 开发"
+    max_results = 6
+
+    # 优先搜索 B站 / 抖音网课视频
+    queries = [
+        topic + " 哔哩哔哩 教程",
+        topic + " bilibili 入门 课程",
+        topic + " 抖音 网课 教学",
+        topic + " 视频教程 从入门到精通",
+    ]
+    all_results: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    for q in queries:
+        results = await search_web(q, max_results=3)
+        for r in results:
+            if r["url"] and r["url"] not in seen_urls:
+                seen_urls.add(r["url"])
+                all_results.append(r)
+        if len(all_results) >= max_results:
+            break
+
+    # LLM 重排序 + 结构化（优先视频网课）
+    system_prompt = (
+        "你是学习资源推荐专家。根据搜索到的信息，为主题推荐 3-5 个网课视频链接。\n"
+        "**优先选择哔哩哔哩(bilibili)、抖音的网课/教学视频**，其次才是其他视频平台。\n"
+        "只使用搜索结果中真实存在的资源，不要编造 URL。\n"
+        "输出严格的 JSON 格式：\n"
+        '{"resources": [{"title": "视频/课程标题", "type": "video", "url": "https://...", "platform": "哔哩哔哩|抖音|其他平台"}]}'
+    )
+    search_context = ""
+    for i, r in enumerate(all_results[:8]):
+        search_context += f"[{i+1}] {r['title']}: {r['snippet']}\n{r['url']}\n\n"
+    user_prompt = "主题：" + topic + "\n\n搜索结果：\n" + search_context
+
+    try:
+        if all_results:
+            raw = await call_deepseek([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ])
+            parsed = parse_llm_response(raw)
+            resources = parsed.get("resources", [])
+        else:
+            # 搜索不可用：直接生成 B站/抖音搜索页真实链接 + LLM 补充具体课程
+            from urllib.parse import quote
+            kw = quote(topic)
+            resources = [
+                {"title": f"哔哩哔哩搜索：{topic}", "type": "video", "url": f"https://search.bilibili.com/all?keyword={kw}", "platform": "哔哩哔哩"},
+                {"title": f"抖音搜索：{topic}", "type": "video", "url": f"https://www.douyin.com/search/{kw}", "platform": "抖音"},
+                {"title": f"哔哩哔哩·知识区：{topic}", "type": "video", "url": f"https://www.bilibili.com/v/knowledge", "platform": "哔哩哔哩"},
+            ]
+            try:
+                raw = await call_deepseek([
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": "主题：" + topic + "\n（搜索不可用，请基于知识推荐哔哩哔哩/抖音的知名网课视频，URL 用真实的视频链接或平台搜索页链接）"},
+                ])
+                parsed = parse_llm_response(raw)
+                extra = parsed.get("resources", [])
+                for e in extra:
+                    if e.get("url") and not any(r["url"] == e["url"] for r in resources):
+                        resources.append(e)
+            except Exception:
+                pass
+
+        if not resources:
+            resources = [{"title": topic + " 网课视频", "type": "video", "url": "", "platform": "哔哩哔哩"}]
+
+        return {"code": 200, "message": "ok", "data": {"resources": resources}}
+    except Exception as e:
+        log.error(f"Generate links error: {e}")
+        raise HTTPException(status_code=500, detail={"code": 500, "message": "生成学习链接失败", "data": None})
+
+
 @app.post("/api/learning/assistant/quiz")
 async def generate_quiz(req: ChatRequest):
     if not DEEPSEEK_API_KEY:
