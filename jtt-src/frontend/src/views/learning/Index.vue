@@ -29,6 +29,13 @@ const dialogPathId = ref('')
 const quizVisible = ref(false)
 const quizPathId = ref('')
 const quizStepTitle = ref('')
+const quizStepId = ref('') // 空 = 整条路径，非空 = 单个步骤
+const quizQuestions = ref<any[]>([])
+const quizAnswers = ref<Record<string, number>>({})
+const quizSubmitted = ref(false)
+const quizLoading = ref(false)
+const quizTargetStepIds = ref<string[]>([])
+const quizIsFinal = ref(false)
 
 // ========== 步骤学习链接（AI 生成） ==========
 const stepLinks = ref<Record<string, any[]>>({}) // stepId -> resources
@@ -158,6 +165,29 @@ const openQuiz = async (path: LearningPath, stepIds: string[], isFinal = false) 
   quizPathId.value = path.id
   quizTargetStepIds.value = stepIds
   quizIsFinal.value = isFinal
+  quizStepId.value = stepIds.length === 1 ? (stepIds[0] || '') : ''
+  const titles = isFinal
+    ? '综合测试'
+    : path.steps.filter(s => stepIds.includes(s.id)).map(s => s.title).join(' + ') || '当前步骤'
+  quizStepTitle.value = titles
+  quizVisible.value = true
+  quizSubmitted.value = false
+  quizAnswers.value = {}
+  quizLoading.value = true
+  try {
+    const res: any = await learningApi.quiz({ pathId: path.id, stepIds, questionCount: isFinal ? 5 : 3 })
+    quizQuestions.value = res.data?.questions || []
+  } catch {
+    ElMessage.error('题目加载失败')
+  } finally {
+    quizLoading.value = false
+  }
+}
+
+const submitQuiz = async () => {
+  quizSubmitted.value = true
+  const correct = quizQuestions.value.filter((q: any) => quizAnswers.value[q.id] === q.correctAnswer).length
+  const total = quizQuestions.value.length
   const pct = total ? Math.round((correct / total) * 100) : 0
   const passed = total > 0 && pct >= 80
   ElMessage[passed ? 'success' : 'warning'](
