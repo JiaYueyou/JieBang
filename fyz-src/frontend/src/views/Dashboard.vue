@@ -224,7 +224,7 @@
             <span class="db-hot-col trend">本月</span>
             <span class="db-hot-col action"></span>
           </div>
-          <div class="db-hot-row" v-for="(job, i) in hotJobs" :key="job.job_id">
+          <div class="db-hot-row" v-for="(job, i) in hotJobs" :key="job.standard_job_id">
             <span class="db-hot-col rank" :class="{ top: (hotJobsPage - 1) * hotJobsPageSize + i < 3 }">{{ (hotJobsPage - 1) * hotJobsPageSize + i + 1 }}</span>
             <span class="db-hot-col name">
               {{ job.title }}
@@ -235,7 +235,9 @@
             </span>
             <span class="db-hot-col num" style="font-family:var(--font-mono);font-weight:600;">{{ job.demand }}</span>
             <span class="db-hot-col trend" :class="job.trend > 0 ? 'up' : job.trend < 0 ? 'down' : ''" style="font-family:var(--font-mono);font-weight:700;">{{ job.trend > 0 ? '+' : '' }}{{ job.trend }}</span>
-            <FavoriteButton type="job" :target-id="job.job_id" :title="job.title" compact />
+            <el-tooltip content="风向标是市场标准岗位聚合，请进入岗位管理后收藏具体的在招岗位" placement="top">
+              <el-button text type="primary" size="small" @click="$router.push('/jobs')">查看在招</el-button>
+            </el-tooltip>
           </div>
           <div class="db-pagination-row">
             <el-pagination

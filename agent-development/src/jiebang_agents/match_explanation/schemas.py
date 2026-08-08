@@ -24,6 +24,8 @@ class MatchExplanationRequest(BaseModel):
     score: int = Field(ge=0, le=100)
     matched_skills: list[str] = Field(default_factory=list)
     missing_skills: list[str] = Field(default_factory=list)
+    candidate_context: dict = Field(default_factory=dict)
+    job_context: dict = Field(default_factory=dict)
     evidence: list[MatchEvidenceInput] = Field(default_factory=list)
 
 

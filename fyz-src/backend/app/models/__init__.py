@@ -24,7 +24,11 @@ from app.models.graph import (
     StandardJobSource,
 )
 from app.models.data_source import DataSource
-from app.models.analysis import AnalysisInsightDecision
+from app.models.analysis import (
+    AnalysisBaselineSkill,
+    AnalysisBaselineSnapshot,
+    AnalysisInsightDecision,
+)
 from app.models.matching import MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.models.internal_transfer import (
     EnterpriseEmployeeDirectory,
@@ -49,7 +53,7 @@ __all__ = [
     "JobDuplicateCluster",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
     "DataSource",
-    "AnalysisInsightDecision",
+    "AnalysisInsightDecision", "AnalysisBaselineSnapshot", "AnalysisBaselineSkill",
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
     "UserFavorite", "UserBrowseHistory",

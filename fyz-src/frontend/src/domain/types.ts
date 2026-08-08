@@ -352,9 +352,32 @@ export interface TalentSummary {
   company?: string;
   location?: string;
   salary?: string;
+  matches?: TalentMatch[];
 }
 
-export type TalentDetail = TalentSummary;
+export interface ResumeSkillDetail {
+  name: string;
+  category: string;
+  confidence: number;
+  evidence_text: string;
+  extraction_method: string;
+}
+
+export interface TalentMatch extends MatchReport {
+  job_title: string;
+  algorithm_version: string;
+  urgent: boolean;
+}
+
+export interface TalentDetail extends TalentSummary {
+  file_size: number;
+  content_type?: string | null;
+  parsed_text: string;
+  profile: Record<string, unknown>;
+  parse_warnings: string[];
+  skills: ResumeSkillDetail[];
+  matches: TalentMatch[];
+}
 
 export interface MatchReport {
   id: EntityId;
@@ -389,7 +412,7 @@ export interface DashboardOverview {
     stages: Array<{ name: string; kind: "high" | "progress" | "gap" | "pending"; count: number }>;
   }>;
   highMatches: TalentSummary[];
-  hotJobs: Array<{ job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[]; core_skills: string[] }>;
+  hotJobs: Array<{ standard_job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[]; core_skills: string[] }>;
   hotJobsTotal: number;
   emergingSkills: Array<{ id: EntityId; name: string; combo: string; growth: number; confidence: number }>;
   emergingSkillsTotal: number;
@@ -636,6 +659,7 @@ export interface TrendQuery {
   emergingPageSize?: number;
   newJobPage?: number;
   newJobPageSize?: number;
+  newJobKeyword?: string;
 }
 
 export interface TrendOverview {
@@ -674,6 +698,7 @@ export interface TrendOverview {
     decision: string | null;
   }>;
   newJobsTotal: number;
+  newJobObservationTotal: number;
   dataQuality: AnalysisDataQuality;
   baseline: AnalysisBaseline;
 }

@@ -39,6 +39,7 @@ async def overview(
     emerging_page_size: int = Query(default=10, ge=1, le=50),
     new_job_page: int = Query(default=1, ge=1),
     new_job_page_size: int = Query(default=10, ge=1, le=50),
+    new_job_keyword: str | None = Query(default=None, max_length=120),
     _principal: TokenPrincipal = Depends(get_current_user),
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[AnalysisOverview]:
@@ -51,6 +52,7 @@ async def overview(
             emerging_page_size=emerging_page_size,
             new_job_page=new_job_page,
             new_job_page_size=new_job_page_size,
+            new_job_keyword=new_job_keyword,
         )
     )
 

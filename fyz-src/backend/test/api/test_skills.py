@@ -63,7 +63,6 @@ async def test_import_task_eager_mode_and_status(client, auth_headers, monkeypat
         test_dir = Path(directory)
         (test_dir / "test.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
         response = await client.post(
             "/api/v1/data-imports/jobs",
             headers=auth_headers,

@@ -33,10 +33,13 @@ export interface DataProvider {
   talents: {
     list(): Promise<TalentSummary[]>;
     get(resumeId: number): Promise<TalentSummary | null>;
+    getDetails(resumeId: number): Promise<import("@/domain/types").TalentDetail>;
     upload(input: import("@/domain/types").ResumeUploadPayload): Promise<void>;
     download(resumeId: number, filename: string): Promise<void>;
+    preview(resumeId: number): Promise<{ url: string; contentType: string }>;
+    matchJobs(resumeId: number, jobIds: number[]): Promise<import("@/domain/types").TalentMatch[]>;
     recalculate(): Promise<{ resumes_processed: number; matches_upserted: number }>;
-    explain(matchId: number): Promise<import("@/domain/types").MatchExplanation>;
+    explain(matchId: number, onProgress?: (progress: number, status: string) => void): Promise<import("@/domain/types").MatchExplanation>;
   };
   career: { analyze(input: {
     skillText: string;

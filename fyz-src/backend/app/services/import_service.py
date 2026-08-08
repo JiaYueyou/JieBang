@@ -37,15 +37,6 @@ from app.services.job_import_schema import normalize_and_validate_records
 from app.services.skill_extractor import content_fingerprint, normalize_text
 from app.services.skill_service import SkillService
 
-ALLOWED_FILES = {
-    "jd_crawl_ifly.json", "jd_crawl_zl.json", "jd_crawl2.json",
-    "jd_crawl_ifly_full.json", "jd_crawl_ifly_merged.json",
-    "jd_crawl_zl_new.json",
-}
-ALLOWED_FILE_PATTERNS = (
-    re.compile(r"iflytek_\d+\.json"),
-    re.compile(r"zhaopin_\d+\.json"),
-)
 logger = logging.getLogger(__name__)
 
 
@@ -66,13 +57,10 @@ class ImportService:
         root = Path(DATA_DIR).resolve()
         paths = []
         for name in files:
-            is_allowed = name in ALLOWED_FILES or any(
-                pattern.fullmatch(name) for pattern in ALLOWED_FILE_PATTERNS
-            )
-            if Path(name).name != name or not is_allowed:
-                raise InvalidParameterError(f"不允许导入文件：{name}")
+            if Path(name).suffix.casefold() != ".json":
+                raise InvalidParameterError(f"仅支持导入 JSON 文件：{name}")
             path = (root / name).resolve()
-            if root not in path.parents or not path.is_file():
+            if (path != root and root not in path.parents) or not path.is_file():
                 raise InvalidParameterError(f"数据文件不存在：{name}")
             paths.append(path)
         return paths
@@ -108,7 +96,12 @@ class ImportService:
         imported_raw_ids: list[int] = []
         for index, record in enumerate(records, start=1):
             fingerprint = content_fingerprint(record)
-            source_name = normalize_text(record.get("source")) or "unknown"
+            source_name = normalize_text(record.get("source"))
+            if source_name and set(source_name) == {"?"}:
+                raise InvalidParameterError(
+                    f"数据来源名称异常（仅包含问号）：第 {index} 条记录"
+                )
+            source_name = source_name or "unknown"
             external_id = normalize_text(record.get("external_id")) or None
             identity_match = (
                 await self.repository.get_source_by_identity(
@@ -127,6 +120,9 @@ class ImportService:
                     policy=policy,
                     evaluated_at=utc_now(),
                 )
+                incoming_source_meta = record.get("source_meta")
+                if not isinstance(incoming_source_meta, dict):
+                    incoming_source_meta = {}
                 source = SourceDocument(
                     source=source_name,
                     external_id=external_id,
@@ -136,8 +132,16 @@ class ImportService:
                     content_fingerprint=fingerprint,
                     content_summary=normalize_text(record.get("jd_text"))[:1000],
                     source_meta={
+                        **incoming_source_meta,
                         "posted_at": record.get("posted_at"),
                         "crawled_at": record.get("crawled_at"),
+                        "archived_at": record.get("archived_at"),
+                        "archive_url": normalize_text(record.get("archive_url")) or None,
+                        "source_type": normalize_text(
+                            record.get("source_type")
+                            or incoming_source_meta.get("source_type")
+                        ) or None,
+                        "license_note": normalize_text(record.get("license_note")) or None,
                     },
                 )
                 raw = RawJobRecord(
@@ -268,9 +272,14 @@ class ImportService:
                 name=normalized.name,
                 canonical_key=normalized.canonical_key,
                 aliases=[],
-                stack={"algorithm": "ai", "data": "data", "devops": "devops"}.get(
-                    normalized.role_family, "backend"
-                ),
+                stack={
+                    "algorithm": "ai",
+                    "data": "data",
+                    "devops": "devops",
+                    "product": "product",
+                    "operations": "business",
+                    "sales": "business",
+                }.get(normalized.role_family, "backend"),
                 level=normalized.level,
                 role_family=normalized.role_family,
                 specialization_key=normalized.specialization_key,

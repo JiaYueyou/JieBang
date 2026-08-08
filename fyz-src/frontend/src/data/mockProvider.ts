@@ -64,7 +64,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
       const data = db();
       const openJobs = data.jobs.filter((job) => job.status === "open");
       const hotJobs = data.jobs.slice(0, 12).map((job, index) => ({
-        job_id: job.id,
+        standard_job_id: job.id,
         title: job.title,
         demand: [243, 156, 187, 132, 108, 165][index] ?? 100,
         city: job.location || "全国",
@@ -133,8 +133,11 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
   talents: {
     async list(){return delay(db().talents);},
     async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
+    async getDetails(){throw new Error("简历详情仅支持后端数据模式");},
     async upload(){throw new Error("简历上传仅支持后端数据模式");},
     async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async preview(){throw new Error("简历预览仅支持后端数据模式");},
+    async matchJobs(){throw new Error("岗位匹配仅支持后端数据模式");},
     async recalculate(){return delay({resumes_processed:db().talents.length,matches_upserted:0});},
     async explain(){throw new Error("匹配解释仅支持后端数据模式");},
   },

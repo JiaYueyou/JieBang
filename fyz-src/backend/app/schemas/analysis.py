@@ -120,6 +120,7 @@ class AnalysisOverview(BaseModel):
     emerging_total: int = 0
     new_jobs: list["EmergingJobInsight"] = Field(default_factory=list)
     new_jobs_total: int = 0
+    new_job_observation_total: int = 0
     data_quality: AnalysisDataQuality
     baseline: AnalysisBaseline
 

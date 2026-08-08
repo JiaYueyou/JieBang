@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import event, func, select
 
 from app.core.database import async_session, engine
+from app.core.exceptions import InvalidParameterError
 from app.models import (
     JobDuplicateCluster,
     JobSkillFact,
@@ -46,6 +47,11 @@ async def test_import_is_idempotent_without_cross_validating_different_jobs(monk
             "require": "熟悉 Redis", "duty": "",
             "post_date": "2026-07-01", "crawled_at": "2026-07-29T10:00:00",
             "keywords": ["Java", "Spring Boot"],
+            "archived_at": "2025-12-01T09:00:00",
+            "archive_url": "https://archive.example.test/java",
+            "source_type": "official_career_site",
+            "license_note": "public-job-page",
+            "source_meta": {"collector": "official-test"},
         },
         {
             "title": "后端工程师", "company": "B", "source": "来源B",
@@ -59,7 +65,6 @@ async def test_import_is_idempotent_without_cross_validating_different_jobs(monk
         test_dir = Path(directory)
         (test_dir / "test.json").write_text(json.dumps(records, ensure_ascii=False), encoding="utf-8")
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
 
         async with async_session() as db:
             service = ImportService(db)
@@ -101,6 +106,11 @@ async def test_import_is_idempotent_without_cross_validating_different_jobs(monk
             assert first_raw.crawled_at is not None
             assert first_raw.quality_status in {"accepted", "warning"}
             assert first_raw.standard_job_id is not None
+            first_document = await db.get(SourceDocument, first_raw.source_document_id)
+            assert first_document.source_meta["archived_at"] == "2025-12-01T09:00:00"
+            assert first_document.source_meta["archive_url"] == "https://archive.example.test/java"
+            assert first_document.source_meta["source_type"] == "official_career_site"
+            assert first_document.source_meta["collector"] == "official-test"
 
 
 async def test_import_deduplicates_stable_source_external_identity(monkeypatch):
@@ -135,7 +145,6 @@ async def test_import_deduplicates_stable_source_external_identity(monkeypatch):
             encoding="utf-8",
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
 
         async with async_session() as db:
             result = await ImportService(db).import_files(["test.json"])
@@ -176,7 +185,6 @@ async def test_same_standard_job_cross_validates_independent_sources(monkeypatch
             encoding="utf-8",
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
 
         async with async_session() as db:
             result = await ImportService(db).import_files(["test.json"])
@@ -224,7 +232,6 @@ async def test_near_duplicate_is_retained_and_downweighted(monkeypatch, enforce_
             encoding="utf-8",
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
 
         async with async_session() as db:
             result = await ImportService(db).import_files(["test.json"])
@@ -278,7 +285,6 @@ async def test_near_duplicate_cluster_member_count_increments(monkeypatch, enfor
             json.dumps([third], ensure_ascii=False), encoding="utf-8"
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json", "test2.json"})
 
         async with async_session() as db:
             first = await ImportService(db).import_files(["test.json"])
@@ -315,7 +321,6 @@ async def test_import_rejects_invalid_job_v1(monkeypatch):
             json.dumps(records, ensure_ascii=False), encoding="utf-8"
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
 
         async with async_session() as db:
             service = ImportService(db)
@@ -324,4 +329,26 @@ async def test_import_rejects_invalid_job_v1(monkeypatch):
                 assert False, "invalid job-v1 payload must be rejected"
             except Exception as exc:
                 assert "job-v1 校验失败" in str(exc)
+            assert await db.scalar(select(func.count(RawJobRecord.id))) == 0
+
+
+async def test_import_rejects_question_mark_only_source(monkeypatch):
+    records = [{
+        "title": "Python Engineer",
+        "company": "Example Co",
+        "source": "??????",
+        "url": "https://example.test/jobs/1",
+        "jd_text": "Build reliable Python services and maintain APIs.",
+        "posted_at": "2026-07-29",
+        "crawled_at": "2026-07-29T10:00:00",
+        "keywords": ["Python"],
+    }]
+    with tempfile.TemporaryDirectory(dir="test") as directory:
+        test_dir = Path(directory)
+        (test_dir / "test.json").write_text(json.dumps(records), encoding="utf-8")
+        monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
+
+        async with async_session() as db:
+            with pytest.raises(InvalidParameterError):
+                await ImportService(db).import_files(["test.json"])
             assert await db.scalar(select(func.count(RawJobRecord.id))) == 0

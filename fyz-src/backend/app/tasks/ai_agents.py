@@ -31,6 +31,10 @@ async def _process_ai_agent(task_id: str) -> dict:
                 )
             elif task.task_type == MatchExplanationAgent.agent_type:
                 match_id = int(task.request_data["payload"]["match_id"])
+                # Commit an evidence-analysis checkpoint before the longer model call so
+                # clients can render a meaningful in-progress state immediately.
+                task.progress = 55
+                await db.commit()
                 result = await MatchingService(db).explain(
                     match_id, task.created_by, agent_run_id=run_id
                 )

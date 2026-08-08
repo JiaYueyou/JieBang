@@ -136,9 +136,14 @@ class GraphService:
                         name=normalized.name,
                         canonical_key=normalized.canonical_key,
                         aliases=[],
-                        stack={"algorithm": "ai", "data": "data", "devops": "devops"}.get(
-                            normalized.role_family, "backend"
-                        ),
+                        stack={
+                            "algorithm": "ai",
+                            "data": "data",
+                            "devops": "devops",
+                            "product": "product",
+                            "operations": "business",
+                            "sales": "business",
+                        }.get(normalized.role_family, "backend"),
                         level=normalized.level,
                         role_family=normalized.role_family,
                         specialization_key=normalized.specialization_key,

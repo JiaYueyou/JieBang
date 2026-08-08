@@ -108,6 +108,8 @@ async def test_dashboard_overview_uses_persisted_jobs_and_matches(
     assert data["highMatches"][0]["name"] == "真实候选人"
     # 热门岗位来自爬取数据（RawJobRecord → 标准岗位聚合）
     assert data["hotJobs"][0]["title"] == "数据仓库工程师"
+    assert data["hotJobs"][0]["standard_job_id"] == standard.id
+    assert "job_id" not in data["hotJobs"][0]
     assert data["hotJobs"][0]["demand"] == 2
     assert data["hotJobs"][0]["city"] == "北京"
     assert "SQL" in data["hotJobs"][0]["core_skills"]

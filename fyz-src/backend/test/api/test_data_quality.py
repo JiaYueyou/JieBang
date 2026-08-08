@@ -29,7 +29,6 @@ async def _import_quality_record(client, auth_headers, monkeypatch) -> int:
             encoding="utf-8",
         )
         monkeypatch.setattr(import_module, "DATA_DIR", str(root))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"quality.json"})
         response = await client.post(
             "/api/v1/data-imports/jobs",
             headers=auth_headers,

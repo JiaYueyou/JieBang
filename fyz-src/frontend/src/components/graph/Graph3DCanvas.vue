@@ -142,9 +142,12 @@ function buildOption(): any {
     const isHighlighted = props.highlightedPath?.includes(nodeId)
     const isSearchMatch = searchMatches.has(nodeId)
     const isSelected = hasSelected && nodeId === selectedId
-    // 弱化：搜索未命中，或选中后不在 L1→选中节点路径上（搜索命中节点保持正常显示）
-    const dimmed = (hasSearchMatches && !isSearchMatch)
-      || (hasSelected && !isSelected && !isSearchMatch && !pathSet.has(nodeId))
+    // Selection takes precedence over search: its complete L1→L5 path keeps its original
+    // colour, and every unrelated node is consistently reduced to 0.22 opacity.
+    const isProminent = isSelected || (!hasSelected && isSearchMatch)
+    const dimmed = hasSelected
+      ? !isSelected && !pathSet.has(nodeId)
+      : hasSearchMatches && !isSearchMatch
     
     nodes.push({
       id: nodeId,
@@ -170,21 +173,21 @@ function buildOption(): any {
       x: attrs.x || (Math.random() - 0.5) * 800,
       y: attrs.y || (Math.random() - 0.5) * 600,
       itemStyle: {
-        color: isSelected || isSearchMatch ? '#f59e4b' : color,
-        borderColor: isSelected || isSearchMatch ? '#fff7ed' : '#ffffff',
-        borderWidth: isSelected || isSearchMatch ? 4 : 2,
+        color: isProminent ? '#f59e4b' : color,
+        borderColor: isProminent ? '#fff7ed' : '#ffffff',
+        borderWidth: isProminent ? 4 : 2,
         opacity: dimmed ? 0.22 : isHighlighted || isSelected ? 1 : 0.9,
-        shadowBlur: isSelected || isSearchMatch ? 30 : isHighlighted ? 20 : 10,
-        shadowColor: isSelected || isSearchMatch ? 'rgba(245, 158, 75, 0.85)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
+        shadowBlur: isProminent ? 30 : isHighlighted ? 20 : 10,
+        shadowColor: isProminent ? 'rgba(245, 158, 75, 0.85)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
         shadowOffsetY: 3
       },
-      symbolSize: isSelected || isSearchMatch ? size * 1.45 : size,
+      symbolSize: isProminent ? size * 1.45 : size,
       label: {
         show: true,
         position: 'bottom',
         distance: 8,
         fontSize: levelFontSizes[level] || 12,
-        color: isSelected || isSearchMatch ? '#b45309' : '#1a1d28',
+        color: isProminent ? '#b45309' : '#1a1d28',
         formatter: (params: any) => params.name,
         fontWeight: 'bold',
         opacity: dimmed ? 0.2 : 1
@@ -322,6 +325,37 @@ function updateChart() {
   enableFullCanvasRoaming()
 }
 
+/** Keep the current zoom and pan the requested graph node into the canvas centre. */
+function centerNode(nodeId: string) {
+  if (!chartInstance || !containerRef.value) return
+
+  const seriesModel = (chartInstance as any).getModel()?.getSeriesByIndex(0)
+  const data = seriesModel?.getData?.()
+  const coordinateSystem = seriesModel?.coordinateSystem
+  if (!data || !coordinateSystem) return
+
+  const index = data.indexOfName(nodeId)
+  const layout = index >= 0 ? data.getItemLayout(index) : null
+  if (!layout) return
+
+  const [x, y] = coordinateSystem.dataToPoint(layout)
+  chartInstance.dispatchAction({
+    type: 'graphRoam',
+    seriesIndex: 0,
+    dx: containerRef.value.clientWidth / 2 - x,
+    dy: containerRef.value.clientHeight / 2 - y
+  })
+}
+
+/** Public API used by the details panel when navigating a parent or child node. */
+function focusNode(nodeId: string) {
+  requestAnimationFrame(() => {
+    centerNode(nodeId)
+    // Force layout may complete shortly after the graph is re-created for a new scope.
+    window.setTimeout(() => centerNode(nodeId), 220)
+  })
+}
+
 function enableFullCanvasRoaming() {
   if (!chartInstance || !containerRef.value) return
   const seriesModel = (chartInstance as any).getModel()?.getSeriesByIndex(0)
@@ -391,6 +425,8 @@ watch(() => props.pathNodeIds, async () => {
   await nextTick()
   updateChart()
 }, { deep: true })
+
+defineExpose({ focusNode })
 
 </script>
 

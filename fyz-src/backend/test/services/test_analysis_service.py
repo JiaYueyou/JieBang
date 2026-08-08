@@ -30,7 +30,7 @@ async def _add_raw(db, standard, skill, title, month, sequence, index):
         source_document_id=document.id,
         title=title,
         standardized_title=title,
-        company="示例企业",
+        company=f"示例企业{index}",
         city="杭州" if index < 3 else "上海",
         salary_text="20K-30K" if index % 2 == 0 else "2-3万",
         jd_text=skill.name,
@@ -152,12 +152,8 @@ async def test_overview_uses_historical_baseline_for_new_and_growing_skills():
         assert rust_item.growth is None
         assert rust_item.previous_count == 0
         assert rust_item.current_count >= 2
-        # Java 历史基线已有且窗口频率与基线月均相当 → 成熟期，不再误判为新增
-        assert "Java" in by_skill
-        java_item = by_skill["Java"]
-        assert java_item.stage == "成熟期"
-        assert java_item.growth == 0
-        assert java_item.previous_count > 0
+        # Java 历史基线已有，成熟/增长技能不能混入“新兴技能”。
+        assert "Java" not in by_skill
 
         # 新增岗位：Rust 开发工程师仅在窗口期出现
         assert [job.name for job in overview.new_jobs] == ["Rust 开发工程师"]
@@ -281,7 +277,7 @@ async def test_overview_paginates_emerging_and_new_jobs():
             window=TrendWindow.months_3, keyword=None, city=None,
             emerging_page_size=50, new_job_page_size=50,
         )
-        assert full.emerging_total == len(full.emerging_skills) >= 2
+        assert full.emerging_total == len(full.emerging_skills) == 1
         assert full.new_jobs_total == len(full.new_jobs) >= 1
 
         page1 = await service.overview(
@@ -299,10 +295,24 @@ async def test_overview_paginates_emerging_and_new_jobs():
             emerging_page=2, emerging_page_size=1,
             new_job_page=1, new_job_page_size=1,
         )
-        assert page2.emerging_skills[0].skill != page1.emerging_skills[0].skill
+        assert page2.emerging_skills == []
         # 统计口径不受分页影响
         assert page2.emerging_total == full.emerging_total
         assert page2.stats.new_skills == full.stats.new_skills
+
+        matched = await service.overview(
+            window=TrendWindow.months_3, keyword=None, city=None,
+            new_job_keyword="rUsT",
+        )
+        assert [job.name for job in matched.new_jobs] == ["Rust 开发工程师"]
+        assert matched.new_jobs_total == 1
+
+        no_match = await service.overview(
+            window=TrendWindow.months_3, keyword=None, city=None,
+            new_job_keyword="not-a-job",
+        )
+        assert no_match.new_jobs == []
+        assert no_match.new_jobs_total == 0
 
 
 async def test_unverified_skills_are_excluded():
@@ -327,3 +337,28 @@ async def test_unverified_skills_are_excluded():
         )
         if rust_job is not None:
             assert "Rust" not in rust_job.core_skills
+
+
+async def test_unverified_new_technology_is_shown_as_observation_candidate():
+    async with async_session() as db:
+        await seed_analysis_data(db)
+        rows = (await db.execute(
+            select(JobSkillFact).where(JobSkillFact.evidence_text == "Rust")
+        )).scalars().all()
+        for row in rows:
+            row.verification_status = "unverified"
+        raw_rows = (await db.execute(select(RawJobRecord))).scalars().all()
+        for raw in raw_rows:
+            raw.quality_status = "accepted"
+        await db.commit()
+
+        service = AnalysisService(db)
+        service.MIN_VERIFIED_FACTS = 1
+        overview = await service.overview(
+            window=TrendWindow.months_3, keyword=None, city=None
+        )
+
+        rust = next(item for item in overview.emerging_skills if item.skill == "Rust")
+        assert rust.stage == "待历史核验"
+        assert rust.previous_count == 0
+        assert "历史基线未覆盖不等同于技术新兴" in rust.evidence_note

@@ -9,6 +9,9 @@
             <el-input v-model="filterName" placeholder="姓名" clearable style="width:140px;" size="default" @input="applyFilter" />
             <el-input v-model="filterPosition" placeholder="岗位" clearable style="width:160px;" size="default" @input="applyFilter" />
             <el-input v-model="filterDept" placeholder="部门" clearable style="width:140px;" size="default" @input="applyFilter" />
+            <el-select v-model="filterJobId" placeholder="匹配岗位" clearable style="width:190px;" size="default" @change="applyFilter">
+              <el-option v-for="job in jobOptions" :key="job.id" :label="job.title" :value="job.id" />
+            </el-select>
             <el-select v-model="filterScore" placeholder="匹配度" clearable style="width:130px;" size="default" @change="applyFilter">
               <el-option label="90% 以上" value="90" /><el-option label="80% 以上" value="80" />
               <el-option label="70% 以上" value="70" /><el-option label="全部" value="" />
@@ -29,8 +32,8 @@
 
     <!-- Stats row -->
     <div class="match-stats-row anim-fade-up anim-delay-1">
-      <div class="match-stat"><span class="ms-num">{{ filteredList.length }}</span><span class="ms-label">匹配人才</span></div>
-      <div class="match-stat"><span class="ms-num green">{{ urgentCount }}</span><span class="ms-label">急缺岗位</span></div>
+      <div class="match-stat"><span class="ms-num">{{ filteredList.length }}</span><span class="ms-label">{{ filterJobId ? '该岗位候选人' : '匹配人才' }}</span></div>
+      <div class="match-stat"><span class="ms-num green">{{ urgentCount }}</span><span class="ms-label">{{ filterJobId ? '急缺岗位候选人' : '急缺岗位' }}</span></div>
       <div class="match-stat"><span class="ms-num blue">{{ highMatchCount }}</span><span class="ms-label">高匹配 (≥90%)</span></div>
     </div>
 
@@ -48,19 +51,20 @@
             <div class="mc-name">
               {{ item.name }}
               <el-tag v-if="item.isNew" size="small" type="danger" style="margin-left:6px;">NEW</el-tag>
-              <el-tag v-if="item.urgent" size="small" type="warning" style="margin-left:4px;">急缺</el-tag>
+              <el-tag v-if="cardMatch(item).urgent" size="small" type="warning" style="margin-left:4px;">急缺</el-tag>
             </div>
             <div class="mc-pos">{{ item.position }} · {{ item.department }}</div>
+            <div class="mc-match-job">匹配岗位：{{ cardMatch(item).job_title }}</div>
           </div>
           <FavoriteButton type="resume" :target-id="item.id" :title="item.name" compact />
           <div class="mc-score-cell">
-            <div class="score-ring" :style="{ '--pct': `${item.score}%` }"><span>{{ item.score }}%</span></div>
+            <div class="score-ring" :style="{ '--pct': `${cardMatch(item).score}%` }"><span>{{ cardMatch(item).score }}%</span></div>
           </div>
         </div>
         <div class="mc-tags">
-          <el-tag v-for="s in item.matched.slice(0, 4)" :key="s" size="small" type="success" effect="plain">{{ s }}</el-tag>
-          <el-tag v-for="s in item.missing.slice(0, 2)" :key="'m_'+s" size="small" type="danger" effect="plain">{{ s }}</el-tag>
-          <span v-if="item.matched.length > 4 || item.missing.length > 2" class="mc-more">+{{ item.matched.length + item.missing.length - 6 }} 项</span>
+          <el-tag v-for="s in cardMatch(item).matched.slice(0, 4)" :key="s" size="small" type="success" effect="plain">{{ s }}</el-tag>
+          <el-tag v-for="s in cardMatch(item).missing.slice(0, 2)" :key="'m_'+s" size="small" type="danger" effect="plain">{{ s }}</el-tag>
+          <span v-if="cardMatch(item).matched.length > 4 || cardMatch(item).missing.length > 2" class="mc-more">+{{ cardMatch(item).matched.length + cardMatch(item).missing.length - 6 }} 项</span>
         </div>
         <div class="mc-footer">
           <span>{{ item.experience }} · {{ item.education }}</span>
@@ -117,12 +121,13 @@ import DataState from "@/components/common/DataState.vue";
 import { useTalentStore } from "@/stores/talents";
 import { useHistoryStore } from "@/stores/history";
 import { useRouter } from "vue-router";
-import type { TalentSummary } from "@/domain/types";
+import type { TalentMatch, TalentSummary } from "@/domain/types";
 import { dataProvider } from "@/data";
 
 const filterName = ref("");
 const filterPosition = ref("");
 const filterDept = ref("");
+const filterJobId = ref<number | undefined>();
 const filterScore = ref("");
 const sortBy = ref("score");
 const currentPage = ref(1);
@@ -137,22 +142,48 @@ const router = useRouter();
 const { talents, loading, error } = storeToRefs(store);
 onMounted(() => store.load());
 
+const jobOptions = computed(() => {
+  const jobs = new Map<number, { id: number; title: string }>();
+  talents.value.forEach((talent) => talentMatches(talent).forEach((match) => {
+    jobs.set(match.job_id, { id: match.job_id, title: match.job_title });
+  }));
+  return [...jobs.values()].sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
+});
+
+function fallbackMatch(talent: TalentSummary): TalentMatch {
+  return {
+    id: talent.match_id, resume_id: talent.resume_id, job_id: talent.targetJobIds?.[0] ?? 0,
+    job_title: talent.targetJobs?.[0] ?? "未指定岗位", algorithm_version: "legacy", urgent: Boolean(talent.urgent),
+    score: talent.score, matched: talent.matched, missing: talent.missing,
+  };
+}
+
+function talentMatches(talent: TalentSummary): TalentMatch[] {
+  return talent.matches?.length ? talent.matches : [fallbackMatch(talent)];
+}
+
+function cardMatch(talent: TalentSummary): TalentMatch {
+  if (filterJobId.value) return talentMatches(talent).find((match) => match.job_id === filterJobId.value) ?? fallbackMatch(talent);
+  return talentMatches(talent)[0] ?? fallbackMatch(talent);
+}
+
 function sortList(list: TalentSummary[]): TalentSummary[] {
   if (sortBy.value === "urgent") {
-    return [...list].sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || b.score - a.score);
+    return [...list].sort((a, b) => Number(cardMatch(b).urgent) - Number(cardMatch(a).urgent) || cardMatch(b).score - cardMatch(a).score);
   }
   if (sortBy.value === "newest") {
     return [...list].sort((a, b) => b.id - a.id);
   }
-  return [...list].sort((a, b) => b.score - a.score);
+  return [...list].sort((a, b) => cardMatch(b).score - cardMatch(a).score);
 }
 
 const filteredList = computed(() => {
   let list = talents.value;
   if (filterName.value) list = list.filter(t => t.name.includes(filterName.value));
-  if (filterPosition.value) list = list.filter(t => t.position.includes(filterPosition.value));
+  if (filterPosition.value) list = list.filter(t => t.position.includes(filterPosition.value) || talentMatches(t).some(match => match.job_title.includes(filterPosition.value)));
   if (filterDept.value) list = list.filter(t => t.department.includes(filterDept.value));
-  if (filterScore.value) list = list.filter(t => t.score >= Number(filterScore.value));
+  if (filterJobId.value) list = list.filter(t => talentMatches(t).some(match => match.job_id === filterJobId.value));
+  if (filterScore.value) list = list.filter(t => cardMatch(t).score >= Number(filterScore.value));
   return sortList(list);
 });
 const pagedList = computed(() => {
@@ -160,8 +191,8 @@ const pagedList = computed(() => {
   return filteredList.value.slice(start, start + pageSize);
 });
 
-const urgentCount = computed(() => talents.value.filter(t => t.urgent).length);
-const highMatchCount = computed(() => talents.value.filter(t => t.score >= 90).length);
+const urgentCount = computed(() => filteredList.value.filter(t => cardMatch(t).urgent).length);
+const highMatchCount = computed(() => filteredList.value.filter(t => cardMatch(t).score >= 90).length);
 
 function applyFilter() {
   currentPage.value = 1;
@@ -199,3 +230,12 @@ async function submitUpload() {
   } finally { uploading.value = false; }
 }
 </script>
+
+<style scoped>
+.mc-match-job {
+  margin-top: 3px;
+  color: var(--color-brand);
+  font-size: 12px;
+  font-weight: 700;
+}
+</style>

@@ -302,7 +302,7 @@ class DashboardService:
         raw_ids: set[int] = set()
         for raw, standard_job_id in rows:
             item = grouped.setdefault(standard_job_id, {
-                "job_id": standard_job_id,
+                "standard_job_id": standard_job_id,
                 "title": "",
                 "demand": 0,
                 "city": "",
@@ -349,7 +349,7 @@ class DashboardService:
             )
             spark = item["spark"]
             result.append({
-                "job_id": standard_job_id,
+                "standard_job_id": standard_job_id,
                 "title": standard_names.get(standard_job_id) or f"标准岗位 #{standard_job_id}",
                 "demand": item["demand"],
                 "city": (
@@ -363,7 +363,7 @@ class DashboardService:
             })
         return sorted(
             result,
-            key=lambda item: (-item["demand"], -item["trend"], item["job_id"]),
+            key=lambda item: (-item["demand"], -item["trend"], item["standard_job_id"]),
         )
 
     @staticmethod
