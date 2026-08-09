@@ -35,7 +35,7 @@ def test_jd_normalizes_published_technical_job():
 
     assert record is not None
     assert record["external_id"] == "221613"
-    assert record["posted_at"].startswith("2026-08-07")
+    assert record["posted_at"] == "2026-08-07T00:00:00+08:00"
     assert record["source_meta"]["date_semantics"] == "published_at"
 
 

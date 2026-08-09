@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import json
 import logging
 from pathlib import Path
@@ -18,12 +18,18 @@ from spider_framework.tech_scope import classify_tech_scope
 
 
 LOGGER = logging.getLogger("spider.jd")
+CHINA_STANDARD_TIME = timezone(timedelta(hours=8), name="Asia/Shanghai")
 
 
 def timestamp_to_local(value: Any) -> datetime | None:
     if isinstance(value, (int, float)):
         try:
-            return datetime.fromtimestamp(value / 1000, tz=timezone.utc).astimezone()
+            # JD publishes epoch milliseconds for its China recruitment portal.
+            # Converting to the host's local timezone makes dates differ between
+            # developer machines (UTC+8) and GitHub Actions runners (UTC).
+            return datetime.fromtimestamp(value / 1000, tz=timezone.utc).astimezone(
+                CHINA_STANDARD_TIME
+            )
         except (ValueError, OSError, OverflowError):
             return None
     return None
