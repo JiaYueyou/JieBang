@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import (
     AnalysisBaselineSkill,
     AnalysisBaselineSnapshot,
+    JobSourceObservation,
     JobSkillFact,
     RawJobRecord,
     Skill,
@@ -67,16 +68,43 @@ class HistoricalBaselineService:
             select(RawJobRecord, SourceDocument)
             .join(SourceDocument, RawJobRecord.source_document_id == SourceDocument.id)
             .where(
-                RawJobRecord.posted_at.is_not(None),
-                RawJobRecord.posted_at >= start_at,
-                RawJobRecord.posted_at < end_at,
                 RawJobRecord.quality_status.in_(("accepted", "warning")),
                 RawJobRecord.is_excluded.is_(False),
             )
         )).all())
+        observation_rows = list((await self.db.execute(
+            select(
+                JobSourceObservation.source_document_id,
+                JobSourceObservation.source_event_at,
+            ).where(
+                JobSourceObservation.source_event_at.is_not(None),
+                JobSourceObservation.source_event_at >= start_at,
+                JobSourceObservation.source_event_at < end_at,
+            )
+        )).all())
+        source_events: dict[int, datetime] = {}
+        for source_document_id, event_at in observation_rows:
+            existing = source_events.get(source_document_id)
+            if existing is None or event_at < existing:
+                source_events[source_document_id] = event_at
 
-        representatives = self._representative_rows(rows)
-        raw_ids = set(representatives)
+        evidence_rows = self._eligible_rows(
+            rows,
+            period_start=start_at,
+            period_end=end_at,
+            source_events=source_events,
+        )
+        representatives = self._representative_rows(
+            rows,
+            period_start=start_at,
+            period_end=end_at,
+            source_events=source_events,
+        )
+        # Keep every fact from an eligible evidence cluster.  Selecting one
+        # representative job is correct for the cluster denominator, but using
+        # only that row's skills silently loses other historical technologies
+        # mentioned by jobs in the same company/role/month cluster.
+        raw_ids = set(evidence_rows)
         fact_rows = []
         if raw_ids:
             fact_rows = list((await self.db.execute(
@@ -89,11 +117,12 @@ class HistoricalBaselineService:
                 )
             )).all())
 
-        source_counts = Counter(document.source for raw, document in representatives.values())
+        source_counts = Counter(
+            document.source for raw, document, evidence_at in representatives.values()
+        )
         periods = {
-            raw.posted_at.strftime("%Y-%m")
-            for raw, _ in representatives.values()
-            if raw.posted_at is not None
+            evidence_at.strftime("%Y-%m")
+            for raw, document, evidence_at in representatives.values()
         }
         quality_summary = {
             "period_start": period_start.isoformat(),
@@ -133,7 +162,8 @@ class HistoricalBaselineService:
             await self.db.flush()
             for item in self._skill_rows(
                 baseline_id=snapshot.id,
-                representatives=representatives,
+                evidence_rows=evidence_rows,
+                representative_count=len(representatives),
                 fact_rows=fact_rows,
             ):
                 self.db.add(item)
@@ -156,49 +186,100 @@ class HistoricalBaselineService:
         )
 
     @staticmethod
-    def _representative_rows(
+    def _eligible_rows(
         rows: list[tuple[RawJobRecord, SourceDocument]],
-    ) -> dict[int, tuple[RawJobRecord, SourceDocument]]:
-        grouped: dict[tuple[str, str, str, str], tuple[RawJobRecord, SourceDocument]] = {}
+        *,
+        period_start: datetime | None = None,
+        period_end: datetime | None = None,
+        source_events: dict[int, datetime] | None = None,
+    ) -> dict[
+        int, tuple[RawJobRecord, SourceDocument, datetime, tuple[str, str, str]]
+    ]:
+        """Return every in-period row and its overall-analysis evidence unit."""
+        result: dict[int, tuple[RawJobRecord, SourceDocument, datetime, str]] = {}
+        source_events = source_events or {}
         for raw, document in rows:
-            if raw.posted_at is None:
+            evidence_at = raw.posted_at or source_events.get(document.id)
+            if evidence_at is None:
                 continue
-            key = (
+            comparable_at = (
+                evidence_at.replace(tzinfo=None)
+                if evidence_at.tzinfo is not None
+                else evidence_at
+            )
+            if period_start is not None and comparable_at < period_start:
+                continue
+            if period_end is not None and comparable_at >= period_end:
+                continue
+            unit = (
                 str(raw.standard_job_id or raw.standardized_title or raw.title).casefold(),
                 (raw.company or document.company or "unknown").strip().casefold(),
-                (raw.city or "unknown").strip().casefold(),
-                raw.posted_at.strftime("%Y-%m"),
+                evidence_at.strftime("%Y-%m"),
             )
+            result[raw.id] = (raw, document, evidence_at, unit)
+        return result
+
+    @staticmethod
+    def _representative_rows(
+        rows: list[tuple[RawJobRecord, SourceDocument]],
+        *,
+        period_start: datetime | None = None,
+        period_end: datetime | None = None,
+        source_events: dict[int, datetime] | None = None,
+    ) -> dict[int, tuple[RawJobRecord, SourceDocument, datetime]]:
+        grouped: dict[
+            tuple[str, str, str],
+            tuple[RawJobRecord, SourceDocument, datetime],
+        ] = {}
+        eligible = HistoricalBaselineService._eligible_rows(
+            rows,
+            period_start=period_start,
+            period_end=period_end,
+            source_events=source_events,
+        )
+        for raw, document, evidence_at, key in eligible.values():
             existing = grouped.get(key)
             if existing is None or raw.id < existing[0].id:
-                grouped[key] = (raw, document)
-        return {raw.id: (raw, document) for raw, document in grouped.values()}
+                grouped[key] = (raw, document, evidence_at)
+        return {
+            raw.id: (raw, document, evidence_at)
+            for raw, document, evidence_at in grouped.values()
+        }
 
     @staticmethod
     def _skill_rows(
         *,
         baseline_id: int,
-        representatives: dict[int, tuple[RawJobRecord, SourceDocument]],
+        evidence_rows: dict[
+            int,
+            tuple[
+                RawJobRecord,
+                SourceDocument,
+                datetime,
+                tuple[str, str, str],
+            ],
+        ],
+        representative_count: int,
         fact_rows: list[tuple[JobSkillFact, Skill]],
     ) -> list[AnalysisBaselineSkill]:
         by_skill: dict[int, dict] = defaultdict(
-            lambda: {"skill": None, "raw_ids": set(), "companies": set(), "sources": set(), "periods": set()}
+            lambda: {"skill": None, "clusters": set(), "companies": set(), "sources": set(), "periods": set()}
         )
         for fact, skill in fact_rows:
             raw_id = fact.raw_job_record_id
-            if raw_id not in representatives:
+            if raw_id not in evidence_rows:
                 continue
-            raw, document = representatives[raw_id]
+            raw, document, evidence_at, evidence_unit = evidence_rows[raw_id]
             value = by_skill[skill.id]
             value["skill"] = skill
-            value["raw_ids"].add(raw_id)
+            value["clusters"].add(evidence_unit)
             value["companies"].add((raw.company or document.company or "unknown").casefold())
             value["sources"].add(document.source.casefold())
-            value["periods"].add(raw.posted_at.strftime("%Y-%m"))
-        denominator = max(len(representatives), 1)
+            value["periods"].add(evidence_at.strftime("%Y-%m"))
+        denominator = max(representative_count, 1)
         result: list[AnalysisBaselineSkill] = []
         for skill_id, value in by_skill.items():
-            clusters = len(value["raw_ids"])
+            clusters = len(value["clusters"])
             companies = len(value["companies"] - {"unknown"})
             sources = len(value["sources"])
             periods = len(value["periods"])

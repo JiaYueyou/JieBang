@@ -10,6 +10,7 @@ from app.core.security import get_current_user, require_admin
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
 from app.schemas.graph import (
+    GraphEnrichmentBatchRejectResponse,
     GraphEnrichmentCandidatePage,
     GraphEnrichmentCandidateResponse,
     GraphEnrichmentPublishRequest,
@@ -131,6 +132,25 @@ async def review_enrichment_candidate(
         )
         message += f"；已自动触发 L4/L5 图谱发布（任务 {task.task_id[:8]}）"
     return ApiResponse(message=message, data=candidate)
+
+
+@router.post(
+    "/enrichment/candidates/reject-machine-failed",
+    response_model=ApiResponse[GraphEnrichmentBatchRejectResponse],
+)
+async def reject_machine_failed_candidates(
+    principal: TokenPrincipal = Depends(require_admin),
+    service: GraphService = Depends(get_graph_service),
+):
+    candidate_ids = await service.reject_machine_failed_candidates(
+        user_id=principal.user_id
+    )
+    return ApiResponse(
+        message=f"已自动驳回 {len(candidate_ids)} 条机器未通过候选",
+        data=GraphEnrichmentBatchRejectResponse(
+            rejected_count=len(candidate_ids), candidate_ids=candidate_ids
+        ),
+    )
 
 
 @router.post("/enrichment/publish", response_model=ApiResponse[TaskStatusResponse])

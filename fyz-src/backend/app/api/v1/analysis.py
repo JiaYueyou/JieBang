@@ -10,6 +10,7 @@ from app.schemas.analysis import (
     InsightDecisionRequest,
     InsightDecisionResponse,
     JobInsightsResponse,
+    JobReferenceStandardPage,
     TrendWindow,
 )
 from app.schemas.auth import TokenPrincipal
@@ -55,6 +56,26 @@ async def overview(
             new_job_keyword=new_job_keyword,
         )
     )
+
+
+@router.get(
+    "/reference-standards",
+    response_model=ApiResponse[JobReferenceStandardPage],
+)
+async def reference_standards(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    keyword: str | None = Query(default=None, max_length=120),
+    stack: str | None = Query(default=None, max_length=50),
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+) -> ApiResponse[JobReferenceStandardPage]:
+    return ApiResponse(data=await service.list_reference_standards(
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        stack=stack,
+    ))
 
 
 @router.get("/job-insights", response_model=ApiResponse[JobInsightsResponse])

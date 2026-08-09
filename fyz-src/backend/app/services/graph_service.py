@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
+    AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE,
     GRAPH_ENRICHMENT_CONCURRENCY,
     GRAPH_ENRICHMENT_MAX_ATTEMPTS,
     GRAPH_ENRICHMENT_TIMEOUT_SECONDS,
@@ -22,6 +23,7 @@ from app.core.config import (
 from app.core.database import async_session
 from app.core.agent_runtime import SkillGraphCompletionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
+from app.core.graph_sync_lock import serialized_graph_sync
 from app.core.time import utc_now, utc_now_naive
 from app.domain.job_standardizer import CATEGORY_STACK, normalize_job_title
 from app.domain.skill_dictionary import canonical_key
@@ -210,7 +212,19 @@ class GraphService:
         enrich_top_skills: bool,
         user_id: int | None,
         task_id: str | None = None,
+        auto_publish_enrichment: bool = False,
+        _lock_acquired: bool = False,
     ) -> dict:
+        if not _lock_acquired:
+            async with serialized_graph_sync():
+                return await self.sync(
+                    mode=mode,
+                    enrich_top_skills=enrich_top_skills,
+                    user_id=user_id,
+                    task_id=task_id,
+                    auto_publish_enrichment=auto_publish_enrichment,
+                    _lock_acquired=True,
+                )
         snapshot_id = str(uuid.uuid4())
         version = utc_now_naive().strftime("%Y%m%dT%H%M%S") + "-" + snapshot_id[:8]
         snapshot = GraphSnapshot(
@@ -262,9 +276,20 @@ class GraphService:
                         ),
                     )
                 )
+                if auto_publish_enrichment:
+                    auto_approved = await self.auto_approve_enrichment_candidates(
+                        snapshot_id=snapshot_id,
+                        minimum_confidence=AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE,
+                    )
+                    enrichment_stats["candidates_auto_approved"] = len(auto_approved)
             await self._report_progress(task_id, batch, 76, "building", "正在构建图谱节点与关系")
             nodes, edges, fact_count = await self._build_payload(snapshot)
-            tech_points, knowledge_points, published_candidate_ids = await self._append_verified_deep_nodes(
+            (
+                tech_points,
+                knowledge_points,
+                published_candidate_ids,
+                superseded_candidate_ids,
+            ) = await self._append_verified_deep_nodes(
                 snapshot_id, nodes, edges
             )
             enrichment_stats["tech_points_written"] = tech_points
@@ -278,6 +303,10 @@ class GraphService:
                     candidate.verification_status = "verified"
                     candidate.publication_status = "published"
                     candidate.published_at = utc_now_naive()
+            for candidate_id in superseded_candidate_ids:
+                candidate = await self.db.get(GraphEnrichmentCandidate, candidate_id)
+                if candidate:
+                    candidate.publication_status = "superseded"
             for row in nodes.get("TechStack", []):
                 skill_id = int(row["id"].split(":", 1)[1])
                 skill = await self.db.get(Skill, skill_id)
@@ -305,6 +334,8 @@ class GraphService:
                 "node_count": snapshot.node_count,
                 "edge_count": snapshot.edge_count,
                 "fact_count": fact_count,
+                "published_candidate_count": len(published_candidate_ids),
+                "superseded_candidate_count": len(superseded_candidate_ids),
             }
         except Exception as exc:
             await self.db.rollback()
@@ -921,7 +952,7 @@ class GraphService:
 
     async def _append_verified_deep_nodes(
         self, snapshot_id, nodes, edges, skills: dict[int, Skill] | None = None
-    ) -> tuple[int, int, list[int]]:
+    ) -> tuple[int, int, list[int], list[int]]:
         logger = logging.getLogger(__name__)
         candidates = list((await self.db.execute(
             select(GraphEnrichmentCandidate).where(
@@ -936,6 +967,11 @@ class GraphService:
         latest_by_skill: dict[int, GraphEnrichmentCandidate] = {}
         for candidate in candidates:
             latest_by_skill.setdefault(candidate.skill_id, candidate)
+        superseded_candidate_ids = [
+            candidate.id
+            for candidate in candidates
+            if latest_by_skill[candidate.skill_id].id != candidate.id
+        ]
         candidates = list(latest_by_skill.values())
         tech_points = 0
         knowledge_points = 0
@@ -1019,7 +1055,7 @@ class GraphService:
             "graph_enrichment: appended tech_points=%d knowledge_points=%d for snapshot=%s",
             tech_points, knowledge_points, snapshot_id,
         )
-        return tech_points, knowledge_points, candidate_ids
+        return tech_points, knowledge_points, candidate_ids, superseded_candidate_ids
 
     @staticmethod
     def _name_key(name: str) -> str:
@@ -1100,10 +1136,69 @@ class GraphService:
             .offset((page - 1) * page_size)
             .limit(page_size)
         )).all()
+        pending_candidates = list((await self.db.execute(
+            select(GraphEnrichmentCandidate).where(
+                GraphEnrichmentCandidate.review_status == "pending"
+            )
+        )).scalars())
         return {
             "items": [self._candidate_response(candidate, skill_name) for candidate, skill_name in rows],
             "total": total, "page": page, "page_size": page_size,
+            "machine_failed_pending_count": sum(
+                self._resolved_machine_status(candidate) not in {"passed", "pending"}
+                for candidate in pending_candidates
+            ),
         }
+
+    async def auto_approve_enrichment_candidates(
+        self, *, snapshot_id: str, minimum_confidence: float
+    ) -> list[int]:
+        """Promote only strongly grounded machine candidates for publication.
+
+        This is intentionally stricter than the manual approval endpoint: the
+        candidate must pass grounding, meet the confidence threshold, cite at
+        least two evidence chunks and contain both L4 and L5 output.  Anything
+        ambiguous stays pending for an administrator.
+        """
+        rows = list((await self.db.execute(
+            select(GraphEnrichmentCandidate).where(
+                GraphEnrichmentCandidate.snapshot_id == snapshot_id,
+                GraphEnrichmentCandidate.review_status == "pending",
+                GraphEnrichmentCandidate.publication_status == "draft",
+                GraphEnrichmentCandidate.machine_validation_status == "passed",
+                GraphEnrichmentCandidate.verification_status == "machine_validated",
+                GraphEnrichmentCandidate.confidence >= minimum_confidence,
+            )
+        )).scalars())
+        approved_at = utc_now_naive()
+        approved_ids: list[int] = []
+        for candidate in rows:
+            data = candidate.candidate_data or {}
+            tech_points = data.get("tech_points") or []
+            knowledge_count = sum(
+                len(point.get("knowledge_points") or [])
+                for point in tech_points
+                if isinstance(point, dict)
+            )
+            if len(set(candidate.evidence_source_ids or [])) < 2:
+                continue
+            if not tech_points or knowledge_count == 0:
+                continue
+            validation = data.get("machine_validation") or {}
+            if int(validation.get("rejected_count") or 0) > 0:
+                continue
+            candidate.review_status = "approved"
+            candidate.publication_status = "approved"
+            candidate.verification_status = "verified"
+            candidate.reviewed_at = approved_at
+            candidate.review_note = (
+                f"automatic quality gate: confidence>={minimum_confidence:.2f}, "
+                "grounding passed, multi-evidence L4/L5"
+            )
+            candidate.lock_version += 1
+            approved_ids.append(candidate.id)
+        await self.db.flush()
+        return approved_ids
 
     async def review_enrichment_candidate(
         self, candidate_id: int, *, action: str, note: str | None,
@@ -1121,7 +1216,9 @@ class GraphService:
         candidate.verification_status = "verified" if action == "approve" else "rejected"
         candidate.reviewed_by = user_id
         candidate.reviewed_at = utc_now_naive()
-        candidate.review_note = (note or "").strip() or None
+        candidate.review_note = (note or "").strip() or (
+            self._machine_rejection_note(candidate) if action == "reject" else None
+        )
         candidate.lock_version += 1
         await self.db.flush()
         await self.db.refresh(candidate)
@@ -1132,10 +1229,33 @@ class GraphService:
         await self.db.commit()
         return response
 
+    async def reject_machine_failed_candidates(self, *, user_id: int) -> list[int]:
+        """驳回所有已经得到机器失败终态、但仍等待人工处理的候选。"""
+        candidates = list((await self.db.execute(
+            select(GraphEnrichmentCandidate).where(
+                GraphEnrichmentCandidate.review_status == "pending"
+            ).order_by(GraphEnrichmentCandidate.id)
+        )).scalars())
+        rejected_at = utc_now_naive()
+        rejected_ids: list[int] = []
+        for candidate in candidates:
+            if self._resolved_machine_status(candidate) in {"passed", "pending"}:
+                continue
+            candidate.review_status = "rejected"
+            candidate.publication_status = "rejected"
+            candidate.verification_status = "rejected"
+            candidate.reviewed_by = user_id
+            candidate.reviewed_at = rejected_at
+            candidate.review_note = self._machine_rejection_note(candidate)
+            candidate.lock_version += 1
+            rejected_ids.append(candidate.id)
+        await self.db.commit()
+        return rejected_ids
+
     async def prepare_enrichment_publication(self, candidate_ids: list[int]) -> int:
         query = select(GraphEnrichmentCandidate).where(
             GraphEnrichmentCandidate.review_status == "approved",
-            GraphEnrichmentCandidate.publication_status.in_(("approved", "published")),
+            GraphEnrichmentCandidate.publication_status == "approved",
         )
         if candidate_ids:
             query = query.where(GraphEnrichmentCandidate.id.in_(candidate_ids))
@@ -1151,15 +1271,7 @@ class GraphService:
 
     @staticmethod
     def _candidate_response(candidate: GraphEnrichmentCandidate, skill_name: str) -> dict:
-        machine_status = candidate.machine_validation_status
-        if machine_status == "pending":
-            machine_status = {
-                "llm_disabled": "skipped",
-                "retrieval_unavailable": "retrieval_failed",
-                "insufficient_evidence": "insufficient_evidence",
-                "llm_failed": "failed",
-                "llm_timeout": "failed",
-            }.get((candidate.candidate_data or {}).get("reason"), machine_status)
+        machine_status = GraphService._resolved_machine_status(candidate)
         return {
             "id": candidate.id, "snapshot_id": candidate.snapshot_id,
             "skill_id": candidate.skill_id, "skill_name": skill_name,
@@ -1174,6 +1286,49 @@ class GraphService:
             "agent_run_id": candidate.agent_run_id, "created_at": candidate.created_at,
             "updated_at": candidate.updated_at,
         }
+
+    @staticmethod
+    def _resolved_machine_status(candidate: GraphEnrichmentCandidate) -> str:
+        status = candidate.machine_validation_status
+        if status != "pending":
+            return status
+        return {
+            "llm_disabled": "skipped",
+            "retrieval_unavailable": "retrieval_failed",
+            "insufficient_evidence": "insufficient_evidence",
+            "insufficient_grounding": "failed",
+            "llm_failed": "failed",
+            "llm_timeout": "failed",
+        }.get((candidate.candidate_data or {}).get("reason"), status)
+
+    @staticmethod
+    def _machine_rejection_note(candidate: GraphEnrichmentCandidate) -> str:
+        data = candidate.candidate_data or {}
+        reason = data.get("reason")
+        if reason == "insufficient_evidence":
+            sources = "、".join(str(value) for value in data.get("sources") or [])
+            detail = f"（当前来源：{sources}）" if sources else ""
+            return f"机器审核未通过：独立证据来源不足，未达到双来源门槛{detail}"[:500]
+        if reason == "insufficient_grounding":
+            report = data.get("machine_validation") or {}
+            rejected = int(report.get("rejected_claim_count") or 0)
+            suffix = f"，{rejected} 条技术陈述未被证据支持" if rejected else ""
+            return f"机器审核未通过：生成内容未通过证据引用校验{suffix}"[:500]
+        if reason in {"llm_failed", "llm_timeout"}:
+            error = str(data.get("error") or "模型未返回可用的结构化技术内容")
+            return f"机器审核未通过：模型生成失败（{error}）"[:500]
+        if reason == "llm_disabled":
+            return "机器审核未通过：模型服务未配置，本次未生成可审核的 L4/L5 技术内容"
+        if reason == "retrieval_unavailable":
+            return "机器审核未通过：证据检索服务不可用，无法形成可验证的技术内容"
+        labels = {
+            "failed": "机器生成或证据校验失败",
+            "skipped": "机器任务已跳过，未形成可审核技术内容",
+            "retrieval_failed": "证据检索失败，无法形成可验证技术内容",
+            "insufficient_evidence": "独立证据不足，未达到发布门槛",
+        }
+        status = GraphService._resolved_machine_status(candidate)
+        return f"机器审核未通过：{labels.get(status, '未达到机器审核发布门槛')}"[:500]
 
     def _write_payload(self, nodes, edges, version: str, mode: str) -> None:
         self.graph.ensure_schema()

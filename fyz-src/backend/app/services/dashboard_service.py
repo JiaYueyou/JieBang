@@ -276,12 +276,13 @@ class DashboardService:
         trend=最近一个月来源数差，core_skills=该岗位已确认事实 Top 技能。
         """
         rows = list((await self.db.execute(
-            select(RawJobRecord, StandardJobSource.standard_job_id)
+            select(RawJobRecord, StandardJobSource.standard_job_id, SourceDocument)
             .join(
                 StandardJobSource,
                 (StandardJobSource.source_type == "raw")
                 & (StandardJobSource.source_id == RawJobRecord.id),
             )
+            .join(SourceDocument, SourceDocument.id == RawJobRecord.source_document_id)
             .where(
                 RawJobRecord.quality_status.in_(("accepted", "warning")),
                 RawJobRecord.is_excluded.is_(False),
@@ -300,7 +301,7 @@ class DashboardService:
 
         grouped: dict[int, dict] = {}
         raw_ids: set[int] = set()
-        for raw, standard_job_id in rows:
+        for raw, standard_job_id, document in rows:
             item = grouped.setdefault(standard_job_id, {
                 "standard_job_id": standard_job_id,
                 "title": "",
@@ -309,6 +310,8 @@ class DashboardService:
                 "city_counts": Counter(),
                 "spark": [0] * 6,
                 "raw_ids": [],
+                "evidence_clusters": set(),
+                "periods": set(),
             })
             item["demand"] += 1
             item["raw_ids"].append(raw.id)
@@ -318,6 +321,15 @@ class DashboardService:
             observed = raw.posted_at or raw.crawled_at or raw.created_at
             if observed is not None:
                 key = (observed.year, observed.month)
+                month = observed.strftime("%Y-%m")
+                company = (
+                    raw.company_key or raw.company or document.company or "unknown"
+                ).strip().casefold()
+                location = raw.city_code or raw.city or "unknown"
+                item["periods"].add(month)
+                item["evidence_clusters"].add(
+                    (standard_job_id, company, location, month)
+                )
                 if key in month_index:
                     item["spark"][month_index[key]] += 1
 
@@ -348,6 +360,15 @@ class DashboardService:
                 for skill_name in skills_by_raw.get(raw_id, [])
             )
             spark = item["spark"]
+            cluster_count = len(item["evidence_clusters"])
+            period_count = len(item["periods"])
+            lifecycle_stage = (
+                "mature"
+                if cluster_count >= 5 and period_count >= 3
+                else "established"
+                if cluster_count >= 3 and period_count >= 2
+                else "observed"
+            )
             result.append({
                 "standard_job_id": standard_job_id,
                 "title": standard_names.get(standard_job_id) or f"标准岗位 #{standard_job_id}",
@@ -360,6 +381,8 @@ class DashboardService:
                 "trend": spark[-1] - spark[-2],
                 "spark": spark,
                 "core_skills": [name for name, _ in skill_counts.most_common(5)],
+                "lifecycle_stage": lifecycle_stage,
+                "active_period_count": period_count,
             })
         return sorted(
             result,

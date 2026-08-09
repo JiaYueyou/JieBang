@@ -13,37 +13,50 @@ from app.services.graph_service import GraphService
 async def _process_graph_sync(
     task_id: str, mode: str, enrich_top_skills: bool, user_id: int | None
 ) -> dict:
-    async with async_session() as db:
-        task = await db.get(AsyncTask, task_id)
-        if not task:
-            raise RuntimeError(f"Task not found: {task_id}")
-        task.status = TaskStatus.running.value
-        task.progress = 5
-        task.started_at = utc_now_naive()
-        await db.commit()
-        try:
-            result = await GraphService(db).sync(
-                mode=mode,
-                enrich_top_skills=enrich_top_skills,
-                user_id=user_id,
-                task_id=task_id,
-            )
+    try:
+        async with async_session() as db:
             task = await db.get(AsyncTask, task_id)
-            task.status = TaskStatus.succeeded.value
-            task.progress = 100
-            task.result = result
-            task.finished_at = utc_now_naive()
+            if not task:
+                raise RuntimeError(f"Task not found: {task_id}")
+            task.status = TaskStatus.running.value
+            task.progress = 1
+            task.started_at = task.started_at or utc_now_naive()
+            task.result = {
+                "stage": "waiting",
+                "detail": "正在等待其他图谱同步任务完成",
+            }
             await db.commit()
-            return result
-        except Exception as exc:
-            await db.rollback()
+        async with async_session() as db:
             task = await db.get(AsyncTask, task_id)
-            task.status = TaskStatus.failed.value
-            task.error_code = type(exc).__name__
-            task.error_message = str(exc)[:2000]
-            task.finished_at = utc_now_naive()
-            await db.commit()
-            raise
+            if not task:
+                raise RuntimeError(f"Task not found: {task_id}")
+            try:
+                result = await GraphService(db).sync(
+                    mode=mode,
+                    enrich_top_skills=enrich_top_skills,
+                    user_id=user_id,
+                    task_id=task_id,
+                )
+                task = await db.get(AsyncTask, task_id)
+                task.status = TaskStatus.succeeded.value
+                task.progress = 100
+                task.result = result
+                task.finished_at = utc_now_naive()
+                await db.commit()
+                return result
+            except Exception:
+                await db.rollback()
+                raise
+    except Exception as exc:
+        async with async_session() as db:
+            task = await db.get(AsyncTask, task_id)
+            if task:
+                task.status = TaskStatus.failed.value
+                task.error_code = type(exc).__name__
+                task.error_message = str(exc)[:2000]
+                task.finished_at = utc_now_naive()
+                await db.commit()
+        raise
 
 
 @celery_app.task(name="graph.process_sync")

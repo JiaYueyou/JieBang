@@ -11,6 +11,7 @@ import type {
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
+  JobReferenceStandardPage,
   JobSummary,
   InternalPosition,
   ObservedJobDetail,
@@ -438,6 +439,9 @@ export const httpDataProvider: DataProvider = {
       `/graph/enrichment/candidates/${candidateId}/review`,
       { action: input.action, note: input.note, lock_version: input.lockVersion },
     ),
+    rejectMachineFailedEnrichment: () => post(
+      "/graph/enrichment/candidates/reject-machine-failed",
+    ),
     publishEnrichment: async (candidateIds = []) => waitForTask(await post(
       "/graph/enrichment/publish", { candidate_ids: candidateIds },
     )),
@@ -454,6 +458,15 @@ export const httpDataProvider: DataProvider = {
         new_job_page_size: query.newJobPageSize || 10,
         new_job_keyword: query.newJobKeyword || undefined,
       }),
+    ),
+    listReferenceStandards: (query) => get<JobReferenceStandardPage>(
+      "/analysis/reference-standards",
+      {
+        page: query.page,
+        page_size: query.pageSize,
+        keyword: query.keyword || undefined,
+        stack: query.stack || undefined,
+      },
     ),
   },
   skillReviews: {
@@ -564,6 +577,10 @@ export const httpDataProvider: DataProvider = {
     ),
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
+    startPipeline:(sourceIds)=>post("/admin/pipeline/runs",{source_ids:sourceIds}),
+    getPipelineRun:(id)=>get(`/admin/pipeline/runs/${id}`),
+    getCrawlerAutomation:()=>get("/admin/data-sources/automation"),
+    saveCrawlerAutomation:(config)=>request.put("/admin/data-sources/automation",config).then(response=>response.data.data),
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),
     importCrawlerOutput:async(filename)=>waitForTask(
       await post<AsyncTask<JobImportResult>>("/data-imports/jobs",{files:[filename]}),

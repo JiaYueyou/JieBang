@@ -26,6 +26,8 @@ from typing import Optional
 
 import requests
 
+from .schema import validate_all
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -71,15 +73,20 @@ class BaseSpider:
         self._last_request_time = 0.0
 
         # ---------- 重试 ----------
-        self.retry_times = self.default_config.get("retry_times", 3)
+        self.retry_times = int(os.getenv(
+            "JIEBANG_SPIDER_RETRY_COUNT", self.default_config.get("retry_times", 3)
+        ))
         self.retry_delay = self.default_config.get("retry_delay", 2)
 
         # ---------- 请求配置 ----------
-        self.timeout = self.default_config.get("timeout", 30)
+        self.timeout = int(os.getenv(
+            "JIEBANG_SPIDER_TIMEOUT", self.default_config.get("timeout", 30)
+        ))
         self.default_headers = self.default_config.get("headers", {})
 
         # ---------- 数据收集 ----------
         self.total_data = []
+        self.max_records = max(0, int(os.getenv("JIEBANG_SPIDER_MAX_RECORDS", "0")))
         self.seen_ids = set()  # 去重用
 
         # ---------- 运行时统计 ----------
@@ -97,6 +104,7 @@ class BaseSpider:
     def fetch(self, url: str, method: str = "GET",
               headers: Optional[dict] = None,
               json_data: Optional[dict] = None,
+              data: Optional[dict] = None,
               params: Optional[dict] = None) -> requests.Response:
         """
         统一的请求方法 —— 自带 UA 轮换、限速、重试
@@ -130,7 +138,7 @@ class BaseSpider:
                     )
                 else:
                     resp = requests.post(
-                        url, headers=merged_headers, json=json_data,
+                        url, headers=merged_headers, json=json_data, data=data,
                         params=params, timeout=self.timeout
                     )
                 resp.raise_for_status()
@@ -151,6 +159,9 @@ class BaseSpider:
 
         返回：True=新记录, False=重复跳过
         """
+        if self.max_records and len(self.total_data) >= self.max_records:
+            return False
+
         # 生成指纹
         fp = self._fingerprint(record)
         if fp in self.seen_ids:
@@ -178,6 +189,14 @@ class BaseSpider:
             logger.warning("⚠️ 没有数据可保存")
             return ""
 
+        validation = validate_all(data, verbose=False)
+        if validation["failed"]:
+            first = validation["errors"][0]
+            raise ValueError(
+                "job-v1 schema validation failed before snapshot write: "
+                f"record={first['index']} errors={first['errors']}"
+            )
+
         output_dir = output_dir or self.save_output_dir or os.getcwd()
         new_count = len(data)
         new_digest = self._content_digest(data)
@@ -199,7 +218,11 @@ class BaseSpider:
             try:
                 with open(latest_path, "r", encoding="utf-8") as f:
                     existing_data = json.load(f)
-                if self._content_digest(existing_data) == new_digest:
+                if (
+                    self._content_digest(existing_data) == new_digest
+                    and self._observation_day(existing_data)
+                    == self._observation_day(data)
+                ):
                     logger.info("业务内容无变化 (%d 条)，复用快照 %s",
                                 new_count, f"{self.name}_{max_num}.json")
                     return latest_path
@@ -255,6 +278,9 @@ class BaseSpider:
         默认逻辑：遍历 1~N 页，每页调用 parse()
         """
         total_pages = self.default_config.get("total_pages", 5)
+        configured_max_pages = int(os.getenv("JIEBANG_SPIDER_MAX_PAGES", "0"))
+        if configured_max_pages > 0:
+            total_pages = min(total_pages, configured_max_pages)
         logger.info("===== %s 爬虫启动 =====", self.name)
 
         for page_num in range(1, total_pages + 1):
@@ -265,6 +291,8 @@ class BaseSpider:
                 for r in records:
                     self.add_job(r)
                 logger.info("  本页提取 %d 条", len(records))
+                if self.max_records and len(self.total_data) >= self.max_records:
+                    break
             except Exception as e:
                 logger.error("  第 %d 页出错: %s", page_num, e)
                 self.stats["errors"] += 1
@@ -279,9 +307,15 @@ class BaseSpider:
     @staticmethod
     def _fingerprint(record: dict) -> str:
         """生成记录的去重指纹（URL + 标题）"""
+        external_id = str(record.get("external_id") or "").strip()
+        source = str(record.get("source") or "").strip()
+        if external_id:
+            # Listing URLs and titles are not unique requisition identities.
+            raw = f"external:{source}|{external_id}"
+            return hashlib.md5(raw.encode("utf-8")).hexdigest()
         url = (record.get("url") or "").strip()
         title = (record.get("title") or "").strip()
-        raw = f"{url}|{title}"
+        raw = f"fallback:{url}|{title}"
         return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
     @staticmethod
@@ -305,3 +339,13 @@ class BaseSpider:
             separators=(",", ":"),
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _observation_day(records: list[dict]) -> str:
+        """Return the snapshot day used for daily observation versioning."""
+        days = sorted({
+            str(record.get("crawled_at") or "")[:10]
+            for record in records
+            if str(record.get("crawled_at") or "")[:10]
+        })
+        return days[-1] if days else ""

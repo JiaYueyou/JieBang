@@ -78,12 +78,15 @@ class SkillRepository:
     ) -> SourceDocument | None:
         return (
             await self.db.execute(
-                select(SourceDocument).where(
+                select(SourceDocument)
+                .where(
                     SourceDocument.source == source,
                     SourceDocument.external_id == external_id,
                 )
+                .order_by(SourceDocument.created_at.desc(), SourceDocument.id.desc())
+                .limit(1)
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
 
     async def add_source_and_raw(self, *, source: SourceDocument, raw: RawJobRecord) -> RawJobRecord:
         self.db.add(source)

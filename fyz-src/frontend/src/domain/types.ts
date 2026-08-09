@@ -293,7 +293,12 @@ export interface CapabilityChange {
   period: string;
   added: string[];
   modified: string[];
+  strengthened?: string[];
+  weakened?: string[];
   removed: string[];
+  change_type?: "comparison";
+  previous_sample_count?: number;
+  current_sample_count?: number;
 }
 
 export interface TechnologyStackBaseline {
@@ -313,6 +318,9 @@ export interface JobReferenceStandard {
   aliases: string[];
   core_skills: string[];
   source_count: number;
+  company_count: number;
+  active_period_count: number;
+  maturity_stage: "mature" | "established" | "observed";
   description: string;
   first_seen_at: string;
   last_seen_at: string;
@@ -326,9 +334,19 @@ export interface AnalysisBaseline {
   technology_stack_count: number;
   verified_skill_count: number;
   verified_fact_count: number;
+  mature_job_count: number;
+  established_job_count: number;
   baseline_at: string | null;
   technology_stacks: TechnologyStackBaseline[];
   job_standards: JobReferenceStandard[];
+}
+
+export interface JobReferenceStandardPage {
+  items: JobReferenceStandard[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
 }
 
 export interface TalentSummary {
@@ -412,7 +430,7 @@ export interface DashboardOverview {
     stages: Array<{ name: string; kind: "high" | "progress" | "gap" | "pending"; count: number }>;
   }>;
   highMatches: TalentSummary[];
-  hotJobs: Array<{ standard_job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[]; core_skills: string[] }>;
+  hotJobs: Array<{ standard_job_id: EntityId; title: string; demand: number; city: string; trend: number; spark: number[]; core_skills: string[]; lifecycle_stage: "mature" | "established" | "observed"; active_period_count: number }>;
   hotJobsTotal: number;
   emergingSkills: Array<{ id: EntityId; name: string; combo: string; growth: number; confidence: number }>;
   emergingSkillsTotal: number;
@@ -575,7 +593,7 @@ export interface GraphEnrichmentCandidate {
   confidence: number;
   machine_validation_status: string;
   review_status: "pending" | "approved" | "rejected";
-  publication_status: "draft" | "approved" | "published" | "rejected";
+  publication_status: "draft" | "approved" | "published" | "superseded" | "rejected";
   review_note: string | null;
   reviewed_at: string | null;
   published_at: string | null;
@@ -590,6 +608,7 @@ export interface GraphEnrichmentCandidatePage {
   total: number;
   page: number;
   page_size: number;
+  machine_failed_pending_count: number;
 }
 
 export interface GraphTaskResult {
@@ -642,6 +661,7 @@ export interface AnalysisDataQuality {
   fallback_time_records: number;
   valid_salary_records: number;
   verified_skill_facts: number;
+  reviewable_skill_facts: number;
   observed_months: number;
   observed_periods: number;
   period_unit: "day" | "month";
@@ -684,6 +704,9 @@ export interface TrendOverview {
     previous_count: number;
     current_companies: number;
     previous_companies: number;
+    current_sources: number;
+    current_periods: number;
+    trend_score: number;
     evidence_note: string;
   }>;
   emergingTotal: number;
@@ -757,6 +780,21 @@ export interface DataSource {
   progress_info?: string;
   schedule: string;
   nextRun: string;
+}
+
+export interface CrawlerAutomationConfig {
+  enabled: boolean;
+  source_ids: number[];
+  schedule_type: "interval" | "daily" | "weekly";
+  interval_minutes: number;
+  run_time: string;
+  weekdays: number[];
+  max_records: number;
+  max_pages: number;
+  retry_count: number;
+  retry_delay_minutes: number;
+  timeout_seconds: number;
+  next_run_at?: string | null;
 }
 
 export interface JobImportValidation {
@@ -905,6 +943,22 @@ export interface PipelineSummary {
   overallQuality: number;
 }
 
+export interface PipelineRun {
+  id: string;
+  trigger: "manual" | "scheduled" | string;
+  status: "queued" | "running" | "succeeded" | "partial" | "failed";
+  stage: string;
+  progress: number;
+  requested_sources: number[];
+  stage_results: Record<string, unknown>;
+  quality_summary: Record<string, number>;
+  error_message: string | null;
+  scheduled_for: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+}
+
 export interface AdminOverview {
   metrics: any[];
   services: Array<{
@@ -932,6 +986,8 @@ export interface AdminOverview {
   systemEvents: any[];
   crawlers: DataSource[];
   pipelineSummary: PipelineSummary;
+  pipelineRuns?: PipelineRun[];
+  currentPipelineRun?: PipelineRun | null;
   qualities: any[];
   performanceCards: any[];
   endpoints: Array<{

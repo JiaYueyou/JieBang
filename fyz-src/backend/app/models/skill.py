@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -54,6 +55,40 @@ class SourceDocument(Base):
     content_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
     source_meta: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+
+class JobSourceObservation(Base):
+    """One daily observation of a source-document version on a public portal."""
+
+    __tablename__ = "job_source_observation"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_document_id",
+            "observed_on",
+            name="uq_job_source_observation_document_day",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    source_document_id: Mapped[int] = mapped_column(
+        ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    observed_on: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    source_event_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    source_event_type: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="observed_at", index=True
+    )
+    content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    snapshot_key: Mapped[str | None] = mapped_column(String(255), index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+
+    source_document: Mapped[SourceDocument] = relationship(lazy="selectin")
 
 
 class RawJobRecord(Base):

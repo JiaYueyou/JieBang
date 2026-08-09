@@ -1,6 +1,27 @@
 """岗位标题标准化规则测试。"""
 
-from app.domain.job_standardizer import infer_job_stack, normalize_job_title, standardize_job_title
+from app.domain.job_standardizer import (
+    infer_job_stack,
+    normalize_city_names,
+    normalize_job_title,
+    standardize_job_title,
+)
+
+
+def test_city_level_normalization_merges_suffixes_and_splits_multi_city_values():
+    assert normalize_city_names("北京") == ("北京",)
+    assert normalize_city_names("北京市") == ("北京",)
+    assert normalize_city_names("北京、上海") == ("北京", "上海")
+    assert normalize_city_names("上海北京") == ("上海", "北京")
+    assert normalize_city_names("北京市、上海市、深圳市") == ("北京", "上海", "深圳")
+
+
+def test_city_level_normalization_excludes_provinces_and_understands_addresses():
+    assert normalize_city_names("广东省") == ()
+    assert normalize_city_names("广东") == ()
+    assert normalize_city_names("安徽省·合肥市") == ("合肥",)
+    assert normalize_city_names("北京市 海淀区、浙江 拱墅区") == ("北京", "杭州")
+    assert normalize_city_names("江西省南昌市青山湖区北京东路") == ("南昌",)
 
 
 def test_standardize_title_removes_noise_but_keeps_specialization():

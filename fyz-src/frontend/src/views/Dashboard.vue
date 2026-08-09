@@ -220,7 +220,7 @@
             <span class="db-hot-col rank">#</span>
             <span class="db-hot-col name">岗位</span>
             <span class="db-hot-col chart">趋势</span>
-            <span class="db-hot-col num">来源</span>
+            <span class="db-hot-col num">岗位数</span>
             <span class="db-hot-col trend">本月</span>
             <span class="db-hot-col action"></span>
           </div>
@@ -228,6 +228,13 @@
             <span class="db-hot-col rank" :class="{ top: (hotJobsPage - 1) * hotJobsPageSize + i < 3 }">{{ (hotJobsPage - 1) * hotJobsPageSize + i + 1 }}</span>
             <span class="db-hot-col name">
               {{ job.title }}
+              <el-tag
+                v-if="job.lifecycle_stage !== 'observed'"
+                :type="job.lifecycle_stage === 'mature' ? 'success' : 'info'"
+                size="small"
+                effect="plain"
+                style="margin-left:6px;vertical-align:middle;"
+              >{{ job.lifecycle_stage === 'mature' ? '已成熟' : '已稳定' }}</el-tag>
               <span v-if="job.core_skills?.length" class="db-hot-skills">{{ job.core_skills.slice(0, 3).join(" · ") }}</span>
             </span>
             <span class="db-hot-col chart">

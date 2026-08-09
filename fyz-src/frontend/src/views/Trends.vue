@@ -4,7 +4,7 @@
     <!-- Stats -->
     <div class="tr-stats anim-fade-up">
       <div class="tr-stat"><span class="tr-num">{{ stats.totalJobs }}</span><span class="tr-label">累计岗位数</span></div>
-      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">新兴技能（当前窗口）</span></div>
+      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">已确认新技能（当前窗口）</span></div>
       <div class="tr-stat"><span class="tr-num green">{{ stats.avgSalary }}</span><span class="tr-label">平均薪资</span></div>
       <div class="tr-stat"><span class="tr-num amber">{{ stats.activeCities }}</span><span class="tr-label">活跃城市</span></div>
     </div>
@@ -45,6 +45,7 @@
       <span><strong>{{ dataQuality.deduplicated_records }}</strong> 去重岗位</span>
       <span><strong>{{ dataQuality.independent_job_clusters }}</strong> 独立岗位簇</span>
       <span><strong>{{ dataQuality.independent_companies }}</strong> 独立企业</span>
+      <span><strong>{{ dataQuality.reviewable_skill_facts ?? dataQuality.verified_skill_facts }}</strong> 可复核技能事实</span>
       <span v-if="dataQuality.duplicate_records"><strong>{{ dataQuality.duplicate_records }}</strong> 条转载/重复已合并</span>
     </div>
 
@@ -73,9 +74,9 @@
       <div class="dash-card-header">
         <div>
           <span class="dash-card-title">技术变化候选</span>
-          <span class="tr-header-note">“新兴”须同时通过历史基线与人工核验</span>
+          <span class="tr-header-note">结合冻结历史基线与成熟技术目录，按跨企业、跨来源和持续性分级</span>
         </div>
-        <span class="dash-card-badge">{{ emergingTotal }} 项待核验</span>
+        <span class="dash-card-badge">{{ emergingTotal }} 项技术判定</span>
       </div>
       <div
         v-loading="isPageLoading"
@@ -94,25 +95,25 @@
               <v-chart :option="sparkOption(row)" autoresize style="height:36px;width:170px;" />
             </template>
           </el-table-column>
-          <el-table-column prop="growth" label="增长率" width="100" align="center">
+          <el-table-column label="趋势评分" width="100" align="center">
             <template #default="{ row }">
-              <span :style="{ color: row.growth === null ? 'var(--color-warning)' : row.growth > 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
-                {{ row.growth === null ? (row.previous_count === 0 ? '新出现' : '待观察') : `${row.growth > 0 ? '+' : ''}${row.growth}%` }}
+              <span :style="{ color: row.trend_score >= 75 ? 'var(--color-success)' : row.trend_score >= 55 ? 'var(--color-warning)' : 'var(--text-secondary)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
+                {{ row.trend_score }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="本期 / 基线期" width="120" align="center">
+          <el-table-column label="本期 / 历史" width="120" align="center">
             <template #default="{ row }">
               <span class="trend-evidence-count">{{ row.current_count }} / {{ row.previous_count }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="企业证据" width="120" align="center">
-            <template #default="{ row }">{{ row.current_companies }} / {{ row.previous_companies }} 家</template>
+          <el-table-column label="市场证据" width="150" align="center">
+            <template #default="{ row }">{{ row.current_companies }}家 · {{ row.current_sources }}源 · {{ row.current_periods }}期</template>
           </el-table-column>
           <el-table-column prop="evidence_note" label="变化证据" min-width="260" show-overflow-tooltip />
-          <el-table-column prop="stage" label="生命周期" width="120" align="center">
+          <el-table-column prop="stage" label="生命周期" width="150" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.stage === '新出现' ? 'success' : 'warning'" size="small">{{ row.stage }}</el-tag>
+              <el-tag :type="row.stage === '新出现' ? 'success' : row.stage.includes('待确认') ? 'warning' : 'info'" size="small">{{ row.stage }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -131,7 +132,7 @@
     <!-- New jobs -->
     <div class="dash-card anim-fade-up anim-delay-3" style="margin-top:16px;">
       <div class="dash-card-header">
-        <span class="dash-card-title">新增岗位一览（跨企业确认）</span>
+        <span class="dash-card-title">新增岗位一览（含待确认）</span>
         <span class="dash-card-badge">{{ newJobsTotal }} 项</span>
       </div>
       <div
@@ -152,7 +153,7 @@
           />
           <el-button type="primary" @click="searchNewJobs">搜索</el-button>
           <span v-if="newJobObservationTotal > newJobsTotal" class="tr-hint">
-            已隐藏 {{ newJobObservationTotal - newJobsTotal }} 个仅单企业或单期的岗位观察信号
+            另有 {{ newJobObservationTotal - newJobsTotal }} 个岗位观察信号未展示
           </span>
         </div>
         <el-table :data="newJobs" style="width:100%" size="default" stripe>
@@ -166,7 +167,7 @@
           <el-table-column prop="source_count" label="独立来源" width="100" align="center" />
           <el-table-column prop="description" label="说明" min-width="240" show-overflow-tooltip />
         </el-table>
-        <div v-if="!newJobsTotal" class="tr-hint" style="padding:8px 2px;">当前窗口内没有同时满足跨企业、跨来源、跨月份条件的新增岗位</div>
+        <div v-if="!newJobsTotal" class="tr-hint" style="padding:8px 2px;">当前窗口内没有相对历史对照期首次出现的岗位</div>
         <div v-else class="tr-pagination-row">
           <el-pagination
             v-model:current-page="newJobPage"

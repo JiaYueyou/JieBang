@@ -51,3 +51,36 @@ class DataSource(Base):
 
     def __repr__(self) -> str:
         return f"<DataSource id={self.id} name={self.name!r} type={self.source_type}>"
+
+
+class PipelineRun(Base):
+    """Persistent audit record for one end-to-end data refresh.
+
+    The scheduler and the manual API both write this table.  A unique
+    idempotency key makes periodic execution safe when more than one API
+    worker is running.
+    """
+
+    __tablename__ = "pipeline_run"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    trigger: Mapped[str] = mapped_column(String(24), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued", index=True)
+    stage: Mapped[str] = mapped_column(String(40), nullable=False, default="queued", index=True)
+    progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    requested_sources: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list)
+    stage_results: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    quality_summary: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    requested_by: Mapped[int | None] = mapped_column(Integer, index=True)
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )

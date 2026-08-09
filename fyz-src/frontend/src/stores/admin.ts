@@ -35,6 +35,17 @@ export const useAdminStore=defineStore("admin",()=>{
   }
   async function toggleCrawler(id:number){await dataProvider.admin.toggleCrawler(id);await load(true);}
   async function runCrawler(id:number){await dataProvider.admin.runCrawler(id);await load(true);}
+  async function startPipeline(sourceIds?:number[]){
+    const run=await dataProvider.admin.startPipeline(sourceIds);
+    await load(true);
+    return run;
+  }
+  async function getCrawlerAutomation(){return dataProvider.admin.getCrawlerAutomation();}
+  async function saveCrawlerAutomation(config:import("@/domain/types").CrawlerAutomationConfig){
+    const result=await dataProvider.admin.saveCrawlerAutomation(config);
+    await load(true);
+    return result;
+  }
   async function pollCrawler(id:number){return dataProvider.admin.pollCrawler(id);}
   async function importCrawlerOutput(filename:string){return dataProvider.admin.importCrawlerOutput(filename);}
   async function loadAgentRuns(){
@@ -49,7 +60,8 @@ export const useAdminStore=defineStore("admin",()=>{
   }
   return {
     data,loading,loaded,error,qualityPage,qualityLoading,qualityError,
-    load,refresh:()=>load(true),loadQuality,decideQuality,toggleCrawler,runCrawler,
+    load,refresh:()=>load(true),loadQuality,decideQuality,toggleCrawler,runCrawler,startPipeline,
+    getCrawlerAutomation,saveCrawlerAutomation,
     pollCrawler,importCrawlerOutput,agentRuns,agentRunsLoading,agentRunsTotal,
     agentRunPage,agentRunPageSize,agentRunStatus,agentRunType,loadAgentRuns,refreshResources,
   };

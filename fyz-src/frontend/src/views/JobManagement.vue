@@ -323,7 +323,6 @@
       </div>
 
       <DataState :loading="insightLoading" :error="insightError" @retry="store.loadInsights(skillPreference)" />
-      <ReferenceBaseline :baseline="insightBaseline" class="insight-baseline" />
       <el-alert
         v-if="insightQuality?.insufficient_data"
         class="insight-quality-alert"
@@ -333,9 +332,12 @@
         :title="insightQuality.notes.join(' ') || '当前数据量不足，洞察结果仅供参考。'"
       />
 
-      <div class="jm-grid" style="margin-top:16px;">
-        <div class="dash-card">
-          <div class="dash-card-header"><span class="dash-card-title">新兴岗位发现</span><span class="dash-card-badge">AI 驱动</span></div>
+      <div class="insight-focus-grid" style="margin-top:16px;">
+        <div class="dash-card insight-focus-card">
+          <div class="dash-card-header insight-panel-head">
+            <div><span class="insight-kicker">EMERGING ROLES</span><span class="dash-card-title">新兴岗位发现</span><small>由跨企业、跨来源岗位聚合识别，支持人工确认和招聘决策</small></div>
+            <span class="dash-card-badge">{{ emergingJobs.length }} 个候选</span>
+          </div>
           <div class="dash-card-body">
             <div class="insight-list">
               <div class="insight-card" v-for="job in paginatedEmergingJobs" :key="job.id">
@@ -370,20 +372,26 @@
           </div>
         </div>
 
-        <div class="dash-card">
-          <div class="dash-card-header"><span class="dash-card-title">能力动态更新</span><span class="dash-card-badge">近期变化</span></div>
+        <div class="dash-card insight-focus-card">
+          <div class="dash-card-header insight-panel-head">
+            <div><span class="insight-kicker">CAPABILITY DELTA</span><span class="dash-card-title">能力动态更新</span><small>对比最近两个双月窗口，仅展示有多条已确认技能证据的变化</small></div>
+            <span class="dash-card-badge">{{ capabilityChanges.length }} 个岗位</span>
+          </div>
           <div class="dash-card-body">
             <div class="insight-list">
-              <div class="insight-card" v-for="ch in paginatedCapabilityChanges" :key="ch.job">
+              <div class="insight-card" v-for="ch in paginatedCapabilityChanges" :key="ch.id">
                 <div class="insight-card-top">
-                  <span class="insight-name">{{ ch.job }}</span><span class="insight-period">{{ ch.period }}</span>
+                  <span class="insight-name">{{ ch.job }}</span>
+                  <span class="evidence-chip">{{ ch.previous_sample_count ?? 0 }} → {{ ch.current_sample_count ?? 0 }} 条岗位证据</span>
                 </div>
+                <div class="insight-period">{{ ch.period }}</div>
                 <div class="change-tags">
                   <template v-for="s in ch.added" :key="'add_'+s"><el-tag size="small" type="success" effect="dark">+ {{ s }}</el-tag></template>
-                  <template v-for="s in ch.modified" :key="'mod_'+s"><el-tag size="small" type="warning" effect="dark">~ {{ s }}</el-tag></template>
+                  <template v-for="s in (ch.strengthened ?? ch.modified)" :key="'up_'+s"><el-tag size="small" type="primary" effect="dark">↑ {{ s }}</el-tag></template>
+                  <template v-for="s in (ch.weakened ?? [])" :key="'down_'+s"><el-tag size="small" type="warning" effect="dark">↓ {{ s }}</el-tag></template>
                   <template v-for="s in ch.removed" :key="'rem_'+s"><el-tag size="small" type="danger" effect="plain">- {{ s }}</el-tag></template>
                 </div>
-                <div class="change-stats">新增 {{ ch.added.length }} 项 · 修改 {{ ch.modified.length }} 项 · 淘汰 {{ ch.removed.length }} 项</div>
+                <div class="change-stats">新增 {{ ch.added.length }} · 强化 {{ (ch.strengthened ?? ch.modified).length }} · 弱化 {{ (ch.weakened ?? []).length }} · 淘汰 {{ ch.removed.length }}</div>
                 <div class="insight-actions">
                   <el-button text size="small" type="primary" @click="viewChangeTrend(ch)">查看趋势图</el-button>
                   <el-button text size="small" @click="prepareJDUpdate(ch)">更新岗位 JD</el-button>
@@ -536,7 +544,6 @@ import { useRoute, useRouter } from "vue-router";
 import { useJobStore } from "@/stores/jobs";
 import { useHistoryStore } from "@/stores/history";
 import DataState from "@/components/common/DataState.vue";
-import ReferenceBaseline from "@/components/analysis/ReferenceBaseline.vue";
 import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
 import type { CapabilityChange, EmergingJob, GeneratedJDDraft, InternalPositionStatus, JobSummary, ObservedJobDetail } from "@/domain/types";
 
@@ -577,7 +584,6 @@ const {
   emergingJobs,
   capabilityChanges,
   insightQuality,
-  insightBaseline,
   insightLoading,
   insightError,
   loading,
@@ -1052,7 +1058,8 @@ function prepareJDUpdate(change: CapabilityChange) {
   jdForm.title = change.job;
   skillRequirements.value = [
     ...change.added.map((skill) => `新增：${skill}`),
-    ...change.modified.map((skill) => `强化：${skill}`),
+    ...(change.strengthened ?? change.modified).map((skill) => `强化：${skill}`),
+    ...(change.weakened ?? []).map((skill) => `降低优先级：${skill}`),
     ...change.removed.map((skill) => `待移除：${skill}`),
   ];
   inputDirty.requirements = true;
@@ -1074,6 +1081,20 @@ function viewChangeTrend(change: CapabilityChange) {
 .insight-pagination>span { color:var(--text-muted);font-size:12px;white-space:nowrap; }
 .insight-pagination :deep(.el-pagination) { margin-left:auto; }
 .insight-pagination :deep(.btn-prev),.insight-pagination :deep(.btn-next),.insight-pagination :deep(.number) { border-radius:8px!important; }
+.insight-focus-grid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start; }
+.insight-focus-card { display:flex;min-width:0;height:680px;overflow:hidden;flex-direction:column;border-top:3px solid var(--color-brand); }
+.insight-focus-card:nth-child(2) { border-top-color:var(--color-success); }
+.insight-focus-card>.dash-card-body { display:flex;min-height:0;flex:1;flex-direction:column;overflow:hidden; }
+.insight-focus-card .insight-list { min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:5px; }
+.insight-focus-card .insight-pagination { flex:0 0 auto;margin-top:auto;background:var(--color-bg-elevated); }
+.insight-panel-head { align-items:flex-start; }
+.insight-panel-head>div { display:flex;min-width:0;flex-direction:column; }
+.insight-panel-head .dash-card-title { margin-top:2px;font-size:17px; }
+.insight-panel-head small { margin-top:4px;color:var(--text-muted);font-size:12px;line-height:1.5; }
+.insight-kicker { color:var(--color-brand);font:700 10px "JetBrains Mono",monospace;letter-spacing:.11em; }
+.insight-focus-card:nth-child(2) .insight-kicker { color:var(--color-success); }
+.evidence-chip { margin-left:auto;padding:4px 8px;border-radius:999px;background:var(--color-bg-muted);color:var(--text-muted);font:600 11px "JetBrains Mono",monospace;white-space:nowrap; }
+.insight-period { margin:7px 0 9px;color:var(--text-muted);font:500 11px "JetBrains Mono",monospace; }
 .suggestion-field { margin-bottom: 18px; }
 .suggestion-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px; }
 .suggestion-heading>div { display:flex;flex-direction:column; }
@@ -1136,5 +1157,6 @@ function viewChangeTrend(change: CapabilityChange) {
 .table-actions { display:flex;align-items:center;justify-content:flex-end; }
 @keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
 @media(max-width:1180px){.position-ledger{grid-template-columns:1fr}}
-@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters,.observed-ledger .ledger-filters{grid-template-columns:1fr}.jm-publish-grid>.dash-card,.ledger-pane{height:auto;max-height:none}.jm-publish-grid>.dash-card>.dash-card-body{overflow:visible}}
+@media(max-width:960px){.insight-focus-grid{grid-template-columns:1fr}.insight-focus-card{height:680px}}
+@media(max-width:768px){.suggestion-review{align-items:flex-start;flex-direction:column}.suggestion-heading{align-items:flex-start}.demand-switch{grid-template-columns:1fr}.ledger-filters,.observed-ledger .ledger-filters{grid-template-columns:1fr}.jm-publish-grid>.dash-card,.ledger-pane{height:auto;max-height:none}.jm-publish-grid>.dash-card>.dash-card-body{overflow:visible}.insight-card-top{align-items:flex-start;flex-wrap:wrap}.evidence-chip{margin-left:0}}
 </style>

@@ -9,6 +9,7 @@ from app.models.skill import (
     AgentRun,
     AsyncTask,
     JobSkillFact,
+    JobSourceObservation,
     RawJobRecord,
     JobDuplicateCluster,
     Skill,
@@ -23,7 +24,7 @@ from app.models.graph import (
     StandardJobAlias,
     StandardJobSource,
 )
-from app.models.data_source import DataSource
+from app.models.data_source import DataSource, PipelineRun
 from app.models.analysis import (
     AnalysisBaselineSkill,
     AnalysisBaselineSnapshot,
@@ -48,11 +49,11 @@ from app.models.retrieval import (
 
 __all__ = [
     "User", "JobPosting", "JobPostingSkill", "JobPostingVersion",
-    "Skill", "SourceDocument", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
+    "Skill", "SourceDocument", "JobSourceObservation", "RawJobRecord", "SourceTrustPolicy", "JobSkillFact",
     "AgentRun", "AsyncTask", "StandardJob", "StandardJobAlias", "StandardJobSource",
     "JobDuplicateCluster",
     "GraphSnapshot", "GraphSyncBatch", "GraphEnrichmentCandidate",
-    "DataSource",
+    "DataSource", "PipelineRun",
     "AnalysisInsightDecision", "AnalysisBaselineSnapshot", "AnalysisBaselineSkill",
     "Resume", "ResumeParseResult", "ResumeSkill", "MatchRecord", "MatchEvidence",
     "EnterpriseEmployeeDirectory", "EnterpriseTalent", "InternalPosition", "TransferRuleSet", "TransferDecision",
