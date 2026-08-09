@@ -11,6 +11,7 @@ import type {
   GeneratedJDDraft,
   JDInputSuggestion,
   JobImportResult,
+  JobReferenceStandardPage,
   JobSummary,
   InternalPosition,
   ObservedJobDetail,
@@ -80,6 +81,7 @@ interface AnalysisOverviewResponse {
   emerging_total?: number;
   new_jobs?: TrendOverview["newJobs"];
   new_jobs_total?: number;
+  new_job_observation_total?: number;
   data_quality: AnalysisDataQuality;
   baseline: AnalysisBaseline;
 }
@@ -114,6 +116,7 @@ function mapTrendOverview(raw: AnalysisOverviewResponse): TrendOverview {
     emergingTotal: raw.emerging_total ?? raw.emerging_skills.length,
     newJobs: raw.new_jobs ?? [],
     newJobsTotal: raw.new_jobs_total ?? raw.new_jobs?.length ?? 0,
+    newJobObservationTotal: raw.new_job_observation_total ?? raw.new_jobs_total ?? raw.new_jobs?.length ?? 0,
     dataQuality: raw.data_quality,
     baseline: raw.baseline,
   };
@@ -132,11 +135,16 @@ async function post<T>(url: string, data?: unknown, timeout?: number): Promise<T
   return response.data.data as T;
 }
 
-async function waitForAgentTask<T>(created: AgentTaskCreated<T>): Promise<T> {
+async function waitForAgentTask<T>(
+  created: AgentTaskCreated<T>,
+  onProgress?: (progress: number, status: string) => void,
+): Promise<T> {
   let task = created.task;
+  onProgress?.(task.progress, task.status);
   for (let attempt = 0; attempt < AGENT_MAX_POLLS && task.status !== "succeeded" && task.status !== "failed"; attempt += 1) {
     if (attempt > 0) await sleep(AGENT_POLL_INTERVAL_MS);
     task = await get<AsyncTask<T>>(`/tasks/${task.task_id}`);
+    onProgress?.(task.progress, task.status);
   }
   if (task.status === "failed") throw new Error(task.error_message || "AI 任务执行失败");
   if (task.status !== "succeeded") throw new Error("AI 任务未在预期时间内完成，请稍后刷新重试");
@@ -288,6 +296,7 @@ export const httpDataProvider: DataProvider = {
   },
   talents: {
     list:()=>get("/talents"), get:(id)=>get(`/talents/${id}`),
+    getDetails: (id) => get(`/talents/${id}/details`),
     upload: async (input) => {
       const form = new FormData();
       form.append("file", input.file);
@@ -301,11 +310,20 @@ export const httpDataProvider: DataProvider = {
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click();
       URL.revokeObjectURL(url);
     },
+    preview: async (resumeId) => {
+      const response = await request.get(`/resumes/${resumeId}/file`, { responseType: "blob" });
+      return {
+        url: URL.createObjectURL(response.data),
+        contentType: response.headers["content-type"] || response.data.type || "application/octet-stream",
+      };
+    },
+    matchJobs: (resumeId, jobIds) => post(`/resumes/${resumeId}/matches`, { job_ids: jobIds }),
     recalculate: () => post("/matches/recalculate", {}),
-    explain: async (matchId) => waitForAgentTask(
+    explain: async (matchId, onProgress) => waitForAgentTask(
       await post<AgentTaskCreated<import("@/domain/types").MatchExplanation>>(
         "/agents/match-explanations", { match_id: matchId }, 60000,
       ),
+      onProgress,
     ),
   },
   career: {
@@ -421,6 +439,9 @@ export const httpDataProvider: DataProvider = {
       `/graph/enrichment/candidates/${candidateId}/review`,
       { action: input.action, note: input.note, lock_version: input.lockVersion },
     ),
+    rejectMachineFailedEnrichment: () => post(
+      "/graph/enrichment/candidates/reject-machine-failed",
+    ),
     publishEnrichment: async (candidateIds = []) => waitForTask(await post(
       "/graph/enrichment/publish", { candidate_ids: candidateIds },
     )),
@@ -435,7 +456,17 @@ export const httpDataProvider: DataProvider = {
         emerging_page_size: query.emergingPageSize || 10,
         new_job_page: query.newJobPage || 1,
         new_job_page_size: query.newJobPageSize || 10,
+        new_job_keyword: query.newJobKeyword || undefined,
       }),
+    ),
+    listReferenceStandards: (query) => get<JobReferenceStandardPage>(
+      "/analysis/reference-standards",
+      {
+        page: query.page,
+        page_size: query.pageSize,
+        keyword: query.keyword || undefined,
+        stack: query.stack || undefined,
+      },
     ),
   },
   skillReviews: {
@@ -546,6 +577,10 @@ export const httpDataProvider: DataProvider = {
     ),
     toggleCrawler:async(id)=>{await request.put(`/admin/data-sources/${id}`,{});},
     runCrawler:async(id)=>{await post(`/admin/data-sources/${id}/run`);},
+    startPipeline:(sourceIds)=>post("/admin/pipeline/runs",{source_ids:sourceIds}),
+    getPipelineRun:(id)=>get(`/admin/pipeline/runs/${id}`),
+    getCrawlerAutomation:()=>get("/admin/data-sources/automation"),
+    saveCrawlerAutomation:(config)=>request.put("/admin/data-sources/automation",config).then(response=>response.data.data),
     pollCrawler:async(id)=>get(`/admin/data-sources/${id}/poll`),
     importCrawlerOutput:async(filename)=>waitForTask(
       await post<AsyncTask<JobImportResult>>("/data-imports/jobs",{files:[filename]}),

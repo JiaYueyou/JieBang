@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import re
 
-NORMALIZATION_VERSION = "job-title-v2"
+NORMALIZATION_VERSION = "job-title-v3"
 
 _NOISE = (
     "急聘", "诚聘", "高薪", "双休", "五险一金", "接受应届", "校招", "社招",
@@ -29,11 +30,40 @@ _CITY_ALIASES = {
     "拉萨": "540100", "香港": "810000", "澳门": "820000", "全国": "000000",
     "远程": "REMOTE",
 }
+
+# City-level analytics must not mix province labels with cities.  This set
+# extends the title-normalization aliases with prefecture-level names observed
+# in supported recruitment sources; codes are not required for display-level
+# normalization.
+_CITY_NAMES = set(_CITY_ALIASES) | {
+    "东营", "内江", "包头", "南阳", "常州", "德州", "日照", "昌吉",
+    "朔州", "枣庄", "洛阳", "淄博", "湛江", "绍兴", "衡阳", "邢台",
+    "邯郸", "长治", "龙岩", "肇庆", "遵义", "信阳", "芜湖", "张家界",
+    "泉州", "绵阳", "唐山", "漳州",
+}
+_NON_CITY_LOCATIONS = {
+    "全国", "远程", "北京周边", "上海周边", "广东", "广东省", "海南省",
+    "江苏省", "四川省", "山东省", "湖南省",
+}
+_DISTRICT_CITY_HINTS = {
+    "海淀": "北京", "朝阳区": "北京", "浦东": "上海", "闵行": "上海",
+    "拱墅": "杭州", "滨江": "杭州", "临平": "杭州", "余杭": "杭州",
+    "武侯": "成都", "郫都": "成都", "雨花台": "南京", "江宁": "南京",
+    "湖里": "厦门", "集美": "厦门", "雁塔": "西安",
+}
+_LOCATION_PART_SEPARATOR = re.compile(r"[,，、/;；]+")
 _TECH_CANONICAL = {
     "python": "Python", "java": "Java", "javascript": "JavaScript", "typescript": "TypeScript",
     "ai": "AI", "llm": "LLM", "nlp": "NLP", "c＋＋": "C++", "c#": "C#",
     "golang": "Go", "devops": "DevOps", "sre": "SRE",
 }
+
+# 企业招聘标题经常在连字符后拼接业务线、产品或公司内部组织。这些字段
+# 只能作为岗位来源维度，不能参与跨企业岗位身份的 canonical key。
+_BUSINESS_SUFFIX_MARKERS = (
+    "抖音", "tiktok", "火山", "字节", "飞书", "lark", "今日头条",
+    "西瓜", "生活服务", "tiktokshop", "芯片研发", "国际电商", "data",
+)
 
 
 @dataclass(frozen=True)
@@ -76,9 +106,12 @@ def normalize_job_title(
         value = re.sub(re.escape(word), "", value, flags=re.IGNORECASE)
     value = re.sub(r"\d+\s*[-~至]\s*\d+\s*年|\d+\s*年以上|经验不限", "", value)
     value = re.sub(r"\s+", "", value).strip("-—_|·/、")
+    value = _strip_business_suffix(value)
     for raw, normalized in _TECH_CANONICAL.items():
         value = re.sub(raw, normalized, value, flags=re.IGNORECASE)
     value = value.replace("软件研发工程师", "软件开发工程师").replace("研发工程师", "开发工程师")
+    value = re.sub(r"forwarddeployedengineer", "前置部署工程师", value, flags=re.IGNORECASE)
+    value = re.sub(r"^后端[/、-]?后端开发工程师", "后端开发工程师", value)
     if not value:
         value = original or "未命名岗位"
 
@@ -129,6 +162,70 @@ def normalize_city_code(city: str | None) -> str | None:
     return f"OTHER:{_canonical_key(compact)[:32]}"
 
 
+@lru_cache(maxsize=2048)
+def normalize_city_names(location: str | None) -> tuple[str, ...]:
+    """Return canonical city-level names from a possibly dirty location field.
+
+    Examples: ``北京市`` becomes ``北京``; ``北京、上海`` becomes two cities;
+    province-only and non-geographic values are excluded because assigning them
+    to a specific city would fabricate precision.
+    """
+    value = re.sub(r"\s+", " ", location or "").strip()
+    if not value or value in _NON_CITY_LOCATIONS:
+        return ()
+
+    found: list[tuple[int, str]] = []
+    offset = 0
+    for raw_part in _LOCATION_PART_SEPARATOR.split(value):
+        part = raw_part.strip(" ·-—|()（）")
+        if not part:
+            offset += len(raw_part) + 1
+            continue
+        if part in _NON_CITY_LOCATIONS or re.fullmatch(
+            r"[\u4e00-\u9fff]{2,8}(?:省|自治区|特别行政区)", part
+        ):
+            offset += len(raw_part) + 1
+            continue
+
+        # Prefer explicit administrative city suffixes.  Once one is present,
+        # later road names such as “北京东路” must not become another city.
+        explicit = []
+        for name in sorted(_CITY_NAMES - {"全国", "远程"}, key=len, reverse=True):
+            for match in re.finditer(rf"{re.escape(name)}市", part):
+                explicit.append((match.start(), name))
+        if explicit:
+            found.extend((offset + position, name) for position, name in explicit)
+            offset += len(raw_part) + 1
+            continue
+
+        matches = []
+        for name in sorted(_CITY_NAMES - {"全国", "远程"}, key=len, reverse=True):
+            for match in re.finditer(re.escape(name), part):
+                matches.append((match.start(), name))
+        # Keep non-overlapping matches in source order; this also handles compact
+        # legacy values such as “北京上海” and “上海北京”.
+        occupied_until = -1
+        for position, name in sorted(matches, key=lambda item: (item[0], -len(item[1]))):
+            if position < occupied_until:
+                continue
+            found.append((offset + position, name))
+            occupied_until = position + len(name)
+
+        if not matches:
+            for district, city in _DISTRICT_CITY_HINTS.items():
+                position = part.find(district)
+                if position >= 0:
+                    found.append((offset + position, city))
+                    break
+        offset += len(raw_part) + 1
+
+    result: list[str] = []
+    for _, name in sorted(found, key=lambda item: item[0]):
+        if name not in result:
+            result.append(name)
+    return tuple(result)
+
+
 def normalize_company_key(company: str | None) -> str | None:
     value = re.sub(r"[（(].*?[）)]", "", company or "")
     value = re.sub(r"有限责任公司|股份有限公司|有限公司|集团|公司", "", value)
@@ -150,13 +247,14 @@ def infer_role_family(title: str) -> str:
     rules = (
         ("algorithm", ("算法", "大模型", "机器学习", "人工智能", "ai", "nlp", "视觉", "语音")),
         ("data", ("数据", "数仓", "大数据", "flink", "spark", "bi")),
-        ("devops", ("运维", "devops", "云平台", "sre", "网络", "安全")),
+        ("devops", ("运维", "devops", "云平台", "sre", "网络", "安全", "部署工程师")),
         ("test", ("测试", "质量", "qa")),
         ("frontend", ("前端", "web", "javascript", "vue", "react")),
         ("backend", ("后端", "服务端", "开发工程师", "软件工程师", "java", "python", "golang")),
         ("product", ("产品经理", "产品运营")),
         ("design", ("设计师", "交互", "ui", "ux")),
         ("sales", ("销售", "客户经理", "商务")),
+        ("operations", ("运营", "招商主管", "商家")),
     )
     for family, words in rules:
         if any(word in lowered for word in words):
@@ -203,6 +301,20 @@ def _canonical_key(value: str) -> str:
 def _specialization_key(value: str, role_family: str) -> str:
     compact = re.sub(r"工程师|开发|经理|专员|顾问|设计师|研究员|架构师", "", value)
     return _canonical_key(compact) or role_family
+
+
+def _strip_business_suffix(value: str) -> str:
+    """Remove only known company/product suffixes, never arbitrary specialties."""
+    parts = re.split(r"[-—|·]", value, maxsplit=1)
+    if len(parts) != 2:
+        return value
+    role, suffix = (part.strip() for part in parts)
+    if not role or not suffix:
+        return value
+    lowered = suffix.casefold()
+    if any(marker in lowered for marker in _BUSINESS_SUFFIX_MARKERS):
+        return role
+    return value
 
 
 CATEGORY_STACK = {

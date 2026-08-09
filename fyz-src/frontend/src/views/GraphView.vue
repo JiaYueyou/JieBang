@@ -104,7 +104,6 @@
               v-if="activeNode.type === 'TechStack'"
               class="deep-expand-btn"
               type="primary"
-              plain
               :loading="expandingNodeId === activeNode.id"
               @click="expandSelectedDeep"
             >展开 L4/L5</el-button>
@@ -264,6 +263,7 @@ const overviewCursor = ref<string | null>(null);
 const hasMoreOverview = ref(false);
 const loadingMore = ref(false);
 const expandingNodeId = ref("");
+const expandedScopeVersion = ref(0);
 // 已展开节点的邻居响应缓存（scope = `${node.id}:${maxLayer}`）。
 // 展开数据在本次会话内不回收：masterGraph 被 loadGraph/loadDeepLayer 重建后
 // 会经 reapplyExpandedScopes() 自动重新合并；仅 resetToOverview（回到概览）
@@ -401,6 +401,7 @@ function resetToOverview() {
   highlightedPath.value = [];
   selectedNodeId.value = null;
   expandedCache.clear();
+  expandedScopeVersion.value += 1;
   loadGraph();
 }
 
@@ -445,6 +446,11 @@ const pathNodeIds = computed(() =>
     ? computeHighlightNodeIds(masterGraph.value, selectedNodeId.value)
     : [],
 );
+const activeNodeDeepExpanded = computed(() => {
+  // Map itself is not reactive; this version is incremented whenever a new scope is cached.
+  expandedScopeVersion.value;
+  return Boolean(activeNode.value && expandedCache.has(`${activeNode.value.id}:5`));
+});
 
 function graphNodeFromAttributes(id: string, attrs: Record<string, any>): GraphNode {
   return {
@@ -508,25 +514,28 @@ async function generateDeepCandidates() {
 }
 
 async function expandNodeScope(node: GraphNode, maxLayer: 3 | 5) {
-  if (!masterGraph.value) return;
+  if (!masterGraph.value) return false;
   const scope = `${node.id}:${maxLayer}`;
   if (expandedCache.has(scope)) {
     // 已展开过（本次会话内不回收）：把缓存数据重新合并进当前 masterGraph
     const cached = expandedCache.get(scope)!;
     masterGraph.value = buildGraphFromSubgraph(cached, masterGraph.value).copy();
     applyLayerFilter();
-    return;
+    return true;
   }
   expandingNodeId.value = node.id;
   try {
     const response = await getNodeNeighbors(node.id, { page_size: 60, max_layer: maxLayer });
     expandedCache.set(scope, response);
+    expandedScopeVersion.value += 1;
     const merged = buildGraphFromSubgraph(response, masterGraph.value);
     masterGraph.value = merged.copy();
     applyLayerFilter();
     if (response.has_more) ElMessage.info("该节点还有更多关联内容，可继续按需展开");
+    return true;
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "节点扩展失败");
+    return false;
   } finally {
     expandingNodeId.value = "";
   }
@@ -545,7 +554,24 @@ function reapplyExpandedScopes() {
 }
 
 async function expandSelectedDeep() {
-  if (activeNode.value) await expandNodeScope(activeNode.value, 5);
+  if (!activeNode.value) return;
+
+  const node = activeNode.value;
+  const wasL3OnlyView = selectedType.value === "TechStack";
+  const expanded = await expandNodeScope(node, 5);
+  if (!expanded) return;
+
+  // In the L3-only view, the just-fetched L4/L5 nodes are intentionally filtered out.
+  // Switch to the all-level view so the outcome of an "expand" action is immediately visible.
+  if (wasL3OnlyView) {
+    selectedType.value = "all";
+    applyLayerFilter();
+    ElMessage.success("已切换至全层级视图，L4/L5 节点已展开");
+  } else if (activeNodeDeepExpanded.value) {
+    ElMessage.success("L4/L5 节点已展开");
+  }
+
+  focusGraphNode(node.id);
 }
 
 async function handleRelatedNodeClick(node: GraphNode) {
@@ -568,6 +594,13 @@ async function handleRelatedNodeClick(node: GraphNode) {
   }
   activeNode.value = node;
   selectedNodeId.value = node.id;
+  focusGraphNode(node.id);
+}
+
+function focusGraphNode(nodeId: string) {
+  // Wait for Vue to hand the merged graph to ECharts; the canvas repeats the centering
+  // after its force layout settles, so newly loaded L4/L5 nodes remain correctly focused.
+  requestAnimationFrame(() => graphCanvasRef.value?.focusNode(nodeId));
 }
 
 function applyLayerFilter() {
@@ -707,6 +740,29 @@ watch([keyword, selectedStack, selectedLevel], () => {
 .deep-expand-btn {
   width: 100%;
   margin-top: 14px;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: #fff;
+  font-weight: 700;
+  transition: background-color var(--duration-fast), border-color var(--duration-fast), transform var(--duration-fast);
+}
+
+.deep-expand-btn:hover,
+.deep-expand-btn:focus-visible {
+  border-color: #3653d3;
+  background: #3653d3;
+  color: #fff;
+}
+
+.deep-expand-btn:active {
+  border-color: #2942b4;
+  background: #2942b4;
+  color: #fff;
+  transform: translateY(1px);
+}
+
+.deep-expand-btn.is-loading {
+  color: #fff;
 }
 
 .knowledge-more-btn { width: 100%; margin-top: 14px; }

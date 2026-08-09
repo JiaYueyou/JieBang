@@ -95,7 +95,7 @@ class TestAdminModule:
             "unverifiedFacts": len(facts) - 1,
             "overallQuality": 0.0,
         }
-        assert body["data"]["crawlers"][1]["endpoint"] == "iflytek.com"
+        assert body["data"]["crawlers"][0]["endpoint"] == "iflytek.com"
         cards = {card["label"]: card for card in body["data"]["performanceCards"]}
         assert cards["技能事实总量"]["value"] == str(len(facts))
         assert cards["事实确认率"]["value"] != "0.0%"
@@ -142,7 +142,7 @@ class TestAdminModule:
         assert resp.status_code == 401
 
     async def test_list_crawlers(self, client, auth_headers):
-        resp = await client.get("/api/v1/admin/data-sources/1/status", headers=auth_headers)
+        resp = await client.get("/api/v1/admin/data-sources/2/status", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["code"] == 200

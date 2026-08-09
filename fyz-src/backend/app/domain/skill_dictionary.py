@@ -59,6 +59,25 @@ SKILL_DICT = {
     for category, names in _GROUPS.items()
     for name in names
 }
+
+# Curated technologies that clearly pre-date the historical recruitment
+# baseline.  Absence from a finite local snapshot must never turn these into a
+# claim that the technology itself is newly emerging.  This is deliberately
+# narrower than SKILL_DICT so genuinely recent terms can still be evaluated
+# from market evidence.
+HISTORICALLY_ESTABLISHED_SKILLS = {
+    "Perl",
+    "Bootstrap",
+    "Vite",
+    "Swagger",
+    "VS Code",
+    "Confluence",
+    "GraphQL",
+    "InfluxDB",
+    "Serverless",
+    "SaaS",
+    "区块链",
+}
 _SKILL_NAMES_CASEFOLD = {name.casefold(): name for name in SKILL_DICT}
 
 SKILL_ALIASES = {

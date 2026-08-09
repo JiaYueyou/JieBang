@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -54,6 +55,9 @@ class JobReferenceStandard(BaseModel):
     aliases: list[str]
     core_skills: list[str]
     source_count: int
+    company_count: int = 0
+    active_period_count: int = 0
+    maturity_stage: str = "observed"
     description: str
     first_seen_at: datetime
     last_seen_at: datetime
@@ -67,9 +71,19 @@ class AnalysisBaseline(BaseModel):
     technology_stack_count: int
     verified_skill_count: int
     verified_fact_count: int
+    mature_job_count: int = 0
+    established_job_count: int = 0
     baseline_at: datetime | None
     technology_stacks: list[TechnologyStackBaseline]
     job_standards: list[JobReferenceStandard]
+
+
+class JobReferenceStandardPage(BaseModel):
+    items: list[JobReferenceStandard] = Field(default_factory=list)
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
 
 
 class EmergingSkill(BaseModel):
@@ -83,6 +97,9 @@ class EmergingSkill(BaseModel):
     previous_count: int
     current_companies: int
     previous_companies: int
+    current_sources: int = 0
+    current_periods: int = 0
+    trend_score: int = 0
     evidence_note: str
 
 
@@ -96,6 +113,7 @@ class AnalysisDataQuality(BaseModel):
     fallback_time_records: int
     valid_salary_records: int
     verified_skill_facts: int
+    reviewable_skill_facts: int
     observed_months: int
     observed_periods: int
     period_unit: str
@@ -120,6 +138,7 @@ class AnalysisOverview(BaseModel):
     emerging_total: int = 0
     new_jobs: list["EmergingJobInsight"] = Field(default_factory=list)
     new_jobs_total: int = 0
+    new_job_observation_total: int = 0
     data_quality: AnalysisDataQuality
     baseline: AnalysisBaseline
 
@@ -164,7 +183,12 @@ class CapabilityChangeInsight(BaseModel):
     period: str
     added: list[str]
     modified: list[str]
+    strengthened: list[str] = Field(default_factory=list)
+    weakened: list[str] = Field(default_factory=list)
     removed: list[str]
+    change_type: Literal["comparison"] = "comparison"
+    previous_sample_count: int = 0
+    current_sample_count: int = 0
 
 
 class JobInsightsResponse(BaseModel):

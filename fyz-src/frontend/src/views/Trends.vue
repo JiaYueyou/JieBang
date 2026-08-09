@@ -4,7 +4,7 @@
     <!-- Stats -->
     <div class="tr-stats anim-fade-up">
       <div class="tr-stat"><span class="tr-num">{{ stats.totalJobs }}</span><span class="tr-label">累计岗位数</span></div>
-      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">新兴技能（当前窗口）</span></div>
+      <div class="tr-stat"><span class="tr-num brand">{{ stats.newSkills }}</span><span class="tr-label">已确认新技能（当前窗口）</span></div>
       <div class="tr-stat"><span class="tr-num green">{{ stats.avgSalary }}</span><span class="tr-label">平均薪资</span></div>
       <div class="tr-stat"><span class="tr-num amber">{{ stats.activeCities }}</span><span class="tr-label">活跃城市</span></div>
     </div>
@@ -45,6 +45,7 @@
       <span><strong>{{ dataQuality.deduplicated_records }}</strong> 去重岗位</span>
       <span><strong>{{ dataQuality.independent_job_clusters }}</strong> 独立岗位簇</span>
       <span><strong>{{ dataQuality.independent_companies }}</strong> 独立企业</span>
+      <span><strong>{{ dataQuality.reviewable_skill_facts ?? dataQuality.verified_skill_facts }}</strong> 可复核技能事实</span>
       <span v-if="dataQuality.duplicate_records"><strong>{{ dataQuality.duplicate_records }}</strong> 条转载/重复已合并</span>
     </div>
 
@@ -70,35 +71,49 @@
 
     <!-- Emerging skills -->
     <div class="dash-card anim-fade-up anim-delay-3" style="margin-top:16px;">
-      <div class="dash-card-header"><span class="dash-card-title">新兴技能一览</span><span class="dash-card-badge">{{ emergingTotal }} 项</span></div>
-      <div class="dash-card-body" style="padding-top:12px;">
+      <div class="dash-card-header">
+        <div>
+          <span class="dash-card-title">技术变化候选</span>
+          <span class="tr-header-note">结合冻结历史基线与成熟技术目录，按跨企业、跨来源和持续性分级</span>
+        </div>
+        <span class="dash-card-badge">{{ emergingTotal }} 项技术判定</span>
+      </div>
+      <div
+        v-loading="isPageLoading"
+        class="dash-card-body"
+        style="padding-top:12px;"
+        :element-loading-text="pageLoadingText"
+        element-loading-background="rgba(255, 255, 255, 0.72)"
+      >
         <el-table :data="emergingSkills" style="width:100%" size="default" stripe>
           <el-table-column prop="skill" label="技能名称" min-width="160" />
-          <el-table-column prop="category" label="分类" width="120" align="center" />
+          <el-table-column label="分类" width="120" align="center">
+            <template #default="{ row }">{{ skillCategoryLabel(row.category) }}</template>
+          </el-table-column>
           <el-table-column label="热度趋势" width="200" align="center">
             <template #default="{ row }">
               <v-chart :option="sparkOption(row)" autoresize style="height:36px;width:170px;" />
             </template>
           </el-table-column>
-          <el-table-column prop="growth" label="增长率" width="100" align="center">
+          <el-table-column label="趋势评分" width="100" align="center">
             <template #default="{ row }">
-              <span :style="{ color: row.growth === null ? 'var(--color-warning)' : row.growth > 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
-                {{ row.growth === null ? (row.previous_count === 0 ? '新出现' : '待观察') : `${row.growth > 0 ? '+' : ''}${row.growth}%` }}
+              <span :style="{ color: row.trend_score >= 75 ? 'var(--color-success)' : row.trend_score >= 55 ? 'var(--color-warning)' : 'var(--text-secondary)', fontWeight: 700, fontFamily: 'var(--font-mono)' }">
+                {{ row.trend_score }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="本期 / 基线期" width="120" align="center">
+          <el-table-column label="本期 / 历史" width="120" align="center">
             <template #default="{ row }">
               <span class="trend-evidence-count">{{ row.current_count }} / {{ row.previous_count }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="企业证据" width="120" align="center">
-            <template #default="{ row }">{{ row.current_companies }} / {{ row.previous_companies }} 家</template>
+          <el-table-column label="市场证据" width="150" align="center">
+            <template #default="{ row }">{{ row.current_companies }}家 · {{ row.current_sources }}源 · {{ row.current_periods }}期</template>
           </el-table-column>
           <el-table-column prop="evidence_note" label="变化证据" min-width="260" show-overflow-tooltip />
-          <el-table-column prop="stage" label="生命周期" width="120" align="center">
+          <el-table-column prop="stage" label="生命周期" width="150" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.stage === '成长期' ? 'success' : row.stage === '成熟期' ? '' : 'warning'" size="small">{{ row.stage }}</el-tag>
+              <el-tag :type="row.stage === '新出现' ? 'success' : row.stage.includes('待确认') ? 'warning' : 'info'" size="small">{{ row.stage }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -108,7 +123,7 @@
             :page-size="emergingPageSize"
             :total="emergingTotal"
             layout="total, prev, pager, next"
-            @current-change="loadTrends"
+            @current-change="loadEmergingPage"
           />
         </div>
       </div>
@@ -117,10 +132,30 @@
     <!-- New jobs -->
     <div class="dash-card anim-fade-up anim-delay-3" style="margin-top:16px;">
       <div class="dash-card-header">
-        <span class="dash-card-title">新增岗位一览（历史基线之外）</span>
+        <span class="dash-card-title">新增岗位一览（含待确认）</span>
         <span class="dash-card-badge">{{ newJobsTotal }} 项</span>
       </div>
-      <div class="dash-card-body" style="padding-top:12px;">
+      <div
+        v-loading="isPageLoading"
+        class="dash-card-body"
+        style="padding-top:12px;"
+        :element-loading-text="pageLoadingText"
+        element-loading-background="rgba(255, 255, 255, 0.72)"
+      >
+        <div class="tr-section-tools">
+          <el-input
+            v-model="newJobFilter"
+            clearable
+            placeholder="搜索岗位、技能或说明"
+            style="width:300px;"
+            @clear="searchNewJobs"
+            @keyup.enter="searchNewJobs"
+          />
+          <el-button type="primary" @click="searchNewJobs">搜索</el-button>
+          <span v-if="newJobObservationTotal > newJobsTotal" class="tr-hint">
+            另有 {{ newJobObservationTotal - newJobsTotal }} 个岗位观察信号未展示
+          </span>
+        </div>
         <el-table :data="newJobs" style="width:100%" size="default" stripe>
           <el-table-column prop="name" label="岗位名称" min-width="180" />
           <el-table-column label="核心技能" min-width="220">
@@ -132,14 +167,14 @@
           <el-table-column prop="source_count" label="独立来源" width="100" align="center" />
           <el-table-column prop="description" label="说明" min-width="240" show-overflow-tooltip />
         </el-table>
-        <div v-if="!newJobsTotal" class="tr-hint" style="padding:8px 2px;">当前窗口内未发现历史基线之外的新增岗位</div>
+        <div v-if="!newJobsTotal" class="tr-hint" style="padding:8px 2px;">当前窗口内没有相对历史对照期首次出现的岗位</div>
         <div v-else class="tr-pagination-row">
           <el-pagination
             v-model:current-page="newJobPage"
             :page-size="newJobPageSize"
             :total="newJobsTotal"
             layout="total, prev, pager, next"
-            @current-change="loadTrends"
+            @current-change="loadNewJobPage"
           />
         </div>
       </div>
@@ -167,6 +202,7 @@ const PALETTE = ["#4f6ef6","#34b37e","#f59e4b","#7c6ff7","#5b9df5","#e85d5d"];
 const timeRange = ref<TrendQuery["window"]>("3m");
 const jobFilter = ref("");
 const cityFilter = ref("");
+const newJobFilter = ref("");
 const route = useRoute();
 
 const store = useTrendStore();
@@ -177,6 +213,7 @@ const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
 const emergingTotal = computed(() => data.value?.emergingTotal ?? 0);
 const newJobs = computed(() => data.value?.newJobs ?? []);
 const newJobsTotal = computed(() => data.value?.newJobsTotal ?? 0);
+const newJobObservationTotal = computed(() => data.value?.newJobObservationTotal ?? 0);
 const dataQuality = computed(() => data.value?.dataQuality ?? null);
 const windowLabel = computed(() => data.value?.windowLabel ?? "近 3 个月");
 const coverageText = computed(() => {
@@ -189,17 +226,86 @@ const emergingPage = ref(1);
 const emergingPageSize = ref(10);
 const newJobPage = ref(1);
 const newJobPageSize = ref(10);
+const isPageLoading = ref(false);
+const pageLoadingText = ref("正在加载趋势数据…");
+let loadSequence = 0;
 
-function loadTrends() {
-  return store.load({
-    window: timeRange.value,
-    keyword: jobFilter.value.trim() || undefined,
-    city: cityFilter.value || undefined,
-    emergingPage: emergingPage.value,
-    emergingPageSize: emergingPageSize.value,
-    newJobPage: newJobPage.value,
-    newJobPageSize: newJobPageSize.value,
-  });
+const SKILL_CATEGORY_LABELS: Record<string, string> = {
+  programming_language: "编程语言",
+  framework: "开发框架",
+  library: "技术库",
+  database: "数据库",
+  tool: "开发工具",
+  cloud: "云计算",
+  domain_knowledge: "领域知识",
+  soft_skill: "通用能力",
+  artificial_intelligence: "人工智能",
+  machine_learning: "机器学习",
+  "Machine Learning": "机器学习",
+  AI: "人工智能",
+  "AI/ML": "人工智能/机器学习",
+  "AI/LLM": "人工智能/大语言模型",
+  ai_ml: "人工智能/机器学习",
+  "AI Agent": "智能体技术",
+  "AI Application": "人工智能应用",
+  "AI Engineering": "人工智能工程",
+  "AI Infrastructure": "人工智能基础设施",
+  "AI Technology": "人工智能技术",
+  "AI Tools": "人工智能工具",
+  "Cloud Computing": "云计算",
+  Backend: "后端技术",
+  Frontend: "前端技术",
+  Language: "语言技术",
+  Programming: "编程技术",
+  "Data Analysis": "数据分析",
+  "Data Engineering": "数据工程",
+  "Data Processing": "数据处理",
+  "Deep Learning": "深度学习",
+  LLM: "大语言模型",
+  MLOps: "机器学习运维",
+  NLP: "自然语言处理",
+  DevOps: "开发运维",
+};
+
+function skillCategoryLabel(category: string) {
+  return SKILL_CATEGORY_LABELS[category] || "其他专业技能";
+}
+
+async function loadTrends() {
+  const sequence = ++loadSequence;
+  isPageLoading.value = true;
+  try {
+    await store.load({
+      window: timeRange.value,
+      keyword: jobFilter.value.trim() || undefined,
+      city: cityFilter.value || undefined,
+      emergingPage: emergingPage.value,
+      emergingPageSize: emergingPageSize.value,
+      newJobPage: newJobPage.value,
+      newJobPageSize: newJobPageSize.value,
+      newJobKeyword: newJobFilter.value.trim() || undefined,
+    });
+  } finally {
+    if (sequence === loadSequence) isPageLoading.value = false;
+  }
+}
+
+function searchNewJobs() {
+  newJobPage.value = 1;
+  pageLoadingText.value = "正在搜索新增岗位…";
+  void loadTrends();
+}
+
+function loadEmergingPage(page: number) {
+  emergingPage.value = page;
+  pageLoadingText.value = `正在加载新兴技能第 ${page} 页…`;
+  void loadTrends();
+}
+
+function loadNewJobPage(page: number) {
+  newJobPage.value = page;
+  pageLoadingText.value = `正在加载新增岗位第 ${page} 页…`;
+  void loadTrends();
 }
 
 let filterTimer: number | undefined;
@@ -207,13 +313,14 @@ watch([timeRange, jobFilter, cityFilter], () => {
   // 筛选条件变化时回到第一页，避免停留在越界页
   emergingPage.value = 1;
   newJobPage.value = 1;
+  pageLoadingText.value = "正在更新筛选结果…";
   window.clearTimeout(filterTimer);
-  filterTimer = window.setTimeout(loadTrends, 350);
+  filterTimer = window.setTimeout(() => void loadTrends(), 350);
 });
 
 onMounted(() => {
   if (typeof route.query.keyword === "string") jobFilter.value = route.query.keyword;
-  loadTrends();
+  void loadTrends();
 });
 
 // ── Job demand option ──
@@ -313,6 +420,18 @@ function sparkOption(row: any) {
   border:1px solid var(--color-border);
   color:var(--color-brand);
   font-size:12px;
+}
+.tr-header-note {
+  margin-left:10px;
+  color:var(--text-secondary);
+  font-size:12px;
+  font-weight:400;
+}
+.tr-section-tools {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:0 0 12px;
 }
 .tr-pagination-row {
   display:flex;

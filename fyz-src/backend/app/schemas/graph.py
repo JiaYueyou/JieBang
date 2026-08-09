@@ -97,6 +97,12 @@ class GraphEnrichmentCandidatePage(BaseModel):
     total: int
     page: int
     page_size: int
+    machine_failed_pending_count: int = 0
+
+
+class GraphEnrichmentBatchRejectResponse(BaseModel):
+    rejected_count: int
+    candidate_ids: list[int] = Field(default_factory=list)
 
 
 class GraphEnrichmentReviewRequest(BaseModel):

@@ -57,8 +57,23 @@ def test_cleanup_never_deletes_other_namespaces(monkeypatch):
     )
     Neo4jGraphRepository().cleanup_stale("v2")
     assert len(calls) == 2
-    assert all(params == {"namespace": "jiebang", "version": "v2"} for _, params in calls)
+    assert all(params["namespace"] == "jiebang" and params["version"] == "v2" for _, params in calls)
     assert all("namespace:$namespace" in query for query, _ in calls)
+    assert all("label IN $allowed_labels" in query for query, _ in calls)
+    assert all("EvidenceChunk" not in params["allowed_labels"] for _, params in calls)
+
+
+def test_counts_excludes_retrieval_evidence_nodes(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        graph_module, "run_read",
+        lambda query, params=None: calls.append((query, params)) or [{"count": 7}],
+    )
+
+    assert Neo4jGraphRepository().counts() == {"nodes": 7, "edges": 7}
+    assert len(calls) == 2
+    assert all("label IN $allowed_labels" in query for query, _ in calls)
+    assert all("EvidenceChunk" not in params["allowed_labels"] for _, params in calls)
 
 
 def test_query_nodes_excludes_non_graph_labels(monkeypatch):

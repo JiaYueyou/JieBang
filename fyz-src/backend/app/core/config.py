@@ -126,6 +126,40 @@ CELERY_TASK_ALWAYS_EAGER = (
     == "true"
 )
 
+# Long-running data refresh.  Tests never start external crawlers.  In a
+# deployed API process the scheduler is enabled by default and guarded by a
+# database idempotency key, so multiple workers cannot execute the same slot.
+AUTO_PIPELINE_ENABLED = (
+    os.getenv("AUTO_PIPELINE_ENABLED", "false" if TESTING else "true").lower()
+    == "true"
+)
+AUTO_PIPELINE_INTERVAL_MINUTES = max(
+    15, int(os.getenv("AUTO_PIPELINE_INTERVAL_MINUTES", "1440"))
+)
+AUTO_PIPELINE_STARTUP_DELAY_SECONDS = max(
+    0, int(os.getenv("AUTO_PIPELINE_STARTUP_DELAY_SECONDS", "60"))
+)
+AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS = max(
+    60, int(os.getenv("AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS", "1800"))
+)
+AUTO_PIPELINE_SOURCE_IDS = tuple(
+    int(value.strip())
+    for value in os.getenv("AUTO_PIPELINE_SOURCE_IDS", "4,5,6").split(",")
+    if value.strip().isdigit()
+)
+AUTO_PIPELINE_ENRICH_GRAPH = (
+    os.getenv("AUTO_PIPELINE_ENRICH_GRAPH", "true").lower() == "true"
+)
+AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE = min(
+    1.0, max(0.0, float(os.getenv("AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE", "0.90")))
+)
+AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS = max(
+    6, int(os.getenv("AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS", "24"))
+)
+AUTO_PIPELINE_BASELINE_LAG_MONTHS = max(
+    1, int(os.getenv("AUTO_PIPELINE_BASELINE_LAG_MONTHS", "2"))
+)
+
 # Import files are restricted to this directory.
 DATA_DIR = os.path.abspath(
     os.getenv(

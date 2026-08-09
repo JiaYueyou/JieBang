@@ -196,3 +196,21 @@ async def test_review_enrichment_reject_does_not_trigger_sync(client, auth_heade
     assert response.json()["message"] == "候选已驳回"
     assert mock_sync.await_count == 0
     assert mock_prepare.await_count == 0
+
+
+async def test_reject_machine_failed_candidates_uses_server_reasons(client, auth_headers):
+    with patch(
+        "app.api.v1.graph.GraphService.reject_machine_failed_candidates",
+        new=AsyncMock(return_value=[3, 5, 8]),
+    ) as mock_reject:
+        response = await client.post(
+            "/api/v1/graph/enrichment/candidates/reject-machine-failed",
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 200
+    assert response.json()["data"] == {
+        "rejected_count": 3,
+        "candidate_ids": [3, 5, 8],
+    }
+    assert mock_reject.await_count == 1

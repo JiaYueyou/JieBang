@@ -131,8 +131,10 @@ class SpiderMeta:
 
 # 已注册的爬虫
 REGISTERED_SPIDERS = [
-    SpiderMeta(1, "zhaopin_spider", "智联招聘", "ZL", "zhaopin.com", "brand"),
     SpiderMeta(2, "iflytek_spider", "科大讯飞", "XF", "iflytek.com", "violet"),
+    SpiderMeta(4, "jd_spider", "京东社会招聘", "JD", "zhaopin.jd.com", "rose"),
+    SpiderMeta(5, "meituan_spider", "美团社会招聘", "MT", "zhaopin.meituan.com", "green"),
+    SpiderMeta(6, "deepseek_spider", "DeepSeek招聘", "DS", "talent.deepseek.com", "violet"),
 ]
 
 # 采集结果分类（poll_spider 返回的 error_category）
@@ -151,7 +153,9 @@ class CrawlerService:
         self._progress_info: dict[int, str] = {}
         self._stderr: dict[int, list[str]] = {}
         self._stdout: dict[int, list[str]] = {}
-        self._enabled: dict[int, bool] = {1: True, 2: True}  # 爬虫启停状态
+        self._enabled: dict[int, bool] = {
+            meta.id: True for meta in REGISTERED_SPIDERS
+        }  # 爬虫启停状态
         self._last_runs: dict[int, dict] = {}
         self._network_sample: tuple[float, int, int] | None = None
 
@@ -216,7 +220,7 @@ class CrawlerService:
     # 爬虫控制
     # ------------------------------------------------------------------
 
-    def run_spider(self, spider_id: int) -> dict:
+    def run_spider(self, spider_id: int, crawl_config: dict | None = None) -> dict:
         """启动爬虫（异步子进程）"""
         meta = self._find_spider(spider_id)
         if not meta:
@@ -230,13 +234,30 @@ class CrawlerService:
 
         # 启动子进程（设置输出目录为 data/）
         logger.info("启动爬虫: %s (%s)", meta.name, meta.script_path)
+        config = crawl_config or {}
+        command = [
+            sys.executable,
+            str(meta.script_path.relative_to(SCRIPTS_DIR)),
+            "--output-dir", str(DATA_DIR),
+        ]
+        max_pages = int(config.get("max_pages") or 0)
+        if max_pages > 0 and meta.module_name in {
+            "jd_spider", "meituan_spider", "deepseek_spider",
+        }:
+            command.extend(["--max-pages", str(max_pages)])
+        environment = os.environ.copy()
+        if int(config.get("max_records") or 0) > 0:
+            environment["JIEBANG_SPIDER_MAX_RECORDS"] = str(int(config["max_records"]))
+        if max_pages > 0:
+            environment["JIEBANG_SPIDER_MAX_PAGES"] = str(max_pages)
+        if int(config.get("timeout_seconds") or 0) > 0:
+            environment["JIEBANG_SPIDER_TIMEOUT"] = str(int(config["timeout_seconds"]))
+        if int(config.get("retry_count") or 0) >= 0:
+            environment["JIEBANG_SPIDER_RETRY_COUNT"] = str(int(config.get("retry_count", 2)) + 1)
         proc = subprocess.Popen(
-            [
-                sys.executable,
-                str(meta.script_path.relative_to(SCRIPTS_DIR)),
-                "--output-dir", str(DATA_DIR),
-            ],
+            command,
             cwd=str(SCRIPTS_DIR),
+            env=environment,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -413,6 +434,19 @@ class CrawlerService:
         current = self._enabled.get(spider_id, True)
         self._enabled[spider_id] = not current
         return {"id": spider_id, "enabled": self._enabled[spider_id]}
+
+    def set_crawler_enabled(self, spider_id: int, enabled: bool) -> dict:
+        if not self._find_spider(spider_id):
+            raise ValueError(f"未知爬虫 ID: {spider_id}")
+        self._enabled[spider_id] = enabled
+        return {"id": spider_id, "enabled": enabled}
+
+    def stop_spider(self, spider_id: int) -> None:
+        """Terminate a tracked crawler process after an orchestration timeout."""
+        proc = self._running_tasks.get(spider_id)
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+
 
     # ------------------------------------------------------------------
     # 内部辅助

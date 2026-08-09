@@ -64,13 +64,15 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
       const data = db();
       const openJobs = data.jobs.filter((job) => job.status === "open");
       const hotJobs = data.jobs.slice(0, 12).map((job, index) => ({
-        job_id: job.id,
+        standard_job_id: job.id,
         title: job.title,
         demand: [243, 156, 187, 132, 108, 165][index] ?? 100,
         city: job.location || "全国",
         trend: [-5, 23, 8, 18, 15, -3][index] ?? 0,
         spark: [[260, 255, 250, 248, 245, 243], [30, 45, 62, 85, 110, 156], [140, 148, 155, 165, 175, 187], [40, 55, 68, 85, 108, 132], [35, 48, 60, 75, 92, 108], [170, 172, 168, 166, 164, 165]][index] ?? [0, 0, 0, 0, 0, 0],
         core_skills: (job.skills ?? []).slice(0, 5),
+        lifecycle_stage: (index < 3 ? "mature" : index < 7 ? "established" : "observed") as "mature" | "established" | "observed",
+        active_period_count: index < 3 ? 6 : index < 7 ? 3 : 1,
       }));
       const hotJobsPage = query?.hotJobsPage || 1;
       const hotJobsPageSize = query?.hotJobsPageSize || 10;
@@ -133,8 +135,11 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
   talents: {
     async list(){return delay(db().talents);},
     async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
+    async getDetails(){throw new Error("简历详情仅支持后端数据模式");},
     async upload(){throw new Error("简历上传仅支持后端数据模式");},
     async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async preview(){throw new Error("简历预览仅支持后端数据模式");},
+    async matchJobs(){throw new Error("岗位匹配仅支持后端数据模式");},
     async recalculate(){return delay({resumes_processed:db().talents.length,matches_upserted:0});},
     async explain(){throw new Error("匹配解释仅支持后端数据模式");},
   },
@@ -204,8 +209,9 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async startEnrichment(){throw new Error("L4/L5 候选生成仅支持后端数据模式");},
     async startPublication(){throw new Error("候选发布仅支持后端数据模式");},
     async getTask(){throw new Error("异步任务查询仅支持后端数据模式");},
-    async listEnrichment(){return delay({items:[],total:0,page:1,page_size:12});},
+    async listEnrichment(){return delay({items:[],total:0,page:1,page_size:12,machine_failed_pending_count:0});},
     async reviewEnrichment(){throw new Error("候选审核仅支持后端数据模式");},
+    async rejectMachineFailedEnrichment(){throw new Error("候选审核仅支持后端数据模式");},
     async publishEnrichment(){throw new Error("候选发布仅支持后端数据模式");},
   },
   favorites: {

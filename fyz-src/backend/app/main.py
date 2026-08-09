@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.bootstrap import bootstrap_initial_admin
 from app.core.exception_handlers import register_exception_handlers
 from app.core.neo4j import close_driver as close_neo4j
+from app.core.config import AUTO_PIPELINE_ENABLED, AUTO_PIPELINE_STARTUP_DELAY_SECONDS
 from app.schemas.common import ApiResponse
 
 from app.api.v1.auth import router as auth_router
@@ -48,11 +49,21 @@ async def lifespan(app: FastAPI):
     )
 
     await recover_pending_agent_tasks()
+    from app.services.pipeline_service import (
+        recover_pipeline_runs,
+        shutdown_pipeline_scheduler,
+        start_pipeline_scheduler,
+    )
+
+    await recover_pipeline_runs()
+    if AUTO_PIPELINE_ENABLED:
+        await start_pipeline_scheduler(AUTO_PIPELINE_STARTUP_DELAY_SECONDS)
     # 初始化 Neo4j 驱动
     from app.core.neo4j import get_driver
 
     get_driver()
     yield
+    await shutdown_pipeline_scheduler()
     await shutdown_agent_tasks()
     close_neo4j()
 

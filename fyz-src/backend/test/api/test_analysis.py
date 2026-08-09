@@ -167,6 +167,23 @@ async def test_analysis_rejects_unsupported_trend_window(client, auth_headers):
     assert response.status_code == 422
 
 
+async def test_reference_standards_support_server_side_pagination(client, auth_headers):
+    response = await client.get(
+        "/api/v1/analysis/reference-standards",
+        params={"page": 1, "page_size": 5, "keyword": "Python", "stack": "backend"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["page"] == 1
+    assert data["page_size"] == 5
+    assert len(data["items"]) <= 5
+    assert data["total_pages"] == (
+        (data["total"] + data["page_size"] - 1) // data["page_size"]
+        if data["total"] else 0
+    )
+
+
 async def test_analysis_supports_required_trend_windows(client, auth_headers):
     expected = {
         "15d": (15, "day"),

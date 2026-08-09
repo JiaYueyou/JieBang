@@ -26,6 +26,19 @@ async def test_resume_match_explanation_and_controlled_download(client, auth_hea
     assert talents[0]["name"] == "张三"
     assert talents[0]["match_id"] == created["matches"][0]["id"]
 
+    details = await client.get(f"/api/v1/talents/{created['id']}/details", headers=auth_headers)
+    assert details.status_code == 200, details.text
+    assert details.json()["data"]["parsed_text"]
+    assert details.json()["data"]["skills"][0]["evidence_text"]
+
+    selected = await client.post(
+        f"/api/v1/resumes/{created['id']}/matches",
+        headers=auth_headers,
+        json={"job_ids": [created["matches"][0]["job_id"]]},
+    )
+    assert selected.status_code == 200, selected.text
+    assert selected.json()["data"][0]["matched"] == ["Python"]
+
     explanation = await client.post(f"/api/v1/matches/{talents[0]['match_id']}/explanation", headers=auth_headers)
     assert explanation.status_code == 200, explanation.text
     assert explanation.json()["data"]["score"] == 50

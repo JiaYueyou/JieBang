@@ -9,8 +9,18 @@ from app.services.crawler_service import (
     CRAWLER_STATUS_OK,
     CRAWLER_STATUS_RUN_FAILED,
     CrawlerService,
+    REGISTERED_SPIDERS,
     SpiderMeta,
 )
+
+
+def test_registered_official_portals_have_unique_ids_and_scripts():
+    ids = [meta.id for meta in REGISTERED_SPIDERS]
+    modules = {meta.module_name for meta in REGISTERED_SPIDERS}
+    assert len(ids) == len(set(ids))
+    assert modules == {"iflytek_spider", "jd_spider", "meituan_spider", "deepseek_spider"}
+    assert all(meta.exists() for meta in REGISTERED_SPIDERS)
+    assert set(CrawlerService()._enabled) == set(ids)
 
 
 class FakeProc:
@@ -38,7 +48,7 @@ def _stats_lines(fetched=0, duplicates=0, errors=0, pages=0) -> list[str]:
 def _service_with_proc(
     returncode: int,
     stderr_lines: list[str],
-    spider_id: int = 1,
+    spider_id: int = 2,
 ) -> CrawlerService:
     service = CrawlerService()
     service._running_tasks[spider_id] = FakeProc(returncode)
@@ -77,7 +87,7 @@ def test_parse_spider_stats_chinese_colon():
 def test_poll_run_failed(monkeypatch):
     monkeypatch.setattr(SpiderMeta, "_latest_output", lambda self: None)
     service = _service_with_proc(returncode=1, stderr_lines=["boom"])
-    result = service.poll_spider(1)
+    result = service.poll_spider(2)
     assert result["error_category"] == CRAWLER_STATUS_RUN_FAILED
     assert result["error_reason"] == "exception"
     assert "异常退出" in result["message"]
@@ -89,7 +99,7 @@ def test_poll_no_data_network(monkeypatch):
     service = _service_with_proc(
         returncode=0, stderr_lines=_stats_lines(fetched=0, errors=3)
     )
-    result = service.poll_spider(1)
+    result = service.poll_spider(2)
     assert result["error_category"] == CRAWLER_STATUS_NO_DATA
     assert result["error_reason"] == "network"
     assert result["stats"]["errors"] == 3
@@ -101,7 +111,7 @@ def test_poll_no_data_no_response(monkeypatch):
     service = _service_with_proc(
         returncode=0, stderr_lines=_stats_lines(fetched=0, errors=0)
     )
-    result = service.poll_spider(1)
+    result = service.poll_spider(2)
     assert result["error_category"] == CRAWLER_STATUS_NO_DATA
     assert result["error_reason"] == "no_response"
     assert "页面结构变更" in result["message"] or "登录" in result["message"]
@@ -109,7 +119,7 @@ def test_poll_no_data_no_response(monkeypatch):
 
 def test_poll_no_data_unchanged(monkeypatch, tmp_path):
     # 旧文件（mtime 早于本次运行）且 fetched>0 → 业务内容无变化，复用快照
-    old_file = tmp_path / "zhaopin_1.json"
+    old_file = tmp_path / "iflytek_1.json"
     old_file.write_text(json.dumps([{"title": "t"}]), encoding="utf-8")
     past = time.time() - 3600
     os.utime(old_file, (past, past))
@@ -117,15 +127,15 @@ def test_poll_no_data_unchanged(monkeypatch, tmp_path):
     service = _service_with_proc(
         returncode=0, stderr_lines=_stats_lines(fetched=5)
     )
-    result = service.poll_spider(1)
+    result = service.poll_spider(2)
     assert result["error_category"] == CRAWLER_STATUS_NO_DATA
     assert result["error_reason"] == "unchanged"
-    assert result["filename"] == "zhaopin_1.json"
+    assert result["filename"] == "iflytek_1.json"
     assert "内容一致" in result["message"]
 
 
 def test_poll_ok(monkeypatch, tmp_path):
-    new_file = tmp_path / "zhaopin_2.json"
+    new_file = tmp_path / "iflytek_2.json"
     new_file.write_text(
         json.dumps([{"title": "a"}, {"title": "b"}]), encoding="utf-8"
     )
@@ -133,7 +143,7 @@ def test_poll_ok(monkeypatch, tmp_path):
     service = _service_with_proc(
         returncode=0, stderr_lines=_stats_lines(fetched=2)
     )
-    result = service.poll_spider(1)
+    result = service.poll_spider(2)
     assert result["error_category"] == CRAWLER_STATUS_OK
     assert result["error_reason"] == ""
     assert result["records_count"] == 2

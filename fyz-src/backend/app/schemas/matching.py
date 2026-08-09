@@ -19,7 +19,16 @@ class MatchResponse(BaseModel):
     matched: list[str]
     missing: list[str]
     algorithm_version: str
+    urgent: bool = False
     evidence: list[MatchEvidenceResponse] = Field(default_factory=list)
+
+
+class ResumeSkillDetailResponse(BaseModel):
+    name: str
+    category: str
+    confidence: float
+    evidence_text: str
+    extraction_method: str
 
 
 class ResumeCreatedResponse(BaseModel):
@@ -51,6 +60,21 @@ class TalentResponse(BaseModel):
     urgent: bool = False
     company: str = ""
     location: str = ""
+    matches: list[MatchResponse] = Field(default_factory=list)
+
+
+class TalentDetailResponse(TalentResponse):
+    file_size: int
+    content_type: str | None = None
+    parsed_text: str = ""
+    profile: dict = Field(default_factory=dict)
+    parse_warnings: list[str] = Field(default_factory=list)
+    skills: list[ResumeSkillDetailResponse] = Field(default_factory=list)
+    matches: list[MatchResponse] = Field(default_factory=list)
+
+
+class ResumeMatchRequest(BaseModel):
+    job_ids: list[int] = Field(min_length=1, max_length=30)
 
 
 class MatchExplanationResponse(BaseModel):

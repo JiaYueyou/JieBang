@@ -708,7 +708,7 @@ async def test_append_verified_deep_nodes_counts():
         service = GraphService(db, llm_provider=_MockProvider())
         nodes = {"TechPoint": [], "KnowledgePoint": []}
         edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
-        tech_count, knowledge_count, candidate_ids = await service._append_verified_deep_nodes(
+        tech_count, knowledge_count, candidate_ids, superseded_ids = await service._append_verified_deep_nodes(
             snapshot.id, nodes, edges, {skill.id: skill}
         )
 
@@ -719,6 +719,7 @@ async def test_append_verified_deep_nodes_counts():
         await db.refresh(candidate)
         assert candidate.publication_status == "approved"
         assert candidate_ids == [candidate.id]
+        assert superseded_ids == []
         assert len(nodes["TechPoint"]) == 1
         assert len(nodes["KnowledgePoint"]) == 1
         assert len(edges["REFINES_TO"]) == 1
@@ -756,6 +757,98 @@ async def test_machine_validated_candidate_requires_review_before_publication():
         assert reviewed["lock_version"] == 1
         assert reviewed["evidence_source_ids"] == ["1", "2"]
         assert await service.prepare_enrichment_publication([candidate.id]) == 1
+
+
+async def test_machine_failed_candidates_are_rejected_with_automatic_reasons():
+    async with async_session() as db:
+        user = User(username="graph-auto-reject", password_hash="x", role="admin")
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="reject-v1",
+            snapshot_type="incremental", status="succeeded",
+        )
+        skills = [
+            Skill(
+                name=name, canonical_name=name, canonical_key=f"reject-{index}",
+                category="tool", aliases=[],
+            )
+            for index, name in enumerate(("PyTorch", "Git", "Pandas"), 1)
+        ]
+        db.add_all([user, snapshot, *skills])
+        await db.flush()
+        failed = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skills[0].id,
+            candidate_data={
+                "reason": "insufficient_evidence", "sources": ["智联招聘"]
+            },
+            evidence_source_ids=["e1"], confidence=0.4,
+            machine_validation_status="insufficient_evidence",
+        )
+        passed = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skills[1].id,
+            candidate_data=_make_output([]).model_dump(mode="json"),
+            evidence_source_ids=["e1", "e2"], confidence=0.9,
+            machine_validation_status="passed",
+        )
+        still_running = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skills[2].id,
+            candidate_data={}, evidence_source_ids=[], confidence=0,
+            machine_validation_status="pending",
+        )
+        db.add_all([failed, passed, still_running])
+        await db.commit()
+
+        service = GraphService(db, llm_provider=_MockProvider())
+        rejected_ids = await service.reject_machine_failed_candidates(user_id=user.id)
+
+        assert rejected_ids == [failed.id]
+        await db.refresh(failed)
+        await db.refresh(passed)
+        await db.refresh(still_running)
+        assert failed.review_status == "rejected"
+        assert failed.publication_status == "rejected"
+        assert failed.review_note == (
+            "机器审核未通过：独立证据来源不足，未达到双来源门槛（当前来源：智联招聘）"
+        )
+        assert failed.reviewed_by == user.id
+        assert passed.review_status == "pending"
+        assert still_running.review_status == "pending"
+
+
+async def test_single_machine_failed_rejection_does_not_require_manual_note():
+    async with async_session() as db:
+        user = User(username="graph-auto-note", password_hash="x", role="admin")
+        skill = Skill(
+            name="Git", canonical_name="Git", canonical_key="git-auto-note",
+            category="tool", aliases=[],
+        )
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="reject-v2",
+            snapshot_type="incremental", status="succeeded",
+        )
+        db.add_all([user, skill, snapshot])
+        await db.flush()
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skill.id,
+            candidate_data={
+                "reason": "insufficient_grounding",
+                "machine_validation": {"rejected_claim_count": 2},
+            },
+            evidence_source_ids=["e1", "e2"], confidence=0.2,
+            machine_validation_status="failed",
+        )
+        db.add(candidate)
+        await db.commit()
+
+        reviewed = await GraphService(
+            db, llm_provider=_MockProvider()
+        ).review_enrichment_candidate(
+            candidate.id, action="reject", note=None,
+            lock_version=0, user_id=user.id,
+        )
+
+        assert reviewed["review_note"] == (
+            "机器审核未通过：生成内容未通过证据引用校验，2 条技术陈述未被证据支持"
+        )
 
 
 def test_dedupe_by_name_keeps_first_and_ignores_blank():
@@ -844,7 +937,7 @@ async def test_append_verified_deep_nodes_dedupes_same_name_points():
         service = GraphService(db, llm_provider=_MockProvider())
         nodes = {"TechPoint": [], "KnowledgePoint": []}
         edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
-        tech_count, knowledge_count, _ = await service._append_verified_deep_nodes(
+        tech_count, knowledge_count, _, _ = await service._append_verified_deep_nodes(
             snapshot.id, nodes, edges
         )
         assert tech_count == 1  # Flask / flask 同名去重
@@ -857,6 +950,54 @@ async def test_append_verified_deep_nodes_dedupes_same_name_points():
         assert knowledge_names == ["请求上下文"]
         assert len(edges["REFINES_TO"]) == 1
         assert len(edges["HAS_KNOWLEDGE"]) == 1
+
+
+async def test_append_verified_deep_nodes_supersedes_older_candidate_for_same_skill():
+    async with async_session() as db:
+        skill = await _seed_python_skill(db)
+        old_snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="version-old",
+            snapshot_type="incremental", status="succeeded",
+        )
+        new_snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="version-new",
+            snapshot_type="incremental", status="running",
+        )
+        db.add_all([old_snapshot, new_snapshot])
+        await db.flush()
+
+        def candidate(snapshot_id: str, point_name: str) -> GraphEnrichmentCandidate:
+            return GraphEnrichmentCandidate(
+                snapshot_id=snapshot_id, skill_id=skill.id,
+                verification_status="verified", review_status="approved",
+                publication_status="approved",
+                evidence_source_ids=["e1", "e2"], confidence=0.9,
+                candidate_data=_make_output([
+                    TechPointOutput(
+                        name=point_name, detail=point_name, confidence=0.9,
+                        evidence_ids=["e1", "e2"],
+                    )
+                ]).model_dump(mode="json"),
+            )
+
+        older = candidate(old_snapshot.id, "旧版技术点")
+        newer = candidate(new_snapshot.id, "新版技术点")
+        db.add(older)
+        await db.flush()
+        db.add(newer)
+        await db.commit()
+
+        nodes = {"TechPoint": [], "KnowledgePoint": []}
+        edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
+        _, _, published_ids, superseded_ids = await GraphService(
+            db, llm_provider=_MockProvider()
+        )._append_verified_deep_nodes(new_snapshot.id, nodes, edges)
+
+        assert published_ids == [newer.id]
+        assert superseded_ids == [older.id]
+        assert [row["properties"]["name"] for row in nodes["TechPoint"]] == [
+            "新版技术点"
+        ]
 
 
 async def test_append_verified_deep_nodes_merges_same_name_across_skills():
@@ -905,7 +1046,7 @@ async def test_append_verified_deep_nodes_merges_same_name_across_skills():
         service = GraphService(db, llm_provider=_MockProvider())
         nodes = {"TechPoint": [], "KnowledgePoint": []}
         edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
-        tech_count, _, _ = await service._append_verified_deep_nodes(
+        tech_count, _, _, _ = await service._append_verified_deep_nodes(
             snapshot.id, nodes, edges
         )
         # 两个候选生成同 key 技术点 → 全局收集合并为 1 个唯一节点
@@ -1011,7 +1152,7 @@ async def test_append_verified_deep_nodes_merges_suffix_variant_across_skills():
         service = GraphService(db, llm_provider=_MockProvider())
         nodes = {"TechPoint": [], "KnowledgePoint": []}
         edges = {"REFINES_TO": [], "HAS_KNOWLEDGE": []}
-        tech_count, _, _ = await service._append_verified_deep_nodes(
+        tech_count, _, _, _ = await service._append_verified_deep_nodes(
             snapshot.id, nodes, edges
         )
         # 变体名称归一为同一 key → 全局收集只生成 1 个唯一节点，两个 skill 共享

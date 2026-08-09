@@ -146,24 +146,38 @@ class Neo4jGraphRepository:
 
     def cleanup_stale(self, version: str) -> None:
         run_write(
-            "MATCH ()-[r {namespace:$namespace}]->() "
-            "WHERE r.syncVersion <> $version DELETE r",
-            {"namespace": self.namespace, "version": version},
+            "MATCH (a)-[r {namespace:$namespace}]->(b) "
+            "WHERE r.syncVersion <> $version "
+            "AND any(label IN labels(a) WHERE label IN $allowed_labels) "
+            "AND any(label IN labels(b) WHERE label IN $allowed_labels) DELETE r",
+            {
+                "namespace": self.namespace, "version": version,
+                "allowed_labels": sorted(GRAPH_LABELS),
+            },
         )
         run_write(
             "MATCH (n {namespace:$namespace}) WHERE n.syncVersion <> $version "
+            "AND any(label IN labels(n) WHERE label IN $allowed_labels) "
             "DETACH DELETE n",
-            {"namespace": self.namespace, "version": version},
+            {
+                "namespace": self.namespace, "version": version,
+                "allowed_labels": sorted(GRAPH_LABELS),
+            },
         )
 
     def counts(self) -> dict:
         nodes = run_read(
-            "MATCH (n {namespace:$namespace}) RETURN count(n) AS count",
-            {"namespace": self.namespace},
+            "MATCH (n {namespace:$namespace}) "
+            "WHERE any(label IN labels(n) WHERE label IN $allowed_labels) "
+            "RETURN count(n) AS count",
+            {"namespace": self.namespace, "allowed_labels": sorted(GRAPH_LABELS)},
         )[0]["count"]
         edges = run_read(
-            "MATCH ()-[r {namespace:$namespace}]->() RETURN count(r) AS count",
-            {"namespace": self.namespace},
+            "MATCH (a)-[r {namespace:$namespace}]->(b) "
+            "WHERE any(label IN labels(a) WHERE label IN $allowed_labels) "
+            "AND any(label IN labels(b) WHERE label IN $allowed_labels) "
+            "RETURN count(r) AS count",
+            {"namespace": self.namespace, "allowed_labels": sorted(GRAPH_LABELS)},
         )[0]["count"]
         return {"nodes": nodes, "edges": edges}
 

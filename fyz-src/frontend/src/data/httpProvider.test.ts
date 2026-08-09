@@ -508,6 +508,7 @@ describe("HTTP job and JD Agent provider contract", () => {
         emerging_page_size: 10,
         new_job_page: 1,
         new_job_page_size: 10,
+        new_job_keyword: undefined,
       },
     });
   });
