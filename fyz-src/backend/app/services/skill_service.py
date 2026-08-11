@@ -30,6 +30,7 @@ from app.schemas.skill import (
 )
 from app.services.job_service import JobService
 from app.services.skill_extractor import RuleSkillExtractor, normalize_text
+from app.services.task_status_cache import bump_cache_generations
 
 
 class SkillService:
@@ -92,6 +93,7 @@ class SkillService:
                 created_by=user_id,
             )
             await self.db.commit()
+            await bump_cache_generations("analysis", "dashboard")
             return JobExtractionResult(
                 job_id=job.id,
                 facts=[self._fact_response(fact) for fact in facts],
@@ -161,6 +163,7 @@ class SkillService:
             # 事实审核即技能认可：联动提升 LLM 新技能的 pending_review 状态
             await self._approve_pending_skills([fact])
         await self.db.commit()
+        await bump_cache_generations("analysis", "dashboard")
         row = await self.skills.get_fact_review(fact_id)
         if not row:
             raise ResourceNotFoundError("技能事实不存在")
@@ -189,6 +192,7 @@ class SkillService:
         if decision == VerificationStatus.verified:
             await self._approve_pending_skills(facts)
         await self.db.commit()
+        await bump_cache_generations("analysis", "dashboard")
         processed_ids = [fact.id for fact in facts]
         skipped_count = max(0, len(unique_ids) - len(processed_ids)) if fact_ids is not None else 0
         return processed_ids, skipped_count

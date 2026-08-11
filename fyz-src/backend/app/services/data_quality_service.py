@@ -19,6 +19,7 @@ from app.schemas.data_quality import (
     RawJobQualityItem,
 )
 from app.services.import_service import ImportService
+from app.services.task_status_cache import bump_cache_generations
 
 
 class DataQualityService:
@@ -145,6 +146,7 @@ class DataQualityService:
             raw.excluded_at = None
             await ImportService(self.db)._cross_validate_facts([])
         await self.db.commit()
+        await bump_cache_generations("analysis", "dashboard")
         source = await self.db.get(SourceDocument, raw.source_document_id)
         return self._item(raw, source)
 

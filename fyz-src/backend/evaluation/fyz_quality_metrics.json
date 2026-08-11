@@ -1,0 +1,95 @@
+{
+  "dataset_version": "fyz-quality-v1",
+  "generated_at": "2026-08-10T06:17:15.723785+00:00",
+  "scope": "FYZ backend only",
+  "thresholds": {
+    "jd_anchor_recall": 0.9,
+    "resume_micro_f1": 0.9,
+    "matching_exact_accuracy": 0.9
+  },
+  "jd_extraction": {
+    "dataset": "checked-in crawled JD positive keyword anchors",
+    "records": 100,
+    "source_distribution": {
+      "jd_crawl_ifly.json": 50,
+      "jd_crawl_zl.json": 50
+    },
+    "records_with_recognized_anchors": 80,
+    "anchor_true_positive": 102,
+    "anchor_false_negative": 1,
+    "anchor_recall": 0.9903,
+    "anchor_proxy_f1": 0.9951,
+    "limitation": "Source keywords are positive-only and incomplete; false-positive rate and fully-labelled JD precision cannot be inferred."
+  },
+  "resume_extraction": {
+    "dataset": "deterministic labelled resume skill boundary cases",
+    "records": 60,
+    "true_positive": 180,
+    "false_positive": 3,
+    "false_negative": 0,
+    "micro_precision": 0.983607,
+    "micro_recall": 1.0,
+    "micro_f1": 0.991736,
+    "exact_case_accuracy": 0.95,
+    "failure_count": 3,
+    "failures": [
+      {
+        "id": "resume-003",
+        "predicted": [
+          "JavaScript",
+          "MySQL",
+          "React",
+          "TypeScript"
+        ],
+        "expected": [
+          "MySQL",
+          "React",
+          "TypeScript"
+        ]
+      },
+      {
+        "id": "resume-027",
+        "predicted": [
+          "JavaScript",
+          "MySQL",
+          "React",
+          "TypeScript"
+        ],
+        "expected": [
+          "MySQL",
+          "React",
+          "TypeScript"
+        ]
+      },
+      {
+        "id": "resume-051",
+        "predicted": [
+          "JavaScript",
+          "MySQL",
+          "React",
+          "TypeScript"
+        ],
+        "expected": [
+          "MySQL",
+          "React",
+          "TypeScript"
+        ]
+      }
+    ]
+  },
+  "matching": {
+    "dataset": "deterministic labelled end-to-end skill coverage cases",
+    "records": 60,
+    "exact_score_accuracy": 1.0,
+    "exact_matched_set_accuracy": 1.0,
+    "mean_absolute_score_error": 0,
+    "failure_count": 0,
+    "failures": []
+  },
+  "gates": {
+    "jd_anchor_recall": true,
+    "resume_micro_f1": true,
+    "matching_exact_accuracy": true
+  },
+  "all_quality_gates_passed": true
+}

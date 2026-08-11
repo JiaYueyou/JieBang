@@ -6,6 +6,7 @@ from app.domain.agent_status import AgentRunStatus, AsyncTaskStatus
 from app.models import AgentRun, AsyncTask
 from app.schemas.agent import GenerateJDRequest, JDInputSuggestionRequest
 from app.services.jd_generation_service import JDGenerationService
+from app.services.task_status_cache import publish_task_status
 
 
 async def _process_jd_generation(task_id: str) -> dict:
@@ -19,6 +20,7 @@ async def _process_jd_generation(task_id: str) -> dict:
         task.started_at = started_at
         run_id = str(task.request_data["agent_run_id"])
         await db.commit()
+        await publish_task_status(task)
         try:
             service = JDGenerationService(db)
             if task.task_type == service.agent.suggestion_task_type:
@@ -32,6 +34,7 @@ async def _process_jd_generation(task_id: str) -> dict:
             task.result = result.model_dump(mode="json")
             task.finished_at = utc_now()
             await db.commit()
+            await publish_task_status(task)
             return task.result
         except Exception as exc:
             await db.rollback()
@@ -47,4 +50,5 @@ async def _process_jd_generation(task_id: str) -> dict:
                 run.error_message = str(exc)[:2000]
                 run.finished_at = utc_now()
             await db.commit()
+            await publish_task_status(task)
             raise

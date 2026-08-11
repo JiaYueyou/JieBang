@@ -24,6 +24,7 @@ from app.schemas.agent import (
     JDInputSuggestionRequest,
 )
 from app.services.task_service import TaskService
+from app.services.task_status_cache import publish_task_status
 
 
 class JDGenerationService:
@@ -89,6 +90,7 @@ class JDGenerationService:
                 if existing.request_data.get("payload") != payload:
                     from app.core.exceptions import InvalidParameterError
                     raise InvalidParameterError("幂等键已用于不同的 Agent 输入")
+                await publish_task_status(existing)
                 return JDGenerationTaskResponse(
                     task=TaskService.to_response(existing),
                     agent_run_id=str(existing.request_data["agent_run_id"]),
@@ -119,6 +121,7 @@ class JDGenerationService:
         await self.db.commit()
         # Load MySQL server defaults before serializing the queued task.
         await self.db.refresh(task)
+        await publish_task_status(task)
 
         from app.core.agent_task_runner import dispatch_agent_task
 

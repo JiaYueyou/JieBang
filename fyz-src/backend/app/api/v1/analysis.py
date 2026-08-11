@@ -16,6 +16,13 @@ from app.schemas.analysis import (
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
 from app.services.analysis_service import AnalysisService
+from app.services.query_cache import (
+    ANALYSIS_CACHE_NAMESPACE,
+    ANALYSIS_JOB_INSIGHTS_TTL_SECONDS,
+    ANALYSIS_OVERVIEW_TTL_SECONDS,
+    bump_analysis_generation,
+    cached_model_query,
+)
 
 router = APIRouter(prefix="/analysis", tags=["趋势分析"])
 
@@ -45,15 +52,31 @@ async def overview(
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[AnalysisOverview]:
     return ApiResponse(
-        data=await service.overview(
-            window=window,
-            keyword=keyword,
-            city=city,
-            emerging_page=emerging_page,
-            emerging_page_size=emerging_page_size,
-            new_job_page=new_job_page,
-            new_job_page_size=new_job_page_size,
-            new_job_keyword=new_job_keyword,
+        data=await cached_model_query(
+            generation_namespace=ANALYSIS_CACHE_NAMESPACE,
+            operation="overview",
+            params={
+                "window": window.value,
+                "keyword": keyword,
+                "city": city,
+                "emerging_page": emerging_page,
+                "emerging_page_size": emerging_page_size,
+                "new_job_page": new_job_page,
+                "new_job_page_size": new_job_page_size,
+                "new_job_keyword": new_job_keyword,
+            },
+            ttl_seconds=ANALYSIS_OVERVIEW_TTL_SECONDS,
+            model_type=AnalysisOverview,
+            loader=lambda: service.overview(
+                window=window,
+                keyword=keyword,
+                city=city,
+                emerging_page=emerging_page,
+                emerging_page_size=emerging_page_size,
+                new_job_page=new_job_page,
+                new_job_page_size=new_job_page_size,
+                new_job_keyword=new_job_keyword,
+            ),
         )
     )
 
@@ -86,8 +109,21 @@ async def job_insights(
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[JobInsightsResponse]:
     return ApiResponse(
-        data=await service.job_insights(
-            skill=skill, limit=limit, user_id=principal.user_id
+        data=await cached_model_query(
+            generation_namespace=ANALYSIS_CACHE_NAMESPACE,
+            operation="job-insights",
+            params={
+                "user_id": principal.user_id,
+                "skill": skill,
+                "limit": limit,
+            },
+            ttl_seconds=ANALYSIS_JOB_INSIGHTS_TTL_SECONDS,
+            model_type=JobInsightsResponse,
+            loader=lambda: service.job_insights(
+                skill=skill,
+                limit=limit,
+                user_id=principal.user_id,
+            ),
         )
     )
 
@@ -102,12 +138,14 @@ async def decide_emerging_job(
     principal: TokenPrincipal = Depends(get_current_user),
     service: AnalysisService = Depends(get_analysis_service),
 ) -> ApiResponse[InsightDecisionResponse]:
+    result = await service.decide_emerging_job(
+        standard_job_id=standard_job_id,
+        decision=payload.decision,
+        note=payload.note,
+        user_id=principal.user_id,
+    )
+    await bump_analysis_generation()
     return ApiResponse(
         message="洞察决策已保存",
-        data=await service.decide_emerging_job(
-            standard_job_id=standard_job_id,
-            decision=payload.decision,
-            note=payload.note,
-            user_id=principal.user_id,
-        ),
+        data=result,
     )
