@@ -62,6 +62,7 @@ from app.services.agent_grounding_service import (
     GroundedClaim,
 )
 from app.services.retrieval_service import RetrievalService
+from app.services.task_status_cache import publish_task_status
 
 
 _local_graph_tasks: set[asyncio.Task] = set()
@@ -363,6 +364,7 @@ class GraphService:
         total: int | None = None,
     ) -> None:
         batch.progress = progress
+        task = None
         if task_id:
             task = await self.db.get(AsyncTask, task_id)
             if task:
@@ -374,6 +376,8 @@ class GraphService:
                     "total": total,
                 }
         await self.db.commit()
+        if task is not None:
+            await publish_task_status(task)
         logger.info(
             "graph_sync_progress task_id=%s snapshot_id=%s progress=%d stage=%s detail=%s",
             task_id,
@@ -1579,6 +1583,7 @@ class GraphTaskService:
         else:
             process_graph_sync.delay(task.id, mode, enrich_top_skills, user_id)
         await self.db.refresh(task)
+        await publish_task_status(task)
         return TaskStatusResponse(
             task_id=task.id, task_type=task.task_type, status=task.status,
             progress=task.progress, result=task.result, error_code=task.error_code,
@@ -1616,6 +1621,7 @@ class GraphTaskService:
         _local_graph_tasks.add(local_task)
         local_task.add_done_callback(self._finish_local_task)
         await self.db.refresh(task)
+        await publish_task_status(task)
         return TaskStatusResponse(
             task_id=task.id, task_type=task.task_type, status=task.status,
             progress=task.progress, result=task.result, error_code=task.error_code,

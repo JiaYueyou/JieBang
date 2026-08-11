@@ -20,6 +20,10 @@ from app.services.crawler_runtime import get_crawler_service
 from app.services.data_quality_service import DataQualityService
 from app.models import DataSource, PipelineRun
 from app.services.pipeline_service import PipelineService, start_pipeline_run
+from app.services.pipeline_status_cache import (
+    get_cached_pipeline_status,
+    publish_pipeline_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -227,10 +231,15 @@ async def get_pipeline_run(
     run_id: str,
     db: AsyncSession = Depends(get_db),
 ):
+    cached = await get_cached_pipeline_status(run_id)
+    if cached is not None:
+        return ApiResponse(data=cached)
     run = await db.get(PipelineRun, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="流水线运行记录不存在")
-    return ApiResponse(data=PipelineService.response(run))
+    data = PipelineService.response(run)
+    await publish_pipeline_status(data)
+    return ApiResponse(data=data)
 
 
 @router.get(

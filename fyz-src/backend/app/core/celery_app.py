@@ -1,5 +1,7 @@
 """Celery application configuration."""
 
+import os
+
 from celery import Celery
 
 from app.core.config import (
@@ -13,7 +15,7 @@ celery_app = Celery(
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.skill_import", "app.tasks.graph_sync",
+        "app.tasks.skill_import", "app.tasks.graph_sync", "app.tasks.cache_warmup",
     ],
 )
 celery_app.conf.update(
@@ -24,4 +26,17 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
+    task_routes={
+        "cache.warm_popular_queries": {"queue": "cache_warmup"},
+    },
+    beat_schedule={
+        "warm-popular-fyz-queries": {
+            "task": "cache.warm_popular_queries",
+            "schedule": max(
+                60.0,
+                float(os.getenv("CACHE_WARM_INTERVAL_SECONDS", "60")),
+            ),
+            "options": {"queue": "cache_warmup", "expires": 55},
+        },
+    },
 )

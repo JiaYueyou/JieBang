@@ -32,6 +32,8 @@ from app.services.crawler_service import REGISTERED_SPIDERS
 from app.services.graph_service import GraphService
 from app.services.historical_baseline_service import HistoricalBaselineService
 from app.services.import_service import ImportService
+from app.services.pipeline_status_cache import publish_pipeline_status
+from app.services.task_status_cache import bump_cache_generations
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +271,9 @@ class PipelineService:
             )
             if existing is None:
                 raise
+            await publish_pipeline_status(self.response(existing))
             return existing
+        await publish_pipeline_status(self.response(run))
         return run
 
     async def _enabled_spider_ids(self, *, due_only: bool = False) -> list[int]:
@@ -302,6 +306,7 @@ class PipelineService:
         if claimed.rowcount != 1:
             return
         run = await self.db.get(PipelineRun, run_id)
+        await publish_pipeline_status(self.response(run))
         try:
             source_results = []
             for index, spider_id in enumerate(run.requested_sources or [], start=1):
@@ -334,6 +339,7 @@ class PipelineService:
                         user_id=run.requested_by,
                     )
                     graph_result["status"] = "succeeded"
+                    await bump_cache_generations("graph")
                 except Exception as exc:
                     await self.db.rollback()
                     run = await self.db.get(PipelineRun, run_id)
@@ -397,6 +403,8 @@ class PipelineService:
             run.finished_at = utc_now_naive()
             run.heartbeat_at = run.finished_at
             await self.db.commit()
+            await publish_pipeline_status(self.response(run))
+            await bump_cache_generations("analysis", "dashboard")
         except asyncio.CancelledError:
             await self.db.rollback()
             run = await self.db.get(PipelineRun, run_id)
@@ -405,6 +413,7 @@ class PipelineService:
                 run.stage = "interrupted"
                 run.heartbeat_at = utc_now_naive()
                 await self.db.commit()
+                await publish_pipeline_status(self.response(run))
             raise
         except Exception as exc:
             await self.db.rollback()
@@ -415,6 +424,7 @@ class PipelineService:
                 run.finished_at = utc_now_naive()
                 run.heartbeat_at = run.finished_at
                 await self.db.commit()
+                await publish_pipeline_status(self.response(run))
             logger.exception("automatic_pipeline_failed run_id=%s", run_id)
 
     async def _run_source(self, run: PipelineRun, spider_id: int) -> dict:
@@ -494,6 +504,7 @@ class PipelineService:
         run.progress = progress
         run.heartbeat_at = utc_now_naive()
         await self.db.commit()
+        await publish_pipeline_status(self.response(run))
 
     @staticmethod
     def _aggregate_imports(items: list[dict]) -> dict:

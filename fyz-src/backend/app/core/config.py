@@ -126,6 +126,40 @@ CELERY_TASK_ALWAYS_EAGER = (
     == "true"
 )
 
+# Optional business cache. Keep this separate from the Celery broker/result
+# databases. MySQL and Neo4j remain the sources of truth when Redis is down.
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/3")
+CACHE_ENABLED = (
+    os.getenv("CACHE_ENABLED", "false" if TESTING else "true").lower() == "true"
+)
+CACHE_KEY_PREFIX = os.getenv("CACHE_KEY_PREFIX", "jiebang:fyz:v1").strip(":")
+CACHE_DEFAULT_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_DEFAULT_TTL_SECONDS", "60"))
+)
+# CACHE_TASK_TTL_SECONDS is retained as a compatibility fallback for local
+# environments created before active and terminal task TTLs were separated.
+CACHE_TASK_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_TASK_TTL_SECONDS", "3600"))
+)
+CACHE_TASK_ACTIVE_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_TASK_ACTIVE_TTL_SECONDS", "15"))
+)
+CACHE_TASK_TERMINAL_TTL_SECONDS = max(
+    1,
+    int(
+        os.getenv(
+            "CACHE_TASK_TERMINAL_TTL_SECONDS",
+            os.getenv("CACHE_TASK_TTL_SECONDS", "86400"),
+        )
+    ),
+)
+CACHE_CONNECT_TIMEOUT_SECONDS = max(
+    0.05, float(os.getenv("CACHE_CONNECT_TIMEOUT_SECONDS", "0.5"))
+)
+CACHE_SOCKET_TIMEOUT_SECONDS = max(
+    0.05, float(os.getenv("CACHE_SOCKET_TIMEOUT_SECONDS", "1.0"))
+)
+
 # Long-running data refresh.  Tests never start external crawlers.  In a
 # deployed API process the scheduler is enabled by default and guarded by a
 # database idempotency key, so multiple workers cannot execute the same slot.

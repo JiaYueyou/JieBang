@@ -44,6 +44,9 @@ cd fyz-src\backend
 | 文件 | 用途 |
 | --- | --- |
 | `evaluate_skill_extraction.py` | 评估技能抽取结果 |
+| `evaluate_fyz_quality.py` | 运行 100 条真实 JD、简历抽取和匹配准确率量化评测 |
+| `run_fyz_coverage.py` | 运行 FYZ 全量测试并统计 Service 可执行行覆盖率 |
+| `generate_fyz_test_report.py` | 汇总质量、覆盖率、JUnit 和 Docker 状态为简洁 HTML 报告 |
 | `build_phase0_golden_set.py` | 重建确定性数据质量种子集 |
 | `finalize_phase0_review.py` | 固化 Phase 0 工程审核结果 |
 | `capture_phase0_baseline.py` | 采集 MySQL、Neo4j 和 Git 只读基线 |
@@ -51,6 +54,17 @@ cd fyz-src\backend
 | `build_phase2_golden_set.py` | 从已认证 Evidence 构建检索评测集 |
 | `evaluate_phase2_retrieval.py` | 运行检索质量、拒答和过滤评测 |
 | `verify_embedding_provider.py` | 验证 Embedding provider，不输出密钥 |
+
+FYZ 竞赛量化报告可按以下顺序复现：
+
+```powershell
+python scripts/evaluate_fyz_quality.py --jd-limit 100 --case-count 60
+python scripts/run_fyz_coverage.py
+python scripts/generate_fyz_test_report.py
+```
+
+最终报告位于 `evaluation/fyz_test_report.html`。JD 指标使用爬取数据中的正例关键词锚点，
+因此报告为锚点召回率，并明确保留其不能估算完整误报率的限制。
 
 这些脚本只生成或检查 `fyz-src/backend/evaluation/` 下的工程评测材料，不承担
 线上业务写入。

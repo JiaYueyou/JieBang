@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import get_cache, stable_query_key
 from app.models import (
     JobPosting,
     JobSkillFact,
@@ -17,6 +18,7 @@ from app.models import (
     StandardJob,
     StandardJobSource,
 )
+from app.services.query_cache import DASHBOARD_CACHE_NAMESPACE
 
 
 class DashboardService:
@@ -268,13 +270,24 @@ class DashboardService:
             )
         return sorted(result, key=lambda item: (-item["score"], item["id"]))
 
-    async def _hot_jobs(self) -> list[dict]:
+    async def _hot_jobs(self, *, force_refresh: bool = False) -> list[dict]:
         """热门岗位：基于爬取数据（RawJobRecord）经标准岗位聚合，按独立来源数排序。
 
         数据源为质量达标、未排除的爬取岗位记录，按 StandardJobSource 映射
         聚合到标准岗位；demand=独立来源数，spark=近 6 个月来源数，
         trend=最近一个月来源数差，core_skills=该岗位已确认事实 Top 技能。
         """
+        cache = get_cache()
+        generation = await cache.get_generation(DASHBOARD_CACHE_NAMESPACE)
+        cache_key = stable_query_key(
+            f"{DASHBOARD_CACHE_NAMESPACE}:hot-jobs",
+            {"generation": generation},
+        )
+        if not force_refresh:
+            cached = await cache.get_json(cache_key)
+            if isinstance(cached, list):
+                return cached
+
         rows = list((await self.db.execute(
             select(RawJobRecord, StandardJobSource.standard_job_id, SourceDocument)
             .join(
@@ -290,6 +303,7 @@ class DashboardService:
             )
         )).all())
         if not rows:
+            await cache.set_json(cache_key, [], ttl_seconds=300)
             return []
 
         now = datetime.utcnow()
@@ -384,10 +398,12 @@ class DashboardService:
                 "lifecycle_stage": lifecycle_stage,
                 "active_period_count": period_count,
             })
-        return sorted(
+        sorted_result = sorted(
             result,
             key=lambda item: (-item["demand"], -item["trend"], item["standard_job_id"]),
         )
+        await cache.set_json(cache_key, sorted_result, ttl_seconds=300)
+        return sorted_result
 
     @staticmethod
     def _emerging_skills(

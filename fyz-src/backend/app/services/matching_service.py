@@ -18,7 +18,7 @@ from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now
 from app.domain.agent_status import AgentRunStatus
-from app.domain.skill_dictionary import canonical_key
+from app.domain.skill_dictionary import canonical_key, normalize_skill
 from app.models import AgentRun, JobPosting, MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.providers import DeepSeekProvider, LLMProvider
 from app.schemas.matching import MatchEvidenceResponse, MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeSkillDetailResponse, TalentDetailResponse, TalentResponse
@@ -30,6 +30,34 @@ from app.services.agent_grounding_service import (
 from app.services.resume_parser import ResumeParser
 from app.services.resume_storage import ResumeStorage
 from app.services.skill_extractor import RuleSkillExtractor
+from app.services.task_status_cache import bump_cache_generations
+
+
+def calculate_skill_coverage(
+    resume_skill_names: list[str] | set[str] | tuple[str, ...],
+    job_skill_names: list[str] | set[str] | tuple[str, ...],
+) -> tuple[int, list[str], list[str]]:
+    """Return the deterministic score used by FYZ resume/job matching.
+
+    Keeping the calculation separate from persistence makes the production
+    algorithm directly measurable without duplicating its rules in the
+    quality evaluation suite.
+    """
+    def normalized_key(name: str) -> str:
+        normalized = normalize_skill(name)
+        return canonical_key(normalized[0] if normalized else name)
+
+    unique_job_skills = list(dict.fromkeys(job_skill_names))
+    if not unique_job_skills:
+        return 0, [], []
+    resume_keys = {normalized_key(name) for name in resume_skill_names}
+    matched = [
+        name for name in unique_job_skills if normalized_key(name) in resume_keys
+    ]
+    missing = [
+        name for name in unique_job_skills if normalized_key(name) not in resume_keys
+    ]
+    return round(len(matched) / len(unique_job_skills) * 100), matched, missing
 
 
 class MatchingService:
@@ -70,6 +98,7 @@ class MatchingService:
             await self.db.flush()
             matches = await self._calculate_matches(resume, user_id=user_id)
             await self.db.commit()
+            await bump_cache_generations("dashboard")
         except Exception:
             await self.db.rollback()
             self.storage.remove(storage_key)
@@ -90,8 +119,9 @@ class MatchingService:
                 job_skills = [skill.name for skill in extracted.skills]
             if not job_skills:
                 continue
-            matched = [name for name in job_skills if canonical_key(name) in resume_keys]
-            missing = [name for name in job_skills if canonical_key(name) not in resume_keys]
+            score, matched, missing = calculate_skill_coverage(
+                list(resume_keys), job_skills
+            )
             record = await self.db.scalar(select(MatchRecord).where(MatchRecord.resume_id == resume.id, MatchRecord.job_id == job.id, MatchRecord.algorithm_version == self.algorithm_version))
             if record is None:
                 record = MatchRecord(resume_id=resume.id, job_id=job.id, algorithm_version=self.algorithm_version, score=0, matched_skills=[], missing_skills=[], created_by=user_id)
@@ -99,7 +129,7 @@ class MatchingService:
                 await self.db.flush()
             else:
                 await self.db.execute(delete(MatchEvidence).where(MatchEvidence.match_id == record.id))
-            record.score = round(len(matched) / len(job_skills) * 100)
+            record.score = score
             record.matched_skills, record.missing_skills = matched, missing
             evidence: list[MatchEvidence] = []
             for name in matched:
@@ -151,6 +181,7 @@ class MatchingService:
                 await self._calculate_matches(resume, user_id=user_id)
             )
         await self.db.commit()
+        await bump_cache_generations("dashboard")
         return {
             "resumes_processed": len(resumes),
             "matches_upserted": match_count,
@@ -194,6 +225,7 @@ class MatchingService:
         resume = await self._resume(resume_id, user_id)
         records = await self._calculate_matches(resume, user_id=user_id, job_ids=job_ids)
         await self.db.commit()
+        await bump_cache_generations("dashboard")
         return [self._match_response(record) for record in records]
 
     async def get_resume_file(self, resume_id: int, user_id: int) -> tuple[str, str | None, object]:

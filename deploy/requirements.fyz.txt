@@ -1,0 +1,2 @@
+# Required by PyMySQL/aiomysql when MySQL 8 uses caching_sha2_password.
+cryptography>=42.0.0,<47.0.0

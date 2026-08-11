@@ -2,12 +2,14 @@
 
 import asyncio
 
+from app.core.cache import close_cache
 from app.core.celery_app import celery_app
 from app.core.database import async_session, engine
 from app.core.time import utc_now_naive
 from app.domain.statuses import TaskStatus
 from app.models import AsyncTask
 from app.services.graph_service import GraphService
+from app.services.task_status_cache import bump_cache_generations, publish_task_status
 
 
 async def _process_graph_sync(
@@ -26,6 +28,7 @@ async def _process_graph_sync(
                 "detail": "正在等待其他图谱同步任务完成",
             }
             await db.commit()
+            await publish_task_status(task)
         async with async_session() as db:
             task = await db.get(AsyncTask, task_id)
             if not task:
@@ -43,6 +46,8 @@ async def _process_graph_sync(
                 task.result = result
                 task.finished_at = utc_now_naive()
                 await db.commit()
+                await publish_task_status(task)
+                await bump_cache_generations("graph", "analysis", "dashboard")
                 return result
             except Exception:
                 await db.rollback()
@@ -56,6 +61,7 @@ async def _process_graph_sync(
                 task.error_message = str(exc)[:2000]
                 task.finished_at = utc_now_naive()
                 await db.commit()
+                await publish_task_status(task)
         raise
 
 
@@ -69,6 +75,7 @@ def process_graph_sync(
         finally:
             # Celery's Windows solo pool creates a fresh loop per asyncio.run().
             # Drop pooled async connections before that loop is closed.
+            await close_cache()
             await engine.dispose()
 
     return asyncio.run(run())

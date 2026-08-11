@@ -18,6 +18,7 @@ from app.schemas.job import (
     JobUpdate,
     JobVersionResponse,
 )
+from app.services.task_status_cache import bump_cache_generations
 
 
 def _utc_now() -> datetime:
@@ -125,6 +126,7 @@ class JobService:
                 created_by=user_id,
             )
             await self.db.commit()
+            await bump_cache_generations("dashboard")
             return self.to_summary(job)
         except Exception:
             await self.db.rollback()
@@ -181,6 +183,7 @@ class JobService:
                 created_by=user_id,
             )
             await self.db.commit()
+            await bump_cache_generations("dashboard")
             return self.to_summary(job)
         except Exception:
             await self.db.rollback()
@@ -215,6 +218,7 @@ class JobService:
                 created_by=user_id,
             )
             await self.db.commit()
+            await bump_cache_generations("dashboard")
         except Exception:
             await self.db.rollback()
             raise
