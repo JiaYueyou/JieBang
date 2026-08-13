@@ -186,12 +186,14 @@ async def call_deepseek(messages: list[dict[str, str]]) -> str:
                 "messages": messages,
                 "temperature": 0.3,
                 "response_format": {"type": "json_object"},
-                "max_tokens": 2048,
+                "max_tokens": 8192,
             },
         )
         resp.raise_for_status()
         data = resp.json()
-        content = data["choices"][0]["message"]["content"]
+        msg = data["choices"][0]["message"]
+        # 思考型模型可能把结论放在 reasoning_content，content 为空时兜底取它
+        content = msg.get("content") or msg.get("reasoning_content") or ""
         return content
 
 

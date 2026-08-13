@@ -47,6 +47,7 @@ class DeepSeekProvider(LLMProvider):
             "model": self.model,
             "messages": messages,
             "temperature": 0.3,  # 降低随机性，输出更稳定
+            "max_tokens": 8192,  # 思考型模型需要足够空间，防 content 被截断
         }
         if response_format:
             payload["response_format"] = response_format
@@ -67,8 +68,11 @@ class DeepSeekProvider(LLMProvider):
                     )
                     resp.raise_for_status()
                     data = resp.json()
+                    msg = data["choices"][0]["message"]
+                    # 思考型模型可能把结论放在 reasoning_content，content 为空时兜底取它
+                    content = msg.get("content") or msg.get("reasoning_content") or ""
                     return {
-                        "content": data["choices"][0]["message"]["content"],
+                        "content": content,
                         "usage": data.get("usage", {}),
                     }
             except Exception as e:
