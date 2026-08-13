@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import { pageData } from '@/stores/pageContext'
 import { assistantApi } from '@/api/assistant'
+import { resumeApi } from '@/api/resume'
 import type { ChatMessage, PageContext, ChatAction } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
 import { mockPositions } from '@/mock/data/positions'
@@ -179,37 +180,56 @@ const addAssistantMsg = (content: string, actions?: ChatAction[], followUps?: st
   })
 }
 
-const handleResumeOptimize = () => {
-  if (mockResumes.length === 0) {
+// 从后端加载真实简历（失败时用 mock 兜底）
+const realResumes = ref<any[]>([])
+const loadResumes = async () => {
+  try {
+    const res: any = await resumeApi.getList()
+    realResumes.value = res.data || []
+  } catch {
+    realResumes.value = mockResumes
+  }
+  return realResumes.value
+}
+
+// 兼容后端 snake_case 和前端 camelCase
+const getResumeName = (r: any) => r.name || ''
+const getResumeTarget = (r: any) => r.target_position || r.targetPosition || ''
+const getResumeSkills = (r: any) => r.skill_list || r.skills || []
+
+const handleResumeOptimize = async () => {
+  const resumes = await loadResumes()
+  if (resumes.length === 0) {
     addAssistantMsg('你还没有简历，是否新建一份？', [
       { label: '新建简历', to: '/resume/editor', icon: 'Plus' },
     ])
     return
   }
-  const list = mockResumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
+  const list = resumes.map((r: any) => '- **' + getResumeName(r) + '**' + (getResumeTarget(r) ? '（目标：' + getResumeTarget(r) + '）' : '')).join('\n')
   addAssistantMsg(
-    '你有 ' + mockResumes.length + ' 份简历，想优化哪一份？\n\n' + list,
-    mockResumes.map(r => ({ label: '优化「' + r.name + '」', to: '/resume/editor/' + r.id, icon: 'Edit' }))
+    '你有 ' + resumes.length + ' 份简历，想优化哪一份？\n\n' + list,
+    resumes.map((r: any) => ({ label: '优化「' + getResumeName(r) + '」', to: '/resume/editor/' + r.id, icon: 'Edit' }))
   )
 }
 
-const handleMatchDiagnose = () => {
-  if (mockResumes.length === 0) {
+const handleMatchDiagnose = async () => {
+  const resumes = await loadResumes()
+  if (resumes.length === 0) {
     addAssistantMsg('请先创建一份简历再进行匹配诊断。', [
       { label: '新建简历', to: '/resume/editor', icon: 'Plus' },
     ])
     return
   }
-  const list = mockResumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
+  const list = resumes.map((r: any) => '- **' + getResumeName(r) + '**' + (getResumeTarget(r) ? '（目标：' + getResumeTarget(r) + '）' : '')).join('\n')
   addAssistantMsg(
     '用哪份简历去匹配？\n\n' + list,
-    mockResumes.map(r => ({ label: '用「' + r.name + '」匹配', to: '__match_resume__:' + r.id, icon: 'DataAnalysis' }))
+    resumes.map((r: any) => ({ label: '用「' + getResumeName(r) + '」匹配', to: '__match_resume__:' + r.id, icon: 'DataAnalysis' }))
   )
 }
 
 const showMatchResults = (resumeId: string) => {
-  const resume = mockResumes.find(r => r.id === resumeId)
-  const resumeSkills = resume?.skills.map(s => s.name.toLowerCase()) || []
+  const resume = realResumes.value.find((r: any) => String(r.id) === resumeId)
+  const resumeSkills: string[] = (resume ? getResumeSkills(resume) : []).map((s: any) => (s.name || '').toLowerCase())
 
   // Compute scores for each position
   const scored = mockPositions.map(pos => {
@@ -227,7 +247,7 @@ const showMatchResults = (resumeId: string) => {
   ).join('\n')
 
   addAssistantMsg(
-    '根据你的简历「' + (resume?.name || '') + '」，以下是匹配度最高的岗位：\n\n' + results,
+    '根据你的简历「' + (resume ? getResumeName(resume) : '') + '」，以下是匹配度最高的岗位：\n\n' + results,
     top.map(s => ({ label: s.pos.name + '（' + s.score + '分）', to: '__match_position__:' + resumeId + ':' + s.pos.id, icon: 'DataAnalysis' }))
   )
 }
@@ -255,14 +275,14 @@ const sendMessage = async (text?: string) => {
   // ── Local flows (intercepted before AI call) ──
   if (msg === '__resume_optimize__') {
     loading.value = false; isSending.value = false
-    handleResumeOptimize()
+    await handleResumeOptimize()
     scrollToBottom(true)
     nextTick(() => inputRef.value?.focus())
     return
   }
   if (msg === '__match_diagnose__') {
     loading.value = false; isSending.value = false
-    handleMatchDiagnose()
+    await handleMatchDiagnose()
     scrollToBottom(true)
     nextTick(() => inputRef.value?.focus())
     return
