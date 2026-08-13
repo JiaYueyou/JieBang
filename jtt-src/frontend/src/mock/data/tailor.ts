@@ -52,24 +52,24 @@ export const mockTailorSuggestions: Record<string, ImprovementSuggestion[]> = {
 export function generateOptimizedPhrases(text: string, style: string): string[] {
   const templates: Record<string, string[]> = {
     professional: [
-      `${text}，取得显著业务成效`,
-      `基于 ${text}，持续优化并沉淀为团队最佳实践`,
-      `在 ${text} 方面积累了丰富的工程经验`,
+      `主导${text}，负责核心技术方案设计与落地，保障系统的高可用性与可扩展性`,
+      `深度参与${text}，从需求分析到架构设计全流程把控，产出符合企业级标准的工程实践`,
+      `负责${text}相关工作，建立完善的技术规范与协作流程，显著提升团队交付质量与效率`,
     ],
     concise: [
-      `擅长 ${text}`,
-      `精通 ${text}`,
-      `专注 ${text}`,
+      `${text}（核心负责人，独立完成关键技术攻坚）`,
+      `主导${text}，实现关键业务目标落地`,
+      `${text}，保障系统稳定高效运行`,
     ],
     match: [
-      `${text}，与目标岗位高度匹配`,
-      `具备 ${text} 的实战能力`,
-      `在 ${text} 领域有深入实践`,
+      `${text}，具备岗位要求的核心技术能力，能够快速融入团队并产出价值`,
+      `拥有${text}的丰富实战经验，技术栈与目标岗位高度契合，可独立承担核心开发任务`,
+      `在${text}方向持续深耕，掌握行业主流方案与最佳实践，满足岗位进阶要求`,
     ],
     impact: [
-      `${text}，实现性能提升30%+`,
-      `主导 ${text}，推动系统从单体到微服务的成功演进`,
-      `通过 ${text}，将系统吞吐量提升2倍`,
+      `主导${text}，系统性能提升40%+，支撑日均百万级请求稳定运行`,
+      `通过${text}，关键指标优化50%以上，推动系统从单体架构成功演进至微服务`,
+      `${text}，构建高可用技术体系，系统可用性达99.9%，获团队技术创新认可`,
     ],
   }
 
