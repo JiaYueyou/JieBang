@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
 import { ElMessage } from 'element-plus'
 import type { ResumeData } from '@/types'
-import { generateOptimizedPhrases } from '@/mock/data/tailor'
+import { assistantApi } from '@/api/assistant'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,29 +58,53 @@ onMounted(async () => {
 })
 
 // AI phrase optimization
+type OptimizeTarget = { field: 'selfEvaluation' | 'workExperience' | 'projects'; index?: number }
+
 const showOptimizer = ref(false)
 const optimizingText = ref('')
 const optimizedResults = ref<string[]>([])
 const optimizeStyle = ref<'professional' | 'concise' | 'match' | 'impact'>('professional')
+const optimizing = ref(false)
+const optimizeTarget = ref<OptimizeTarget | null>(null)
 
-const openOptimizer = (text: string) => {
+const openOptimizer = (text: string, target: OptimizeTarget) => {
   if (!text.trim()) {
-    ElMessage.warning('请先选中文字')
+    ElMessage.warning('请先填写内容')
     return
   }
   optimizingText.value = text
-  optimizedResults.value = generateOptimizedPhrases(text, optimizeStyle.value)
+  optimizeTarget.value = target
   showOptimizer.value = true
+  fetchOptimized()
+}
+
+const fetchOptimized = async () => {
+  optimizing.value = true
+  optimizedResults.value = []
+  try {
+    const res = await assistantApi.optimizePhrase({ text: optimizingText.value, style: optimizeStyle.value })
+    optimizedResults.value = res.data?.suggestions || []
+  } catch {
+    ElMessage.error('AI 优化失败，请稍后重试')
+  } finally {
+    optimizing.value = false
+  }
 }
 
 const changeStyle = (style: typeof optimizeStyle.value) => {
   optimizeStyle.value = style
-  optimizedResults.value = generateOptimizedPhrases(optimizingText.value, style)
+  fetchOptimized()
 }
 
-const applyPhrase = (phrase: string, field: keyof typeof resume) => {
-  if (field === 'selfEvaluation') {
+const applyPhrase = (phrase: string) => {
+  const target = optimizeTarget.value
+  if (!target) return
+  if (target.field === 'selfEvaluation') {
     resume.selfEvaluation = phrase
+  } else if (target.field === 'workExperience' && target.index !== undefined) {
+    resume.workExperience![target.index]!.description = phrase
+  } else if (target.field === 'projects' && target.index !== undefined) {
+    resume.projects![target.index]!.description = phrase
   }
   showOptimizer.value = false
   ElMessage.success('已应用优化语句')
@@ -214,7 +238,7 @@ const handleSave = async () => {
             <div style="margin-top: 10px;">
               <div class="textarea-wrapper">
                 <el-input v-model="exp.description" type="textarea" :rows="3" placeholder="工作内容描述" />
-                <el-button class="ai-btn" text size="small" type="success" @click="openOptimizer(exp.description || '')">AI 优化</el-button>
+                <el-button class="ai-btn" text size="small" type="success" @click="openOptimizer(exp.description || '', { field: 'workExperience', index: i })">AI 优化</el-button>
               </div>
             </div>
           </div>
@@ -241,7 +265,10 @@ const handleSave = async () => {
               <el-col :span="12"><el-input v-model="proj.role" placeholder="担任角色" /></el-col>
             </el-row>
             <div style="margin-top: 10px;">
-              <el-input v-model="proj.description" type="textarea" :rows="3" placeholder="项目描述" />
+              <div class="textarea-wrapper">
+                <el-input v-model="proj.description" type="textarea" :rows="3" placeholder="项目描述" />
+                <el-button class="ai-btn" text size="small" type="success" @click="openOptimizer(proj.description || '', { field: 'projects', index: i })">AI 优化</el-button>
+              </div>
             </div>
           </div>
         </el-card>
@@ -266,7 +293,7 @@ const handleSave = async () => {
           <template #header><span class="sec-title">自我评价</span></template>
           <div class="textarea-wrapper">
             <el-input v-model="resume.selfEvaluation" type="textarea" :rows="4" placeholder="简要介绍自己…" />
-            <el-button class="ai-btn" :icon="'Edit'" text size="small" type="success" @click="openOptimizer(resume.selfEvaluation || '')">AI 优化</el-button>
+            <el-button class="ai-btn" :icon="'Edit'" text size="small" type="success" @click="openOptimizer(resume.selfEvaluation || '', { field: 'selfEvaluation' })">AI 优化</el-button>
           </div>
         </el-card>
       </div>
@@ -332,10 +359,17 @@ const handleSave = async () => {
         </el-radio-group>
       </div>
       <div class="opt-results">
-        <div v-for="(text, i) in optimizedResults" :key="i" class="opt-item" @click="applyPhrase(text, 'selfEvaluation')">
-          <span class="opt-num">{{ i + 1 }}</span>
-          <p>{{ text }}</p>
+        <div v-if="optimizing" class="opt-loading">
+          <el-icon class="loading-spin" :size="20"><Loading /></el-icon>
+          <span>AI 优化中，请稍候...</span>
         </div>
+        <template v-else>
+          <div v-for="(text, i) in optimizedResults" :key="i" class="opt-item" @click="applyPhrase(text)">
+            <span class="opt-num">{{ i + 1 }}</span>
+            <p>{{ text }}</p>
+          </div>
+          <el-empty v-if="optimizedResults.length === 0" description="未生成结果，请切换风格重试" :image-size="60" />
+        </template>
       </div>
     </el-dialog>
   </div>
@@ -480,6 +514,16 @@ const handleSave = async () => {
 .style-select { margin-bottom: 16px; }
 
 .opt-results { display: flex; flex-direction: column; gap: 8px; }
+
+.opt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
 
 .opt-item {
   display: flex;

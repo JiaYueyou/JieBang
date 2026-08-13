@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { LearningPath, LearningStep } from '@/types'
 import { learningApi } from '@/api/learning'
+import { assistantApi } from '@/api/assistant'
 import { pathFromApi } from '@/utils/transform'
 
 const STORAGE_KEY = 'jiebang_learning_paths'
@@ -34,9 +35,35 @@ export const useLearningStore = defineStore('learning', () => {
     }
   }
 
-  const addPath = async (path: LearningPath) => {
-    const res: any = await learningApi.create({ name: path.name, positionId: parseInt(path.positionId) || 1 })
+  const addPath = async (goal: string) => {
+    // 1. 调用 AI Assistant 根据自然语言目标生成个性化学习路径
+    const aiRes: any = await assistantApi.generatePathFromGoal(goal)
+    const aiData = aiRes.data
+    const aiSteps = (aiData?.steps || []).map((s: any, i: number) => ({
+      id: `s-${Date.now()}-${i}`,
+      order: i + 1,
+      title: s.title || '',
+      description: s.description || '',
+      duration: s.duration || '',
+      resources: (s.resources || []).map((r: any) => ({
+        id: r.title || `r-${i}`,
+        title: r.title || '',
+        type: r.type || 'article',
+        url: r.url || '',
+        platform: r.platform || '',
+      })),
+      completed: false,
+    }))
+
+    // 2. 持久化到后端 MySQL
+    const res: any = await learningApi.create({
+      name: aiData?.pathName || goal.slice(0, 20),
+      positionId: 1,
+      positionName: aiData?.goalAnalysis || goal,
+      steps: aiSteps,
+    })
     if (res.data) paths.value.push(pathFromApi(res.data))
+    return res.data
   }
 
   const removePath = async (id: string) => {

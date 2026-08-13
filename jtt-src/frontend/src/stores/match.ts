@@ -3,9 +3,12 @@ import { ref } from 'vue'
 import type { MatchResult, ImprovementSuggestion } from '@/types'
 import { matchApi } from '@/api/match'
 import { tailorApi } from '@/api/tailor'
+import { assistantApi } from '@/api/assistant'
+import { useResumeStore } from '@/stores/resume'
 import { matchResultFromApi, suggestionFromApi } from '@/utils/transform'
 
 export const useMatchStore = defineStore('match', () => {
+  const resumeStore = useResumeStore()
   const currentResult = ref<MatchResult | null>(null)
   const history = ref<MatchResult[]>([])
   const loading = ref(false)
@@ -44,11 +47,21 @@ export const useMatchStore = defineStore('match', () => {
   const optimizing = ref(false)
   const optimizeResult = ref<{ newResumeId: number } | null>(null)
 
-  const fetchAiSuggestions = async (resumeId: string, positionId: string) => {
+  // 从 MatchResult 构造岗位上下文，供 AI 优化建议使用
+  const toPositionCtx = (r: MatchResult) => ({
+    name: r.positionName,
+    missingSkills: r.gapAnalysis.missingSkills.map((s: any) => s.name),
+    weakSkills: r.gapAnalysis.weakSkills.map((s: any) => s.name),
+    matchSkills: r.gapAnalysis.matchSkills.map((s: any) => s.name),
+  })
+
+  const fetchAiSuggestions = async (resumeId: string, positionCtx: any) => {
     suggestionsLoading.value = true
     try {
-      const res: any = await tailorApi.getSuggestions(resumeId, positionId)
-      aiSuggestions.value = (res.data || []).map(suggestionFromApi)
+      await resumeStore.fetchDetail(resumeId)
+      const resume = resumeStore.currentResume
+      const res: any = await assistantApi.optimizeResume(resume, positionCtx)
+      aiSuggestions.value = (res.data?.suggestions || []).map(suggestionFromApi)
       return aiSuggestions.value
     } finally {
       suggestionsLoading.value = false
@@ -102,7 +115,7 @@ export const useMatchStore = defineStore('match', () => {
       if (batchResults.value.length > 0 && !selectedBatchResult.value) {
         const first = batchResults.value[0]!
         selectedBatchResult.value = first
-        fetchAiSuggestions(resumeId, String(first.positionId))
+        fetchAiSuggestions(resumeId, toPositionCtx(first))
       }
       return batchResults.value
     } finally {
@@ -112,7 +125,7 @@ export const useMatchStore = defineStore('match', () => {
 
   const selectBatchResult = (result: MatchResult) => {
     selectedBatchResult.value = result
-    fetchAiSuggestions(result.resumeId, result.positionId)
+    fetchAiSuggestions(result.resumeId, toPositionCtx(result))
   }
 
   return {

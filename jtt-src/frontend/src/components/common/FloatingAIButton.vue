@@ -5,18 +5,22 @@ import { usePositionsStore } from '@/stores/positions'
 import { pageData } from '@/stores/pageContext'
 import { assistantApi } from '@/api/assistant'
 import type { ChatMessage, PageContext, ChatAction } from '@/types'
-import { mockResumes } from '@/mock/data/resume'
-import { mockPositions } from '@/mock/data/positions'
+import { useResumeStore } from '@/stores/resume'
+import { useMatchStore } from '@/stores/match'
 
 const route = useRoute()
 const router = useRouter()
 const positionsStore = usePositionsStore()
+const resumeStore = useResumeStore()
+const matchStore = useMatchStore()
 
 // ── State ──
 const visible = ref(false)
 const messages = ref<ChatMessage[]>([])
 const inputText = ref('')
 const loading = ref(false)
+const wrapperRef = ref<HTMLDivElement>()
+const fabRef = ref<HTMLButtonElement>()
 const chatBodyRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLInputElement>()
 const fileInputRef = ref<HTMLInputElement>()
@@ -143,12 +147,26 @@ const scrollToBottom = (smooth = false) => {
   })
 }
 
+// ── Click outside to close ──
+const onClickOutside = (e: MouseEvent) => {
+  if (!visible.value) return
+  const target = e.target as HTMLElement
+  if (wrapperRef.value?.contains(target) || fabRef.value?.contains(target)) return
+  visible.value = false
+}
+
 // ── Keyboard ──
 const onGlobalKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && visible.value) { visible.value = false }
 }
-onMounted(() => document.addEventListener('keydown', onGlobalKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown))
+onMounted(() => {
+  document.addEventListener('keydown', onGlobalKeydown)
+  document.addEventListener('pointerdown', onClickOutside)
+})
+onUnmounted(() => {
+  document.removeEventListener('keydown', onGlobalKeydown)
+  document.removeEventListener('pointerdown', onClickOutside)
+})
 
 watch(visible, v => { if (v) nextTick(() => inputRef.value?.focus()) })
 
@@ -179,57 +197,75 @@ const addAssistantMsg = (content: string, actions?: ChatAction[], followUps?: st
   })
 }
 
-const handleResumeOptimize = () => {
-  if (mockResumes.length === 0) {
+const handleResumeOptimize = async () => {
+  if (resumeStore.resumes.length === 0) await resumeStore.fetchList()
+  const resumes = resumeStore.resumes
+  if (resumes.length === 0) {
     addAssistantMsg('你还没有简历，是否新建一份？', [
       { label: '新建简历', to: '/resume/editor', icon: 'Plus' },
     ])
     return
   }
-  const list = mockResumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
+  const list = resumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
   addAssistantMsg(
-    '你有 ' + mockResumes.length + ' 份简历，想优化哪一份？\n\n' + list,
-    mockResumes.map(r => ({ label: '优化「' + r.name + '」', to: '/resume/editor/' + r.id, icon: 'Edit' }))
+    '你有 ' + resumes.length + ' 份简历，想优化哪一份？\n\n' + list,
+    resumes.map(r => ({ label: '优化「' + r.name + '」', to: '/resume/editor/' + r.id, icon: 'Edit' }))
   )
 }
 
-const handleMatchDiagnose = () => {
-  if (mockResumes.length === 0) {
+const handleMatchDiagnose = async () => {
+  if (resumeStore.resumes.length === 0) await resumeStore.fetchList()
+  const resumes = resumeStore.resumes
+  if (resumes.length === 0) {
     addAssistantMsg('请先创建一份简历再进行匹配诊断。', [
       { label: '新建简历', to: '/resume/editor', icon: 'Plus' },
     ])
     return
   }
-  const list = mockResumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
+  const list = resumes.map(r => '- **' + r.name + '**' + (r.targetPosition ? '（目标：' + r.targetPosition + '）' : '')).join('\n')
   addAssistantMsg(
     '用哪份简历去匹配？\n\n' + list,
-    mockResumes.map(r => ({ label: '用「' + r.name + '」匹配', to: '__match_resume__:' + r.id, icon: 'DataAnalysis' }))
+    resumes.map(r => ({ label: '用「' + r.name + '」匹配', to: '__match_resume__:' + r.id, icon: 'DataAnalysis' }))
   )
 }
 
-const showMatchResults = (resumeId: string) => {
-  const resume = mockResumes.find(r => r.id === resumeId)
-  const resumeSkills = resume?.skills.map(s => s.name.toLowerCase()) || []
+const showMatchResults = async (resumeId: string) => {
+  const resume = resumeStore.resumes.find(r => r.id === resumeId)
+  if (!resume) return
 
-  // Compute scores for each position
-  const scored = mockPositions.map(pos => {
-    const posSkills = [...(pos.requiredSkills || []), ...(pos.preferredSkills || [])].map(s => s.name.toLowerCase())
-    const matched = posSkills.filter(s => resumeSkills.some(rs => rs.includes(s) || s.includes(rs)))
-    const matchRate = posSkills.length ? Math.round((matched.length / posSkills.length) * 100) : 0
-    return { pos, score: Math.min(matchRate + Math.floor(Math.random() * 15), 100) }
-  })
+  loading.value = true
+  try {
+    const results = await matchStore.doAutoMatch(resumeId)
+    loading.value = false
 
-  scored.sort((a, b) => b.score - a.score)
-  const top = scored.slice(0, 8)
+    if (!results || results.length === 0) {
+      addAssistantMsg('未找到匹配度 ≥50 的岗位，建议补充简历中的技能信息后再试。')
+      return
+    }
 
-  const results = top.map((s, i) =>
-    (i + 1) + '. **' + s.pos.name + '** — ' + s.score + ' 分' + (s.score >= 80 ? ' 🟢' : s.score >= 50 ? ' 🟡' : ' 🔴')
-  ).join('\n')
+    const stats = matchStore.batchStats
+    const top = results.slice(0, 8)
 
-  addAssistantMsg(
-    '根据你的简历「' + (resume?.name || '') + '」，以下是匹配度最高的岗位：\n\n' + results,
-    top.map(s => ({ label: s.pos.name + '（' + s.score + '分）', to: '__match_position__:' + resumeId + ':' + s.pos.id, icon: 'DataAnalysis' }))
-  )
+    let text = `根据你的简历「**${resume.name}**」，共匹配 **${stats?.totalMatched ?? '?'}** 个岗位`
+    if (stats) {
+      text += `（学历过滤 ${stats.educationFiltered} 个，低分过滤 ${stats.scoreFiltered} 个，数据源: ${stats.dataSource}）`
+    }
+    text += `\n\n**Top ${top.length} 结果：**\n\n`
+
+    text += top.map((r, i) => {
+      const emoji = r.totalScore >= 80 ? ' 🟢' : r.totalScore >= 60 ? ' 🟡' : ' 🔴'
+      const dims = r.dimensions
+        .filter(d => d.weight > 0)
+        .map(d => `${d.name.slice(0, 4)}:${d.score}`)
+        .join('  ')
+      return `${i + 1}. **${r.positionName}** — **${r.totalScore} 分**${emoji}\n   ▸ ${dims}`
+    }).join('\n')
+
+    addAssistantMsg(text)
+  } catch {
+    loading.value = false
+    addAssistantMsg('匹配服务暂时不可用，请稍后再试。')
+  }
 }
 
 // ── Send ──
@@ -363,7 +399,7 @@ const closePreview = () => { previewImageUrl.value = '' }
 </script>
 
 <template>
-  <div class="ai-float-wrapper">
+  <div ref="wrapperRef" class="ai-float-wrapper">
     <!-- ═══ Panel ═══ -->
     <transition name="slide-up">
       <div v-if="visible" class="ai-panel">
@@ -416,6 +452,18 @@ const closePreview = () => { previewImageUrl.value = '' }
             </div>
 
             <p class="welcome-hint">支持发送图片分析 · Ctrl+V 粘贴</p>
+          </div>
+
+          <!-- Persistent quickbar -->
+          <div v-if="hasMessages()" class="quickbar">
+            <button
+              v-for="p in presetPages" :key="p.label"
+              class="quickbar-btn" :disabled="loading"
+              @click="p.action"
+            >
+              <el-icon :size="14"><component :is="p.icon" /></el-icon>
+              <span>{{ p.label }}</span>
+            </button>
           </div>
 
           <!-- Messages -->
@@ -539,7 +587,7 @@ const closePreview = () => { previewImageUrl.value = '' }
     </transition>
 
     <!-- ═══ FAB ═══ -->
-    <button class="ai-fab" :class="{ active: visible }" @click="toggle">
+    <button ref="fabRef" class="ai-fab" :class="{ active: visible }" @click="toggle">
       <el-icon :size="28">
         <component :is="visible ? 'Close' : 'ChatDotRound'" />
       </el-icon>
@@ -635,6 +683,37 @@ const closePreview = () => { previewImageUrl.value = '' }
 }
 .ai-body::-webkit-scrollbar { width: 4px; }
 .ai-body::-webkit-scrollbar-thumb { background: var(--weak); border-radius: 2px; }
+
+/* ─── Quickbar (persistent shortcut row) ─── */
+.quickbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 10px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+.quickbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  background: #fff;
+  color: var(--ink);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.quickbar-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-light);
+}
+.quickbar-btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* Welcome */
 .welcome { text-align: center; padding: 16px 0 8px; }

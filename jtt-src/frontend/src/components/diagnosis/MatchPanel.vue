@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
 import { useMatchStore } from '@/stores/match'
 import type { MatchResult, ImprovementSuggestion } from '@/types'
-import { tailorApi } from '@/api/tailor'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
@@ -63,15 +62,14 @@ const fetchTailorSuggestions = async () => {
   if (!r || optimizing.value) return
   optimizing.value = true
   try {
-    const res: any = await tailorApi.getSuggestions(props.resumeId, r.positionId)
-    const aiSuggestions = (res.data || []).map((s: any) => ({
-      ...s,
-      id: `ai-${s.id}`,
-      accepted: false,
-      verified: s.verified ?? true,
-      warning: s.warning ?? null,
-      changeType: s.change_type ?? s.changeType ?? 'small',
-    }))
+    const positionCtx = {
+      name: r.positionName,
+      missingSkills: r.gapAnalysis.missingSkills.map((s: any) => s.name),
+      weakSkills: r.gapAnalysis.weakSkills.map((s: any) => s.name),
+      matchSkills: r.gapAnalysis.matchSkills.map((s: any) => s.name),
+    }
+    const fetched = await matchStore.fetchAiSuggestions(props.resumeId, positionCtx)
+    const aiSuggestions = fetched.map((s: any) => ({ ...s, id: `ai-${s.id}` }))
     // 替换为 LLM 精修建议，保留原有的作为备选
     r.suggestions = [...aiSuggestions, ...r.suggestions.filter(
       (s: ImprovementSuggestion) => !s.id.startsWith('ai-')

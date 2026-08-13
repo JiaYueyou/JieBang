@@ -34,8 +34,14 @@ export const assistantApi = {
     api.post('/assistant/chat', data),
 
   optimizePhrase: (data: OptimizePhraseRequest): Promise<{ code: number; message: string; data: OptimizePhraseResponse }> =>
-    api.post('/assistant/optimize-phrase', data),
+    api.post('/assistant/optimize-phrase', data, { timeout: 90000 }),
 
   generateLearningPath: (positionName: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
-    api.post('/assistant/generate-learning-path', { positionName }),
+    api.post('/assistant/generate-learning-path', { positionName }, { timeout: 90000 }),
+
+  generatePathFromGoal: (goal: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
+    api.post('/assistant/generate-learning-path-from-goal', { goal }, { timeout: 90000 }),
+
+  optimizeResume: (resume: any, position: any): Promise<{ code: number; message: string; data: { suggestions: any[] } }> =>
+    api.post('/assistant/optimize-resume', { resume, position }, { timeout: 90000 }),
 }

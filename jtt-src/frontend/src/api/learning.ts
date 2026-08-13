@@ -6,8 +6,13 @@ import api from './index'
 export const learningApi = {
   // 学习路径 CRUD
   getList: () => api.get('/learning/paths'),
-  create: (data: { name: string; positionId: number }) =>
-    api.post('/learning/paths', { name: data.name, position_id: data.positionId }),
+  create: (data: { name: string; positionId?: number; positionName?: string; steps?: any[] }) =>
+    api.post('/learning/paths', {
+      name: data.name,
+      position_id: data.positionId ?? 1,
+      position_name: data.positionName ?? '',
+      steps: data.steps ?? [],
+    }),
   update: (id: string, data: Record<string, any>) => api.put(`/learning/paths/${id}`, data),
   delete: (id: string) => api.delete(`/learning/paths/${id}`),
 

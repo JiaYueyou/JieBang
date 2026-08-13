@@ -221,7 +221,7 @@ export function suggestionFromApi(data: any): ImprovementSuggestion {
     original: data.original || '',
     suggested: data.suggested || '',
     reason: data.reason || '',
-    changeType: data.change_type || 'small',
+    changeType: data.change_type ?? data.changeType ?? 'small',
     accepted: data.accepted || false,
     verified: data.verified !== false,
     warning: data.warning || null,

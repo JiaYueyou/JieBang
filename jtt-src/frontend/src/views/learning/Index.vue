@@ -21,6 +21,7 @@ const expandedId = ref<string | null>(null)
 
 // ========== 对话框：新增/重命名路径 ==========
 const dialogVisible = ref(false)
+const dialogLoading = ref(false)
 const dialogMode = ref<'add' | 'rename'>('add')
 const dialogName = ref('')
 const dialogPathId = ref('')
@@ -128,13 +129,21 @@ const openRenameDialog = (path: LearningPath) => {
 const handleDialogConfirm = async () => {
   if (!dialogName.value.trim()) return
   if (dialogMode.value === 'add') {
-    await learningStore.addPath({ name: dialogName.value.trim(), positionId: '', positionName: '', steps: [], totalDuration: '', createdAt: '', updatedAt: '' } as any)
-    ElMessage.success('路径已创建')
+    dialogLoading.value = true
+    try {
+      await learningStore.addPath(dialogName.value.trim())
+      ElMessage.success('AI 学习路径已生成')
+      dialogVisible.value = false
+    } catch {
+      ElMessage.error('AI 生成失败，请检查网络后重试')
+    } finally {
+      dialogLoading.value = false
+    }
   } else {
     learningStore.renamePath(dialogPathId.value, dialogName.value.trim())
     ElMessage.success('路径已重命名')
+    dialogVisible.value = false
   }
-  dialogVisible.value = false
 }
 
 const handleDeletePath = async (id: string, name: string) => {
@@ -669,20 +678,20 @@ const renderMarkdown = (text: string): string => {
     <!-- ========== 新增 / 重命名对话框 ========== -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'add' ? '新建学习路径' : '重命名学习路径'"
+      :title="dialogMode === 'add' ? 'AI 生成学习路径' : '重命名学习路径'"
       width="400px"
       :close-on-click-modal="false"
     >
       <el-input
         v-model="dialogName"
-        placeholder="请输入路径名称"
-        maxlength="50"
+        :placeholder="dialogMode === 'add' ? '描述你想学什么，如：我想学 Java 后端开发，尤其是和数据库交互的部分' : '请输入路径名称'"
+        maxlength="200"
         show-word-limit
         @keydown.enter="handleDialogConfirm"
       />
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :disabled="!dialogName.trim()" @click="handleDialogConfirm">确定</el-button>
+        <el-button type="primary" :disabled="!dialogName.trim()" :loading="dialogLoading" @click="handleDialogConfirm">确定</el-button>
       </template>
     </el-dialog>
 
