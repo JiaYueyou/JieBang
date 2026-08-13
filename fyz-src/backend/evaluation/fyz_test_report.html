@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FYZ 端测试与量化报告</title>
+  <style>
+    :root { --ink:#172033; --muted:#667085; --line:#dfe4ec; --blue:#2855d9; --green:#147a4b; --red:#b42318; --bg:#f4f6f9; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 "Segoe UI","Microsoft YaHei",sans-serif; }
+    main { max-width:1100px; margin:28px auto; padding:0 20px 40px; }
+    header, section { background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px 22px; margin-bottom:14px; }
+    h1 { margin:0 0 6px; font-size:24px; } h2 { margin:0 0 14px; font-size:17px; }
+    p { margin:5px 0; } .muted { color:var(--muted); }
+    .cards { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:18px; }
+    .card { border:1px solid var(--line); border-radius:8px; padding:14px; }
+    .value { display:block; font-size:24px; font-weight:700; color:var(--blue); margin-top:3px; }
+    table { width:100%; border-collapse:collapse; } th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-weight:600; background:#fafbfc; } tr:last-child td { border-bottom:0; }
+    .badge { display:inline-block; border-radius:999px; padding:2px 8px; font-weight:700; font-size:12px; }
+    .pass { color:var(--green); background:#e9f7ef; } .fail { color:var(--red); background:#fef0ef; }
+    .note { border-left:3px solid #f0a000; padding-left:12px; color:#5e4a17; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    code { font-family:"Cascadia Mono",Consolas,monospace; font-size:12px; }
+    @media(max-width:850px) { .cards { grid-template-columns:1fr 1fr; } .split { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body><main>
+  <header>
+    <h1>FYZ 端测试与量化报告</h1>
+    <p>总体结论：<span class="badge pass">通过</span>　范围：仅 FYZ 后端　生成时间：2026-08-10 14:37:51</p>
+    <p class="muted">数据集版本 fyz-quality-v1；Docker：9 个运行服务；迁移退出码 0</p>
+    <div class="cards">
+      <div class="card">测试用例<span class="value">311</span>失败 0</div>
+      <div class="card">服务层覆盖率<span class="value">83.68%</span>7233 / 8644 行</div>
+      <div class="card">JD 锚点召回<span class="value">99.03%</span>100 条真实 JD</div>
+      <div class="card">简历抽取 F1<span class="value">99.17%</span>60 条标注样本</div>
+      <div class="card">匹配准确率<span class="value">100.00%</span>60 条端到端样本</div>
+    </div>
+  </header>
+
+  <section>
+    <h2>核心门禁</h2>
+    <table><thead><tr><th>指标</th><th>结果</th><th>门槛</th><th>样本/计算量</th><th>判定</th></tr></thead><tbody>
+      <tr><td>FYZ 自动化测试</td><td>311 / 311</td><td>零失败</td><td>362.06 秒</td><td><span class="badge pass">通过</span></td></tr>
+      <tr><td>Service 可执行行覆盖率</td><td>83.68%</td><td>≥ 60%</td><td>7233 / 8644 行</td><td><span class="badge pass">通过</span></td></tr>
+      <tr><td>JD 解析：正例关键词锚点召回</td><td>99.03%</td><td>≥ 90%</td><td>102 / 103 锚点</td><td><span class="badge pass">通过</span></td></tr>
+      <tr><td>简历技能抽取 micro-F1</td><td>99.17%</td><td>≥ 90%</td><td>TP 180 / FP 3 / FN 0</td><td><span class="badge pass">通过</span></td></tr>
+      <tr><td>匹配分数精确准确率</td><td>100.00%</td><td>≥ 90%</td><td>60 / 60；MAE 0</td><td><span class="badge pass">通过</span></td></tr>
+    </tbody></table>
+  </section>
+
+  <section>
+    <h2>数据构成与误差</h2>
+    <table><thead><tr><th>评测集</th><th>规模</th><th>来源</th><th>失败/误差</th></tr></thead><tbody>
+      <tr><td>JD 技能锚点</td><td>100 条</td><td>jd_crawl_ifly.json: 50 条；jd_crawl_zl.json: 50 条</td><td>漏检锚点 1 个</td></tr>
+      <tr><td>简历技能抽取</td><td>60 条</td><td>确定性人工规则标注边界样本</td><td>3 条非完全匹配；FP 3</td></tr>
+      <tr><td>人岗匹配</td><td>60 条</td><td>生产抽取器 + 生产 skill-coverage 算法</td><td>0 条；分数 MAE 0</td></tr>
+    </tbody></table>
+    <p class="note"><strong>JD 指标边界：</strong>爬取数据的 keywords 只提供不完整的正例标签，因此 99.03% 是正例锚点召回率，不能推导完整 JD 的误报率。报告没有把该代理指标伪装成完整人工金标准 F1。</p>
+  </section>
+
+  <div class="split">
+    <section>
+      <h2>测试分布</h2>
+      <table><thead><tr><th>测试分组</th><th>用例数</th></tr></thead><tbody><tr><td>api</td><td>104</td></tr><tr><td>core</td><td>26</td></tr><tr><td>domain</td><td>10</td></tr><tr><td>evaluation</td><td>14</td></tr><tr><td>integrations</td><td>7</td></tr><tr><td>repositories</td><td>15</td></tr><tr><td>schemas</td><td>3</td></tr><tr><td>scripts</td><td>3</td></tr><tr><td>services</td><td>129</td></tr></tbody></table>
+    </section>
+    <section>
+      <h2>覆盖率最低的 8 个 Service 文件</h2>
+      <table><thead><tr><th>文件</th><th>覆盖行</th><th>覆盖率</th></tr></thead><tbody><tr><td>app/services/pipeline_service.py</td><td>231 / 589</td><td>39.22%</td></tr><tr><td>app/services/resume_parser.py</td><td>23 / 43</td><td>53.49%</td></tr><tr><td>app/services/crawler_service.py</td><td>569 / 752</td><td>75.66%</td></tr><tr><td>app/services/retrieval_service.py</td><td>444 / 561</td><td>79.14%</td></tr><tr><td>app/services/user_activity_service.py</td><td>244 / 308</td><td>79.22%</td></tr><tr><td>app/services/resume_storage.py</td><td>26 / 32</td><td>81.25%</td></tr><tr><td>app/services/job_import_schema.py</td><td>61 / 75</td><td>81.33%</td></tr><tr><td>app/services/skill_service.py</td><td>223 / 272</td><td>81.99%</td></tr></tbody></table>
+    </section>
+  </div>
+
+  <section>
+    <h2>复现命令</h2>
+    <p><code>python scripts/evaluate_fyz_quality.py --jd-limit 100 --case-count 60</code></p>
+    <p><code>python scripts/run_fyz_coverage.py</code></p>
+    <p><code>python scripts/generate_fyz_test_report.py</code></p>
+    <p class="muted">覆盖率方法：CPython line-table executable lines + sys.settrace execution。完整 JSON 和 JUnit XML 保存在 evaluation 目录。</p>
+  </section>
+</main></body></html>

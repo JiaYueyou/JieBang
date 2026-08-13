@@ -131,9 +131,16 @@ class SpiderMeta:
 
 # 已注册的爬虫
 REGISTERED_SPIDERS = [
-    SpiderMeta(1, "zhaopin_spider", "智联招聘", "ZL", "zhaopin.com", "brand"),
     SpiderMeta(2, "iflytek_spider", "科大讯飞", "XF", "iflytek.com", "violet"),
+    SpiderMeta(4, "jd_spider", "京东社会招聘", "JD", "zhaopin.jd.com", "rose"),
+    SpiderMeta(5, "meituan_spider", "美团社会招聘", "MT", "zhaopin.meituan.com", "green"),
+    SpiderMeta(6, "deepseek_spider", "DeepSeek招聘", "DS", "talent.deepseek.com", "violet"),
 ]
+
+# 采集结果分类（poll_spider 返回的 error_category）
+CRAWLER_STATUS_OK = "ok"            # 采集成功且生成新数据
+CRAWLER_STATUS_NO_DATA = "no_data"  # 采集完成但未产生新数据（反爬/超时/内容无变化等）
+CRAWLER_STATUS_RUN_FAILED = "run_failed"  # 采集脚本异常退出
 
 
 class CrawlerService:
@@ -146,7 +153,9 @@ class CrawlerService:
         self._progress_info: dict[int, str] = {}
         self._stderr: dict[int, list[str]] = {}
         self._stdout: dict[int, list[str]] = {}
-        self._enabled: dict[int, bool] = {1: True, 2: True}  # 爬虫启停状态
+        self._enabled: dict[int, bool] = {
+            meta.id: True for meta in REGISTERED_SPIDERS
+        }  # 爬虫启停状态
         self._last_runs: dict[int, dict] = {}
         self._network_sample: tuple[float, int, int] | None = None
 
@@ -211,7 +220,7 @@ class CrawlerService:
     # 爬虫控制
     # ------------------------------------------------------------------
 
-    def run_spider(self, spider_id: int) -> dict:
+    def run_spider(self, spider_id: int, crawl_config: dict | None = None) -> dict:
         """启动爬虫（异步子进程）"""
         meta = self._find_spider(spider_id)
         if not meta:
@@ -225,13 +234,30 @@ class CrawlerService:
 
         # 启动子进程（设置输出目录为 data/）
         logger.info("启动爬虫: %s (%s)", meta.name, meta.script_path)
+        config = crawl_config or {}
+        command = [
+            sys.executable,
+            str(meta.script_path.relative_to(SCRIPTS_DIR)),
+            "--output-dir", str(DATA_DIR),
+        ]
+        max_pages = int(config.get("max_pages") or 0)
+        if max_pages > 0 and meta.module_name in {
+            "jd_spider", "meituan_spider", "deepseek_spider",
+        }:
+            command.extend(["--max-pages", str(max_pages)])
+        environment = os.environ.copy()
+        if int(config.get("max_records") or 0) > 0:
+            environment["JIEBANG_SPIDER_MAX_RECORDS"] = str(int(config["max_records"]))
+        if max_pages > 0:
+            environment["JIEBANG_SPIDER_MAX_PAGES"] = str(max_pages)
+        if int(config.get("timeout_seconds") or 0) > 0:
+            environment["JIEBANG_SPIDER_TIMEOUT"] = str(int(config["timeout_seconds"]))
+        if int(config.get("retry_count") or 0) >= 0:
+            environment["JIEBANG_SPIDER_RETRY_COUNT"] = str(int(config.get("retry_count", 2)) + 1)
         proc = subprocess.Popen(
-            [
-                sys.executable,
-                str(meta.script_path.relative_to(SCRIPTS_DIR)),
-                "--output-dir", str(DATA_DIR),
-            ],
+            command,
             cwd=str(SCRIPTS_DIR),
+            env=environment,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -317,11 +343,48 @@ class CrawlerService:
         output_changed = bool(
             latest and latest.stat().st_mtime >= started - 1
         )
+        stats = self._parse_spider_stats(stderr_text)
+        returncode = proc_obj.returncode
+
+        # 结构化采集结果分类，供前端给出友好提示（而非静默失败）
+        if returncode != 0:
+            error_category = CRAWLER_STATUS_RUN_FAILED
+            error_reason = "exception"
+            message = (
+                f"{meta.name}采集脚本异常退出（退出码 {returncode}），"
+                "请查看下方日志与网络环境后重试"
+            )
+        elif output_changed and records_count > 0:
+            error_category = CRAWLER_STATUS_OK
+            error_reason = ""
+            message = f"采集完成，共 {records_count} 条记录"
+        else:
+            error_category = CRAWLER_STATUS_NO_DATA
+            if stats["fetched"] == 0 and stats["errors"] > 0:
+                error_reason = "network"
+                message = (
+                    f"未采集到有效数据：请求错误 {stats['errors']} 次。"
+                    "可能是目标站点网络不通、访问超时或被反爬拦截，请检查网络后重试"
+                )
+            elif stats["fetched"] == 0:
+                error_reason = "no_response"
+                message = (
+                    "未采集到有效数据。可能是站点页面结构变更、需要登录或验证码，"
+                    "导致数据接口未被触发，请人工确认站点可访问性"
+                )
+            else:
+                error_reason = "unchanged"
+                message = (
+                    f"本次采集到 {stats['fetched']} 条，但与最近快照业务内容一致，"
+                    "未生成新数据文件"
+                )
+
         self._last_runs[spider_id] = {
             "date": datetime.date.today().isoformat(),
             "records_count": records_count,
             "elapsed": round(elapsed, 1),
-            "returncode": proc_obj.returncode,
+            "returncode": returncode,
+            "error_category": error_category,
         }
 
         return {
@@ -332,10 +395,36 @@ class CrawlerService:
             "filename": latest.name if latest else "",
             "output_changed": output_changed,
             "elapsed": round(elapsed, 1),
-            "returncode": proc_obj.returncode,
+            "returncode": returncode,
             "stdout": stdout_text[-500:] if stdout_text else "",
             "stderr": stderr_text[-500:] if stderr_text else "",
+            "error_category": error_category,
+            "error_reason": error_reason,
+            "message": message,
+            "stats": stats,
         }
+
+    @staticmethod
+    def _parse_spider_stats(stderr_text: str) -> dict:
+        """从爬虫脚本 print_stats 输出（写入 stderr）解析采集统计。
+
+        spider 框架的 print_stats 通过 logging 输出：
+          抓取成功: N 条 / 去重跳过: N 条 / 错误次数: N 次 / 已爬页数: N 页
+        """
+        stats = {"fetched": 0, "duplicates": 0, "errors": 0, "pages": 0}
+        if not stderr_text:
+            return stats
+        patterns = {
+            "fetched": r"抓取成功[:：]\s*(\d+)\s*条",
+            "duplicates": r"去重跳过[:：]\s*(\d+)\s*条",
+            "errors": r"错误次数[:：]\s*(\d+)\s*次",
+            "pages": r"已爬页数[:：]\s*(\d+)\s*页",
+        }
+        for key, pattern in patterns.items():
+            m = re.search(pattern, stderr_text)
+            if m:
+                stats[key] = int(m.group(1))
+        return stats
 
     def toggle_crawler(self, spider_id: int) -> dict:
         """切换爬虫启停状态"""
@@ -345,6 +434,19 @@ class CrawlerService:
         current = self._enabled.get(spider_id, True)
         self._enabled[spider_id] = not current
         return {"id": spider_id, "enabled": self._enabled[spider_id]}
+
+    def set_crawler_enabled(self, spider_id: int, enabled: bool) -> dict:
+        if not self._find_spider(spider_id):
+            raise ValueError(f"未知爬虫 ID: {spider_id}")
+        self._enabled[spider_id] = enabled
+        return {"id": spider_id, "enabled": enabled}
+
+    def stop_spider(self, spider_id: int) -> None:
+        """Terminate a tracked crawler process after an orchestration timeout."""
+        proc = self._running_tasks.get(spider_id)
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+
 
     # ------------------------------------------------------------------
     # 内部辅助

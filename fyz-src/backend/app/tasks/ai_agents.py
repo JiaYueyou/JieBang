@@ -8,6 +8,7 @@ from app.models import AgentRun, AsyncTask
 from app.schemas.career import CareerAnalysisRequest
 from app.services.career_service import CareerService
 from app.services.matching_service import MatchingService
+from app.services.task_status_cache import publish_task_status
 
 
 async def _process_ai_agent(task_id: str) -> dict:
@@ -23,6 +24,7 @@ async def _process_ai_agent(task_id: str) -> dict:
         )
         run_id = str(task.request_data["agent_run_id"])
         await db.commit()
+        await publish_task_status(task)
         try:
             if task.task_type == CareerPlanningAgent.agent_type:
                 request = CareerAnalysisRequest.model_validate(task.request_data["payload"])
@@ -31,6 +33,11 @@ async def _process_ai_agent(task_id: str) -> dict:
                 )
             elif task.task_type == MatchExplanationAgent.agent_type:
                 match_id = int(task.request_data["payload"]["match_id"])
+                # Commit an evidence-analysis checkpoint before the longer model call so
+                # clients can render a meaningful in-progress state immediately.
+                task.progress = 55
+                await db.commit()
+                await publish_task_status(task)
                 result = await MatchingService(db).explain(
                     match_id, task.created_by, agent_run_id=run_id
                 )
@@ -40,6 +47,7 @@ async def _process_ai_agent(task_id: str) -> dict:
             task.result = result.model_dump(mode="json")
             task.finished_at = utc_now()
             await db.commit()
+            await publish_task_status(task)
             return task.result
         except Exception as exc:
             await db.rollback()
@@ -53,4 +61,5 @@ async def _process_ai_agent(task_id: str) -> dict:
                 run.error_code, run.error_message = type(exc).__name__, str(exc)[:2000]
                 run.finished_at = utc_now()
             await db.commit()
+            await publish_task_status(task)
             raise

@@ -1,8 +1,8 @@
 import type {
-  AdminOverview, AdminResourceSnapshot, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, DashboardOverview, JobImportResult,
+  AdminOverview, AdminResourceSnapshot, AgentRunAuditPage, AgentRunStatus, CapabilityChange, CareerRecommendation, CrawlerAutomationConfig, DashboardOverview, DashboardQuery, JobImportResult, PipelineRun,
   DataQualityPage, DataQualityQuery, RawJobQualityItem,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphAsyncTask, GraphEnrichmentCandidate, GraphEnrichmentCandidatePage, GraphQuery, GraphSubgraph, HistoryInsights,
-  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline,
+  HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline, JobReferenceStandardPage,
   EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
   SkillDemandSummary, SkillFactReviewItem, SkillFactReviewPage,
   SkillFactVerificationStatus, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
@@ -10,7 +10,7 @@ import type {
 } from "@/domain/types";
 
 export interface DataProvider {
-  dashboard: { getOverview(): Promise<DashboardOverview> };
+  dashboard: { getOverview(query?: DashboardQuery): Promise<DashboardOverview> };
   jobs: {
     list(query?: { page?: number; pageSize?: number; status?: JobSummary["status"]; keyword?: string }): Promise<PageResult<JobSummary>>;
     listObserved(query: {
@@ -33,10 +33,13 @@ export interface DataProvider {
   talents: {
     list(): Promise<TalentSummary[]>;
     get(resumeId: number): Promise<TalentSummary | null>;
+    getDetails(resumeId: number): Promise<import("@/domain/types").TalentDetail>;
     upload(input: import("@/domain/types").ResumeUploadPayload): Promise<void>;
     download(resumeId: number, filename: string): Promise<void>;
+    preview(resumeId: number): Promise<{ url: string; contentType: string }>;
+    matchJobs(resumeId: number, jobIds: number[]): Promise<import("@/domain/types").TalentMatch[]>;
     recalculate(): Promise<{ resumes_processed: number; matches_upserted: number }>;
-    explain(matchId: number): Promise<import("@/domain/types").MatchExplanation>;
+    explain(matchId: number, onProgress?: (progress: number, status: string) => void): Promise<import("@/domain/types").MatchExplanation>;
   };
   career: { analyze(input: {
     skillText: string;
@@ -81,9 +84,13 @@ export interface DataProvider {
       getTask(taskId: string): Promise<GraphAsyncTask>;
     listEnrichment(query?: { page?: number; pageSize?: number; reviewStatus?: string }): Promise<GraphEnrichmentCandidatePage>;
     reviewEnrichment(candidateId: number, input: { action: "approve" | "reject"; note?: string; lockVersion: number }): Promise<GraphEnrichmentCandidate>;
+    rejectMachineFailedEnrichment(): Promise<{ rejected_count: number; candidate_ids: number[] }>;
     publishEnrichment(candidateIds?: number[]): Promise<{ node_count: number; edge_count: number; fact_count: number }>;
   };
-  trends: { getOverview(query: TrendQuery): Promise<TrendOverview> };
+  trends: {
+    getOverview(query: TrendQuery): Promise<TrendOverview>;
+    listReferenceStandards(query: { page: number; pageSize: number; keyword?: string; stack?: string }): Promise<JobReferenceStandardPage>;
+  };
   skillReviews: {
     list(query: {
       page: number;
@@ -133,6 +140,10 @@ export interface DataProvider {
     ): Promise<RawJobQualityItem>;
     toggleCrawler(id: number): Promise<void>;
     runCrawler(id: number): Promise<void>;
+    startPipeline(sourceIds?: number[]): Promise<PipelineRun>;
+    getPipelineRun(id: string): Promise<PipelineRun>;
+    getCrawlerAutomation(): Promise<CrawlerAutomationConfig>;
+    saveCrawlerAutomation(config: CrawlerAutomationConfig): Promise<CrawlerAutomationConfig>;
     pollCrawler(id: number): Promise<any>;
     importCrawlerOutput(filename: string): Promise<JobImportResult>;
   };

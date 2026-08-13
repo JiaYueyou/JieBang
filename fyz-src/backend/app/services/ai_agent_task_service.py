@@ -16,6 +16,7 @@ from app.providers import DeepSeekProvider
 from app.schemas.agent import AgentTaskResponse
 from app.schemas.career import CareerAnalysisRequest
 from app.services.task_service import TaskService
+from app.services.task_status_cache import publish_task_status
 
 
 class AIAgentTaskService:
@@ -84,6 +85,7 @@ class AIAgentTaskService:
             if existing:
                 if existing.request_data.get("payload") != payload:
                     raise InvalidParameterError("幂等键已用于不同的 Agent 输入")
+                await publish_task_status(existing)
                 return AgentTaskResponse(
                     task=TaskService.to_response(existing),
                     agent_run_id=str(existing.request_data["agent_run_id"]),
@@ -106,6 +108,7 @@ class AIAgentTaskService:
         # MySQL server defaults (notably created_at) must be loaded before the
         # response model reads them; this refresh does not wait for the Agent.
         await self.db.refresh(task)
+        await publish_task_status(task)
 
         from app.core.agent_task_runner import dispatch_agent_task
 

@@ -126,6 +126,74 @@ CELERY_TASK_ALWAYS_EAGER = (
     == "true"
 )
 
+# Optional business cache. Keep this separate from the Celery broker/result
+# databases. MySQL and Neo4j remain the sources of truth when Redis is down.
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/3")
+CACHE_ENABLED = (
+    os.getenv("CACHE_ENABLED", "false" if TESTING else "true").lower() == "true"
+)
+CACHE_KEY_PREFIX = os.getenv("CACHE_KEY_PREFIX", "jiebang:fyz:v1").strip(":")
+CACHE_DEFAULT_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_DEFAULT_TTL_SECONDS", "60"))
+)
+# CACHE_TASK_TTL_SECONDS is retained as a compatibility fallback for local
+# environments created before active and terminal task TTLs were separated.
+CACHE_TASK_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_TASK_TTL_SECONDS", "3600"))
+)
+CACHE_TASK_ACTIVE_TTL_SECONDS = max(
+    1, int(os.getenv("CACHE_TASK_ACTIVE_TTL_SECONDS", "15"))
+)
+CACHE_TASK_TERMINAL_TTL_SECONDS = max(
+    1,
+    int(
+        os.getenv(
+            "CACHE_TASK_TERMINAL_TTL_SECONDS",
+            os.getenv("CACHE_TASK_TTL_SECONDS", "86400"),
+        )
+    ),
+)
+CACHE_CONNECT_TIMEOUT_SECONDS = max(
+    0.05, float(os.getenv("CACHE_CONNECT_TIMEOUT_SECONDS", "0.5"))
+)
+CACHE_SOCKET_TIMEOUT_SECONDS = max(
+    0.05, float(os.getenv("CACHE_SOCKET_TIMEOUT_SECONDS", "1.0"))
+)
+
+# Long-running data refresh.  Tests never start external crawlers.  In a
+# deployed API process the scheduler is enabled by default and guarded by a
+# database idempotency key, so multiple workers cannot execute the same slot.
+AUTO_PIPELINE_ENABLED = (
+    os.getenv("AUTO_PIPELINE_ENABLED", "false" if TESTING else "true").lower()
+    == "true"
+)
+AUTO_PIPELINE_INTERVAL_MINUTES = max(
+    15, int(os.getenv("AUTO_PIPELINE_INTERVAL_MINUTES", "1440"))
+)
+AUTO_PIPELINE_STARTUP_DELAY_SECONDS = max(
+    0, int(os.getenv("AUTO_PIPELINE_STARTUP_DELAY_SECONDS", "60"))
+)
+AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS = max(
+    60, int(os.getenv("AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS", "1800"))
+)
+AUTO_PIPELINE_SOURCE_IDS = tuple(
+    int(value.strip())
+    for value in os.getenv("AUTO_PIPELINE_SOURCE_IDS", "4,5,6").split(",")
+    if value.strip().isdigit()
+)
+AUTO_PIPELINE_ENRICH_GRAPH = (
+    os.getenv("AUTO_PIPELINE_ENRICH_GRAPH", "true").lower() == "true"
+)
+AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE = min(
+    1.0, max(0.0, float(os.getenv("AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE", "0.90")))
+)
+AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS = max(
+    6, int(os.getenv("AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS", "24"))
+)
+AUTO_PIPELINE_BASELINE_LAG_MONTHS = max(
+    1, int(os.getenv("AUTO_PIPELINE_BASELINE_LAG_MONTHS", "2"))
+)
+
 # Import files are restricted to this directory.
 DATA_DIR = os.path.abspath(
     os.getenv(

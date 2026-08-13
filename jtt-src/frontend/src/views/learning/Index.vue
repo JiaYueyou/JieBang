@@ -30,12 +30,18 @@ const dialogPathId = ref('')
 const quizVisible = ref(false)
 const quizPathId = ref('')
 const quizStepTitle = ref('')
+const quizStepId = ref('') // 空 = 整条路径，非空 = 单个步骤
 const quizQuestions = ref<any[]>([])
 const quizAnswers = ref<Record<string, number>>({})
 const quizSubmitted = ref(false)
 const quizLoading = ref(false)
 const quizTargetStepIds = ref<string[]>([])
 const quizIsFinal = ref(false)
+
+// ========== 步骤学习链接（AI 生成） ==========
+const stepLinks = ref<Record<string, any[]>>({}) // stepId -> resources
+const stepLinksLoading = ref<Record<string, boolean>>({}) // stepId -> loading
+const stepLinksError = ref<Record<string, boolean>>({})
 
 // ========== AI 助手 ==========
 const chatMessages = ref<{ role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }[]>([])
@@ -112,6 +118,15 @@ const toggle = (id: string) => {
   expandedId.value = expandedId.value === id ? null : id
 }
 
+// 手动点击步骤：仅允许取消完成；标记完成需通过测验（≥80%）
+const handleStepClick = (path: LearningPath, step: any) => {
+  if (step.completed) {
+    learningStore.toggleStep(path.id, step.id)
+    return
+  }
+  ElMessage.info('完成本步骤需先通过「测验」且得分 ≥80%')
+}
+
 const openAddDialog = () => {
   dialogMode.value = 'add'
   dialogName.value = ''
@@ -159,6 +174,7 @@ const openQuiz = async (path: LearningPath, stepIds: string[], isFinal = false) 
   quizPathId.value = path.id
   quizTargetStepIds.value = stepIds
   quizIsFinal.value = isFinal
+  quizStepId.value = stepIds.length === 1 ? (stepIds[0] || '') : ''
   const titles = isFinal
     ? '综合测试'
     : path.steps.filter(s => stepIds.includes(s.id)).map(s => s.title).join(' + ') || '当前步骤'
@@ -181,17 +197,21 @@ const submitQuiz = async () => {
   quizSubmitted.value = true
   const correct = quizQuestions.value.filter((q: any) => quizAnswers.value[q.id] === q.correctAnswer).length
   const total = quizQuestions.value.length
-  const passed = total > 0 && correct / total > 0.5
+  const pct = total ? Math.round((correct / total) * 100) : 0
+  const passed = total > 0 && pct >= 80
   ElMessage[passed ? 'success' : 'warning'](
-    passed ? `测试通过：${correct} / ${total} 正确` : `测试未通过：${correct} / ${total} 正确（需正确率 > 50%）`
+    passed ? '测试通过：' + correct + ' / ' + total + ' 正确（' + pct + '%）' : '测试未通过：' + correct + ' / ' + total + ' 正确（需 ≥80%）'
   )
 
-  // 步骤测试：通过后标记 quizPassed 并持久化到后端
+  // 步骤测试：通过后标记 quizPassed + completed 并持久化
   if (!quizIsFinal.value && passed) {
     const path = learningStore.paths.find(p => p.id === quizPathId.value)
     if (path) {
       path.steps.forEach(s => {
-        if (quizTargetStepIds.value.includes(s.id)) s.quizPassed = true
+        if (quizTargetStepIds.value.includes(s.id)) {
+          s.quizPassed = true
+          s.completed = true
+        }
       })
       try {
         await learningApi.update(quizPathId.value, { steps: path.steps })
@@ -217,6 +237,32 @@ const getQuizOptionIcon = (qIdx: number, optIdx: number) => {
   if (optIdx === q.correctAnswer) return ' ✅'
   if (quizAnswers.value[q.id] === optIdx) return ' ❌'
   return ''
+}
+
+// ========== 步骤学习链接（AI 联网生成） ==========
+const generateStepLinks = async (step: any) => {
+  if (stepLinksLoading.value[step.id]) return
+  stepLinksLoading.value[step.id] = true
+  stepLinksError.value[step.id] = false
+  try {
+    const res: any = await assistantApi.generateLinks(step.title + ' ' + step.description)
+    const resources = res.data?.resources || []
+    // 合并到已有资源（保留原有 mock 资源）
+    const existing = stepLinks.value[step.id] || []
+    const merged = [...existing]
+    for (const r of resources) {
+      if (!merged.some(m => m.title === r.title)) merged.push({ ...r, id: 'ai-' + Date.now() + '-' + merged.length })
+    }
+    stepLinks.value[step.id] = merged
+    if (merged.length === existing.length) {
+      ElMessage.info('未找到新的学习链接')
+    }
+  } catch {
+    stepLinksError.value[step.id] = true
+    ElMessage.error('生成学习链接失败，请稍后重试')
+  } finally {
+    stepLinksLoading.value[step.id] = false
+  }
 }
 
 // ========== AI 聊天（含学习路径生成流程）==========
@@ -600,7 +646,7 @@ const renderMarkdown = (text: string): string => {
             <div class="flowchart-line">
               <template v-for="(step, idx) in path.steps" :key="step.id">
                 <div class="flow-item">
-                  <div class="flow-node" :class="{ done: step.completed }" @click="learningStore.toggleStep(path.id, step.id)">
+                  <div class="flow-node" :class="{ done: step.completed }" @click="handleStepClick(path, step)">
                     <span class="flow-num">{{ idx + 1 }}</span>
                     <span class="flow-title">{{ step.title }}</span>
                     <span class="flow-duration">{{ step.duration }}</span>
@@ -618,7 +664,7 @@ const renderMarkdown = (text: string): string => {
                 class="tl-item"
                 :class="{ done: step.completed }"
               >
-                <div class="tl-dot" @click="learningStore.toggleStep(path.id, step.id)">
+                <div class="tl-dot" @click="handleStepClick(path, step)">
                   <el-icon v-if="step.completed" :size="12"><Check /></el-icon>
                 </div>
                 <div class="tl-content">
@@ -635,7 +681,19 @@ const renderMarkdown = (text: string): string => {
                     </button>
                   </div>
                   <p class="tl-desc">{{ step.description }}</p>
-                  <!-- 步骤资源 -->
+
+                  <!-- 步骤学习链接 -->
+                  <div class="tl-actions">
+                    <button
+                      class="step-btn links"
+                      :disabled="stepLinksLoading[step.id]"
+                      @click.stop="generateStepLinks(step)"
+                    >
+                      {{ stepLinksLoading[step.id] ? '⏳ 生成中…' : '🔗 学习链接' }}
+                    </button>
+                  </div>
+
+                  <!-- 步骤已有资源（预置） -->
                   <div v-if="step.resources?.length" class="tl-resources">
                     <span
                       v-for="res in step.resources"
@@ -653,6 +711,24 @@ const renderMarkdown = (text: string): string => {
                         style="margin-left: 4px; padding: 0 4px; font-size: 12px;"
                       />
                     </span>
+                  </div>
+
+                  <!-- AI 生成的学习链接 -->
+                  <div v-if="stepLinks[step.id]?.length" class="ai-links">
+                    <div class="ai-links-label">🔗 AI 推荐学习链接</div>
+                    <div v-for="link in stepLinks[step.id]" :key="link.id" class="ai-link-item">
+                      <a v-if="link.url" :href="link.url" target="_blank" rel="noopener">
+                        {{ resourceIcons[link.type] || '📌' }} {{ link.title }}
+                        <small>@{{ link.platform }}</small>
+                      </a>
+                      <span v-else class="ai-link-no-url">
+                        {{ resourceIcons[link.type] || '📌' }} {{ link.title }}
+                        <small>@{{ link.platform }}</small>
+                      </span>
+                    </div>
+                  </div>
+                  <div v-if="stepLinksError[step.id]" class="ai-links-error">
+                    学习链接生成失败，请稍后重试
                   </div>
                 </div>
               </div>
@@ -1460,6 +1536,72 @@ const renderMarkdown = (text: string): string => {
   color: #a16207;
   font-size: 11px;
   cursor: default;
+}
+
+/* 步骤操作按钮 */
+.tl-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.step-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.step-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.step-btn.quiz { border-color: var(--brand); color: var(--brand); }
+.step-btn.quiz:hover:not(:disabled) { background: var(--brand); color: #fff; }
+.step-btn.links { border-color: #f59e4b; color: #d97706; }
+.step-btn.links:hover:not(:disabled) { background: #f59e4b; color: #fff; }
+
+.step-done-mark { font-size: 11px; color: #059669; }
+
+/* AI 生成的学习链接 */
+.ai-links {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.ai-links-label {
+  font-size: 11px;
+  color: #059669;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ai-link-item { margin-bottom: 4px; font-size: 12px; }
+
+.ai-link-item a {
+  color: var(--brand);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.ai-link-item a:hover { color: var(--brand-dark); text-decoration: underline; }
+
+.ai-link-item small { color: var(--weak); margin-left: 4px; }
+
+.ai-link-no-url { color: #059669; cursor: default; }
+
+.ai-links-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--danger);
 }
 
 /* 操作按钮 */

@@ -84,9 +84,9 @@
             :graph="currentGraph"
             :highlighted-path="highlightedPath"
             :highlighted-node-ids="searchHighlightedNodeIds"
-            :pinned-node-ids="pinnedNodeIds"
+            :selected-node-id="selectedNodeId"
+            :path-node-ids="pathNodeIds"
             @node-click="handleNodeClick"
-            @node-pin="handleNodePin"
           />
         </div>
       </main>
@@ -104,16 +104,9 @@
               v-if="activeNode.type === 'TechStack'"
               class="deep-expand-btn"
               type="primary"
-              plain
               :loading="expandingNodeId === activeNode.id"
               @click="expandSelectedDeep"
             >展开 L4/L5</el-button>
-            <el-button
-              class="pin-toggle-btn"
-              :type="isActiveNodePinned ? 'warning' : 'primary'"
-              plain
-              @click="toggleActiveNodePin"
-            >{{ isActiveNodePinned ? "取消锁定" : "锁定节点" }}</el-button>
           </div>
 
           <div class="graph-detail-grid">
@@ -226,7 +219,9 @@ import { ElMessage } from "element-plus";
 import Graph from "graphology";
 import Graph3DCanvas from "@/components/graph/Graph3DCanvas.vue";
 import { buildGraphFromSubgraph } from "@/data/graphBuilder";
+import { computeHighlightNodeIds } from "@/utils/graphPath";
 import { getNodeNeighbors, getOverview, getPanorama } from "@/api/graph";
+import type { GraphSubgraph } from "@/api/graph";
 import DataState from "@/components/common/DataState.vue";
 import { useGraphTasks } from "@/composables/useGraphTasks";
 import type { GraphNode, GraphType } from "@/domain/types";
@@ -256,7 +251,7 @@ const searchHighlightedNodeIds = computed(() => {
   });
   return matched;
 });
-const pinnedNodeIds = ref<string[]>([]);
+const selectedNodeId = ref<string | null>(null);
 const knowledgeDialogVisible = ref(false);
 const graphCanvasRef = ref<InstanceType<typeof Graph3DCanvas> | null>(null);
 const graphTasks = useGraphTasks();
@@ -268,7 +263,12 @@ const overviewCursor = ref<string | null>(null);
 const hasMoreOverview = ref(false);
 const loadingMore = ref(false);
 const expandingNodeId = ref("");
-const expandedScopes = new Set<string>();
+const expandedScopeVersion = ref(0);
+// 已展开节点的邻居响应缓存（scope = `${node.id}:${maxLayer}`）。
+// 展开数据在本次会话内不回收：masterGraph 被 loadGraph/loadDeepLayer 重建后
+// 会经 reapplyExpandedScopes() 自动重新合并；仅 resetToOverview（回到概览）
+// 才显式清空。
+const expandedCache = new Map<string, GraphSubgraph>();
 
 onMounted(async () => {
   graphTasks.resume();
@@ -324,13 +324,12 @@ async function loadGraph() {
       max_layer: 3,
     });
     masterGraph.value = buildGraphFromSubgraph(response);
-    applyLayerFilter();
+    reapplyExpandedScopes();
     overviewCursor.value = response.next_cursor || null;
     hasMoreOverview.value = Boolean(response.has_more);
-    expandedScopes.clear();
     activeNode.value = null;
     highlightedPath.value = [];
-    pinnedNodeIds.value = [];
+    selectedNodeId.value = null;
   } catch (e) {
     error.value = e instanceof Error ? e.message : "加载失败";
     masterGraph.value = null;
@@ -352,7 +351,7 @@ async function loadMoreOverview() {
     });
     const merged = buildGraphFromSubgraph(response, masterGraph.value);
     masterGraph.value = merged.copy();
-    applyLayerFilter();
+    reapplyExpandedScopes();
     overviewCursor.value = response.next_cursor || null;
     hasMoreOverview.value = Boolean(response.has_more);
   } catch (exception) {
@@ -371,13 +370,12 @@ async function loadDeepLayer(type: "TechPoint" | "KnowledgePoint") {
     limit: 1000,
   });
   masterGraph.value = buildGraphFromSubgraph(response);
-  applyLayerFilter();
+  reapplyExpandedScopes();
   overviewCursor.value = null;
   hasMoreOverview.value = false;
-  expandedScopes.clear();
   activeNode.value = null;
   highlightedPath.value = [];
-  pinnedNodeIds.value = [];
+  selectedNodeId.value = null;
 }
 
 async function syncGraph() {
@@ -386,7 +384,11 @@ async function syncGraph() {
     await graphTasks.startSync();
     ElMessage.success("图谱同步任务已提交，可继续使用当前页面");
   } catch (exception) {
-    ElMessage.error(exception instanceof Error ? exception.message : "图谱同步失败");
+    ElMessage.error(
+      exception instanceof Error
+        ? `${exception.message}；任务可能仍在后台执行，请稍后刷新查看`
+        : "图谱同步提交失败，任务可能仍在后台执行，请稍后刷新查看",
+    );
   }
 }
 
@@ -397,7 +399,9 @@ function resetToOverview() {
   selectedType.value = "all";
   activeNode.value = null;
   highlightedPath.value = [];
-  pinnedNodeIds.value = [];
+  selectedNodeId.value = null;
+  expandedCache.clear();
+  expandedScopeVersion.value += 1;
   loadGraph();
 }
 
@@ -436,6 +440,17 @@ const levelOptions: { label: string; value: LevelType }[] = [
 
 const nodeCount = computed(() => currentGraph.value?.order || 0);
 const edgeCount = computed(() => currentGraph.value?.size || 0);
+// 选中节点后：路径 L1~L5 + 已展开下级后代保持正常显示，其余弱化
+const pathNodeIds = computed(() =>
+  masterGraph.value && selectedNodeId.value
+    ? computeHighlightNodeIds(masterGraph.value, selectedNodeId.value)
+    : [],
+);
+const activeNodeDeepExpanded = computed(() => {
+  // Map itself is not reactive; this version is incremented whenever a new scope is cached.
+  expandedScopeVersion.value;
+  return Boolean(activeNode.value && expandedCache.has(`${activeNode.value.id}:5`));
+});
 
 function graphNodeFromAttributes(id: string, attrs: Record<string, any>): GraphNode {
   return {
@@ -466,9 +481,6 @@ function relatedNodesByDirection(direction: "parent" | "child") {
 
 const parentNodes = computed(() => relatedNodesByDirection("parent"));
 const childNodes = computed(() => relatedNodesByDirection("child"));
-const isActiveNodePinned = computed(() => Boolean(
-  activeNode.value && pinnedNodeIds.value.includes(activeNode.value.id),
-));
 
 const currentViewTitle = computed(() => {
   const stack = stackOptions.find(item => item.value === selectedStack.value)?.label || "全部方向";
@@ -477,8 +489,19 @@ const currentViewTitle = computed(() => {
 });
 
 async function handleNodeClick(node: GraphNode | null) {
+  if (node && selectedNodeId.value === node.id) {
+    // 再次点击同一节点：取消选择（恢复全图正常显示，不清展开缓存）
+    activeNode.value = null;
+    selectedNodeId.value = null;
+    return;
+  }
   activeNode.value = node;
-  if (node) await expandNodeScope(node, node.type === "TechPoint" || node.type === "KnowledgePoint" ? 5 : 3);
+  selectedNodeId.value = node?.id ?? null;
+  if (node) {
+    // L3 TechStack 及其下级节点需要 max_layer=5 才能让后端返回 L4/L5 邻居
+    // （后端把 max_layer 当作"允许返回的最大节点层级"而非扩展深度）
+    await expandNodeScope(node, node.type === "Job" || node.type === "SkillArea" ? 3 : 5);
+  }
 }
 
 async function generateDeepCandidates() {
@@ -491,45 +514,93 @@ async function generateDeepCandidates() {
 }
 
 async function expandNodeScope(node: GraphNode, maxLayer: 3 | 5) {
-  if (!masterGraph.value) return;
+  if (!masterGraph.value) return false;
   const scope = `${node.id}:${maxLayer}`;
-  if (expandedScopes.has(scope)) return;
+  if (expandedCache.has(scope)) {
+    // 已展开过（本次会话内不回收）：把缓存数据重新合并进当前 masterGraph
+    const cached = expandedCache.get(scope)!;
+    masterGraph.value = buildGraphFromSubgraph(cached, masterGraph.value).copy();
+    applyLayerFilter();
+    return true;
+  }
   expandingNodeId.value = node.id;
   try {
     const response = await getNodeNeighbors(node.id, { page_size: 60, max_layer: maxLayer });
+    expandedCache.set(scope, response);
+    expandedScopeVersion.value += 1;
     const merged = buildGraphFromSubgraph(response, masterGraph.value);
     masterGraph.value = merged.copy();
     applyLayerFilter();
-    expandedScopes.add(scope);
     if (response.has_more) ElMessage.info("该节点还有更多关联内容，可继续按需展开");
+    return true;
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "节点扩展失败");
+    return false;
   } finally {
     expandingNodeId.value = "";
   }
 }
 
-async function expandSelectedDeep() {
-  if (activeNode.value) await expandNodeScope(activeNode.value, 5);
-}
-
-function handleNodePin(nodeId: string, pinned: boolean) {
-  if (pinned) {
-    pinnedNodeIds.value = [nodeId];
-  } else {
-    pinnedNodeIds.value = pinnedNodeIds.value.filter(id => id !== nodeId);
+/**
+ * 把本次会话内已展开 scope 的邻居数据重新合并进当前 masterGraph（幂等）。
+ * 展开的 L4/L5 在重新加载/筛选变化/同步完成后不回收。
+ */
+function reapplyExpandedScopes() {
+  if (!masterGraph.value) return;
+  for (const response of expandedCache.values()) {
+    masterGraph.value = buildGraphFromSubgraph(response, masterGraph.value).copy();
   }
+  applyLayerFilter();
 }
 
-function toggleActiveNodePin() {
+async function expandSelectedDeep() {
   if (!activeNode.value) return;
-  const pinned = !pinnedNodeIds.value.includes(activeNode.value.id);
-  handleNodePin(activeNode.value.id, pinned);
+
+  const node = activeNode.value;
+  const wasL3OnlyView = selectedType.value === "TechStack";
+  const expanded = await expandNodeScope(node, 5);
+  if (!expanded) return;
+
+  // In the L3-only view, the just-fetched L4/L5 nodes are intentionally filtered out.
+  // Switch to the all-level view so the outcome of an "expand" action is immediately visible.
+  if (wasL3OnlyView) {
+    selectedType.value = "all";
+    applyLayerFilter();
+    ElMessage.success("已切换至全层级视图，L4/L5 节点已展开");
+  } else if (activeNodeDeepExpanded.value) {
+    ElMessage.success("L4/L5 节点已展开");
+  }
+
+  focusGraphNode(node.id);
 }
 
-function handleRelatedNodeClick(node: GraphNode) {
+async function handleRelatedNodeClick(node: GraphNode) {
   activeNode.value = node;
-  expandNodeScope(node, 3);
+  selectedNodeId.value = node.id;
+  if (selectedType.value === "all") {
+    // 全层级：自动展开目标节点（L4/L5 节点自动展开其子级），本次使用期间不回收
+    await expandNodeScope(node, node.type === "Job" || node.type === "SkillArea" ? 3 : 5);
+  } else {
+    // 单层级：目标类型 ≠ 当前层级 → 跳转到对应单层级界面
+    if (node.type !== selectedType.value) {
+      selectedType.value = node.type;
+      await loadGraph();
+      activeNode.value = node; // loadGraph 会清空 activeNode，跳转后恢复
+    }
+    // 目标节点不在当前图中 → 拉取并合并（不回收）
+    if (!currentGraph.value?.hasNode(node.id)) {
+      await expandNodeScope(node, node.type === "Job" || node.type === "SkillArea" ? 3 : 5);
+    }
+  }
+  activeNode.value = node;
+  selectedNodeId.value = node.id;
+  focusGraphNode(node.id);
+}
+
+function focusGraphNode(nodeId: string) {
+  // Wait for Vue to hand the merged graph to ECharts; the canvas repeats the centering
+  // after its force layout settles, so newly loaded L4/L5 nodes remain correctly focused.
+  requestAnimationFrame(() => graphCanvasRef.value?.focusNode(nodeId));
 }
 
 function applyLayerFilter() {
@@ -551,6 +622,7 @@ function applyLayerFilter() {
 
 async function selectLayer(type: GraphType) {
   selectedType.value = selectedType.value === type ? "all" : type;
+  selectedNodeId.value = null;
   await loadGraph();
 }
 
@@ -668,6 +740,29 @@ watch([keyword, selectedStack, selectedLevel], () => {
 .deep-expand-btn {
   width: 100%;
   margin-top: 14px;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: #fff;
+  font-weight: 700;
+  transition: background-color var(--duration-fast), border-color var(--duration-fast), transform var(--duration-fast);
+}
+
+.deep-expand-btn:hover,
+.deep-expand-btn:focus-visible {
+  border-color: #3653d3;
+  background: #3653d3;
+  color: #fff;
+}
+
+.deep-expand-btn:active {
+  border-color: #2942b4;
+  background: #2942b4;
+  color: #fff;
+  transform: translateY(1px);
+}
+
+.deep-expand-btn.is-loading {
+  color: #fff;
 }
 
 .knowledge-more-btn { width: 100%; margin-top: 14px; }
@@ -872,10 +967,6 @@ watch([keyword, selectedStack, selectedLevel], () => {
   margin-top: 3px;
   color: var(--text-muted);
   font-size: 14px;
-}
-
-.pin-toggle-btn {
-  margin-top: 8px;
 }
 
 .knowledge-detail > p {

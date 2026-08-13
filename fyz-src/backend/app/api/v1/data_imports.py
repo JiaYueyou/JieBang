@@ -25,7 +25,7 @@ async def import_jobs(
     principal: TokenPrincipal = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[TaskStatusResponse]:
-    # 请求进入队列前先校验文件白名单与存在性。
+    # 请求进入队列前确认文件位于本地数据目录且为 JSON。
     ImportService.resolve_files(payload.files)
     task = await TaskService(db).create_import(
         files=payload.files, user_id=principal.user_id

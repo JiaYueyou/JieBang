@@ -1,6 +1,6 @@
 import type { DataProvider } from "./provider";
 import { loadMockDatabase, saveMockDatabase } from "./mockDatabase";
-import type { CareerRecommendation, FavoriteRecord, FavoriteTargetType, JobSummary, TalentSummary } from "@/domain/types";
+import type { CareerRecommendation, DashboardOverview, FavoriteRecord, FavoriteTargetType, JobSummary, TalentSummary } from "@/domain/types";
 
 const delay = <T>(value: T, ms = 30) => new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
 const db = () => loadMockDatabase();
@@ -60,9 +60,37 @@ function favoriteFromEntity(type: FavoriteTargetType, targetId: number, title?: 
 
 export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalTransfer" | "skillReviews" | "admin"> = {
   dashboard: {
-    async getOverview() {
+    async getOverview(query) {
       const data = db();
       const openJobs = data.jobs.filter((job) => job.status === "open");
+      const hotJobs = data.jobs.slice(0, 12).map((job, index) => ({
+        standard_job_id: job.id,
+        title: job.title,
+        demand: [243, 156, 187, 132, 108, 165][index] ?? 100,
+        city: job.location || "全国",
+        trend: [-5, 23, 8, 18, 15, -3][index] ?? 0,
+        spark: [[260, 255, 250, 248, 245, 243], [30, 45, 62, 85, 110, 156], [140, 148, 155, 165, 175, 187], [40, 55, 68, 85, 108, 132], [35, 48, 60, 75, 92, 108], [170, 172, 168, 166, 164, 165]][index] ?? [0, 0, 0, 0, 0, 0],
+        core_skills: (job.skills ?? []).slice(0, 5),
+        lifecycle_stage: (index < 3 ? "mature" : index < 7 ? "established" : "observed") as "mature" | "established" | "observed",
+        active_period_count: index < 3 ? 6 : index < 7 ? 3 : 1,
+      }));
+      const hotJobsPage = query?.hotJobsPage || 1;
+      const hotJobsPageSize = query?.hotJobsPageSize || 10;
+      const emergingPage = query?.emergingPage || 1;
+      const emergingPageSize = query?.emergingPageSize || 10;
+      const hotJobsSlice = hotJobs.slice(
+        (hotJobsPage - 1) * hotJobsPageSize,
+        (hotJobsPage - 1) * hotJobsPageSize + hotJobsPageSize,
+      );
+      const emergingSkills: DashboardOverview["emergingSkills"] = [
+        { id: 1, name: "LangChain", combo: "AI 应用开发", growth: 12, confidence: 87 },
+        { id: 2, name: "RAG", combo: "AI 应用开发", growth: 9, confidence: 82 },
+        { id: 3, name: "向量数据库", combo: "数据工程", growth: 7, confidence: 78 },
+      ];
+      const emergingSlice = emergingSkills.slice(
+        (emergingPage - 1) * emergingPageSize,
+        (emergingPage - 1) * emergingPageSize + emergingPageSize,
+      );
       return delay({
         heroCards: [
           { value: String(openJobs.length), label: "在招岗位", change: "+12.5%", up: true, color: "brand", action: "发布岗位", link: "/jobs" },
@@ -97,16 +125,21 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
           };
         }),
         highMatches: [...data.talents].sort((a,b)=>b.score-a.score).slice(0,6),
-        hotJobs: data.jobs.slice(0,6).map((job,index)=>({job_id:job.id,title:job.title,demand:[243,156,187,132,108,165][index],city:job.location||"全国",trend:[-5,23,8,18,15,-3][index],spark:[[260,255,250,248,245,243],[30,45,62,85,110,156],[140,148,155,165,175,187],[40,55,68,85,108,132],[35,48,60,75,92,108],[170,172,168,166,164,165]][index]})),
-        emergingSkills: [],
+        hotJobs: hotJobsSlice,
+        hotJobsTotal: hotJobs.length,
+        emergingSkills: emergingSlice,
+        emergingSkillsTotal: emergingSkills.length,
       });
     },
   },
   talents: {
     async list(){return delay(db().talents);},
     async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
+    async getDetails(){throw new Error("简历详情仅支持后端数据模式");},
     async upload(){throw new Error("简历上传仅支持后端数据模式");},
     async download(){throw new Error("简历下载仅支持后端数据模式");},
+    async preview(){throw new Error("简历预览仅支持后端数据模式");},
+    async matchJobs(){throw new Error("岗位匹配仅支持后端数据模式");},
     async recalculate(){return delay({resumes_processed:db().talents.length,matches_upserted:0});},
     async explain(){throw new Error("匹配解释仅支持后端数据模式");},
   },
@@ -176,8 +209,9 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async startEnrichment(){throw new Error("L4/L5 候选生成仅支持后端数据模式");},
     async startPublication(){throw new Error("候选发布仅支持后端数据模式");},
     async getTask(){throw new Error("异步任务查询仅支持后端数据模式");},
-    async listEnrichment(){return delay({items:[],total:0,page:1,page_size:12});},
+    async listEnrichment(){return delay({items:[],total:0,page:1,page_size:12,machine_failed_pending_count:0});},
     async reviewEnrichment(){throw new Error("候选审核仅支持后端数据模式");},
+    async rejectMachineFailedEnrichment(){throw new Error("候选审核仅支持后端数据模式");},
     async publishEnrichment(){throw new Error("候选发布仅支持后端数据模式");},
   },
   favorites: {

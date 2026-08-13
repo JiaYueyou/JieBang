@@ -18,11 +18,13 @@ from app.domain.data_quality import (
     apply_near_duplicate_penalty,
     evaluate_job_quality,
     near_duplicate_group_id,
+    parse_source_datetime,
     simhash_similarity,
 )
 from app.domain.job_standardizer import normalize_job_title
 from app.models import (
     JobDuplicateCluster,
+    JobSourceObservation,
     JobSkillFact,
     RawJobRecord,
     Skill,
@@ -37,15 +39,6 @@ from app.services.job_import_schema import normalize_and_validate_records
 from app.services.skill_extractor import content_fingerprint, normalize_text
 from app.services.skill_service import SkillService
 
-ALLOWED_FILES = {
-    "jd_crawl_ifly.json", "jd_crawl_zl.json", "jd_crawl2.json",
-    "jd_crawl_ifly_full.json", "jd_crawl_ifly_merged.json",
-    "jd_crawl_zl_new.json",
-}
-ALLOWED_FILE_PATTERNS = (
-    re.compile(r"iflytek_\d+\.json"),
-    re.compile(r"zhaopin_\d+\.json"),
-)
 logger = logging.getLogger(__name__)
 
 
@@ -66,13 +59,10 @@ class ImportService:
         root = Path(DATA_DIR).resolve()
         paths = []
         for name in files:
-            is_allowed = name in ALLOWED_FILES or any(
-                pattern.fullmatch(name) for pattern in ALLOWED_FILE_PATTERNS
-            )
-            if Path(name).name != name or not is_allowed:
-                raise InvalidParameterError(f"不允许导入文件：{name}")
+            if Path(name).suffix.casefold() != ".json":
+                raise InvalidParameterError(f"仅支持导入 JSON 文件：{name}")
             path = (root / name).resolve()
-            if root not in path.parents or not path.is_file():
+            if (path != root and root not in path.parents) or not path.is_file():
                 raise InvalidParameterError(f"数据文件不存在：{name}")
             paths.append(path)
         return paths
@@ -99,16 +89,23 @@ class ImportService:
                 raise InvalidParameterError(
                     f"job-v1 校验失败：{path.name} 第 {first_error['index']} 条，{details}"
                 )
+            for record in normalized:
+                record["_source_file"] = path.name
             records.extend(normalized)
         total = len(records)
         logger.info("job_import_validated files=%d records=%d", len(paths), total)
-        imported = duplicates = facts = 0
+        imported = duplicates = facts = observations = 0
         near_duplicates = low_quality = time_anomalies = 0
         quality_status_counts = {"accepted": 0, "warning": 0, "rejected": 0}
         imported_raw_ids: list[int] = []
         for index, record in enumerate(records, start=1):
             fingerprint = content_fingerprint(record)
-            source_name = normalize_text(record.get("source")) or "unknown"
+            source_name = normalize_text(record.get("source"))
+            if source_name and set(source_name) == {"?"}:
+                raise InvalidParameterError(
+                    f"数据来源名称异常（仅包含问号）：第 {index} 条记录"
+                )
+            source_name = source_name or "unknown"
             external_id = normalize_text(record.get("external_id")) or None
             identity_match = (
                 await self.repository.get_source_by_identity(
@@ -118,15 +115,30 @@ class ImportService:
                 if external_id
                 else None
             )
-            if identity_match or await self.repository.get_source_by_fingerprint(fingerprint):
+            fingerprint_match = await self.repository.get_source_by_fingerprint(fingerprint)
+            existing_document = (
+                identity_match
+                if identity_match and identity_match.content_fingerprint == fingerprint
+                else fingerprint_match
+            )
+            policy = await self._quality_policy(source_name)
+            evaluation = evaluate_job_quality(
+                record,
+                policy=policy,
+                evaluated_at=utc_now(),
+            )
+            if existing_document:
                 duplicates += 1
-            else:
-                policy = await self._quality_policy(source_name)
-                evaluation = evaluate_job_quality(
-                    record,
-                    policy=policy,
-                    evaluated_at=utc_now(),
+                observations += await self._record_observation(
+                    source_document=existing_document,
+                    record=record,
+                    fingerprint=fingerprint,
+                    evaluation=evaluation,
                 )
+            else:
+                incoming_source_meta = record.get("source_meta")
+                if not isinstance(incoming_source_meta, dict):
+                    incoming_source_meta = {}
                 source = SourceDocument(
                     source=source_name,
                     external_id=external_id,
@@ -136,8 +148,19 @@ class ImportService:
                     content_fingerprint=fingerprint,
                     content_summary=normalize_text(record.get("jd_text"))[:1000],
                     source_meta={
+                        **incoming_source_meta,
                         "posted_at": record.get("posted_at"),
                         "crawled_at": record.get("crawled_at"),
+                        "archived_at": record.get("archived_at"),
+                        "archive_url": normalize_text(record.get("archive_url")) or None,
+                        "source_type": normalize_text(
+                            record.get("source_type")
+                            or incoming_source_meta.get("source_type")
+                        ) or None,
+                        "license_note": normalize_text(record.get("license_note")) or None,
+                        "supersedes_source_document_id": (
+                            identity_match.id if identity_match is not None else None
+                        ),
                     },
                 )
                 raw = RawJobRecord(
@@ -172,6 +195,12 @@ class ImportService:
                     },
                 )
                 await self.repository.add_source_and_raw(source=source, raw=raw)
+                observations += await self._record_observation(
+                    source_document=source,
+                    record=record,
+                    fingerprint=fingerprint,
+                    evaluation=evaluation,
+                )
                 await self._ensure_standard_job(raw)
                 if await self._mark_near_duplicate(
                     raw,
@@ -214,6 +243,7 @@ class ImportService:
             "time_anomalies": time_anomalies,
             "quality_status_counts": quality_status_counts,
             "cross_source_verified": verification["verified_skill_facts"],
+            "observations": observations,
             "validation": validation,
             **verification,
         }
@@ -222,6 +252,61 @@ class ImportService:
             total, imported, duplicates, facts, verification["verified_skill_facts"],
         )
         return result
+
+    async def _record_observation(
+        self,
+        *,
+        source_document: SourceDocument,
+        record: dict,
+        fingerprint: str,
+        evaluation,
+    ) -> int:
+        observed_at = evaluation.crawled_at or utc_now()
+        observed_on = observed_at.date()
+        existing = await self.db.scalar(
+            select(JobSourceObservation.id).where(
+                JobSourceObservation.source_document_id == source_document.id,
+                JobSourceObservation.observed_on == observed_on,
+            )
+        )
+        if existing is not None:
+            return 0
+
+        source_meta = record.get("source_meta")
+        if not isinstance(source_meta, dict):
+            source_meta = {}
+        if evaluation.posted_at is not None:
+            source_event_at = evaluation.posted_at
+            source_event_type = "published_at"
+        else:
+            source_event_at = None
+            source_event_type = "observed_at"
+            for field, event_type in (
+                ("source_updated_at", "updated_at"),
+                ("snapshot_observed_at", "snapshot_at"),
+            ):
+                value = source_meta.get(field)
+                parsed = parse_source_datetime(value, observed_at=observed_at)
+                if parsed is not None:
+                    source_event_at = parsed
+                    source_event_type = event_type
+                    break
+        self.db.add(
+            JobSourceObservation(
+                source_document_id=source_document.id,
+                source=source_document.source,
+                external_id=source_document.external_id,
+                observed_on=observed_on,
+                observed_at=observed_at,
+                source_event_at=source_event_at,
+                source_event_type=source_event_type,
+                content_fingerprint=fingerprint,
+                snapshot_key=normalize_text(record.get("_source_file"))[:255] or None,
+                status="active",
+            )
+        )
+        await self.db.flush()
+        return 1
 
     async def _quality_policy(self, source: str) -> QualityPolicy:
         row = await self.db.scalar(
@@ -237,11 +322,20 @@ class ImportService:
                 policy_version=row.policy_version,
             )
         lowered = source.casefold()
-        trust = 0.95 if "讯飞" in source or "ifly" in lowered else 0.85 if "智联" in source or "zhaopin" in lowered else 0.7
+        is_official_portal = "官方" in source or "招聘门户" in source
+        trust = (
+            0.95
+            if is_official_portal or "讯飞" in source or "ifly" in lowered
+            else 0.85
+            if "智联" in source or "zhaopin" in lowered
+            else 0.7
+        )
         row = SourceTrustPolicy(
             source=source,
             trust_score=trust,
-            freshness_window_days=90,
+            # 当前公开官网列表本身证明岗位在抓取时仍在架；允许使用最多
+            # 两年的真实首发历史作为基线种子，观察表继续记录后续在架性。
+            freshness_window_days=730 if is_official_portal else 90,
             enabled=True,
             policy_version="phase1-v1",
         )
@@ -268,9 +362,14 @@ class ImportService:
                 name=normalized.name,
                 canonical_key=normalized.canonical_key,
                 aliases=[],
-                stack={"algorithm": "ai", "data": "data", "devops": "devops"}.get(
-                    normalized.role_family, "backend"
-                ),
+                stack={
+                    "algorithm": "ai",
+                    "data": "data",
+                    "devops": "devops",
+                    "product": "product",
+                    "operations": "business",
+                    "sales": "business",
+                }.get(normalized.role_family, "backend"),
                 level=normalized.level,
                 role_family=normalized.role_family,
                 specialization_key=normalized.specialization_key,
@@ -381,6 +480,24 @@ class ImportService:
             candidate.near_duplicate_group_id
             or near_duplicate_group_id(fingerprint, candidate_fingerprint)
         )
+        # 先确保 cluster 存在，再给 raw 赋值 duplicate_cluster_id。
+        # db.get 会触发 autoflush：若先赋值 FK 再 get，autoflush 会把引用
+        # 尚不存在 cluster 的 UPDATE 抢先刷出 → MySQL 1452 外键失败。
+        # （此处 get 只 flush 无外键依赖的改动，安全。）
+        cluster = await self.db.get(JobDuplicateCluster, group_id)
+        if cluster is None:
+            cluster = JobDuplicateCluster(
+                id=group_id,
+                standard_job_id=raw.standard_job_id,
+                representative_raw_job_id=candidate.id,
+                company_key=raw.company_key if raw.company_key == candidate.company_key else None,
+                city_code=raw.city_code if raw.city_code == candidate.city_code else None,
+                member_count=2,
+            )
+            self.db.add(cluster)
+            cluster_exists = False
+        else:
+            cluster_exists = True
         for item in (candidate, raw):
             item.dedup_status = "near_duplicate"
             item.near_duplicate_group_id = group_id
@@ -396,18 +513,9 @@ class ImportService:
                 similarity,
             )
             item.duplicate_cluster_id = group_id
-        cluster = await self.db.get(JobDuplicateCluster, group_id)
-        if cluster is None:
-            cluster = JobDuplicateCluster(
-                id=group_id,
-                standard_job_id=raw.standard_job_id,
-                representative_raw_job_id=candidate.id,
-                company_key=raw.company_key if raw.company_key == candidate.company_key else None,
-                city_code=raw.city_code if raw.city_code == candidate.city_code else None,
-                member_count=2,
-            )
-            self.db.add(cluster)
-        else:
+        if cluster_exists:
+            # 重新统计 member_count：必须在 duplicate_cluster_id 赋值之后，
+            # 计数才包含当前 candidate 与 raw 两条。
             cluster.member_count = int(await self.db.scalar(
                 select(func.count(RawJobRecord.id)).where(
                     RawJobRecord.duplicate_cluster_id == group_id

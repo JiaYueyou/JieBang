@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1.7
+
+FROM python:3.10-slim-bookworm AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    JIEBANG_AGENT_PATH=/app/agent-development/src \
+    DATA_DIR=/app/data \
+    LOCAL_STORAGE_PATH=/app/storage \
+    CHROMA_PERSIST_PATH=/app/storage/chroma
+
+WORKDIR /app/fyz-src/backend
+
+COPY fyz-src/backend/requirements.txt /tmp/requirements.txt
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -r /tmp/requirements.txt \
+    && python -m playwright install --with-deps chromium \
+    && rm -rf /var/lib/apt/lists/* /root/.cache
+
+COPY deploy/requirements.fyz.txt /tmp/requirements-docker.txt
+RUN python -m pip install -r /tmp/requirements-docker.txt
+
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app \
+    && mkdir -p /app/data /app/storage /app/agent-development/src /ms-playwright \
+    && chown -R app:app /app /ms-playwright
+
+COPY --chown=app:app agent-development/src /app/agent-development/src
+COPY --chown=app:app scripts /app/scripts
+COPY --chown=app:app fyz-src/backend /app/fyz-src/backend
+
+USER app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips=*"]

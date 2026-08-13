@@ -106,6 +106,9 @@
     <section v-else-if="activeSection === 'crawler'" class="admin-section anim-fade-up">
       <div class="section-heading">
         <div><span>DATA PIPELINE</span><h2>爬虫数据采集中心</h2><p>展示后端已注册采集脚本、真实运行状态和数据库质量结果。</p></div>
+        <el-button type="primary" class="automation-config-button" @click="openAutomationDialog">
+          <el-icon><Setting /></el-icon>自动爬取配置
+        </el-button>
       </div>
 
       <div class="crawler-summary">
@@ -114,6 +117,31 @@
         <div><span>运行中任务</span><strong class="brand">{{ runningCrawlerCount }}</strong><small>共 {{ crawlers.length }} 个数据源</small></div>
         <div><span>失败任务</span><strong class="amber">{{ pipelineSummary.failedTasks }}</strong><small>今日导入任务</small></div>
       </div>
+
+      <article class="admin-card pipeline-run-card" role="status">
+        <div class="card-heading">
+          <div><span>AUTOMATIC CLOSED LOOP</span><h2>自动更新流水线</h2></div>
+          <span class="healthy-chip">{{ currentPipelineRun ? `${currentPipelineRun.progress}%` : "等待下一周期" }}</span>
+        </div>
+        <div v-if="currentPipelineRun" class="pipeline-run-body">
+          <div class="pipeline-run-title">
+            <strong>{{ pipelineStageLabel(currentPipelineRun.stage) }}</strong>
+            <small>运行 ID {{ currentPipelineRun.id.slice(0, 8) }} · {{ currentPipelineRun.trigger === "scheduled" ? "定时触发" : "手动触发" }}</small>
+          </div>
+          <el-progress :percentage="currentPipelineRun.progress" :status="currentPipelineRun.status === 'failed' ? 'exception' : undefined" />
+          <div class="pipeline-stages">
+            <span v-for="stage in pipelineStages" :key="stage.key" :class="{ active: stage.key === currentPipelineRun.stage }">{{ stage.label }}</span>
+          </div>
+        </div>
+        <div v-else-if="latestPipelineRun" class="pipeline-run-body">
+          <div class="pipeline-run-title">
+            <strong>最近更新：{{ pipelineStatusLabel(latestPipelineRun.status) }}</strong>
+            <small>{{ formatLocalDate(latestPipelineRun.finished_at) }} · 运行 ID {{ latestPipelineRun.id.slice(0, 8) }}</small>
+          </div>
+          <p v-if="latestPipelineRun.error_message" class="pipeline-error">{{ latestPipelineRun.error_message }}</p>
+        </div>
+        <el-empty v-else description="尚无自动更新运行记录" :image-size="48" />
+      </article>
 
       <div v-if="lastImportResult" class="import-result" role="status">
         <div class="import-result-head">
@@ -155,7 +183,7 @@
             <span><el-icon><Clock /></el-icon>{{ crawler.nextRun }}</span>
           </div>
           <footer>
-            <button type="button" :disabled="crawler.running || !crawler.enabled" @click="runCrawler(crawler)">
+            <button type="button" :disabled="crawler.running || !crawler.enabled || Boolean(currentPipelineRun)" @click="runPipeline(crawler)">
               <el-icon><VideoPlay /></el-icon>{{ crawler.running ? "运行中" : "采集并入库" }}
             </button>
             <button type="button" @click="viewCrawlerLog(crawler)"><el-icon><Document /></el-icon>日志</button>
@@ -278,6 +306,88 @@
           @current-change="refreshQuality"
         />
       </article>
+
+      <el-dialog
+        v-model="automationDialogVisible"
+        title="自动爬取配置"
+        width="680px"
+        class="automation-dialog"
+        modal-class="automation-global-mask"
+        append-to-body
+        :z-index="3000"
+        :close-on-click-modal="false"
+        lock-scroll
+        destroy-on-close
+      >
+        <div v-loading="automationLoading" class="automation-form">
+          <div class="automation-intro">
+            <span class="automation-icon"><el-icon><Timer /></el-icon></span>
+            <div><strong>定时采集并自动入库</strong><p>按计划抓取选定官方招聘门户，完成校验、入库和后续图谱流水线。</p></div>
+            <el-switch v-model="automationForm.enabled" active-text="已启用" inactive-text="已停用" />
+          </div>
+
+          <el-form label-position="top">
+            <el-form-item label="数据来源">
+              <el-checkbox-group v-model="automationForm.source_ids" class="source-checks">
+                <el-checkbox v-for="crawler in crawlers" :key="crawler.id" :value="Number(crawler.id)">
+                  <span class="source-option"><i :class="crawler.tone">{{ crawler.short }}</i>{{ crawler.name }}</span>
+                </el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+
+            <div class="automation-grid">
+              <el-form-item label="执行计划">
+                <el-select v-model="automationForm.schedule_type">
+                  <el-option label="固定间隔" value="interval" />
+                  <el-option label="每天定时" value="daily" />
+                  <el-option label="每周定时" value="weekly" />
+                </el-select>
+              </el-form-item>
+              <el-form-item v-if="automationForm.schedule_type === 'interval'" label="间隔时长">
+                <el-input-number v-model="automationForm.interval_minutes" :min="15" :max="10080" :step="15" controls-position="right" />
+                <small>分钟，最短 15 分钟</small>
+              </el-form-item>
+              <el-form-item v-else label="执行时间">
+                <el-time-select v-model="automationForm.run_time" start="00:00" step="00:15" end="23:45" />
+                <small>北京时间（Asia/Shanghai）</small>
+              </el-form-item>
+            </div>
+
+            <el-form-item v-if="automationForm.schedule_type === 'weekly'" label="执行星期">
+              <el-checkbox-group v-model="automationForm.weekdays" class="weekday-checks">
+                <el-checkbox-button v-for="day in weekdayOptions" :key="day.value" :value="day.value">{{ day.label }}</el-checkbox-button>
+              </el-checkbox-group>
+            </el-form-item>
+
+            <div class="automation-section-title"><span>采集规模</span><small>限制单个来源每次请求和入库的数据量</small></div>
+            <div class="automation-grid">
+              <el-form-item label="单来源最多岗位数">
+                <el-input-number v-model="automationForm.max_records" :min="1" :max="2000" :step="10" controls-position="right" />
+              </el-form-item>
+              <el-form-item label="单来源最多页数">
+                <el-input-number v-model="automationForm.max_pages" :min="1" :max="100" controls-position="right" />
+              </el-form-item>
+            </div>
+
+            <div class="automation-section-title"><span>容错策略</span><small>网络异常时按设置重试，避免任务长期占用</small></div>
+            <div class="automation-grid three-columns">
+              <el-form-item label="失败重试次数">
+                <el-input-number v-model="automationForm.retry_count" :min="0" :max="5" controls-position="right" />
+              </el-form-item>
+              <el-form-item label="重试间隔（分钟）">
+                <el-input-number v-model="automationForm.retry_delay_minutes" :min="1" :max="1440" controls-position="right" />
+              </el-form-item>
+              <el-form-item label="请求超时（秒）">
+                <el-input-number v-model="automationForm.timeout_seconds" :min="30" :max="3600" :step="30" controls-position="right" />
+              </el-form-item>
+            </div>
+          </el-form>
+        </div>
+        <template #footer>
+          <el-button @click="automationDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="automationSaving" @click="saveAutomationConfig">保存配置</el-button>
+        </template>
+      </el-dialog>
     </section>
 
     <!-- Skill fact review -->
@@ -414,6 +524,13 @@
           <el-option label="已批准" value="approved" />
           <el-option label="已驳回" value="rejected" />
         </el-select>
+        <el-button
+          type="danger"
+          plain
+          :disabled="graphMachineFailedPendingCount === 0"
+          :loading="graphAutoRejecting"
+          @click="rejectAllMachineFailedCandidates"
+        >一键驳回机器未通过（{{ graphMachineFailedPendingCount }}）</el-button>
         <span>共 {{ graphCandidateTotal }} 条候选</span>
       </div>
       <div v-loading="graphCandidatesLoading" class="graph-candidate-grid">
@@ -424,6 +541,7 @@
               <el-tag :type="candidate.machine_validation_status === 'passed' ? 'success' : 'warning'">机器：{{ machineStatusLabel(candidate.machine_validation_status) }}</el-tag>
               <el-tag :type="candidate.review_status === 'approved' ? 'success' : candidate.review_status === 'rejected' ? 'danger' : 'info'">审核：{{ graphReviewStatusLabel(candidate.review_status) }}</el-tag>
               <el-tag v-if="candidate.publication_status === 'published'" type="success">已发布</el-tag>
+              <el-tag v-else-if="candidate.publication_status === 'superseded'" type="info">已被新版替代</el-tag>
             </div>
           </header>
           <div class="candidate-summary">
@@ -615,6 +733,7 @@ import type {
   SkillFactReviewItem,
   SkillFactReviewSummary,
   SkillFactVerificationStatus,
+  CrawlerAutomationConfig,
 } from "@/domain/types";
 import { classifyImportFailure, errorMessage } from "@/utils/crawlerFlowError";
 
@@ -625,6 +744,28 @@ const logLevel = ref("");
 const logKeyword = ref("");
 const autoScroll = ref(true);
 const lastImportResult = ref<JobImportResult | null>(null);
+const automationDialogVisible = ref(false);
+const automationLoading = ref(false);
+const automationSaving = ref(false);
+const automationForm = ref<CrawlerAutomationConfig>({
+  enabled: false,
+  source_ids: [],
+  schedule_type: "interval",
+  interval_minutes: 60,
+  run_time: "02:00",
+  weekdays: [0, 2, 4],
+  max_records: 100,
+  max_pages: 5,
+  retry_count: 2,
+  retry_delay_minutes: 10,
+  timeout_seconds: 300,
+});
+const weekdayOptions = [
+  { value: 0, label: "周一" }, { value: 1, label: "周二" },
+  { value: 2, label: "周三" }, { value: 3, label: "周四" },
+  { value: 4, label: "周五" }, { value: 5, label: "周六" },
+  { value: 6, label: "周日" },
+];
 const store = useAdminStore();
 const {
   data: admin,
@@ -677,6 +818,8 @@ const somePageFactsSelected = computed(() => !allPageFactsSelected.value
 const graphCandidates = ref<GraphEnrichmentCandidate[]>([]);
 const graphCandidatesLoading = ref(false);
 const graphCandidateTotal = ref(0);
+const graphMachineFailedPendingCount = ref(0);
+const graphAutoRejecting = ref(false);
 const graphCandidatePage = ref(1);
 const graphCandidatePageSize = 12;
 const graphReviewStatus = ref("");
@@ -690,17 +833,25 @@ const graphBackgroundTask = computed(() => {
 });
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let resourceTimer: ReturnType<typeof setInterval> | null = null;
+let pipelineTimer: ReturnType<typeof setInterval> | null = null;
 let resourceRequestRunning = false;
+let pipelineRequestRunning = false;
 
 async function pollResources() {
   if (document.hidden || resourceRequestRunning || activeSection.value !== "overview") return;
   resourceRequestRunning = true;
   try { await store.refreshResources(); } finally { resourceRequestRunning = false; }
 }
+async function pollPipeline() {
+  if (document.hidden || pipelineRequestRunning || activeSection.value !== "crawler") return;
+  pipelineRequestRunning = true;
+  try { await store.load(true); } finally { pipelineRequestRunning = false; }
+}
 onMounted(async () => {
   graphTasks.resume();
   await store.load();
   resourceTimer = setInterval(pollResources, 2000);
+  pipelineTimer = setInterval(pollPipeline, 3000);
 });
 
 watch(() => graphTasks.tasks.enrichment?.status, async status => {
@@ -724,6 +875,7 @@ watch(() => graphTasks.tasks.publication?.status, async status => {
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer);
   if (resourceTimer) clearInterval(resourceTimer);
+  if (pipelineTimer) clearInterval(pipelineTimer);
 });
 
 const navItems: { value: Section; label: string; desc: string; icon: string }[] = [
@@ -756,6 +908,16 @@ const traffic = computed(() => admin.value?.traffic ?? {
 const recentTasks = computed(() => admin.value?.recentTasks ?? []);
 const systemEvents = computed(() => admin.value?.systemEvents ?? []);
 const crawlers = computed(() => admin.value?.crawlers ?? []);
+const currentPipelineRun = computed(() => admin.value?.currentPipelineRun ?? null);
+const latestPipelineRun = computed(() => admin.value?.pipelineRuns?.[0] ?? null);
+const pipelineStages = [
+  { key: "collect", label: "采集" },
+  { key: "validate_import", label: "校验入库" },
+  { key: "quality_gate", label: "质量门禁" },
+  { key: "graph_publish", label: "入图发布" },
+  { key: "baseline_refresh", label: "滚动基线" },
+  { key: "trend_verify", label: "趋势验收" },
+];
 const qualities = computed(() => admin.value?.qualities ?? []);
 const pipelineSummary = computed(() => admin.value?.pipelineSummary ?? {
   totalJobs: 0,
@@ -814,6 +976,7 @@ async function loadGraphCandidates(page = graphCandidatePage.value) {
     });
     graphCandidates.value = result.items;
     graphCandidateTotal.value = result.total;
+    graphMachineFailedPendingCount.value = result.machine_failed_pending_count;
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "图谱候选加载失败");
   } finally {
@@ -832,7 +995,7 @@ async function generateGraphCandidates() {
 
 async function reviewGraphCandidate(candidate: GraphEnrichmentCandidate, action: "approve" | "reject") {
   let note = action === "approve" ? "证据与节点结构审核通过" : "";
-  if (action === "reject") {
+  if (action === "reject" && candidate.machine_validation_status === "passed") {
     try {
       const result = await ElMessageBox.prompt("请填写驳回原因，审核记录将被保留。", "驳回图谱候选", {
         inputValidator: (value) => Boolean(value.trim()) || "请填写驳回原因",
@@ -844,10 +1007,31 @@ async function reviewGraphCandidate(candidate: GraphEnrichmentCandidate, action:
     await dataProvider.graph.reviewEnrichment(candidate.id, {
       action, note, lockVersion: candidate.lock_version,
     });
-    ElMessage.success(action === "approve" ? "候选已批准，等待发布" : "候选已驳回");
+    ElMessage.success(action === "approve" ? "候选已批准，已自动触发 L4/L5 图谱发布，稍后可在技能图谱页查看" : "候选已驳回");
     await loadGraphCandidates();
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "候选审核失败");
+  }
+}
+
+async function rejectAllMachineFailedCandidates() {
+  if (!graphMachineFailedPendingCount.value) return;
+  try {
+    await ElMessageBox.confirm(
+      `系统将使用各候选的机器审核结果，自动驳回 ${graphMachineFailedPendingCount.value} 条未通过项。审核理由会逐条写入记录，是否继续？`,
+      "一键驳回机器未通过项",
+      { confirmButtonText: "自动驳回", cancelButtonText: "取消", type: "warning" },
+    );
+    graphAutoRejecting.value = true;
+    const result = await dataProvider.graph.rejectMachineFailedEnrichment();
+    ElMessage.success(`已自动驳回 ${result.rejected_count} 条候选，并记录机器审核理由`);
+    await loadGraphCandidates(1);
+  } catch (value) {
+    if (value !== "cancel" && value !== "close") {
+      ElMessage.error(errorMessage(value, "自动驳回失败"));
+    }
+  } finally {
+    graphAutoRejecting.value = false;
   }
 }
 
@@ -901,6 +1085,51 @@ function handleEvent(event: any) {
   }
 }
 async function toggleCrawler(crawler: any) { await store.toggleCrawler(crawler.id); ElMessage.success(`${crawler.name}状态已更新`); }
+async function openAutomationDialog() {
+  automationDialogVisible.value = true;
+  automationLoading.value = true;
+  try {
+    automationForm.value = await store.getCrawlerAutomation();
+  } catch (error) {
+    ElMessage.error(`配置加载失败：${errorMessage(error)}`);
+  } finally {
+    automationLoading.value = false;
+  }
+}
+async function saveAutomationConfig() {
+  if (automationForm.value.enabled && automationForm.value.source_ids.length === 0) {
+    ElMessage.warning("启用自动爬取时请至少选择一个数据来源");
+    return;
+  }
+  if (automationForm.value.schedule_type === "weekly" && automationForm.value.weekdays.length === 0) {
+    ElMessage.warning("按周执行时请至少选择一天");
+    return;
+  }
+  automationSaving.value = true;
+  try {
+    automationForm.value = await store.saveCrawlerAutomation({ ...automationForm.value });
+    automationDialogVisible.value = false;
+    ElMessage.success(automationForm.value.enabled ? "自动爬取计划已启用" : "自动爬取计划已停用");
+  } catch (error) {
+    ElMessage.error(`配置保存失败：${errorMessage(error)}`);
+  } finally {
+    automationSaving.value = false;
+  }
+}
+async function runPipeline(crawler: any) {
+  try {
+    const run = await store.startPipeline([crawler.id]);
+    ElMessage.success(`${crawler.name}端到端更新已启动（${run.id.slice(0, 8)}）`);
+  } catch (error) {
+    ElMessage.error(`${crawler.name}更新启动失败：${errorMessage(error)}`);
+  }
+}
+function pipelineStageLabel(stage: string) {
+  return pipelineStages.find((item) => item.key === stage)?.label ?? "准备执行";
+}
+function pipelineStatusLabel(status: string) {
+  return ({ succeeded: "全部成功", partial: "部分成功", failed: "失败" } as Record<string, string>)[status] ?? status;
+}
 async function runCrawler(crawler: any) {
   try {
     await store.runCrawler(crawler.id);
@@ -919,12 +1148,14 @@ async function runCrawler(crawler: any) {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         const result = res.result;
         if (result?.returncode !== 0) {
-          // 失败：展示 stderr 里的错误
-          const errMsg = result?.stderr || result?.stdout || "未知错误";
+          // 运行失败：优先展示后端结构化可读消息，回退 stderr
+          const errMsg = result?.message || result?.stderr || result?.stdout || "未知错误";
           ElMessage.error(`${crawler.name}采集失败：${errMsg.slice(0, 200)}`);
         } else {
-          if (!result?.filename) {
-            ElMessage.warning(`${crawler.name}采集完成，但没有生成新的数据文件`);
+          if (!result?.filename || result?.error_category === "no_data") {
+            // 静默失败：展示后端细分的具体原因（反爬/超时/内容无变化）
+            const noDataMsg = result?.message || "没有生成新的数据文件，请检查站点可访问性";
+            ElMessage.warning(`${crawler.name}采集完成但未产生新数据：${noDataMsg}`);
           } else {
             ElMessage.info(`${crawler.name}采集完成，正在执行 job-v1 校验和入库`);
             try {
@@ -1065,7 +1296,7 @@ async function batchApproveFacts() {
     factReviewing.value = true;
     const result = await reviewStore.reviewBatch(selectedFactIds.value, "verified", "证据充分，管理员批量确认");
     selectedFactIds.value = [];
-    ElMessage.success(`已同意 ${result.processed_count} 条技能事实`);
+    ElMessage.success(`已同意 ${result.processed_count} 条技能事实，已自动触发图谱增量同步，稍后可在技能图谱页查看`);
   } catch (value) {
     if (value !== "cancel" && value !== "close") ElMessage.error(errorMessage(value, "批量审核失败"));
   } finally {
@@ -1108,7 +1339,7 @@ async function approveAllFacts() {
     factReviewing.value = true;
     const result = await reviewStore.approveAll();
     selectedFactIds.value = [];
-    ElMessage.success(`已同意 ${result.processed_count} 条技能事实`);
+    ElMessage.success(`已同意 ${result.processed_count} 条技能事实，已自动触发图谱增量同步，稍后可在技能图谱页查看`);
   } catch (value) {
     if (value !== "cancel" && value !== "close") ElMessage.error(errorMessage(value, "一键同意失败"));
   } finally {
@@ -1124,7 +1355,7 @@ async function approveFact(item: SkillFactReviewItem) {
     );
     factReviewing.value = true;
     await reviewStore.review(item, "verified", "证据充分，人工确认");
-    ElMessage.success("技能事实已确认");
+    ElMessage.success("技能事实已确认，已自动触发图谱增量同步，稍后可在技能图谱页查看");
   } catch (value) {
     if (value !== "cancel" && value !== "close") {
       ElMessage.error(errorMessage(value, "审核操作失败"));
@@ -1174,6 +1405,15 @@ function formatReviewDate(value: string | null) {
 </script>
 
 <style>
+.pipeline-run-card { margin: 0 0 13px; }
+.pipeline-run-body { padding: 0 18px 16px; }
+.pipeline-run-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.pipeline-run-title strong { font-size: 14px; }
+.pipeline-run-title small { color: var(--text-muted); font: 500 12px var(--font-mono); }
+.pipeline-stages { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; }
+.pipeline-stages span { padding: 6px; border-radius: 7px; background: var(--color-bg-muted); color: var(--text-muted); font-size: 12px; text-align: center; }
+.pipeline-stages span.active { background: var(--color-brand-light); color: var(--color-brand); font-weight: 700; }
+.pipeline-error { margin: 8px 0 0; color: var(--color-danger); font-size: 12px; }
 .graph-agent-progress {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(300px, 42%);
@@ -1194,13 +1434,14 @@ function formatReviewDate(value: string | null) {
 .admin-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:13px}.metric-card{display:flex;align-items:center;gap:11px;min-width:0;padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.metric-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:11px;font-size:17px}.brand{background:var(--color-brand-light);color:var(--color-brand)}.green{background:var(--color-success-light);color:var(--color-success)}.amber{background:var(--color-warning-light);color:var(--color-warning)}.rose{background:var(--color-danger-light);color:var(--color-danger)}.violet{background:#f0edff;color:#7c6ff7}.blue{background:var(--color-info-light);color:var(--color-info)}.metric-copy{display:flex;min-width:0;flex:1;flex-direction:column}.metric-copy span{font-size:14px;color:var(--text-muted)}.metric-copy strong{font:700 22px var(--font-mono);letter-spacing:-.04em}.metric-copy small{font-size:14px}.positive,.green{color:var(--color-success)}.warning,.amber{color:var(--color-warning)}.metric-bars,.spark-bars{display:flex;align-items:flex-end;gap:2px;height:38px}.metric-bars i,.spark-bars i{width:3px;min-height:4px;border-radius:2px;background:var(--color-brand);opacity:.55}.overview-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:13px}.admin-card{border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.card-heading{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 11px}.card-heading>div{display:flex;flex-direction:column}.card-heading span,.section-heading>div>span{font:700 14px var(--font-mono);letter-spacing:.09em;color:var(--text-muted);text-transform:uppercase}.card-heading h2{font-size:14px;margin-top:2px}.healthy-chip,.event-count{padding:4px 8px;border-radius:999px;background:var(--color-success-light);color:var(--color-success)!important;font:700 14px var(--font-sans)!important;letter-spacing:0!important}.service-list,.task-list,.event-list{padding:0 18px 12px}.service-row,.task-row{display:flex;align-items:center;gap:10px;padding:10px 0}.service-row+.service-row,.task-row+.task-row{border-top:1px solid var(--color-border-light)}.service-logo,.task-state{display:grid;width:31px;height:31px;flex:0 0 31px;place-items:center;border-radius:9px}.service-name,.task-row>div{display:flex;min-width:0;flex:1;flex-direction:column}.service-name strong,.task-row strong{font-size:14px}.service-name small,.task-row small{font-size:14px;color:var(--text-muted)}.latency{display:flex;flex-direction:column;align-items:flex-end}.latency strong{font:600 14px var(--font-mono)}.latency small{font-size:14px;color:var(--text-muted)}.service-state{display:flex;align-items:center;gap:4px;color:var(--color-success);font-size:14px;font-weight:600}.service-state i,.live-label i{width:6px;height:6px;border-radius:50%;background:currentColor}.resource-card{padding-bottom:14px}.live-label{display:flex;align-items:center;gap:5px;color:var(--color-success)!important;font:700 14px var(--font-mono)!important}.resource-rings{display:flex;justify-content:space-around;padding:12px 15px 16px}.resource-item{display:flex;align-items:center;flex-direction:column}.resource-ring{display:grid;width:76px;height:76px;place-items:center;border-radius:50%;background:conic-gradient(var(--ring-color) calc(var(--value)*1%),var(--color-bg-muted) 0);position:relative}.resource-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}.resource-ring span{z-index:1;font:700 17px var(--font-mono)}.resource-ring small{font-size:14px}.resource-item>strong{font-size:14px;margin-top:7px}.resource-item>small{font-size:14px;color:var(--text-muted)}.traffic-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px}.traffic-strip div{display:flex;align-items:center;gap:6px;padding:9px;border-radius:8px;background:var(--color-bg-muted);font-size:14px}.traffic-strip strong{margin-left:auto;font:600 14px var(--font-mono)}.task-state.success{background:var(--color-success-light);color:var(--color-success)}.task-state.running{background:var(--color-brand-light);color:var(--color-brand)}.task-state.warning{background:var(--color-warning-light);color:var(--color-warning)}.task-count{font:600 14px var(--font-mono);color:var(--text-secondary)}.task-status{min-width:48px;text-align:right;font-size:14px;font-weight:700}.task-status.success{color:var(--color-success)}.task-status.running{color:var(--color-brand)}.task-status.warning{color:var(--color-warning)}.event-card .event-count{background:var(--color-danger-light);color:var(--color-danger)!important}.event-list button{display:flex;align-items:center;gap:9px;width:100%;padding:10px 0;border:0;border-top:1px solid var(--color-border-light);background:transparent;text-align:left;cursor:pointer}.event-level{display:grid;width:29px;height:29px;place-items:center;border-radius:8px}.event-level.warning{background:var(--color-warning-light)}.event-level.danger{background:var(--color-danger-light);color:var(--color-danger)}.event-level.info{background:var(--color-info-light);color:var(--color-info)}.event-list button>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column}.event-list strong{font-size:14px}.event-list small{font-size:14px;color:var(--text-muted)}.event-list time{font:500 14px var(--font-mono);color:var(--text-muted)}
 .section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:8px 2px 16px}.section-heading h2{font-size:20px;letter-spacing:-.03em}.section-heading p{font-size:14px;color:var(--text-muted);margin-top:3px}.section-actions{display:flex;gap:8px}.crawler-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.crawler-summary>div{display:flex;flex-direction:column;padding:14px 16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.crawler-summary span{font-size:14px;color:var(--text-muted)}.crawler-summary strong{font:700 20px var(--font-mono)}.crawler-summary small{font-size:14px;color:var(--text-muted)}.crawler-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:13px}.crawler-card{padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff;transition:.2s}.crawler-card.paused{opacity:.72;background:var(--color-bg-muted)}.crawler-head{display:flex;align-items:center;gap:10px}.source-logo{display:grid;width:39px;height:39px;place-items:center;border-radius:11px;background:var(--color-brand-light);color:var(--color-brand);font-weight:700}.crawler-head>div{min-width:0;flex:1}.crawler-head h3{font-size:14px}.crawler-head p{font-size:14px;color:var(--text-muted)}.crawler-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.crawler-stats div{display:flex;flex-direction:column;padding:8px;border-radius:8px;background:var(--color-bg-muted)}.crawler-stats span,.crawler-progress span,.crawler-meta{font-size:14px;color:var(--text-muted)}.crawler-stats strong{font:600 14px var(--font-mono)}.crawler-progress>div{display:flex;justify-content:space-between;margin-bottom:5px}.crawler-progress strong{font:600 14px var(--font-mono)}.crawler-meta{display:flex;justify-content:space-between;margin-top:9px}.crawler-meta span{display:flex;align-items:center;gap:4px}.crawler-card footer{display:flex;gap:5px;padding-top:11px;margin-top:11px;border-top:1px solid var(--color-border-light)}.crawler-card footer button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;height:29px;border:1px solid var(--color-border);border-radius:7px;background:#fff;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.crawler-card footer button:first-child{border-color:var(--color-brand);color:var(--color-brand)}.crawler-card footer button:disabled{opacity:.5;cursor:not-allowed}.quality-panel{padding-bottom:16px}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 18px}.quality-grid>div{padding:12px;border-radius:9px;background:var(--color-bg-muted)}.quality-grid span{font-size:14px;color:var(--text-muted)}.quality-grid strong{display:block;font:700 17px var(--font-mono);margin:2px 0 7px}.quality-grid small{font-size:14px;color:var(--text-muted)}
 .import-result{padding:16px;margin-bottom:13px;border:1px solid color-mix(in srgb,var(--color-success) 35%,var(--color-border));border-radius:var(--radius-lg);background:color-mix(in srgb,var(--color-success) 5%,#fff)}.import-result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.import-result-head>div{display:flex;flex-direction:column}.import-result-head span{font-size:13px;color:var(--text-muted)}.import-result-head strong{font-size:14px}.import-result-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.import-result-grid>div{padding:9px 10px;border-radius:8px;background:#fff}.import-result-grid span{display:block;font-size:12px;color:var(--text-muted)}.import-result-grid strong{font:700 16px var(--font-mono)}
+.automation-config-button{height:38px;padding:0 16px!important;border-radius:9px!important}.automation-form{min-height:260px}.automation-intro{display:flex;align-items:center;gap:12px;margin:-4px 0 20px;padding:14px 15px;border:1px solid #dfe5ff;border-radius:12px;background:linear-gradient(110deg,#f3f6ff,#fff)}.automation-intro>div{min-width:0;flex:1}.automation-intro strong{font-size:14px}.automation-intro p{margin-top:2px;color:var(--text-muted);font-size:12px;line-height:1.5}.automation-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:10px;background:var(--color-brand);color:#fff;font-size:18px}.source-checks{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.source-checks .el-checkbox{height:auto;margin:0;padding:9px 11px;border:1px solid var(--color-border);border-radius:9px}.source-option{display:flex;align-items:center;gap:8px}.source-option i{display:grid;width:27px;height:27px;place-items:center;border-radius:7px;background:var(--color-brand-light);color:var(--color-brand);font-size:10px;font-style:normal;font-weight:700}.automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.automation-grid.three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.automation-grid .el-input-number,.automation-grid .el-select{width:100%}.automation-grid .el-form-item small{display:block;margin-top:4px;color:var(--text-muted);font-size:11px}.automation-section-title{display:flex;align-items:baseline;gap:8px;margin:3px 0 12px;padding-top:15px;border-top:1px solid var(--color-border-light)}.automation-section-title span{font-size:13px;font-weight:700}.automation-section-title small{color:var(--text-muted);font-size:11px}.weekday-checks{display:flex;flex-wrap:wrap}.automation-dialog .el-dialog__footer{padding-top:4px}
 .quality-review-panel{margin-top:13px;overflow:hidden}.quality-review-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 18px 12px}.quality-review-summary>div{padding:10px 12px;border-radius:8px;background:var(--color-bg-muted)}.quality-review-summary span{display:block;font-size:12px;color:var(--text-muted)}.quality-review-summary strong{font:700 17px var(--font-mono)}.quality-review-toolbar{display:flex;gap:8px;padding:0 18px 14px}.quality-review-toolbar .el-select{width:150px}.quality-review-toolbar .el-input{max-width:260px}.quality-job{display:flex;min-width:0;flex-direction:column}.quality-job strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quality-job span,.quality-flags>span{font-size:12px;color:var(--text-muted)}.quality-flags{display:flex;flex-wrap:wrap;gap:4px}.mono{font-family:var(--font-mono)}.quality-pagination{justify-content:center;padding:15px 18px}
 .review-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:11px;padding:6px;border:1px solid var(--color-border);border-radius:12px;background:#fff}.review-summary button{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);font:600 13px var(--font-sans);cursor:pointer}.review-summary button.active{background:var(--color-brand-light);color:var(--color-brand)}.review-summary strong{padding:2px 7px;border-radius:999px;background:#fff;font:700 12px var(--font-mono)}.review-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}.review-toolbar .el-input{max-width:480px}.review-toolbar>span{margin-left:auto;font:600 12px var(--font-mono);color:var(--text-muted)}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.review-card{position:relative;overflow:hidden;padding:17px 17px 14px 21px;border:1px solid var(--color-border);border-radius:13px;background:#fff;box-shadow:0 4px 14px rgba(32,36,55,.04)}.review-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--color-warning)}.review-card.review-verified:before{background:var(--color-success)}.review-card.review-rejected:before{background:var(--color-danger)}.review-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.review-card header small{font:600 11px var(--font-mono);letter-spacing:.08em;color:var(--text-muted)}.review-card h3{margin-top:2px;font-size:20px}.review-card header>span{padding:4px 8px;border-radius:999px;background:var(--color-warning-light);color:var(--color-warning);font-size:12px;font-weight:700}.review-card header>span.verified{background:var(--color-success-light);color:var(--color-success)}.review-card header>span.rejected{background:var(--color-danger-light);color:var(--color-danger)}.review-job{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 10px;padding:9px 11px;border-radius:8px;background:var(--color-bg-muted)}.review-job>div{display:flex;min-width:0;flex-direction:column}.review-job small,.review-job>div>span{font-size:12px;color:var(--text-muted)}.review-job strong{overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.review-job>a,.review-job>span{flex:0 0 auto;color:var(--color-brand);font-size:12px;font-weight:700;text-decoration:none}.review-card blockquote{margin:0;padding:11px 12px;border:1px solid #e7eaf4;border-radius:9px;background:#fbfbfd}.review-card blockquote small{font:700 11px var(--font-mono);letter-spacing:.07em;color:var(--text-muted)}.review-card blockquote p{margin-top:5px;color:#34394a;font-size:13px;line-height:1.65}.review-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}.review-signals span{padding:7px;border-radius:7px;background:var(--color-bg-muted);font-size:11px;color:var(--text-muted)}.review-signals strong{display:block;margin-top:2px;font:700 12px var(--font-mono);color:var(--text-secondary)}.review-audit{margin-top:10px;padding:9px 11px;border-left:3px solid var(--color-border);background:var(--color-bg-muted)}.review-audit small{font:600 11px var(--font-mono);color:var(--text-muted)}.review-audit p{margin-top:3px;font-size:13px;color:var(--text-secondary)}.review-card footer{display:flex;justify-content:flex-end;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border-light)}.review-pagination{justify-content:center;margin-top:16px}.reject-fact-context{margin-bottom:12px;padding:11px;border-radius:9px;background:var(--color-bg-muted)}.reject-fact-context span{display:block;font:700 12px var(--font-mono);color:var(--color-danger)}.reject-fact-context strong{display:block;margin:3px 0;font-size:14px}.reject-fact-context p{font-size:13px;color:var(--text-muted)}
 .performance-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.performance-card{position:relative;overflow:hidden;padding:15px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.performance-card>span{font-size:14px;color:var(--text-muted)}.performance-card>strong{display:block;font:700 20px var(--font-mono)}.performance-card>small{font-size:14px}.spark-bars{position:absolute;right:13px;bottom:13px;height:33px}.monitor-grid{margin-bottom:13px}.endpoint-list{padding:0 18px 14px}.endpoint-list>div{display:grid;grid-template-columns:40px minmax(220px,1.35fr) 1fr 90px;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--color-border-light)}.operation-mark{display:grid;width:32px;height:32px;place-items:center;border-radius:9px;background:var(--color-brand-light);color:var(--color-brand)}.operation-copy{display:flex;min-width:0;flex-direction:column}.operation-copy>strong{font-family:var(--font-sans);font-size:14px;text-align:left}.operation-copy>small{margin-top:2px;color:var(--text-muted);font-size:12px}.endpoint-bar{height:4px;border-radius:999px;background:var(--color-bg-muted)}.endpoint-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--color-brand),var(--color-success))}.endpoint-list>div>strong{font:600 14px var(--font-mono);text-align:right}.log-panel{overflow:hidden}.log-toolbar{display:flex;align-items:center;justify-content:space-between;padding:14px 17px}.log-toolbar>div:first-child{display:flex;flex-direction:column}.log-toolbar span{font:700 14px var(--font-mono);color:var(--text-muted)}.log-toolbar h2{font-size:14px}.log-toolbar>div:last-child{display:flex;align-items:center;gap:7px}.log-console{max-height:340px;overflow:auto;padding:8px 12px 12px;background:#1d2130;color:#cfd5e6;font:14px/1.8 var(--font-mono)}.log-line{display:grid;grid-template-columns:118px 48px 150px 1fr;gap:8px;padding:3px 5px;border-radius:4px}.log-line:hover{background:rgba(255,255,255,.04)}.log-line time{color:#747d94}.log-level{font-weight:700}.log-level.info{color:#68b4ff}.log-level.warn{color:#f6b85d}.log-level.error{color:#ff7474}.log-service{overflow:hidden;color:#8e9abb;text-overflow:ellipsis;white-space:nowrap}.log-line code{color:#d8deec;white-space:normal}
 @media(max-width:1200px){.admin-nav{flex-wrap:nowrap}.admin-nav-items{grid-template-columns:repeat(5,minmax(0,1fr));flex-basis:auto}.admin-nav small{display:none}.admin-status{width:auto;padding-left:10px;border-top:0;border-left:1px solid var(--color-border);border-radius:0 9px 9px 0}.admin-status div{display:none}.admin-metrics,.crawler-summary,.performance-grid{grid-template-columns:repeat(2,1fr)}.import-result-grid{grid-template-columns:repeat(3,1fr)}.overview-grid{grid-template-columns:1fr}}@media(max-width:900px){.review-grid{grid-template-columns:1fr}}@media(max-width:768px){.section-heading{align-items:stretch;flex-direction:column}.admin-nav{flex-wrap:wrap}.admin-nav-items{grid-template-columns:1fr 1fr;flex-basis:100%}.admin-status{width:100%;justify-content:flex-end;border-top:1px solid var(--color-border-light);border-left:0}.crawler-grid{grid-template-columns:1fr}.quality-grid{grid-template-columns:1fr 1fr}.review-summary{grid-template-columns:1fr 1fr}.review-toolbar{align-items:stretch;flex-wrap:wrap}.review-toolbar .el-input{max-width:none;flex-basis:100%}.review-toolbar>span{display:none}.log-toolbar{align-items:stretch;flex-direction:column;gap:10px}.log-toolbar>div:last-child{flex-wrap:wrap}.resource-rings{gap:8px}.resource-ring{width:65px;height:65px}.endpoint-list>div{grid-template-columns:40px 1fr 90px}.endpoint-bar{display:none}.log-line{grid-template-columns:105px 44px 1fr}.log-line code{grid-column:1/-1}}@media(max-width:540px){.admin-metrics,.crawler-summary,.performance-grid,.quality-grid,.import-result-grid{grid-template-columns:1fr}.admin-nav small{display:none}.admin-status{justify-content:flex-start}.metric-card{min-height:80px}.review-signals{grid-template-columns:1fr 1fr}.review-job{align-items:flex-start;flex-direction:column}}
 .agent-run-panel{overflow:hidden;margin-bottom:13px}.agent-run-pagination{justify-content:flex-end;padding:14px 17px}.agent-output{margin-top:18px}.agent-output>strong{display:block;margin-bottom:8px}.agent-output pre{max-height:360px;overflow:auto;padding:12px;border-radius:9px;background:#1d2130;color:#d8deec;font:12px/1.6 var(--font-mono);white-space:pre-wrap;word-break:break-word}
 .admin-status.degraded{background:var(--color-warning-light)}.admin-status.degraded .status-pulse{background:var(--color-warning)}.admin-status.unavailable{background:var(--color-danger-light)}.admin-status.unavailable .status-pulse{background:var(--color-danger)}.service-state.degraded{color:var(--color-warning)}.service-state.unavailable{color:var(--color-danger)}.traffic-strip div{flex-wrap:wrap}.traffic-strip small{flex-basis:100%;padding-left:22px;color:var(--text-muted)}.event-list .el-empty,.task-list .el-empty{padding:18px 0}
-@media(max-width:768px){.quality-review-summary{grid-template-columns:repeat(2,1fr)}.quality-review-toolbar{align-items:stretch;flex-wrap:wrap}.quality-review-toolbar .el-input{max-width:none;flex:1 1 100%}}
+@media(max-width:768px){.quality-review-summary{grid-template-columns:repeat(2,1fr)}.quality-review-toolbar{align-items:stretch;flex-wrap:wrap}.quality-review-toolbar .el-input{max-width:none;flex:1 1 100%}.source-checks,.automation-grid,.automation-grid.three-columns{grid-template-columns:1fr}}
 @media(max-width:540px){.quality-review-summary{grid-template-columns:1fr}}
 }
 .graph-review-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; color:var(--text-muted); }
@@ -1220,4 +1461,40 @@ function formatReviewDate(value: string | null) {
 .candidate-points small,.candidate-note { color:var(--text-muted); }
 .graph-candidate-card footer { display:flex; justify-content:flex-end; margin-top:auto; }
 @media (max-width:1100px) { .graph-candidate-grid { grid-template-columns:1fr; } }
+
+/* App-level crawler configuration modal. It is appended to body so the mask
+   covers the sidebar, topbar and content as one interaction surface. */
+.automation-global-mask.el-overlay {
+  background:rgba(24,28,38,.62)!important;
+}
+.automation-global-mask .el-overlay-dialog {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.automation-global-mask .automation-dialog {
+  width:min(680px,calc(100vw - 32px))!important;
+  max-height:calc(100vh - 48px);
+  margin:0!important;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:14px;
+  box-shadow:0 28px 80px rgba(12,17,29,.28);
+}
+.automation-global-mask .automation-dialog .el-dialog__body {
+  max-height:calc(100vh - 170px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.automation-global-mask .automation-form{min-height:260px}
+.automation-global-mask .automation-intro{display:flex;align-items:center;gap:12px;margin:-4px 0 20px;padding:14px 15px;border:1px solid #dfe5ff;border-radius:12px;background:linear-gradient(110deg,#f3f6ff,#fff)}
+.automation-global-mask .automation-intro>div{min-width:0;flex:1}.automation-global-mask .automation-intro strong{font-size:14px}.automation-global-mask .automation-intro p{margin-top:2px;color:var(--text-muted);font-size:12px;line-height:1.5}
+.automation-global-mask .automation-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:10px;background:var(--color-brand);color:#fff;font-size:18px}
+.automation-global-mask .source-checks{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.automation-global-mask .source-checks .el-checkbox{height:auto;margin:0;padding:9px 11px;border:1px solid var(--color-border);border-radius:9px}
+.automation-global-mask .source-option{display:flex;align-items:center;gap:8px}.automation-global-mask .source-option i{display:grid;width:27px;height:27px;place-items:center;border-radius:7px;background:var(--color-brand-light);color:var(--color-brand);font-size:10px;font-style:normal;font-weight:700}
+.automation-global-mask .automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.automation-global-mask .automation-grid.three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.automation-global-mask .automation-grid .el-input-number,.automation-global-mask .automation-grid .el-select{width:100%}.automation-global-mask .automation-grid .el-form-item small{display:block;margin-top:4px;color:var(--text-muted);font-size:11px}
+.automation-global-mask .automation-section-title{display:flex;align-items:baseline;gap:8px;margin:3px 0 12px;padding-top:15px;border-top:1px solid var(--color-border-light)}.automation-global-mask .automation-section-title span{font-size:13px;font-weight:700}.automation-global-mask .automation-section-title small{color:var(--text-muted);font-size:11px}.automation-global-mask .weekday-checks{display:flex;flex-wrap:wrap}
+@media(max-width:680px){.automation-global-mask .automation-grid,.automation-global-mask .automation-grid.three-columns,.automation-global-mask .source-checks{grid-template-columns:1fr}.automation-global-mask .el-overlay-dialog{padding:12px}}
 </style>

@@ -13,7 +13,7 @@ from app.core.agent_runtime import SkillExtractionAgent
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now, utc_now_naive
 from app.domain.skill_dictionary import SKILL_DICT, canonical_key
-from app.models import AgentRun, JobSkillFact
+from app.models import AgentRun, JobSkillFact, Skill
 from app.providers import DeepSeekProvider, LLMProvider
 from app.repositories import JobRepository, SkillRepository
 from app.schemas.common import PageMeta
@@ -30,6 +30,7 @@ from app.schemas.skill import (
 )
 from app.services.job_service import JobService
 from app.services.skill_extractor import RuleSkillExtractor, normalize_text
+from app.services.task_status_cache import bump_cache_generations
 
 
 class SkillService:
@@ -92,6 +93,7 @@ class SkillService:
                 created_by=user_id,
             )
             await self.db.commit()
+            await bump_cache_generations("analysis", "dashboard")
             return JobExtractionResult(
                 job_id=job.id,
                 facts=[self._fact_response(fact) for fact in facts],
@@ -157,7 +159,11 @@ class SkillService:
         fact.reviewed_by = reviewer_id
         fact.reviewed_at = utc_now()
         fact.review_note = note
+        if decision == VerificationStatus.verified:
+            # 事实审核即技能认可：联动提升 LLM 新技能的 pending_review 状态
+            await self._approve_pending_skills([fact])
         await self.db.commit()
+        await bump_cache_generations("analysis", "dashboard")
         row = await self.skills.get_fact_review(fact_id)
         if not row:
             raise ResourceNotFoundError("技能事实不存在")
@@ -183,10 +189,30 @@ class SkillService:
             fact.reviewed_by = reviewer_id
             fact.reviewed_at = reviewed_at
             fact.review_note = note
+        if decision == VerificationStatus.verified:
+            await self._approve_pending_skills(facts)
         await self.db.commit()
+        await bump_cache_generations("analysis", "dashboard")
         processed_ids = [fact.id for fact in facts]
         skipped_count = max(0, len(unique_ids) - len(processed_ids)) if fact_ids is not None else 0
         return processed_ids, skipped_count
+
+    async def _approve_pending_skills(self, facts: list[JobSkillFact]) -> int:
+        """将已确认事实关联的 pending_review 技能联动提升为 approved。
+
+        修复"LLM 抽取的新技能 validation_status=pending_review 且无任何提升
+        机制、永远进不了图谱"的死胡同：事实审核确认即技能认可，保证技能可
+        进入 L1~L3 图谱与 L4/L5 候选生成。
+        """
+        promoted = 0
+        for fact in facts:
+            if fact.verification_status != VerificationStatus.verified.value:
+                continue
+            skill = await self.db.get(Skill, fact.skill_id)
+            if skill and skill.validation_status == "pending_review":
+                skill.validation_status = "approved"
+                promoted += 1
+        return promoted
 
     async def extract_text(
         self,

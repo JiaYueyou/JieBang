@@ -1,19 +1,5 @@
 <template>
   <section v-if="baseline" class="baseline-panel dash-card">
-    <header class="baseline-head">
-      <div>
-        <div class="baseline-kicker">REFERENCE BASELINE · {{ baseline.version }}</div>
-        <h3>基线技术栈与岗位参考标准</h3>
-        <p>{{ baseline.source_note }}</p>
-      </div>
-      <div class="baseline-metrics" aria-label="基线摘要">
-        <span><strong>{{ baseline.technology_stack_count }}</strong> 技术栈</span>
-        <span><strong>{{ baseline.standard_job_count }}</strong> 标准岗位</span>
-        <span><strong>{{ baseline.verified_skill_count }}</strong> 已确认技能</span>
-        <span><strong>{{ baseline.verified_fact_count }}</strong> 事实证据</span>
-      </div>
-    </header>
-
     <div class="baseline-stacks">
       <article
         v-for="stack in baseline.technology_stacks"
@@ -37,7 +23,7 @@
     <div class="baseline-reference-head">
       <div>
         <strong>岗位参考标准</strong>
-        <span>至少 {{ baseline.minimum_source_count }} 条独立来源后进入基线</span>
+        <span>岗位成熟度按独立岗位簇与持续月份判定，来源多样性单独展示</span>
       </div>
       <div class="baseline-filters">
         <el-input
@@ -46,8 +32,10 @@
           size="small"
           placeholder="筛选标准岗位或技能"
           :prefix-icon="Search"
+          @keyup.enter="loadStandards(1)"
+          @clear="loadStandards(1)"
         />
-        <el-select v-model="stackFilter" size="small" style="width: 140px">
+        <el-select v-model="stackFilter" size="small" style="width: 140px" @change="loadStandards(1)">
           <el-option label="全部技术栈" value="" />
           <el-option
             v-for="stack in baseline.technology_stacks"
@@ -59,13 +47,23 @@
       </div>
     </div>
 
-    <el-table :data="filteredStandards" stripe size="small" max-height="360">
+    <el-table v-loading="standardsLoading" :data="standards" stripe size="small" max-height="360">
       <el-table-column prop="name" label="标准岗位" min-width="190" />
       <el-table-column prop="stack_label" label="技术栈" width="120" />
       <el-table-column label="级别" width="90" align="center">
         <template #default="{ row }">{{ levelLabel(row.level) }}</template>
       </el-table-column>
-      <el-table-column prop="source_count" label="独立来源" width="90" align="center" />
+      <el-table-column label="生命周期" width="100" align="center">
+        <template #default="{ row }">
+          <el-tag
+            :type="row.maturity_stage === 'mature' ? 'success' : row.maturity_stage === 'established' ? 'info' : 'warning'"
+            size="small"
+            effect="plain"
+          >{{ maturityLabel(row.maturity_stage) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="source_count" label="岗位证据" width="90" align="center" />
+      <el-table-column prop="active_period_count" label="持续月份" width="90" align="center" />
       <el-table-column label="核心技能" min-width="260">
         <template #default="{ row }">
           <div class="standard-skills">
@@ -87,34 +85,85 @@
         </template>
       </el-table-column>
     </el-table>
+    <div class="baseline-pagination">
+      <el-pagination
+        v-if="standardsTotal > 0"
+        background
+        layout="total, sizes, prev, pager, next"
+        :current-page="standardsPage"
+        :page-size="standardsPageSize"
+        :page-sizes="[10, 20, 50]"
+        :total="standardsTotal"
+        @current-change="loadStandards"
+        @size-change="changePageSize"
+      />
+      <span v-else-if="!standardsLoading">暂无符合条件的岗位参考标准</span>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref, watch } from "vue";
+import { ElMessage } from "element-plus";
 import { Search } from "@element-plus/icons-vue";
-import type { AnalysisBaseline } from "@/domain/types";
+import { dataProvider } from "@/data";
+import type { AnalysisBaseline, JobReferenceStandard } from "@/domain/types";
 
 const props = defineProps<{ baseline: AnalysisBaseline | null }>();
 const keyword = ref("");
 const stackFilter = ref("");
+const standards = ref<JobReferenceStandard[]>([]);
+const standardsLoading = ref(false);
+const standardsPage = ref(1);
+const standardsPageSize = ref(20);
+const standardsTotal = ref(0);
+let loadSequence = 0;
 
-const filteredStandards = computed(() => {
-  const needle = keyword.value.trim().toLocaleLowerCase();
-  return (props.baseline?.job_standards ?? []).filter((standard) => {
-    if (stackFilter.value && standard.stack !== stackFilter.value) return false;
-    if (!needle) return true;
-    return [
-      standard.name,
-      standard.stack_label,
-      ...standard.aliases,
-      ...standard.core_skills,
-    ].join(" ").toLocaleLowerCase().includes(needle);
-  });
-});
+async function loadStandards(page = standardsPage.value) {
+  if (!props.baseline) return;
+  const sequence = ++loadSequence;
+  standardsLoading.value = true;
+  try {
+    const result = await dataProvider.trends.listReferenceStandards({
+      page,
+      pageSize: standardsPageSize.value,
+      keyword: keyword.value.trim() || undefined,
+      stack: stackFilter.value || undefined,
+    });
+    if (sequence !== loadSequence) return;
+    standards.value = result.items;
+    standardsPage.value = result.page;
+    standardsTotal.value = result.total;
+  } catch (error) {
+    if (sequence === loadSequence) {
+      standards.value = [];
+      standardsTotal.value = 0;
+      ElMessage.error(error instanceof Error ? error.message : "岗位参考标准加载失败");
+    }
+  } finally {
+    if (sequence === loadSequence) standardsLoading.value = false;
+  }
+}
+
+function changePageSize(size: number) {
+  standardsPageSize.value = size;
+  void loadStandards(1);
+}
+
+watch(() => props.baseline, (baseline) => {
+  if (baseline) void loadStandards(1);
+  else {
+    standards.value = [];
+    standardsTotal.value = 0;
+  }
+}, { immediate: true });
 
 function levelLabel(level: string) {
   return ({ junior: "初级", middle: "中级", senior: "高级", expert: "专家" } as Record<string, string>)[level] ?? level;
+}
+
+function maturityLabel(stage: string) {
+  return ({ mature: "已成熟", established: "已稳定", observed: "观察中" } as Record<string, string>)[stage] ?? "观察中";
 }
 
 function dateText(value: string) {
@@ -126,54 +175,6 @@ function dateText(value: string) {
 .baseline-panel {
   margin-bottom: 16px;
   overflow: hidden;
-}
-.baseline-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid var(--color-border);
-  background:
-    linear-gradient(120deg, color-mix(in srgb, var(--color-brand) 9%, transparent), transparent 52%),
-    var(--color-bg-elevated);
-}
-.baseline-kicker {
-  margin-bottom: 5px;
-  color: var(--color-brand);
-  font: 700 11px/1.4 var(--font-mono);
-  letter-spacing: .11em;
-}
-.baseline-head h3 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 18px;
-}
-.baseline-head p {
-  max-width: 720px;
-  margin: 7px 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.65;
-}
-.baseline-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(108px, 1fr));
-  gap: 8px;
-  min-width: 250px;
-}
-.baseline-metrics span {
-  padding: 9px 11px;
-  border: 1px solid color-mix(in srgb, var(--color-brand) 18%, var(--color-border));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-brand));
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-.baseline-metrics strong {
-  margin-right: 4px;
-  color: var(--color-brand);
-  font: 700 15px/1 var(--font-mono);
 }
 .baseline-stacks {
   display: grid;
@@ -267,12 +268,20 @@ function dateText(value: string) {
   color: var(--text-secondary);
   font: 11px/1.4 var(--font-mono);
 }
+.baseline-pagination {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 24px 14px;
+  border-top: 1px solid var(--color-border);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
 @media (max-width: 900px) {
-  .baseline-head,
   .baseline-reference-head {
     flex-direction: column;
   }
-  .baseline-metrics,
   .baseline-filters {
     width: 100%;
   }

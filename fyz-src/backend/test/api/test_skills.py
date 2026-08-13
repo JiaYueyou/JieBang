@@ -63,7 +63,6 @@ async def test_import_task_eager_mode_and_status(client, auth_headers, monkeypat
         test_dir = Path(directory)
         (test_dir / "test.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         monkeypatch.setattr(import_module, "DATA_DIR", str(test_dir))
-        monkeypatch.setattr(import_module, "ALLOWED_FILES", {"test.json"})
         response = await client.post(
             "/api/v1/data-imports/jobs",
             headers=auth_headers,
@@ -204,3 +203,75 @@ async def test_admin_batch_reviews_and_approves_all_skill_facts(client, auth_hea
         params={"status": "unverified"},
     )
     assert queue.json()["meta"]["total"] == 0
+
+
+async def test_fact_review_approves_pending_review_skill(client, auth_headers):
+    """事实审核确认应联动提升 LLM 抽取的 pending_review 技能为 approved。"""
+    from app.core.database import async_session
+    from app.models import JobSkillFact, Skill
+
+    async with async_session() as db:
+        skill = Skill(
+            name="RAG 检索优化", canonical_name="RAG 检索优化",
+            canonical_key="rag-retrieval-opt-test", category="ai",
+            aliases=[], validation_status="pending_review",
+        )
+        db.add(skill)
+        await db.flush()
+        fact = JobSkillFact(
+            raw_job_record_id=None, skill_id=skill.id, kind="required",
+            importance=0.9, frequency=1, confidence=0.8,
+            evidence_text="evidence", verification_status="unverified",
+            extraction_method="llm", source_count=1,
+        )
+        db.add(fact)
+        await db.commit()
+        fact_id, skill_id = fact.id, skill.id
+
+    response = await client.patch(
+        f"/api/v1/skills/facts/{fact_id}/review",
+        headers=auth_headers,
+        json={"decision": "verified", "note": "人工确认"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["verification_status"] == "verified"
+
+    async with async_session() as db:
+        skill = await db.get(Skill, skill_id)
+        assert skill.validation_status == "approved"
+
+
+async def test_fact_review_triggers_auto_graph_sync(client, auth_headers):
+    """事实审核确认后应自动创建进程内 graph_sync 任务（auto_triggered）。"""
+    from sqlalchemy import select
+
+    from app.core.database import async_session
+    from app.models import AsyncTask
+
+    job = await _create_job(client, auth_headers)
+    extracted = await client.post(
+        f"/api/v1/jobs/{job['id']}/extract-skills", headers=auth_headers
+    )
+    assert extracted.status_code == 200
+
+    approve_all = await client.post(
+        "/api/v1/skills/facts/reviews/approve-all",
+        headers=auth_headers,
+        json={"keyword": ""},
+    )
+    assert approve_all.status_code == 200
+    assert approve_all.json()["data"]["processed_count"] > 0
+    assert "自动触发图谱增量同步" in approve_all.json()["message"]
+
+    async with async_session() as db:
+        task = (
+            await db.execute(
+                select(AsyncTask)
+                .where(AsyncTask.task_type == "graph_sync")
+                .order_by(AsyncTask.created_at.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+    assert task is not None
+    assert (task.request_data or {}).get("auto_triggered") is True
+    assert (task.request_data or {}).get("enrich_top_skills") is False

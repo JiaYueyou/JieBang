@@ -45,6 +45,10 @@ class ZhaopinSpider(BaseSpider):
 
     def run(self):
         """智联爬虫主流程：使用 Playwright 逐页访问"""
+        raise RuntimeError(
+            "Automatic Zhaopin collection is disabled: the current platform terms "
+            "require written authorization. Use an authorized export or official API instead."
+        )
         from playwright.sync_api import sync_playwright
 
         logger = self._get_logger()

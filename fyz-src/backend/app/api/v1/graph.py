@@ -1,6 +1,7 @@
 """Neo4j 能力图谱同步、快照与查询 API。"""
 
 import logging
+from collections.abc import Awaitable, Callable
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,7 @@ from app.core.security import get_current_user, require_admin
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
 from app.schemas.graph import (
+    GraphEnrichmentBatchRejectResponse,
     GraphEnrichmentCandidatePage,
     GraphEnrichmentCandidateResponse,
     GraphEnrichmentPublishRequest,
@@ -20,6 +22,11 @@ from app.schemas.graph import (
 )
 from app.schemas.skill import TaskStatusResponse
 from app.services import GraphService, GraphTaskService
+from app.services.query_cache import (
+    GRAPH_CACHE_NAMESPACE,
+    GRAPH_QUERY_TTL_SECONDS,
+    cached_model_query,
+)
 
 router = APIRouter(prefix="/graph", tags=["技能图谱"])
 logger = logging.getLogger(__name__)
@@ -31,6 +38,21 @@ def get_graph_service(db: AsyncSession = Depends(get_db)) -> GraphService:
 
 def get_graph_task_service(db: AsyncSession = Depends(get_db)) -> GraphTaskService:
     return GraphTaskService(db)
+
+
+async def _cached_graph_query(
+    operation: str,
+    params: dict[str, object],
+    loader: Callable[[], Awaitable[GraphSubgraph]],
+) -> GraphSubgraph:
+    return await cached_model_query(
+        generation_namespace=GRAPH_CACHE_NAMESPACE,
+        operation=operation,
+        params=params,
+        ttl_seconds=GRAPH_QUERY_TTL_SECONDS,
+        model_type=GraphSubgraph,
+        loader=loader,
+    )
 
 
 @router.get("/", response_model=ApiResponse[dict])
@@ -50,6 +72,7 @@ async def sync_graph(
         mode=payload.mode.value,
         enrich_top_skills=payload.enrich_top_skills,
         user_id=principal.user_id,
+        run_eager_in_background=True,
     )
     logger.info(
         "graph_sync_created task_id=%s mode=%s enrich=%s user_id=%s",
@@ -113,11 +136,42 @@ async def review_enrichment_candidate(
     payload: GraphEnrichmentReviewRequest,
     principal: TokenPrincipal = Depends(require_admin),
     service: GraphService = Depends(get_graph_service),
+    task_service: GraphTaskService = Depends(get_graph_task_service),
 ):
-    return ApiResponse(data=await service.review_enrichment_candidate(
+    candidate = await service.review_enrichment_candidate(
         candidate_id, action=payload.action, note=payload.note,
         lock_version=payload.lock_version, user_id=principal.user_id,
-    ))
+    )
+    message = "候选已批准" if payload.action == "approve" else "候选已驳回"
+    if payload.action == "approve":
+        # 批准后即发布：将候选置为可发布，并自动触发 L4/L5 增量写 Neo4j
+        # （进程内异步，不依赖 Celery；_append_verified_deep_nodes 会读取
+        #   publication_status=approved 的候选写入 TechPoint/KnowledgePoint）
+        await service.prepare_enrichment_publication([candidate_id])
+        task = await task_service.create_sync_in_background(
+            mode="incremental", enrich_top_skills=False, user_id=principal.user_id,
+        )
+        message += f"；已自动触发 L4/L5 图谱发布（任务 {task.task_id[:8]}）"
+    return ApiResponse(message=message, data=candidate)
+
+
+@router.post(
+    "/enrichment/candidates/reject-machine-failed",
+    response_model=ApiResponse[GraphEnrichmentBatchRejectResponse],
+)
+async def reject_machine_failed_candidates(
+    principal: TokenPrincipal = Depends(require_admin),
+    service: GraphService = Depends(get_graph_service),
+):
+    candidate_ids = await service.reject_machine_failed_candidates(
+        user_id=principal.user_id
+    )
+    return ApiResponse(
+        message=f"已自动驳回 {len(candidate_ids)} 条机器未通过候选",
+        data=GraphEnrichmentBatchRejectResponse(
+            rejected_count=len(candidate_ids), candidate_ids=candidate_ids
+        ),
+    )
 
 
 @router.post("/enrichment/publish", response_model=ApiResponse[TaskStatusResponse])
@@ -149,8 +203,17 @@ async def panorama(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.panorama(
-        stack=stack, level=level, node_type=node_type, keyword=keyword, limit=limit
+    params = {
+        "stack": stack,
+        "level": level,
+        "node_type": node_type,
+        "keyword": keyword,
+        "limit": limit,
+    }
+    return ApiResponse(data=await _cached_graph_query(
+        "panorama",
+        params,
+        lambda: service.panorama(**params),
     ))
 
 
@@ -165,9 +228,18 @@ async def graph_overview(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.overview(
-        cursor=cursor, page_size=page_size, max_layer=max_layer,
-        stack=stack, level=level, keyword=keyword,
+    params = {
+        "cursor": cursor,
+        "page_size": page_size,
+        "max_layer": max_layer,
+        "stack": stack,
+        "level": level,
+        "keyword": keyword,
+    }
+    return ApiResponse(data=await _cached_graph_query(
+        "overview",
+        params,
+        lambda: service.overview(**params),
     ))
 
 
@@ -177,7 +249,11 @@ async def node_detail(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.node(node_id))
+    return ApiResponse(data=await _cached_graph_query(
+        "node",
+        {"node_id": node_id},
+        lambda: service.node(node_id),
+    ))
 
 
 @router.get("/nodes/{node_id}/neighbors", response_model=ApiResponse[GraphSubgraph])
@@ -189,8 +265,20 @@ async def node_neighbors(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.neighbors(
-        node_id, cursor=cursor, page_size=page_size, max_layer=max_layer,
+    return ApiResponse(data=await _cached_graph_query(
+        "neighbors",
+        {
+            "node_id": node_id,
+            "cursor": cursor,
+            "page_size": page_size,
+            "max_layer": max_layer,
+        },
+        lambda: service.neighbors(
+            node_id,
+            cursor=cursor,
+            page_size=page_size,
+            max_layer=max_layer,
+        ),
     ))
 
 
@@ -202,7 +290,11 @@ async def expand(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.expand(node_id, depth, limit))
+    return ApiResponse(data=await _cached_graph_query(
+        "expand",
+        {"node_id": node_id, "depth": depth, "limit": limit},
+        lambda: service.expand(node_id, depth, limit),
+    ))
 
 
 @router.get("/search", response_model=ApiResponse[GraphSubgraph])
@@ -213,7 +305,11 @@ async def search(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.search(q, types, limit))
+    return ApiResponse(data=await _cached_graph_query(
+        "search",
+        {"q": q, "types": types, "limit": limit},
+        lambda: service.search(q, types, limit),
+    ))
 
 
 @router.get("/path", response_model=ApiResponse[GraphSubgraph])
@@ -224,7 +320,11 @@ async def path(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.path(from_id, to_id, max_depth))
+    return ApiResponse(data=await _cached_graph_query(
+        "path",
+        {"from_id": from_id, "to_id": to_id, "max_depth": max_depth},
+        lambda: service.path(from_id, to_id, max_depth),
+    ))
 
 
 @router.get("/jobs/{job_id}/tree", response_model=ApiResponse[GraphSubgraph])
@@ -234,4 +334,8 @@ async def job_tree(
     _principal: TokenPrincipal = Depends(get_current_user),
     service: GraphService = Depends(get_graph_service),
 ):
-    return ApiResponse(data=await service.job_tree(job_id, depth))
+    return ApiResponse(data=await _cached_graph_query(
+        "job-tree",
+        {"job_id": job_id, "depth": depth},
+        lambda: service.job_tree(job_id, depth),
+    ))

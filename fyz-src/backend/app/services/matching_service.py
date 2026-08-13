@@ -6,6 +6,7 @@ from hashlib import sha256
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.agent_runtime import (
     MatchEvidenceInput,
@@ -17,10 +18,10 @@ from app.core.config import DEEPSEEK_TIMEOUT_SECONDS
 from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now
 from app.domain.agent_status import AgentRunStatus
-from app.domain.skill_dictionary import canonical_key
+from app.domain.skill_dictionary import canonical_key, normalize_skill
 from app.models import AgentRun, JobPosting, MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.providers import DeepSeekProvider, LLMProvider
-from app.schemas.matching import MatchEvidenceResponse, MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, TalentResponse
+from app.schemas.matching import MatchEvidenceResponse, MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeSkillDetailResponse, TalentDetailResponse, TalentResponse
 from app.services.agent_grounding_service import (
     AgentGroundingReport,
     AgentGroundingService,
@@ -29,6 +30,34 @@ from app.services.agent_grounding_service import (
 from app.services.resume_parser import ResumeParser
 from app.services.resume_storage import ResumeStorage
 from app.services.skill_extractor import RuleSkillExtractor
+from app.services.task_status_cache import bump_cache_generations
+
+
+def calculate_skill_coverage(
+    resume_skill_names: list[str] | set[str] | tuple[str, ...],
+    job_skill_names: list[str] | set[str] | tuple[str, ...],
+) -> tuple[int, list[str], list[str]]:
+    """Return the deterministic score used by FYZ resume/job matching.
+
+    Keeping the calculation separate from persistence makes the production
+    algorithm directly measurable without duplicating its rules in the
+    quality evaluation suite.
+    """
+    def normalized_key(name: str) -> str:
+        normalized = normalize_skill(name)
+        return canonical_key(normalized[0] if normalized else name)
+
+    unique_job_skills = list(dict.fromkeys(job_skill_names))
+    if not unique_job_skills:
+        return 0, [], []
+    resume_keys = {normalized_key(name) for name in resume_skill_names}
+    matched = [
+        name for name in unique_job_skills if normalized_key(name) in resume_keys
+    ]
+    missing = [
+        name for name in unique_job_skills if normalized_key(name) not in resume_keys
+    ]
+    return round(len(matched) / len(unique_job_skills) * 100), matched, missing
 
 
 class MatchingService:
@@ -69,6 +98,7 @@ class MatchingService:
             await self.db.flush()
             matches = await self._calculate_matches(resume, user_id=user_id)
             await self.db.commit()
+            await bump_cache_generations("dashboard")
         except Exception:
             await self.db.rollback()
             self.storage.remove(storage_key)
@@ -89,8 +119,9 @@ class MatchingService:
                 job_skills = [skill.name for skill in extracted.skills]
             if not job_skills:
                 continue
-            matched = [name for name in job_skills if canonical_key(name) in resume_keys]
-            missing = [name for name in job_skills if canonical_key(name) not in resume_keys]
+            score, matched, missing = calculate_skill_coverage(
+                list(resume_keys), job_skills
+            )
             record = await self.db.scalar(select(MatchRecord).where(MatchRecord.resume_id == resume.id, MatchRecord.job_id == job.id, MatchRecord.algorithm_version == self.algorithm_version))
             if record is None:
                 record = MatchRecord(resume_id=resume.id, job_id=job.id, algorithm_version=self.algorithm_version, score=0, matched_skills=[], missing_skills=[], created_by=user_id)
@@ -98,7 +129,7 @@ class MatchingService:
                 await self.db.flush()
             else:
                 await self.db.execute(delete(MatchEvidence).where(MatchEvidence.match_id == record.id))
-            record.score = round(len(matched) / len(job_skills) * 100)
+            record.score = score
             record.matched_skills, record.missing_skills = matched, missing
             evidence: list[MatchEvidence] = []
             for name in matched:
@@ -118,7 +149,9 @@ class MatchingService:
                         "canonical_key": skill.canonical_key,
                     },
                 ))
-            for name in missing:
+            # Keep JD evidence for every required skill. A matched skill then has both
+            # resume and job anchors, which allows a richer but still auditable explanation.
+            for name in job_skills:
                 evidence.append(MatchEvidence(match_id=record.id, evidence_type="job_requirement", skill_name=name, evidence_text=f"岗位 {job.title} 要求 {name}", source_ref={"job_id": job.id}))
             self.db.add_all(evidence)
             record.job = job
@@ -148,6 +181,7 @@ class MatchingService:
                 await self._calculate_matches(resume, user_id=user_id)
             )
         await self.db.commit()
+        await bump_cache_generations("dashboard")
         return {
             "resumes_processed": len(resumes),
             "matches_upserted": match_count,
@@ -163,6 +197,37 @@ class MatchingService:
             raise ResourceNotFoundError("该简历尚无岗位匹配记录")
         return self._talent(resume)
 
+    async def get_talent_detail(self, resume_id: int, user_id: int) -> TalentDetailResponse:
+        resume = await self._resume(resume_id, user_id)
+        if not resume.matches:
+            raise ResourceNotFoundError("该简历尚无岗位匹配记录")
+        parsed = resume.parse_result
+        return TalentDetailResponse(
+            **self._talent(resume).model_dump(),
+            file_size=resume.file_size,
+            content_type=resume.content_type,
+            parsed_text=parsed.parsed_text if parsed else "",
+            profile=parsed.profile if parsed else {},
+            parse_warnings=parsed.warnings if parsed else [],
+            skills=[
+                ResumeSkillDetailResponse(
+                    name=skill.name,
+                    category=skill.category,
+                    confidence=skill.confidence,
+                    evidence_text=skill.evidence_text,
+                    extraction_method=skill.extraction_method,
+                )
+                for skill in resume.skills
+            ],
+        )
+
+    async def match_resume_jobs(self, resume_id: int, job_ids: list[int], user_id: int) -> list[MatchResponse]:
+        resume = await self._resume(resume_id, user_id)
+        records = await self._calculate_matches(resume, user_id=user_id, job_ids=job_ids)
+        await self.db.commit()
+        await bump_cache_generations("dashboard")
+        return [self._match_response(record) for record in records]
+
     async def get_resume_file(self, resume_id: int, user_id: int) -> tuple[str, str | None, object]:
         resume = await self._resume(resume_id, user_id)
         return resume.original_filename, resume.content_type, self.storage.path_for(resume.storage_key)
@@ -174,7 +239,16 @@ class MatchingService:
         *,
         agent_run_id: str | None = None,
     ) -> MatchExplanationResponse:
-        match = await self.db.scalar(select(MatchRecord).join(Resume).where(MatchRecord.id == match_id, Resume.created_by == user_id, Resume.deleted_at.is_(None)))
+        match = await self.db.scalar(
+            select(MatchRecord)
+            .options(
+                selectinload(MatchRecord.resume),
+                selectinload(MatchRecord.job),
+                selectinload(MatchRecord.evidence),
+            )
+            .join(Resume)
+            .where(MatchRecord.id == match_id, Resume.created_by == user_id, Resume.deleted_at.is_(None))
+        )
         if match is None:
             raise ResourceNotFoundError("匹配记录不存在")
         saved_evidence = list(match.evidence)
@@ -186,6 +260,21 @@ class MatchingService:
             score=match.score,
             matched_skills=match.matched_skills,
             missing_skills=match.missing_skills,
+            candidate_context={
+                "current_position": match.resume.current_position or "待确认",
+                "experience": match.resume.experience or "待确认",
+                "education": match.resume.education or "待确认",
+                "department": match.resume.department or "待确认",
+                "company": match.resume.company or "",
+                "location": match.resume.location or "",
+            },
+            job_context={
+                "department": match.job.department,
+                "level": match.job.level,
+                "responsibilities": match.job.responsibilities,
+                "requirements": match.job.requirements,
+                "bonus_skills": [],
+            },
             evidence=[
                 MatchEvidenceInput(
                     evidence_id=f"match_evidence:{item.id}",
@@ -405,8 +494,8 @@ class MatchingService:
     def _talent(self, resume: Resume) -> TalentResponse:
         matches = sorted(resume.matches, key=lambda item: (-item.score, item.job_id))
         best = matches[0]
-        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=resume.name, position=resume.current_position or "待确认", score=best.score, isNew=True, experience=resume.experience or "待确认", education=resume.education or "待确认", department=resume.department or "待确认", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "")
+        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=resume.name, position=resume.current_position or "待确认", score=best.score, isNew=True, experience=resume.experience or "待确认", education=resume.education or "待确认", department=resume.department or "待确认", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "", matches=[self._match_response(match) for match in matches])
 
     @staticmethod
     def _match_response(match: MatchRecord) -> MatchResponse:
-        return MatchResponse(id=match.id, resume_id=match.resume_id, job_id=match.job_id, job_title=match.job.title, score=match.score, matched=match.matched_skills, missing=match.missing_skills, algorithm_version=match.algorithm_version, evidence=[MatchEvidenceResponse(id=e.id, evidence_type=e.evidence_type, skill_name=e.skill_name, evidence_text=e.evidence_text, source_ref=e.source_ref) for e in match.evidence])
+        return MatchResponse(id=match.id, resume_id=match.resume_id, job_id=match.job_id, job_title=match.job.title, score=match.score, matched=match.matched_skills, missing=match.missing_skills, algorithm_version=match.algorithm_version, urgent=match.job.urgent, evidence=[MatchEvidenceResponse(id=e.id, evidence_type=e.evidence_type, skill_name=e.skill_name, evidence_text=e.evidence_text, source_ref=e.source_ref) for e in match.evidence])

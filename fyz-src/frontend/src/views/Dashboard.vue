@@ -213,26 +213,47 @@
       <div class="dash-card">
         <div class="dash-card-header">
           <span class="dash-card-title">IT 热门岗位风向标</span>
-          <span class="dash-card-badge">近 6 个月</span>
+          <span class="dash-card-badge">近 6 个月 · {{ hotJobsTotal }} 个岗位</span>
         </div>
         <div class="dash-card-body db-module-scroll" style="padding-top:8px;">
           <div class="db-hot-row db-hot-header">
             <span class="db-hot-col rank">#</span>
             <span class="db-hot-col name">岗位</span>
             <span class="db-hot-col chart">趋势</span>
-            <span class="db-hot-col num">候选</span>
+            <span class="db-hot-col num">岗位数</span>
             <span class="db-hot-col trend">本月</span>
             <span class="db-hot-col action"></span>
           </div>
-          <div class="db-hot-row" v-for="(job, i) in hotJobs" :key="job.job_id">
-            <span class="db-hot-col rank" :class="{ top: i < 3 }">{{ i + 1 }}</span>
-            <span class="db-hot-col name">{{ job.title }}</span>
+          <div class="db-hot-row" v-for="(job, i) in hotJobs" :key="job.standard_job_id">
+            <span class="db-hot-col rank" :class="{ top: (hotJobsPage - 1) * hotJobsPageSize + i < 3 }">{{ (hotJobsPage - 1) * hotJobsPageSize + i + 1 }}</span>
+            <span class="db-hot-col name">
+              {{ job.title }}
+              <el-tag
+                v-if="job.lifecycle_stage !== 'observed'"
+                :type="job.lifecycle_stage === 'mature' ? 'success' : 'info'"
+                size="small"
+                effect="plain"
+                style="margin-left:6px;vertical-align:middle;"
+              >{{ job.lifecycle_stage === 'mature' ? '已成熟' : '已稳定' }}</el-tag>
+              <span v-if="job.core_skills?.length" class="db-hot-skills">{{ job.core_skills.slice(0, 3).join(" · ") }}</span>
+            </span>
             <span class="db-hot-col chart">
               <v-chart :option="sparkOption(job.spark)" autoresize style="height:28px;width:100px;" />
             </span>
             <span class="db-hot-col num" style="font-family:var(--font-mono);font-weight:600;">{{ job.demand }}</span>
             <span class="db-hot-col trend" :class="job.trend > 0 ? 'up' : job.trend < 0 ? 'down' : ''" style="font-family:var(--font-mono);font-weight:700;">{{ job.trend > 0 ? '+' : '' }}{{ job.trend }}</span>
-            <FavoriteButton type="job" :target-id="job.job_id" :title="job.title" compact />
+            <el-tooltip content="风向标是市场标准岗位聚合，请进入岗位管理后收藏具体的在招岗位" placement="top">
+              <el-button text type="primary" size="small" @click="$router.push('/jobs')">查看在招</el-button>
+            </el-tooltip>
+          </div>
+          <div class="db-pagination-row">
+            <el-pagination
+              v-model:current-page="hotJobsPage"
+              :page-size="hotJobsPageSize"
+              :total="hotJobsTotal"
+              layout="total, prev, pager, next"
+              @current-change="loadDashboard"
+            />
           </div>
         </div>
       </div>
@@ -241,12 +262,12 @@
       <div class="dash-card">
         <div class="dash-card-header">
           <span class="dash-card-title">技能涌现捕捉器</span>
-          <span class="dash-card-badge">AI 发现</span>
+          <span class="dash-card-badge">AI 发现 · {{ emergingSkillsTotal }} 项</span>
         </div>
         <div class="dash-card-body db-module-scroll" style="padding-top:8px;">
           <div class="db-skill-list">
             <div class="db-skill-item" v-for="(sk, i) in emergingSkills" :key="i">
-              <div class="db-skill-rank" :class="{ hot: i < 2 }">{{ i + 1 }}</div>
+              <div class="db-skill-rank" :class="{ hot: (emergingPage - 1) * emergingPageSize + i < 2 }">{{ (emergingPage - 1) * emergingPageSize + i + 1 }}</div>
               <div class="db-skill-body">
                 <div class="db-skill-name">{{ sk.name }}</div>
                 <div class="db-skill-combo">{{ sk.combo }}</div>
@@ -256,6 +277,15 @@
                 <el-tag size="small" type="warning" effect="plain">{{ sk.confidence }}%</el-tag>
               </div>
             </div>
+          </div>
+          <div class="db-pagination-row">
+            <el-pagination
+              v-model:current-page="emergingPage"
+              :page-size="emergingPageSize"
+              :total="emergingSkillsTotal"
+              layout="total, prev, pager, next"
+              @current-change="loadDashboard"
+            />
           </div>
         </div>
       </div>
@@ -344,7 +374,23 @@ const heroCards = computed(() => data.value?.heroCards ?? []);
 const kanban = computed(() => data.value?.kanban ?? []);
 const alerts = computed(() => data.value?.highMatches ?? []);
 const hotJobs = computed(() => data.value?.hotJobs ?? []);
+const hotJobsTotal = computed(() => data.value?.hotJobsTotal ?? 0);
 const emergingSkills = computed(() => data.value?.emergingSkills ?? []);
+const emergingSkillsTotal = computed(() => data.value?.emergingSkillsTotal ?? 0);
+
+const hotJobsPage = ref(1);
+const hotJobsPageSize = ref(10);
+const emergingPage = ref(1);
+const emergingPageSize = ref(10);
+
+function loadDashboard() {
+  void store.load({
+    hotJobsPage: hotJobsPage.value,
+    hotJobsPageSize: hotJobsPageSize.value,
+    emergingPage: emergingPage.value,
+    emergingPageSize: emergingPageSize.value,
+  }, true);
+}
 const kanbanSummary = computed(() => {
   const jobs = kanban.value;
   const headcount = jobs.reduce((sum, job) => sum + job.headcount, 0);
@@ -359,7 +405,7 @@ const kanbanMetrics = computed(() => [
   { label: "已完成评估", value: kanbanSummary.value.evaluated, unit: "项", tone: "success" },
   { label: "等待评估", value: kanbanSummary.value.pending, unit: "项", tone: "warning" },
 ]);
-onMounted(() => store.refresh());
+onMounted(() => loadDashboard());
 
 function openTalent(item: TalentSummary) {
   selectedTalent.value = item;

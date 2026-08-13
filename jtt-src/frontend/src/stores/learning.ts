@@ -76,11 +76,21 @@ export const useLearningStore = defineStore('learning', () => {
     if (path) path.name = name
   }
 
+  // 手动点击只允许"取消完成"；标记完成必须通过测验（≥80%）
   const toggleStep = (pathId: string, stepId: string) => {
     const path = paths.value.find((p) => p.id === pathId)
     if (path) {
       const step = path.steps.find((s: LearningStep) => s.id === stepId)
-      if (step) step.completed = !step.completed
+      if (step && step.completed) step.completed = false
+    }
+  }
+
+  // 测验达到 80% 后标记完成
+  const completeStep = (pathId: string, stepId: string) => {
+    const path = paths.value.find((p) => p.id === pathId)
+    if (path) {
+      const step = path.steps.find((s: LearningStep) => s.id === stepId)
+      if (step) step.completed = true
     }
   }
 
@@ -107,5 +117,5 @@ export const useLearningStore = defineStore('learning', () => {
     }
   }
 
-  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, getCompletionPercent, generateFromGaps }
+  return { paths, loading, fetchPaths, addPath, removePath, renamePath, toggleStep, completeStep, getCompletionPercent, generateFromGaps }
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick} from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import Graph from 'graphology'
 import type { GraphNode, GraphType } from '@/domain/types'
@@ -8,15 +8,13 @@ const props = defineProps<{
   graph: Graph | null
   highlightedPath?: string[]
   highlightedNodeIds?: string[]
-  pinnedNodeIds?: string[]
+  selectedNodeId?: string | null
+  pathNodeIds?: string[]
 }>()
 
 const emit = defineEmits<{
   (e: 'nodeClick', node: GraphNode | null): void
-  (e: 'nodePin', nodeId: string, pinned: boolean): void
 }>()
-
-const pinnedNodes = ref<Set<string>>(new Set(props.pinnedNodeIds || []))
 
 const containerRef = ref<HTMLDivElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
@@ -64,14 +62,6 @@ async function initChart() {
   
   chartInstance.on('click', (params: any) => {
     if (params.dataType === 'node') {
-      const nodeId = params.data.id
-      const nextPinned = !pinnedNodes.value.has(nodeId)
-      pinnedNodes.value.clear()
-      if (nextPinned) pinnedNodes.value.add(nodeId)
-      pinnedNodes.value = new Set(pinnedNodes.value)
-      
-      emit('nodePin', nodeId, nextPinned)
-      
       const nodeData = params.data
       const graphNode: GraphNode = {
         id: nodeData.id,
@@ -140,6 +130,9 @@ function buildOption(): any {
   }
   const searchMatches = new Set(props.highlightedNodeIds || [])
   const hasSearchMatches = searchMatches.size > 0
+  const selectedId = props.selectedNodeId ?? null
+  const hasSelected = Boolean(selectedId)
+  const pathSet = new Set(props.pathNodeIds || [])
   
   props.graph?.forEachNode((nodeId: string, attrs: any) => {
     const level = attrs.level || 'L3'
@@ -148,8 +141,13 @@ function buildOption(): any {
     const categoryIndex = levelToCategoryIndex[level] || 2
     const isHighlighted = props.highlightedPath?.includes(nodeId)
     const isSearchMatch = searchMatches.has(nodeId)
-    const isPinned = pinnedNodes.value.has(nodeId)
-    const pinnedSize = isPinned ? size * 1.2 : size
+    const isSelected = hasSelected && nodeId === selectedId
+    // Selection takes precedence over search: its complete L1→L5 path keeps its original
+    // colour, and every unrelated node is consistently reduced to 0.22 opacity.
+    const isProminent = isSelected || (!hasSelected && isSearchMatch)
+    const dimmed = hasSelected
+      ? !isSelected && !pathSet.has(nodeId)
+      : hasSearchMatches && !isSearchMatch
     
     nodes.push({
       id: nodeId,
@@ -174,43 +172,38 @@ function buildOption(): any {
       common_solutions: attrs.common_solutions || [],
       x: attrs.x || (Math.random() - 0.5) * 800,
       y: attrs.y || (Math.random() - 0.5) * 600,
-      fixed: isPinned,
       itemStyle: {
-        color: isPinned || isSearchMatch ? '#f59e4b' : color,
-        borderColor: isSearchMatch ? '#fff7ed' : '#ffffff',
-        borderWidth: isPinned || isSearchMatch ? 4 : 2,
-        opacity: hasSearchMatches && !isSearchMatch ? 0.22 : isHighlighted || isPinned ? 1 : 0.9,
-        shadowBlur: isPinned || isSearchMatch ? 30 : isHighlighted ? 20 : 10,
-        shadowColor: isPinned || isSearchMatch ? 'rgba(245, 158, 75, 0.85)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
-        shadowOffsetY: isPinned ? 5 : 3
+        color: isProminent ? '#f59e4b' : color,
+        borderColor: isProminent ? '#fff7ed' : '#ffffff',
+        borderWidth: isProminent ? 4 : 2,
+        opacity: dimmed ? 0.22 : isHighlighted || isSelected ? 1 : 0.9,
+        shadowBlur: isProminent ? 30 : isHighlighted ? 20 : 10,
+        shadowColor: isProminent ? 'rgba(245, 158, 75, 0.85)' : isHighlighted ? 'rgba(79, 110, 246, 0.7)' : 'rgba(0, 0, 0, 0.2)',
+        shadowOffsetY: 3
       },
-      symbolSize: isSearchMatch ? pinnedSize * 1.45 : pinnedSize,
+      symbolSize: isProminent ? size * 1.45 : size,
       label: {
         show: true,
         position: 'bottom',
-        distance: isPinned ? 12 : 8,
-        fontSize: isPinned ? (levelFontSizes[level] || 12) + 2 : levelFontSizes[level] || 12,
-        color: isPinned || isSearchMatch ? '#b45309' : '#1a1d28',
+        distance: 8,
+        fontSize: levelFontSizes[level] || 12,
+        color: isProminent ? '#b45309' : '#1a1d28',
         formatter: (params: any) => params.name,
         fontWeight: 'bold',
-        opacity: hasSearchMatches && !isSearchMatch ? 0.2 : 1
+        opacity: dimmed ? 0.2 : 1
       },
-      zlevel: isPinned ? 10 : level === 'L1' ? 5 : level === 'L2' ? 4 : level === 'L3' ? 3 : level === 'L4' ? 2 : 1
+      zlevel: isSelected ? 10 : level === 'L1' ? 5 : level === 'L2' ? 4 : level === 'L3' ? 3 : level === 'L4' ? 2 : 1
     })
   })
   
   props.graph?.forEachEdge((edgeId: string, attrs: any, source: string, target: string) => {
-    const sourcePinned = pinnedNodes.value.has(source)
-    const targetPinned = pinnedNodes.value.has(target)
-    const hasPinnedNode = sourcePinned || targetPinned
-    
     links.push({
       source: source,
       target: target,
       relation: attrs.relation || '',
       lineStyle: {
-        color: hasPinnedNode ? 'rgba(245, 158, 75, 0.7)' : 'rgba(79, 110, 246, 0.4)',
-        width: hasPinnedNode ? 2.5 : 1.5,
+        color: 'rgba(79, 110, 246, 0.4)',
+        width: 1.5,
         curveness: 0.1
       }
     })
@@ -240,11 +233,9 @@ function buildOption(): any {
       formatter: (params: any) => {
         if (params.dataType === 'node') {
           const data = params.data
-          const isPinned = pinnedNodes.value.has(data.id)
-          return `<div style="font-weight: bold; margin-bottom: 8px; color: ${data.itemStyle.color}">${data.name}${isPinned ? ' 🔒' : ''}</div>
+          return `<div style="font-weight: bold; margin-bottom: 8px; color: ${data.itemStyle.color}">${data.name}</div>
                   <div>类型: ${data.type}</div>
                   <div>层级: ${data.level}</div>
-                  <div>${isPinned ? '状态: <span style="color: #f59e4b">已锁定，再次点击可取消</span>' : '提示: 点击锁定节点'}</div>
                   <div>${data.description || ''}</div>`
         } else if (params.dataType === 'edge') {
           return `<div>关系: ${params.data.relation || '关联'}</div>`
@@ -334,6 +325,37 @@ function updateChart() {
   enableFullCanvasRoaming()
 }
 
+/** Keep the current zoom and pan the requested graph node into the canvas centre. */
+function centerNode(nodeId: string) {
+  if (!chartInstance || !containerRef.value) return
+
+  const seriesModel = (chartInstance as any).getModel()?.getSeriesByIndex(0)
+  const data = seriesModel?.getData?.()
+  const coordinateSystem = seriesModel?.coordinateSystem
+  if (!data || !coordinateSystem) return
+
+  const index = data.indexOfName(nodeId)
+  const layout = index >= 0 ? data.getItemLayout(index) : null
+  if (!layout) return
+
+  const [x, y] = coordinateSystem.dataToPoint(layout)
+  chartInstance.dispatchAction({
+    type: 'graphRoam',
+    seriesIndex: 0,
+    dx: containerRef.value.clientWidth / 2 - x,
+    dy: containerRef.value.clientHeight / 2 - y
+  })
+}
+
+/** Public API used by the details panel when navigating a parent or child node. */
+function focusNode(nodeId: string) {
+  requestAnimationFrame(() => {
+    centerNode(nodeId)
+    // Force layout may complete shortly after the graph is re-created for a new scope.
+    window.setTimeout(() => centerNode(nodeId), 220)
+  })
+}
+
 function enableFullCanvasRoaming() {
   if (!chartInstance || !containerRef.value) return
   const seriesModel = (chartInstance as any).getModel()?.getSeriesByIndex(0)
@@ -394,12 +416,17 @@ watch(() => props.highlightedNodeIds, async () => {
   updateChart()
 }, { deep: true })
 
-watch(() => props.pinnedNodeIds, async (ids) => {
-  pinnedNodes.value = new Set(ids || [])
+watch(() => props.selectedNodeId, async () => {
+  await nextTick()
+  updateChart()
+})
+
+watch(() => props.pathNodeIds, async () => {
   await nextTick()
   updateChart()
 }, { deep: true })
 
+defineExpose({ focusNode })
 
 </script>
 
