@@ -227,7 +227,10 @@ class TailorService:
                 {"job_name": ctx.name},
             )
             if not rows:
-                return suggestion  # 图谱无该岗位 → 不加警告（避免误伤）
+                # [防幻觉] 图谱未收录该岗位 → 明确告知未经图谱验证，而非静默放行
+                suggestion["verified"] = False
+                suggestion["warning"] = f"岗位「{ctx.name}」未收录知识图谱，该建议未经图谱验证，请人工确认"
+                return suggestion
 
             graph_skills = set()
             for key in ("stacks", "points", "knows"):
@@ -235,7 +238,13 @@ class TailorService:
                     if name:
                         graph_skills.add(str(name).strip().lower())
 
-            if graph_skills and not any(gs in text.lower() for gs in graph_skills):
+            if not graph_skills:
+                # [防幻觉] OPTIONAL MATCH 对 miss 岗位也返回空行——技能树为空同样视为未收录
+                suggestion["verified"] = False
+                suggestion["warning"] = f"岗位「{ctx.name}」未收录知识图谱，该建议未经图谱验证，请人工确认"
+                return suggestion
+
+            if not any(gs in text.lower() for gs in graph_skills):
                 suggestion["verified"] = False
                 suggestion["warning"] = "该建议涉及的技能未在该岗位的知识图谱技能树中，请人工确认"
         except Exception:

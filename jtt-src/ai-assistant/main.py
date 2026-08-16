@@ -10,6 +10,7 @@
 
 import os
 import json
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any
@@ -448,6 +449,40 @@ async def recommend_resources(req: ChatRequest):
         raise HTTPException(status_code=500, detail={"code": 500, "message": "推荐失败", "data": None})
 
 
+async def _url_alive(url: str) -> bool:
+    """[防幻觉] 探活单个 URL：2xx/3xx 视为可达；超时/4xx/5xx/异常视为不可达。"""
+    if not url or not url.startswith(("http://", "https://")):
+        return not url  # 空链接（平台搜索页占位）保留，非 http 编造链接丢弃
+    try:
+        async with httpx.AsyncClient(timeout=5, follow_redirects=True,
+                                     headers={"User-Agent": "Mozilla/5.0 (compatibility)"}) as client:
+            resp = await client.head(url)
+            # 部分站点不支持 HEAD，退回 GET 取 headers
+            if resp.status_code == 405:
+                resp = await client.get(url)
+            return resp.status_code < 400
+    except Exception:
+        return False
+
+
+async def filter_alive_urls(resources: list[dict]) -> list[dict]:
+    """[防幻觉] 并发探活全部 URL，只保留真实可达的资源；全挂时返回 B站搜索页兜底。"""
+    if not resources:
+        return resources
+    results = await asyncio.gather(*(_url_alive(str(r.get("url", ""))) for r in resources))
+    alive = [r for r, ok in zip(resources, results) if ok]
+    dropped = len(resources) - len(alive)
+    if dropped:
+        log.info(f"[防幻觉] 探活丢弃 {dropped} 个不可达链接")
+    if not alive:
+        # 全部失效：退回平台搜索页（保证功能不空手而归）
+        from urllib.parse import quote
+        kw = quote(resources[0].get("title", "编程")[:20])
+        alive = [{"title": "哔哩哔哩搜索：" + resources[0].get("title", "")[:20],
+                  "type": "video", "url": f"https://search.bilibili.com/all?keyword={kw}", "platform": "哔哩哔哩"}]
+    return alive
+
+
 @app.post("/api/assistant/generate-links")
 async def generate_links(req: ChatRequest):
     """按主题联网搜索学习资源，返回带 URL 的链接列表。"""
@@ -519,6 +554,9 @@ async def generate_links(req: ChatRequest):
 
         if not resources:
             resources = [{"title": topic + " 网课视频", "type": "video", "url": "", "platform": "哔哩哔哩"}]
+
+        # [防幻觉] URL 探活：只保留真实可达（2xx/3xx）的链接，编造/失效链接静默丢弃
+        resources = await filter_alive_urls(resources)
 
         return {"code": 200, "message": "ok", "data": {"resources": resources}}
     except Exception as e:
