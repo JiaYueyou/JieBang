@@ -40,7 +40,15 @@ export const useLearningStore = defineStore('learning', () => {
   }
 
   const removePath = async (id: string) => {
-    await learningApi.delete(id)
+    // 本地生成的路径（lp-gen-/mock 前缀）直接本地删，不调后端
+    const isLocal = !/^\d+$/.test(id)
+    if (!isLocal) {
+      try {
+        await learningApi.delete(id)
+      } catch {
+        // 后端删除失败也继续本地删（避免删不掉）
+      }
+    }
     paths.value = paths.value.filter((p) => p.id !== id)
   }
 

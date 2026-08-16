@@ -2,9 +2,12 @@
 import { ref, nextTick, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
+import { useLearningStore } from '@/stores/learning'
+import { useFavoritesStore } from '@/stores/favorites'
 import { pageData } from '@/stores/pageContext'
 import { assistantApi } from '@/api/assistant'
 import { resumeApi } from '@/api/resume'
+import { matchApi } from '@/api/match'
 import type { ChatMessage, PageContext, ChatAction } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
 import { mockPositions } from '@/mock/data/positions'
@@ -12,6 +15,8 @@ import { mockPositions } from '@/mock/data/positions'
 const route = useRoute()
 const router = useRouter()
 const positionsStore = usePositionsStore()
+const learningStore = useLearningStore()
+const favoritesStore = useFavoritesStore()
 
 // ── State ──
 const visible = ref(false)
@@ -56,6 +61,19 @@ const pageContext = computed<PageContext>(() => {
         company: w.company, position: w.position, description: w.description, skills: w.skills,
       })),
       education: r.education.map(e => ({ school: e.school, degree: e.degree, major: e.major })),
+    }
+  }
+  // [简历分析流程] 用户在悬浮球中选定的简历（覆盖 pageData，agent 工具用真实数据）
+  if (selectedResume.value) {
+    const r = selectedResume.value
+    ctx.resumeData = {
+      name: getResumeName(r),
+      targetPosition: getResumeTarget(r),
+      skills: getResumeSkills(r).map((s: any) => ({ name: s.name || s, level: s.level || '', category: s.category || '' })),
+      workExperience: (r.work_experience_list || r.workExperience || []).map((w: any) => ({
+        company: w.company || '', position: w.position || '', description: w.description || '', skills: w.skills || [],
+      })),
+      education: (r.education_list || r.education || []).map((e: any) => ({ school: e.school || '', degree: e.degree || '', major: e.major || '' })),
     }
   }
   // Attach match data from shared store
@@ -120,6 +138,15 @@ const presetPages = computed(() => [
   { label: '简历优化', icon: 'Edit', action: () => sendMessage('__resume_optimize__') },
   { label: '匹配诊断', icon: 'DataAnalysis', action: () => sendMessage('__match_diagnose__') },
 ])
+
+// 示例问题：让用户一眼看出可以问什么（展示 agent 的能力面）
+const exampleQuestions = [
+  '我想转行做系统架构师，需要学什么？',
+  '分析我的简历，哪些技能需要加强？',
+  'Java 后端 2026 年的就业前景如何？',
+  '微服务和单体架构怎么选？',
+  '帮我对比几个适合我的岗位',
+]
 
 // ── Time formatting ──
 const formatTime = (ts: number) => {
@@ -196,6 +223,136 @@ const loadResumes = async () => {
 const getResumeName = (r: any) => r.name || ''
 const getResumeTarget = (r: any) => r.target_position || r.targetPosition || ''
 const getResumeSkills = (r: any) => r.skill_list || r.skills || []
+
+// ── [简历分析流程] 意图拦截 → 选简历 → 拉详情 → 走 agent ──
+const selectedResume = ref<any>(null)
+const awaitingResumePick = ref(false)
+
+const RESUME_INTENT = /简历|技能.*(加强|提升|差距|分析|薄弱)|(分析|评估).*(技能|履历)/
+
+const startResumeAnalysis = async (userMsg: string) => {
+  awaitingResumePick.value = false
+  const resumes = await loadResumes()
+  if (resumes.length === 0) {
+    addAssistantMsg('你还没有简历。可以选择：', [
+      { label: '📋 上传简历文件', to: '/resume/upload', icon: 'Upload' },
+      { label: '✏️ 新建空白简历', to: '/resume/editor', icon: 'Edit' },
+    ])
+    return
+  }
+  const list = resumes.map((r: any) => '- **' + getResumeName(r) + '**' + (getResumeTarget(r) ? '（目标：' + getResumeTarget(r) + '）' : '')).join('\n')
+  addAssistantMsg(
+    '好的！要分析哪份简历？\n\n' + list + '\n\n也可以直接粘贴简历文本、上传图片，或去简历诊断页查看：',
+    [
+      ...resumes.map((r: any) => ({ label: '分析「' + getResumeName(r) + '」', to: '__analyze_resume__:' + r.id, icon: 'Document' })),
+      { label: '📋 上传新简历', to: '/resume/upload', icon: 'Upload' },
+      { label: '🏥 简历诊断页', to: '/diagnosis', icon: 'Search' },
+    ],
+  )
+}
+
+const analyzeWithResume = async (resumeId: string) => {
+  // 拉取该简历完整详情，注入 agent 上下文
+  let detail: any = null
+  try {
+    const res: any = await resumeApi.getDetail(resumeId)
+    detail = res.data
+  } catch {
+    detail = realResumes.value.find((r: any) => String(r.id) === resumeId)
+  }
+  if (!detail) {
+    addAssistantMsg('简历加载失败，请稍后再试。')
+    return
+  }
+  selectedResume.value = detail
+
+  // 直接走 agent 循环（带完整简历数据）
+  await sendMessage('请分析我的简历「' + getResumeName(detail) + '」，哪些技能需要加强？结合知识图谱给出具体建议')
+}
+
+// ══════════ [网站数据整合] 四个高价值数据采集器 ══════════
+
+// 1️⃣ 学习进度：读学习路径 store，汇总各路径完成度/卡点
+const gatherLearningProgress = (): string => {
+  const paths = learningStore.paths || []
+  if (paths.length === 0) return '用户暂无学习路径'
+  const lines: string[] = []
+  for (const p of paths) {
+    const total = p.steps?.length || 0
+    const done = p.steps?.filter((s: any) => s.completed).length || 0
+    const pct = total ? Math.round((done / total) * 100) : 0
+    const passed = p.steps?.filter((s: any) => s.quizPassed).length || 0
+    lines.push(`- ${p.name}：${done}/${total} 步完成（${pct}%），测验通过 ${passed} 项`)
+    // 找第一个未完成步骤 = 卡点
+    const stuck = p.steps?.find((s: any) => !s.completed)
+    if (stuck && done > 0) lines.push(`  当前卡在：${stuck.title}（${stuck.duration || ''}）`)
+  }
+  return `[用户学习进度数据（来自学习路径页）]\n${lines.join('\n')}`
+
+}
+
+// 2️⃣ 匹配历史：拉历次匹配分数做趋势
+const gatherMatchHistory = async (): Promise<string> => {
+  try {
+    const res: any = await matchApi.getHistory()
+    const history = res.data || []
+    if (history.length === 0) return '[匹配历史] 用户暂无匹配记录'
+    const sorted = [...history].sort((a: any, b: any) =>
+      String(a.match_date || '').localeCompare(String(b.match_date || '')))
+    const lines = sorted.slice(-8).map((m: any) =>
+      `${String(m.match_date || '').slice(0, 10)} ${m.position_name || m.positionName || '?'}：${m.total_score ?? m.totalScore ?? '?'}分`)
+    return `[用户匹配历史（来自匹配诊断页，时间升序）]\n${lines.join('\n')}`
+  } catch {
+    return '[匹配历史] 数据加载失败'
+  }
+}
+
+// 3️⃣ 收藏夹：岗位/资源收藏
+const gatherFavorites = (): string => {
+  const favs = favoritesStore.allFavorites || []
+  if (favs.length === 0) return '[收藏夹] 用户暂无收藏'
+  const pos = favs.filter((f: any) => f.item_type === 'position').map((f: any) => f.title)
+  const res = favs.filter((f: any) => f.item_type === 'learning_resource').map((f: any) => f.title)
+  const parts: string[] = []
+  if (pos.length) parts.push(`收藏的岗位（${pos.length}个）：${pos.join('、')}`)
+  if (res.length) parts.push(`收藏的学习资源（${res.length}个）：${res.join('、')}`)
+  return parts.length ? `[用户收藏夹数据]\n${parts.join('\n')}` : '[收藏夹] 用户暂无收藏'
+}
+
+// 4️⃣ 错题本：测验答错的题
+const gatherQuizErrors = (): string => {
+  const errs = favoritesStore.errorFavs || []
+  if (errs.length === 0) return '[错题本] 暂无错题记录'
+  const lines = errs.map((e: any) => {
+    const meta = e.metadata || {}
+    return `- ${e.title}${meta.related_skills?.length ? '（关联：' + meta.related_skills.join('、') + '）' : ''}`
+  })
+  return `[用户错题本（来自学习测验）]\n${lines.join('\n')}`
+}
+
+// 意图识别 → 采集对应数据 → 注入 agent 消息
+const SITE_INTENTS: { re: RegExp; gather: () => Promise<string> | string; note: string }[] = [
+  { re: /学得怎么样|学习进度|学习情况|进度怎么样|卡在|继续学什么/, gather: gatherLearningProgress, note: '学习进度分析' },
+  { re: /匹配历史|几次匹配|匹配.*变好|匹配.*趋势|历次匹配/, gather: gatherMatchHistory, note: '匹配趋势分析' },
+  { re: /收藏|收藏夹|收藏的岗位|收藏的岗位哪个/, gather: gatherFavorites, note: '收藏分析' },
+  { re: /错题|复习.*题|答错|薄弱.*题/, gather: gatherQuizErrors, note: '错题复习' },
+]
+
+// 命中站点数据意图时：采集真实数据拼进消息发给 agent
+const trySiteDataIntent = async (msg: string): Promise<string | null> => {
+  for (const intent of SITE_INTENTS) {
+    if (intent.re.test(msg)) {
+      const data = await intent.gather()
+      // 收藏数据懒加载
+      if (intent.note === '收藏分析' && (favoritesStore.allFavorites || []).length === 0) {
+        try { await favoritesStore.fetchAll() } catch { /* 忽略 */ }
+        return await intent.gather()
+      }
+      return data
+    }
+  }
+  return null
+}
 
 const handleResumeOptimize = async () => {
   const resumes = await loadResumes()
@@ -288,35 +445,90 @@ const sendMessage = async (text?: string) => {
     return
   }
 
-  // ── Normal AI chat ──
+  // ── [简历分析流程] 意图拦截：简历相关问题且未选简历 → 先问哪份 ──
+  if (!selectedResume.value && RESUME_INTENT.test(msg)) {
+    loading.value = false; isSending.value = false
+    await startResumeAnalysis(msg)
+    scrollToBottom(true)
+    nextTick(() => inputRef.value?.focus())
+    return
+  }
+  // 已选简历后的对话结束，清掉选择（下次重新问哪份）
+  if (selectedResume.value) {
+    setTimeout(() => { selectedResume.value = null }, 1500)
+  }
+
+  // ── [网站数据整合] 命中进度/历史/收藏/错题意图 → 采集真实数据注入 agent ──
+  let agentMsg = msg
+  const siteData = await trySiteDataIntent(msg)
+  if (siteData) {
+    agentMsg = msg + '\n\n' + siteData + '\n（以上是网站的真实数据，基于它回答；如果数据为空就引导用户去对应页面使用）'
+  }
+
+  // ── [P1] Agent 循环对话：LLM 自主调工具，思考过程逐步展示 ──
+  const thinkMsg: ChatMessage = {
+    id: `m-${++msgId}`,
+    role: 'assistant',
+    content: '🤖 分析你的问题，规划工具调用…',
+    timestamp: Date.now(),
+  }
+  messages.value.push(thinkMsg)
+  scrollToBottom(true)
+
   try {
-    const res: any = await assistantApi.chat({
-      message: msg || '',
+    const res: any = await assistantApi.agentChat({
+      message: agentMsg || '',
       images,
       pageContext: pageContext.value,
       history: conversationHistory.value,
     })
     const d = res.data
-    scrollToBottom(true)
-    await new Promise(r => setTimeout(r, 200))
+
+    // 逐步回放思考步骤（工具调用轨迹，每步 500ms）
+    const steps: { icon: string; text: string }[] = d?.thinkingSteps || []
+    for (let i = 0; i < steps.length; i++) {
+      thinkMsg.content = steps.slice(0, i + 1).map(s => s.icon + ' ' + s.text).join('\n')
+      scrollToBottom(true)
+      await new Promise(r => setTimeout(r, 500))
+    }
+
+    // 思考完成后，紧接最终回答
+    await new Promise(r => setTimeout(r, 300))
     messages.value.push({
       id: `m-${++msgId}`,
       role: 'assistant',
       content: d?.reply || '抱歉，我暂时无法回答这个问题。',
       timestamp: Date.now(),
-      relatedConcepts: d?.relatedConcepts,
-      suggestedResources: d?.suggestedResources,
       followUpQuestions: d?.followUpQuestions,
-      actions: d?.actions,
     })
   } catch {
-    messages.value.push({
-      id: `m-${++msgId}`,
-      role: 'assistant',
-      content: '网络请求失败，请稍后再试。',
-      timestamp: Date.now(),
-      actions: [{ label: '重新发送', to: '__retry__', icon: 'Refresh' }],
-    })
+    thinkMsg.content = '⚠️ Agent 调用失败，回退普通对话重试…'
+    try {
+      const res: any = await assistantApi.chat({
+        message: msg || '',
+        images,
+        pageContext: pageContext.value,
+        history: conversationHistory.value,
+      })
+      messages.value.push({
+        id: `m-${++msgId}`,
+        role: 'assistant',
+        content: res.data?.reply || '抱歉，我暂时无法回答这个问题。',
+        timestamp: Date.now(),
+        relatedConcepts: res.data?.relatedConcepts,
+        suggestedResources: res.data?.suggestedResources,
+        followUpQuestions: res.data?.followUpQuestions,
+        actions: res.data?.actions,
+      })
+    } catch {
+      messages.value.push({
+        id: `m-${++msgId}`,
+        role: 'assistant',
+        content: '网络请求失败，请稍后再试。',
+        timestamp: Date.now(),
+        actions: [{ label: '重新发送', to: '__retry__', icon: 'Refresh' }],
+      })
+    }
   } finally {
     loading.value = false
     isSending.value = false
@@ -325,13 +537,19 @@ const sendMessage = async (text?: string) => {
   }
 }
 
-const onActionClick = (act: ChatAction) => {
+const onActionClick = async (act: ChatAction) => {
   if (act.to === '__retry__') {
     const lastUser = [...messages.value].reverse().find(m => m.role === 'user')
     if (lastUser) {
       messages.value = messages.value.slice(0, -1)
       sendMessage(lastUser.content)
     }
+    return
+  }
+  // 简历分析：选定的简历 → 拉详情走 agent
+  if (act.to.startsWith('__analyze_resume__:')) {
+    const rid = act.to.split(':')[1] || ''
+    if (rid) await analyzeWithResume(rid)
     return
   }
   // Match flow: resume selected → compute scores
@@ -409,8 +627,19 @@ const closePreview = () => { previewImageUrl.value = '' }
           <!-- Welcome -->
           <div v-if="!hasMessages()" class="welcome">
             <div class="welcome-avatar">🤖</div>
-            <p class="welcome-greeting">你好！我是 AI 助手</p>
-            <p class="welcome-sub">我能帮你分析岗位、推荐学习路径、优化简历</p>
+            <p class="welcome-greeting">你好！我是 AI 智能体</p>
+            <p class="welcome-sub">我会自主调用工具（知识图谱 / 联网搜索 / 简历分析）来回答你的问题，不只是聊天</p>
+
+            <div class="welcome-section">
+              <span class="welcome-label">💡 你可以这样问我（点击直接发）</span>
+              <div class="example-list">
+                <button
+                  v-for="ex in exampleQuestions" :key="ex"
+                  class="example-chip" :disabled="loading"
+                  @click="sendMessage(ex)"
+                >{{ ex }}</button>
+              </div>
+            </div>
 
             <div v-if="quickActions.length > 0" class="welcome-section">
               <span class="welcome-label">当前页面</span>
@@ -435,7 +664,7 @@ const closePreview = () => { previewImageUrl.value = '' }
               </div>
             </div>
 
-            <p class="welcome-hint">支持发送图片分析 · Ctrl+V 粘贴</p>
+            <p class="welcome-hint">任意职业问题都可以问 · 支持图片分析（Ctrl+V 粘贴）</p>
           </div>
 
           <!-- Messages -->
@@ -705,6 +934,27 @@ const closePreview = () => { previewImageUrl.value = '' }
 .chip-primary { border-color: var(--brand); color: var(--brand); }
 .chip-primary:hover:not(:disabled) { background: var(--brand); color: #fff; }
 .chip:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 示例问题（可点击直接发送） */
+.example-list { display: flex; flex-direction: column; gap: 6px; }
+.example-chip {
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  line-height: 1.4;
+}
+.example-chip:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-light);
+}
+.example-chip:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ─── Messages ─── */
 .msg {

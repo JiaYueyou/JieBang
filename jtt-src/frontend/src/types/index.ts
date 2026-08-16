@@ -195,6 +195,7 @@ export interface MatchResult {
     matchSkills: Skill[]
   }
   suggestions: ImprovementSuggestion[]
+  reasoningChain?: { icon: string; title: string; detail: string }[]
   matchDate: string
 }
 

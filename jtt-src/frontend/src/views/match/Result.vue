@@ -74,6 +74,20 @@ const fetchTailorSuggestions = async () => {
     </div>
 
     <div class="result-body">
+      <!-- [P2] 匹配推理链 —— AI 推理过程可解释 -->
+      <el-card class="res-card" v-if="result.reasoningChain?.length">
+        <template #header><span class="card-title">🧠 匹配推理链</span></template>
+        <div class="reasoning-timeline">
+          <div v-for="(step, i) in result.reasoningChain" :key="i" class="reasoning-step">
+            <div class="rs-icon">{{ step.icon }}</div>
+            <div class="rs-content">
+              <div class="rs-title">{{ step.title }}</div>
+              <div class="rs-detail">{{ step.detail }}</div>
+            </div>
+          </div>
+        </div>
+      </el-card>
+
       <el-card class="res-card">
         <template #header><span class="card-title">差距分析</span></template>
         <div class="gap-section">
@@ -162,4 +176,28 @@ const fetchTailorSuggestions = async () => {
 .sg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .sg-section-tag { font-size: 12px; padding: 2px 8px; background: var(--canvas); border-radius: 4px; color: var(--muted); }
 .sg-reason { font-size: 13px; color: var(--ink); line-height: 1.5; }
+
+/* [P2] 推理链时间线 */
+.reasoning-timeline { padding: 4px 0; }
+.reasoning-step { display: flex; gap: 12px; position: relative; padding-bottom: 16px; }
+.reasoning-step:last-child { padding-bottom: 0; }
+.reasoning-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px; top: 30px; bottom: 0;
+  width: 2px;
+  background: var(--hairline);
+}
+.rs-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--brand-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.rs-content { flex: 1; min-width: 0; padding-top: 3px; }
+.rs-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.rs-detail { font-size: 12px; color: var(--muted); line-height: 1.6; }
 </style>

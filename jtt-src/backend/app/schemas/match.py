@@ -45,6 +45,13 @@ class SuggestionSchema(BaseModel):
     warning: str | None = None  # 校验警告
 
 
+class ReasoningStepSchema(BaseModel):
+    """[P2] 匹配推理链步骤"""
+    icon: str = ""
+    title: str = ""
+    detail: str = ""
+
+
 class MatchResultResponse(BaseModel):
     """匹配结果响应"""
     id: int
@@ -56,6 +63,7 @@ class MatchResultResponse(BaseModel):
     dimensions: list[MatchDimensionSchema] = []
     gap_analysis: GapAnalysisSchema = GapAnalysisSchema()
     suggestions: list[SuggestionSchema] = []
+    reasoning_chain: list[ReasoningStepSchema] = []
     match_date: str | None = None
 
 

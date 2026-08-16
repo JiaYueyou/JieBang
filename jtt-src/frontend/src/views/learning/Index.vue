@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useResumeStore } from '@/stores/resume'
 import { learningApi } from '@/api/learning'
 import { assistantApi } from '@/api/assistant'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -15,9 +16,43 @@ import chongmingmingIcon from '@/assets/icon/chongmingming.svg'
 
 const learningStore = useLearningStore()
 const favoritesStore = useFavoritesStore()
+const resumeStore = useResumeStore()
+
+// 构建用户技能上下文（注入 chat，让 AI 回复个性化而非模板）
+const buildUserContext = () => {
+  const r = resumeStore.resumes?.[0]
+  if (!r) return undefined
+  const skills = (r.skills || []).map((s: any) => s.name).filter(Boolean)
+  if (!skills.length && !r.targetPosition) return undefined
+  return {
+    name: 'user-profile',
+    path: '/learning',
+    resumeData: {
+      name: r.name || '',
+      targetPosition: r.targetPosition || '',
+      skills: (r.skills || []).map((s: any) => ({ name: s.name, level: s.level || '', category: s.category || '' })),
+      workExperience: (r.workExperience || []).map((w: any) => ({ company: w.company || '', position: w.position || '', description: w.description || '', skills: w.skills || [] })),
+      education: (r.education || []).map((e: any) => ({ school: e.school || '', degree: e.degree || '', major: e.major || '' })),
+    },
+  }
+}
 
 // ========== 路径展开 ==========
 const expandedId = ref<string | null>(null)
+
+// AI 生成路径的序号：扫描已有路径名里的「学习路径X：」，取当前存在的最大编号 +1 顺延
+const nextPathSeq = () => {
+  const cnMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 }
+  let max = 0
+  for (const p of learningStore.paths) {
+    const m = (p.name || '').match(/学习路径([一二三四五六七八九十]|\d+)[：:]/)
+    if (m && m[1]) {
+      const n = cnMap[m[1]] ?? parseInt(m[1], 10)
+      if (!isNaN(n) && n > max) max = n
+    }
+  }
+  return max + 1
+}
 
 // ========== 对话框：新增/重命名路径 ==========
 const dialogVisible = ref(false)
@@ -87,12 +122,12 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', onDividerUp)
 })
 
-// 预设快捷指令
+// 预设快捷指令（msg 为内部标记，onPresetClick 按标记走"先问清再处理"流程）
 const presetCommands = [
-  { label: '生成学习路径', icon: lujingIcon, msg: '请根据 Java 开发工程师岗位，为我生成一份学习路径' },
-  { label: '推荐学习资源', icon: ziyuanIcon, msg: '推荐 Spring Boot 和微服务的学习资源' },
-  { label: '学习路线咨询', icon: zixunIcon, msg: '我是一名后端开发，想转行 AI 智能体方向，应该怎么学？' },
-  { label: '技能差距分析', icon: chajufenxiIcon, msg: '分析我当前技能与目标岗位的差距' },
+  { label: '生成学习路径', icon: lujingIcon, msg: '__gen_path__' },
+  { label: '推荐学习资源', icon: ziyuanIcon, msg: '__rec_resource__' },
+  { label: '学习路线咨询', icon: zixunIcon, msg: '__career_advice__' },
+  { label: '技能差距分析', icon: chajufenxiIcon, msg: '__gap_analysis__' },
 ]
 
 // 资源类型图标映射
@@ -266,7 +301,9 @@ const scrollChatToBottom = () => {
 }
 
 const addAssistantMsg = (content: string, extras?: { concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean }) => {
-  chatMessages.value.push({ role: 'assistant', content, ...extras })
+  const msg: { role: 'user' | 'assistant'; content: string; concepts?: any[]; resources?: any[]; followUps?: string[]; isPath?: boolean } = { role: 'assistant', content, ...extras }
+  chatMessages.value.push(msg)
+  return msg
 }
 
 const sendMessage = async () => {
@@ -284,15 +321,45 @@ const sendMessage = async () => {
   if (currentFlow === 'awaiting_position') {
     const positionName = msg
 
-    // Show "generating" message
-    addAssistantMsg('正在联网搜索「' + positionName + '」的最新技能要求并生成学习路径，请稍候…（约15-30秒）')
+    // [P3] 等待期间逐步展示思考节奏（API 返回后用真实步骤数据补全细节）
+    const thinkMsg = addAssistantMsg('🎯 分析目标岗位「' + positionName + '」的技能要求…')
     scrollChatToBottom()
+
+    // 等待期节奏步骤（不依赖 API 数据的先行步骤，每 4 秒一条，避免干等）
+    const waitSteps = [
+      '🔍 查询知识图谱：获取岗位技能树结构…',
+      '🌐 联网搜索最新招聘技能要求…',
+      '🧠 综合图谱与搜索结果，规划学习路径…',
+    ]
+    let waitIdx = 0
+    const waitTimer = setInterval(() => {
+      if (waitIdx < waitSteps.length) {
+        thinkMsg.content += '\n' + waitSteps[waitIdx]
+        waitIdx++
+        scrollChatToBottom()
+      }
+    }, 4000)
 
     try {
       const res: any = await assistantApi.generateLearningPath(positionName)
+      clearInterval(waitTimer)
       const data = res.data
       if (!data || !data.steps || data.steps.length === 0) {
         throw new Error('未生成有效路径')
+      }
+
+      // API 返回：逐条淡入真实思考步骤（含图谱命中数等真实数据），替代一次性刷出
+      const steps: { icon: string; text: string; detail?: string }[] = data.thinkingSteps || []
+      if (steps.length) {
+        for (let i = 0; i < steps.length; i++) {
+          const st = steps[i]
+          if (!st) continue
+          thinkMsg.content = (i === 0 ? '' : thinkMsg.content + '\n') +
+            st.icon + ' ' + st.text + (st.detail ? '（' + st.detail + '）' : '')
+          scrollChatToBottom()
+          await new Promise(r => setTimeout(r, 450))
+        }
+        await new Promise(r => setTimeout(r, 400))
       }
 
       // Build detailed step display
@@ -326,9 +393,13 @@ const sendMessage = async () => {
       scrollChatToBottom()
 
       // Add to learning paths store (right panel)
+      // 命名与既有路径统一：「学习路径一：xxx」…（按当前存在的最大编号顺延，删除后编号复用）
+      const nextSeq = nextPathSeq()
+      const cnNum = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+      const seqLabel = nextSeq <= 10 ? cnNum[nextSeq - 1] : String(nextSeq)
       const newPath: any = {
         id: 'lp-gen-' + Date.now(),
-        name: data.pathName,
+        name: '学习路径' + seqLabel + '：' + data.positionName,
         positionId: '',
         positionName: data.positionName,
         steps: data.steps.map((s: any, idx: number) => ({
@@ -355,6 +426,7 @@ const sendMessage = async () => {
       ElMessage.success('学习路径已生成并添加到列表')
       return
     } catch (e: any) {
+      clearInterval(waitTimer)
       chatLoading.value = false
       const errMsg = e?.response?.data?.detail?.message || e?.message || '生成失败'
       addAssistantMsg('抱歉，生成学习路径时出错：' + errMsg + '\n\n请重试或换个岗位名称。', {
@@ -367,7 +439,11 @@ const sendMessage = async () => {
 
   	  // ── Normal AI chat (all flows reach here) ──
 	try {
-    const res: any = await learningApi.chat({ message: msg })
+    // 确保简历已加载（首次对话时懒加载），并注入用户技能上下文
+    if (resumeStore.resumes.length === 0) {
+      try { await resumeStore.fetchList() } catch { /* 离线时忽略 */ }
+    }
+    const res: any = await learningApi.chat({ message: msg, pageContext: buildUserContext() })
     const data = res.data
     chatMessages.value.push({
       role: 'assistant',

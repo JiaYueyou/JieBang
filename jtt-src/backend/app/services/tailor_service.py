@@ -198,32 +198,48 @@ class TailorService:
         return verified_suggestions
 
     async def _verify_suggestion(self, suggestion: dict, ctx: PositionContext) -> dict:
-        """图谱回查校验单条建议 —— 防幻觉核心逻辑"""
+        """图谱回查校验单条建议 —— 防幻觉核心逻辑
+
+        查询路径：Job --REQUIRES_AREA--> SkillArea --CONTAINS--> TechStack
+                      --SUPPORTS--> TechPoint --HAS_KNOWLEDGE--> KnowledgePoint
+        建议文本包含图谱任一层级的技能名 → verified；否则标记 warning。
+        """
         suggestion["verified"] = True
         suggestion["warning"] = None
 
         if suggestion.get("section") != "skills":
             return suggestion
 
-        text = suggestion.get("suggested", "")
+        text = suggestion.get("suggested", "") or ""
+        if not text.strip():
+            return suggestion
+
         try:
-            # 使用 ctx.id 查询 Neo4j（仅 MySQL 来源有对应节点）
-            if ctx.source == "mysql":
-                pid = ctx.id.split(":", 1)[1]
-                existing_nodes = run_read(
-                    "MATCH (p:Position {id: $pid})-[:COMPOSES|CONTAINS|INCLUDES*1..3]->(k:Knowledge) "
-                    "RETURN collect(k.label) AS skills",
-                    {"pid": pid},
-                )
-                if existing_nodes:
-                    known_skills = set(existing_nodes[0].get("skills", []))
-                    if not any(skill_name in text for skill_name in known_skills) and known_skills:
-                        suggestion["warning"] = "部分建议的技能未在知识图谱中充分验证，请人工确认"
-            else:
-                # raw_job_record / neo4j 来源：校验逻辑同上但用 Neo4j Job 节点
-                pass
+            # 按岗位名查图谱技能树（Job 节点的 name 属性）
+            rows = run_read(
+                "MATCH (j:Job {name: $job_name}) "
+                "-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
+                "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
+                "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE]->(kp:KnowledgePoint) "
+                "RETURN collect(DISTINCT ts.name) AS stacks, "
+                "collect(DISTINCT tp.name) AS points, "
+                "collect(DISTINCT kp.name) AS knows",
+                {"job_name": ctx.name},
+            )
+            if not rows:
+                return suggestion  # 图谱无该岗位 → 不加警告（避免误伤）
+
+            graph_skills = set()
+            for key in ("stacks", "points", "knows"):
+                for name in rows[0].get(key) or []:
+                    if name:
+                        graph_skills.add(str(name).strip().lower())
+
+            if graph_skills and not any(gs in text.lower() for gs in graph_skills):
+                suggestion["verified"] = False
+                suggestion["warning"] = "该建议涉及的技能未在该岗位的知识图谱技能树中，请人工确认"
         except Exception:
-            pass
+            pass  # Neo4j 不可用 → 跳过校验，不阻塞建议返回
 
         return suggestion
 

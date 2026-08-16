@@ -254,6 +254,11 @@ export function matchResultFromApi(data: any): MatchResult {
       matchSkills: (data.gap_analysis?.match_skills || []).map(toSkill),
     },
     suggestions: (data.suggestions || []).map(suggestionFromApi),
+    reasoningChain: (data.reasoning_chain || []).map((r: any) => ({
+      icon: r.icon || '📌',
+      title: r.title || '',
+      detail: r.detail || '',
+    })),
     matchDate: data.match_date || '',
   }
 }
