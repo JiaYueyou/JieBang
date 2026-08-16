@@ -12,7 +12,7 @@ export const learningApi = {
   delete: (id: string) => api.delete(`/learning/paths/${id}`),
 
   // AI 学习助手（LLM 调用可能较慢，放宽超时）
-  chat: (data: { message: string; context?: Record<string, any>; history?: Record<string, any>[] }) =>
+  chat: (data: { message: string; context?: Record<string, any>; pageContext?: Record<string, any>; history?: Record<string, any>[] }) =>
     api.post('/learning/assistant/chat', data, { timeout: 90000 }),
   generatePath: (data: { position_name: string; missing_skills: string[]; matched_skills: string[]; resume_id: number }) =>
     api.post('/learning/assistant/generate-path', {

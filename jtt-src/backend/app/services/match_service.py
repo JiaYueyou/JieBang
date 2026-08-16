@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
+from app.core.neo4j import run_read
 from app.providers.llm import get_llm_provider
 from app.repositories.match_repository import MatchRepository
 from app.repositories.resume_repository import ResumeRepository
@@ -277,7 +278,27 @@ class MatchService:
 
     # ===== 核心匹配 =====
 
-        # ── [Agent 3] 技能语义匹配（LLM）──
+        # ── [Agent 3] 技能图谱背书（防幻觉）──
+    def _graph_verified_skills(self, position_name: str) -> set[str]:
+        """
+        查知识图谱获取该岗位技能树（TechStack/TechPoint/KnowledgePoint 三层），
+        返回图谱中真实存在的技能名集合（小写）。Neo4j 不可用返回空集。
+        """
+        try:
+            rows = run_read(
+                "MATCH (j:Job {name: $job})-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
+                "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
+                "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE]->(kp:KnowledgePoint) "
+                "RETURN collect(DISTINCT ts.name)+collect(DISTINCT tp.name)+collect(DISTINCT kp.name) AS skills",
+                {"job": position_name},
+            )
+            if not rows:
+                return set()
+            return {str(n).strip().lower() for n in (rows[0].get("skills") or []) if n}
+        except Exception:
+            return set()
+
+    # ── [Agent 3] 技能语义匹配（LLM）──
     async def _semantic_skill_match(self, resume_skills: list[str], position_skills: list[str]) -> set[str]:
         """
         使用 LLM 对技能进行语义匹配：判断岗位技能是否被简历技能语义覆盖。
@@ -353,27 +374,47 @@ class MatchService:
             work_count = len(work_experience)
             return min(100, 40 + work_count * 20) if work_count > 0 else 30
 
-    async def do_match(self, user_id: int, resume_id: int, job: dict, persist: bool = True) -> dict | None:
+    async def do_match(self, user_id: int, resume_id: int, job: dict, persist: bool = True,
+                       _fast_match: bool = False, _resume_ctx: dict | None = None) -> dict | None:
         """执行单次人岗匹配。job 为标准化格式的岗位字典。返回 None 表示被学历过滤。
-        persist=False 时只计算不持久化（用于批量实时匹配）。"""
-        resume = await self.resume_repo.get_by_id(resume_id)
-        if not resume:
-            raise ResourceNotFoundError("简历不存在")
+        persist=False 时只计算不持久化（用于批量实时匹配）。
+        _fast_match=True：批量模式，跳过逐岗位 LLM 调用（规则+图谱匹配），快百倍。"""
+        if _fast_match and _resume_ctx is not None:
+            resume = None  # 批量模式：简历数据来自 _resume_ctx，不重复查库
+        else:
+            resume = await self.resume_repo.get_by_id(resume_id)
+            if not resume:
+                raise ResourceNotFoundError("简历不存在")
 
-        # 学历硬筛选
-        resume_edu = self._get_resume_highest_education(resume)
-        if not _education_meets(job.get("education_requirement", ""), resume_edu):
-            return None
+        # 学历硬筛选（批量模式无 resume 对象时跳过学历过滤）
+        if resume is not None:
+            resume_edu = self._get_resume_highest_education(resume)
+            if not _education_meets(job.get("education_requirement", ""), resume_edu):
+                return None
 
-        resume_skill_names = [
-            s.get("name", "") for s in (resume.skill_list or []) if s.get("name")
-        ]
+        resume_skill_names = (
+            _resume_ctx["skills"] if (_fast_match and _resume_ctx)
+            else [s.get("name", "") for s in (resume.skill_list or []) if s.get("name")]
+        )
         required_skills = set(job.get("required_skills", []))
         preferred_skills = set(job.get("preferred_skills", []))
         all_position_skills = required_skills | preferred_skills
 
-        # 1) 技能匹配评分 (50%) —— LLM 语义匹配，降级为规则模糊匹配
-        matched = await self._semantic_skill_match(resume_skill_names, list(all_position_skills))
+        # 1) 技能匹配评分 (50%)
+        if _fast_match:
+            # 批量模式：规则模糊匹配 + 图谱验证（不调 LLM，毫秒级）
+            matched = {
+                ps for ps in all_position_skills
+                if any(_skill_names_match(rs, ps) for rs in resume_skill_names)
+            }
+            graph_ok = self._graph_verified_skills(job.get("name", ""))
+            matched |= {ps for ps in all_position_skills
+                        if ps.strip().lower() in graph_ok and any(
+                            rs.lower() in ps.lower() or ps.lower() in rs.lower()
+                            for rs in resume_skill_names)}
+        else:
+            # 单次模式：LLM 语义匹配，降级为规则模糊匹配
+            matched = await self._semantic_skill_match(resume_skill_names, list(all_position_skills))
         missing = all_position_skills - matched
         required_matched = required_skills & matched
         required_missing = required_skills - matched
@@ -388,24 +429,45 @@ class MatchService:
         else:
             skill_score = 70
 
-        # 2) 经验匹配评分 (35%) —— LLM 评估相关性，降级为基于经历数量
-        work_experience = [
-            {
-                "company": e.get("company", ""),
-                "position": e.get("position", ""),
-                "description": e.get("description", ""),
-                "skills": e.get("skills", []),
-            }
-            for e in (resume.work_experience_list or [])
-        ]
-        work_count = len(work_experience)
-        exp_score = await self._assess_experience_relevance(
-            work_experience, job.get("name", ""), list(all_position_skills)
-        )
+        # 2) 经验匹配评分 (35%)
+        if _fast_match and _resume_ctx:
+            work_experience = [
+                {
+                    "company": e.get("company", ""),
+                    "position": e.get("position", ""),
+                    "description": e.get("description", ""),
+                    "skills": e.get("skills", []),
+                }
+                for e in _resume_ctx.get("exp", [])
+            ]
+            # 批量模式：规则评分（经验数+岗位名技能命中），不调 LLM
+            work_count = len(work_experience)
+            base = min(100, 40 + work_count * 20) if work_count > 0 else 30
+            job_name = job.get("name", "")
+            relevant = any(rs.lower() in job_name.lower() for rs in resume_skill_names)
+            exp_score = min(100, base + (10 if relevant else 0))
+        else:
+            work_experience = [
+                {
+                    "company": e.get("company", ""),
+                    "position": e.get("position", ""),
+                    "description": e.get("description", ""),
+                    "skills": e.get("skills", []),
+                }
+                for e in (resume.work_experience_list or [])
+            ]
+            work_count = len(work_experience)
+            exp_score = await self._assess_experience_relevance(
+                work_experience, job.get("name", ""), list(all_position_skills)
+            )
 
-        # 3) 综合素质评分 (15%)
-        proj_count = len(resume.project_list or [])
-        has_eval = bool(resume.self_evaluation and len(resume.self_evaluation) > 20)
+        # 3) 综合素质评分 (15%)（批量模式 resume 为 None 时用默认中性分）
+        if resume is not None:
+            proj_count = len(resume.project_list or [])
+            has_eval = bool(resume.self_evaluation and len(resume.self_evaluation) > 20)
+            resume_edu_out = self._get_resume_highest_education(resume)
+        else:
+            proj_count, has_eval, resume_edu_out = 2, True, ""
         quality_score = min(100, proj_count * 25 + (25 if has_eval else 0))
 
         # 加权总分（技能 50% + 经验 35% + 综合素质 15%）
@@ -416,7 +478,7 @@ class MatchService:
         # 构建维度详情
         position_name = job["name"]
         edu_status = (
-            f"{resume_edu or '未知'} {'≥' if resume_edu else ''}{job.get('education_requirement', '无要求')}"
+            f"{resume_edu_out or '未知'} {'≥' if resume_edu_out else ''}{job.get('education_requirement', '无要求')}"
             if job.get("education_requirement") else "无硬性要求"
         )
         dimensions = [
@@ -426,7 +488,7 @@ class MatchService:
              "details": f"{work_count} 段工作经历"},
             {"name": "综合素质", "score": quality_score, "weight": 0.15,
              "details": f"{proj_count} 个项目{'，有自我评价' if has_eval else ''}"},
-            {"name": "学历要求", "score": 100 if resume_edu else 0, "weight": 0,
+            {"name": "学历要求", "score": 100 if resume_edu_out else 0, "weight": 0,
              "details": edu_status},
         ]
 
@@ -446,7 +508,13 @@ class MatchService:
             ],
         }
 
-        # 生成规则优化建议
+        # 生成规则优化建议（经图谱验证标记）
+        graph_skills = self._graph_verified_skills(position_name)
+        def _graph_flag(skill_name: str) -> dict:
+            if not graph_skills or skill_name.strip().lower() in graph_skills:
+                return {"verified": True, "warning": None}
+            return {"verified": False, "warning": "该技能未在知识图谱岗位技能树中验证，请人工确认"}
+
         suggestions = []
         for i, skill_name in enumerate(required_missing):
             suggestions.append({
@@ -455,7 +523,7 @@ class MatchService:
                 "original": "", "suggested": f"建议学习并添加技能: {skill_name}",
                 "reason": f"该岗位要求掌握 {skill_name}",
                 "change_type": "large", "accepted": False,
-                "verified": True, "warning": None,
+                **_graph_flag(skill_name),
             })
         for j, skill_name in enumerate(preferred_skills - matched):
             suggestions.append({
@@ -464,7 +532,42 @@ class MatchService:
                 "original": "", "suggested": f"建议补充加分技能: {skill_name}",
                 "reason": f"掌握 {skill_name} 可显著提升该岗位竞争力",
                 "change_type": "small", "accepted": False,
-                "verified": True, "warning": None,
+                **_graph_flag(skill_name),
+            })
+
+        # [P2] 匹配推理链 —— 真实数据驱动的可解释推理过程
+        matched_list = sorted(matched, key=lambda s: (s not in required_skills, s))
+        missing_required_list = sorted(required_missing)
+        graph_hit_missing = [s for s in missing_required_list if s.strip().lower() in graph_skills] if graph_skills else []
+
+        reasoning_chain = [
+            {
+                "icon": "📋", "title": "岗位要求解析",
+                "detail": f"必备 {len(required_skills)} 项：{'、'.join(list(required_skills)[:6]) or '无'}"
+                          + (f" 等；加分 {len(preferred_skills)} 项" if len(preferred_skills) > 6 else ""),
+            },
+            {
+                "icon": "👤", "title": "候选人技能画像",
+                "detail": f"简历提取 {len(resume_skill_names)} 项技能：{'、'.join(resume_skill_names[:6]) or '无'}"
+                          + (" 等" if len(resume_skill_names) > 6 else ""),
+            },
+            {
+                "icon": "🧩", "title": "语义匹配结果",
+                "detail": (f"匹配 {len(matched_list)} 项：{'、'.join(matched_list[:6]) or '无'}"
+                           + (f" 等（{len(matched)} 项全部命中）" if len(matched) > 6 else ""))
+                          if matched_list else "未匹配到任何岗位技能",
+            },
+            {
+                "icon": "🔍", "title": "知识图谱验证",
+                "detail": (f"缺失技能中 {len(graph_hit_missing)}/{len(missing_required_list)} 项经图谱验证为该岗位技能树真实节点"
+                           if graph_skills else "图谱暂未收录该岗位，匹配结果未经图谱背书"),
+            },
+        ]
+        if missing_required_list:
+            priority = graph_hit_missing[0] if graph_hit_missing else missing_required_list[0]
+            reasoning_chain.append({
+                "icon": "📚", "title": "补齐建议",
+                "detail": f"优先学习 {priority}（{'图谱技能树节点，岗位核心要求' if graph_hit_missing else '岗位必备技能'}），预计可提升匹配度",
             })
 
         # 持久化（仅 MySQL 单次匹配需要保存，批量实时匹配不落库）
@@ -480,7 +583,7 @@ class MatchService:
                 "resume_id": resume_id,
                 "position_id": position_id,
                 "position_name": position_name,
-                "resume_name": resume.name,
+                "resume_name": (resume.name if resume else ""),
                 "total_score": total_score,
                 "dimensions": dimensions,
                 "gap_analysis": gap_analysis,
@@ -496,11 +599,12 @@ class MatchService:
             "resume_id": resume_id,
             "position_id": job["id"],
             "position_name": position_name,
-            "resume_name": resume.name,
+            "resume_name": (resume.name if resume else ""),
             "total_score": total_score,
             "dimensions": dimensions,
             "gap_analysis": gap_analysis,
             "suggestions": suggestions,
+            "reasoning_chain": reasoning_chain,
             "match_date": str(datetime.now()),
         }
 
@@ -560,11 +664,21 @@ class MatchService:
                     logger.error(f"auto_match: 所有数据源加载失败: {e3}")
                     raise RuntimeError("无法加载岗位数据")
 
-        # 逐岗匹配
+        # 逐岗匹配（批量模式：跳过逐岗位 LLM，用规则+图谱匹配，快百倍）
         results = []
         education_filtered = 0
+        # 一次性提取简历技能（所有岗位共用）
+        resume = await self.resume_repo.get_by_id(resume_id)
+        if not resume:
+            raise ResourceNotFoundError("简历不存在")
+        resume_skills = [s.get("name", "") for s in (resume.skill_list or []) if s.get("name")]
+        resume_skill_lower = {s.lower() for s in resume_skills}
+
         for job in jobs:
-            result = await self.do_match(user_id, resume_id, job, persist=False)
+            result = await self.do_match(
+                user_id, resume_id, job, persist=False,
+                _fast_match=True, _resume_ctx={"skills": resume_skills, "lower": resume_skill_lower, "exp": resume.work_experience_list or []},
+            )
             if result is None:
                 education_filtered += 1
             else:

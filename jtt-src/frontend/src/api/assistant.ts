@@ -40,9 +40,20 @@ export interface GenerateLinksResponse {
   resources: GeneratedResource[]
 }
 
+export interface AgentChatResponse {
+  reply: string
+  thinkingSteps: { icon: string; text: string }[]
+  toolsCalled: string[]
+  followUpQuestions: string[]
+}
+
 export const assistantApi = {
   chat: (data: AssistantChatRequest): Promise<{ code: number; message: string; data: AssistantChatResponse }> =>
     api.post('/assistant/chat', data),
+
+  // [P1] Agent 循环：LLM 自主调工具（图谱/搜索/差距分析）→ 综合
+  agentChat: (data: AssistantChatRequest): Promise<{ code: number; message: string; data: AgentChatResponse }> =>
+    api.post('/assistant/agent-chat', data, { timeout: 120000 }),
 
   optimizePhrase: (data: OptimizePhraseRequest): Promise<{ code: number; message: string; data: OptimizePhraseResponse }> =>
     api.post('/assistant/optimize-phrase', data),

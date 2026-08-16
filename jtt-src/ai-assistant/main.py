@@ -229,6 +229,139 @@ async def health():
     }}
 
 
+# ══════════════════ [P1] Agent 工具调用循环 ══════════════════
+
+# 工具注册表：LLM 按名称自主选择调用，执行真实数据源
+AGENT_TOOLS: dict[str, dict] = {
+    "query_skill_graph": {
+        "desc": "查询知识图谱中某岗位的技能树（技能域→技术栈→技术点）。参数: position(岗位名)",
+        "func": "tool_query_graph",
+    },
+    "search_web": {
+        "desc": "联网搜索最新信息（招聘要求/技术趋势/学习资源）。参数: query(搜索词)",
+        "func": "tool_search_web",
+    },
+    "analyze_skill_gap": {
+        "desc": "对比用户简历技能与目标岗位技能，找出缺失项。参数: position(岗位名)。需用户简历上下文",
+        "func": "tool_gap",
+    },
+}
+
+
+def tool_query_graph(position: str) -> str:
+    """工具：查知识图谱技能树（复用 P0-2 的查询）"""
+    result = query_graph_skill_tree(position)
+    return result if result else f"知识图谱暂未收录岗位「{position}」的技能树"
+
+
+async def tool_search_web(query: str) -> str:
+    """工具：联网搜索（复用既有 search_web，截取摘要）"""
+    results = await search_web(query, max_results=5)
+    if not results:
+        return f"搜索「{query}」无结果（网络不可用）"
+    lines = [f"[{i+1}] {r['title']}: {r['snippet'][:100]}" for i, r in enumerate(results[:5])]
+    return "\n".join(lines)
+
+
+def tool_gap(position: str, resume_data: dict | None) -> str:
+    """工具：技能差距分析（基于用户简历 vs 图谱技能树）"""
+    if not resume_data or not resume_data.get("skills"):
+        return "用户简历上下文缺失，无法分析差距"
+    tree_text = query_graph_skill_tree(position)
+    if not tree_text:
+        return f"图谱无「{position}」技能树，建议先用 search_web 查岗位要求"
+    import re as _re
+    graph_skills = {m.group(0).strip() for m in _re.finditer(r"[\w一-鿿 .#+/-]+", tree_text)}
+    graph_skills = {g for g in graph_skills if 2 <= len(g) <= 30}
+    user_skills = {s.get("name", "") for s in resume_data["skills"] if s.get("name")}
+    matched = {g for g in graph_skills if any(u.lower() in g.lower() or g.lower() in u.lower() for u in user_skills)}
+    missing = sorted(graph_skills - matched)[:10]
+    return (f"用户技能：{'、'.join(sorted(user_skills))}\n"
+            f"图谱技能树命中 {len(matched)} 项\n"
+            f"缺失（建议学习）：{'、'.join(missing) if missing else '无明显缺失'}")
+
+
+@app.post("/api/assistant/agent-chat")
+async def agent_chat(req: ChatRequest):
+    """[P1] Agent 循环：LLM 自主规划工具调用 → 执行真实工具 → 综合作答"""
+    if not DEEPSEEK_API_KEY:
+        raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
+
+    rd = req.pageContext.resumeData if req.pageContext else None
+    thinking: list[dict] = [{"icon": "🤖", "text": "分析你的问题，规划工具调用…"}]
+
+    # ── 第 1 步：LLM 规划要调用哪些工具 ──
+    tools_desc = "\n".join(f"- {name}: {t['desc']}" for name, t in AGENT_TOOLS.items())
+    plan_prompt = (
+        "你是任务规划器。根据用户问题，决定需要调用哪些工具来获取真实数据。\n"
+        f"可用工具：\n{tools_desc}\n\n"
+        f"用户问题：{req.message}\n\n"
+        + (f"用户简历技能：{', '.join(s.get('name','') for s in rd['skills'])}\n" if rd else "")
+        + '输出 JSON：{"tools": [{"name": "工具名", "args": {"参数名": "值"}}], "reason": "为什么调这些"}\n'
+        "最多 3 个工具。如果不需要工具（纯常识问答），返回 {\"tools\": []}"
+    )
+    try:
+        raw = await call_deepseek([{"role": "system", "content": plan_prompt}])
+        plan = parse_llm_response(raw)
+        tool_calls = plan.get("tools", [])[:3]
+    except Exception:
+        tool_calls = []
+
+    # ── 第 2 步：执行工具（真实数据源）──
+    tool_results: list[str] = []
+    for tc in tool_calls:
+        name, args = tc.get("name", ""), tc.get("args", {}) or {}
+        if name not in AGENT_TOOLS:
+            continue
+        thinking.append({"icon": "🔧", "text": f"调用工具 {name}({args})…"})
+        try:
+            if name == "query_skill_graph":
+                r = tool_query_graph(str(args.get("position", "")))
+            elif name == "search_web":
+                r = await tool_search_web(str(args.get("query", req.message)))
+            elif name == "analyze_skill_gap":
+                r = tool_gap(str(args.get("position", "")), rd)
+            else:
+                r = "未知工具"
+            tool_results.append(f"[工具 {name} 结果]\n{r}")
+            thinking.append({"icon": "📊", "text": f"{name} 返回 {len(r)} 字符数据"})
+        except Exception as e:
+            tool_results.append(f"[工具 {name} 失败]: {e}")
+            thinking.append({"icon": "⚠️", "text": f"{name} 调用失败，跳过"})
+
+    # ── 第 3 步：LLM 综合工具结果作答 ──
+    thinking.append({"icon": "🧠", "text": f"综合 {len(tool_results)} 份工具结果生成回答…"})
+    final_sys = (
+        "你是智联职引的 AI 职业助手。基于工具返回的真实数据回答用户问题。\n"
+        "要求：优先引用工具数据（标注来源），工具没覆盖的才用自身知识；输出 JSON：\n"
+        '{"reply": "Markdown 回答", "followUpQuestions": ["追问1", "追问2"]}'
+    )
+    ctx = ""
+    if rd:
+        ctx = f"\n用户简历：目标{rd.get('targetPosition','')}，技能{'、'.join(s.get('name','') for s in rd.get('skills',[]))}\n"
+    final_user = f"用户问题：{req.message}\n{ctx}\n工具结果：\n" + ("\n\n".join(tool_results) if tool_results else "（无工具调用，直接回答）")
+
+    try:
+        raw = await call_deepseek([
+            {"role": "system", "content": final_sys},
+            {"role": "user", "content": final_user},
+        ])
+        parsed = parse_llm_response(raw)
+        reply = parsed.get("reply") or raw
+        follow_ups = parsed.get("followUpQuestions", [])
+    except Exception:
+        reply, follow_ups = "综合回答生成失败，请稍后重试", []
+
+    thinking.append({"icon": "✅", "text": f"完成（调用 {len(tool_results)} 个工具）"})
+
+    return {"code": 200, "message": "ok", "data": {
+        "reply": reply,
+        "thinkingSteps": thinking,
+        "toolsCalled": [tc.get("name") for tc in tool_calls],
+        "followUpQuestions": follow_ups,
+    }}
+
+
 @app.post("/api/assistant/chat")
 async def chat(req: ChatRequest):
     if not DEEPSEEK_API_KEY:
@@ -468,6 +601,42 @@ def rerank_skills(search_results: list[dict[str, str]], position: str) -> str:
 
 # ── Generate Learning Path (search + rerank + structure) ──
 
+# ── [Agent 2] 知识图谱技能树查询 ──
+
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "")
+
+def query_graph_skill_tree(position_name: str) -> str:
+    """
+    查询 Neo4j 知识图谱中该岗位的技能树（SkillArea→TechStack→TechPoint），
+    返回可注入 prompt 的文本。图谱不可用/无该岗位返回空串。
+    """
+    if not NEO4J_PASSWORD:
+        return ""
+    try:
+        from neo4j import GraphDatabase
+        driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD), connection_timeout=5)
+        with driver.session() as s:
+            rows = s.run(
+                "MATCH (j:Job {name: $job})-[:REQUIRES_AREA]->(sa:SkillArea)-[:CONTAINS]->(ts:TechStack) "
+                "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
+                "RETURN sa.name AS area, ts.name AS stack, collect(tp.name) AS points "
+                "ORDER BY area, stack",
+                {"job": position_name},
+            ).data()
+        driver.close()
+        if not rows:
+            return ""
+        lines = []
+        for r in rows:
+            pts = "、".join(p for p in (r["points"] or []) if p)
+            lines.append(f"- {r['area']} / {r['stack']}" + (f"（知识点：{pts}）" if pts else ""))
+        return "知识图谱中该岗位的技能树（按此结构排学习步骤，基础技能域在前）：\n" + "\n".join(lines)
+    except Exception:
+        return ""
+
+
 @app.post("/api/assistant/generate-learning-path")
 async def generate_learning_path(req: LearningPathRequest):
     if not DEEPSEEK_API_KEY:
@@ -525,10 +694,25 @@ async def generate_learning_path(req: LearningPathRequest):
     )
 
     user_prompt = "目标岗位：" + position + "\n\n"
+    # [Agent 2] 注入知识图谱技能树 —— 路径排序以图谱依赖结构为准（防幻觉）
+    graph_tree = query_graph_skill_tree(position)
+    if graph_tree:
+        user_prompt += graph_tree + "\n\n"
     if search_context:
-        user_prompt += search_context + "\n\n请根据以上搜索结果提取技能要求，生成学习路径。注意筛选近一年的信息，过时技术不要包含。"
+        user_prompt += search_context + "\n\n请根据知识图谱技能树和搜索结果生成学习路径：图谱中列出的技能必须覆盖，顺序遵循图谱的技能域结构（基础在前）；搜索结果补充最新趋势，注意筛选近一年的信息。"
     else:
-        user_prompt += "请根据你的知识生成学习路径，标注哪些技能是你确定的最新要求。"
+        user_prompt += "请根据知识图谱技能树" + ("和你的知识" if graph_tree else "你的知识") + "生成学习路径，优先使用图谱中列出的技能，标注哪些是你确定的最新要求。"
+
+    # [P3] Agent 推理步骤记录（前端逐步展示思考过程）
+    graph_skill_count = graph_tree.count("\n") if graph_tree else 0
+    thinking_steps = [
+        {"icon": "🎯", "text": f"分析目标岗位「{position}」的技能要求"},
+        {"icon": "🔍", "text": ("查询知识图谱：获取技能树结构" if graph_tree else "知识图谱暂未收录该岗位，将基于联网信息") ,
+         "detail": f"图谱返回 {graph_skill_count} 个技能条目" if graph_tree else None},
+        {"icon": "🌐", "text": f"联网搜索最新招聘信息（{len(all_results)} 条结果）" if search_available else "联网搜索不可用，使用模型知识生成"},
+        {"icon": "🧠", "text": "综合图谱技能树与搜索结果，规划学习路径"},
+        {"icon": "✅", "text": "生成完成，路径已按图谱依赖结构排序"},
+    ]
 
     try:
         raw = await call_deepseek([
@@ -550,6 +734,7 @@ async def generate_learning_path(req: LearningPathRequest):
                 "totalDuration": parsed.get("totalDuration", ""),
                 "sourceNote": source_note,
                 "searchResultsCount": len(all_results),
+                "thinkingSteps": thinking_steps,
             },
         }
     except Exception as e:
