@@ -32,9 +32,9 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/v1/, '/api'),
       },
-      // 数据请求 → 后端 8000（baseURL 和后端路由都含 v1，无需 rewrite）
+      // 数据请求 → 后端 8001（baseURL 和后端路由都含 v1，无需 rewrite）
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
     },
