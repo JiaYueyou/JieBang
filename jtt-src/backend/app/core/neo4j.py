@@ -24,6 +24,9 @@ def get_driver():
             auth=(NEO4J_USER, NEO4J_PASSWORD),
             max_connection_lifetime=3600,
             max_connection_pool_size=50,
+            # 连接超时兜底：Neo4j 不可用时快速失败降级，避免匹配请求无限挂起
+            connection_timeout=5,
+            connection_acquisition_timeout=5,
         )
     return _driver
 

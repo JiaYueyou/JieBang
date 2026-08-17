@@ -23,6 +23,7 @@ const visible = ref(false)
 const messages = ref<ChatMessage[]>([])
 const inputText = ref('')
 const loading = ref(false)
+const wrapperRef = ref<HTMLDivElement>()
 const chatBodyRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLInputElement>()
 const fileInputRef = ref<HTMLInputElement>()
@@ -175,8 +176,22 @@ const scrollToBottom = (smooth = false) => {
 const onGlobalKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && visible.value) { visible.value = false }
 }
-onMounted(() => document.addEventListener('keydown', onGlobalKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown))
+
+// 点击面板外部区域时收起聊天框
+const onClickOutside = (e: MouseEvent) => {
+  if (visible.value && wrapperRef.value && !wrapperRef.value.contains(e.target as Node)) {
+    visible.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onGlobalKeydown)
+  document.addEventListener('click', onClickOutside)
+})
+onUnmounted(() => {
+  document.removeEventListener('keydown', onGlobalKeydown)
+  document.removeEventListener('click', onClickOutside)
+})
 
 watch(visible, v => { if (v) nextTick(() => inputRef.value?.focus()) })
 
@@ -601,7 +616,7 @@ const closePreview = () => { previewImageUrl.value = '' }
 </script>
 
 <template>
-  <div class="ai-float-wrapper">
+  <div ref="wrapperRef" class="ai-float-wrapper">
     <!-- ═══ Panel ═══ -->
     <transition name="slide-up">
       <div v-if="visible" class="ai-panel">
