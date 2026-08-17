@@ -6,8 +6,10 @@ import type { ImprovementSuggestion, JobPosition } from '@/types'
 import { tailorApi } from '@/api/tailor'
 import { positionsApi } from '@/api/positions'
 import { matchApi } from '@/api/match'
+import { useMatchStore } from '@/stores/match'
 
 const route = useRoute()
+const matchStore = useMatchStore()
 const suggestions = ref<ImprovementSuggestion[]>([])
 const position = ref<JobPosition | null>(null)
 const matchScore = ref(68)
@@ -17,14 +19,22 @@ onMounted(async () => {
   const resumeId = route.params.resumeId as string
   const positionId = route.params.positionId as string
   try {
-    const [sgRes, posRes, matchRes]: any = await Promise.all([
-      tailorApi.getSuggestions(resumeId, positionId),
+    const [posRes, matchRes]: any = await Promise.all([
       positionsApi.getDetail(positionId),
       matchApi.getResult(resumeId, positionId),
     ])
-    suggestions.value = sgRes.data || []
     position.value = posRes.data || null
     matchScore.value = matchRes.data?.totalScore ?? 68
+
+    // 从岗位参考构造上下文，AI 生成向岗位靠齐的优化建议
+    if (position.value) {
+      const positionCtx = {
+        name: position.value.name,
+        requiredSkills: position.value.requiredSkills.map((s: any) => s.name),
+        preferredSkills: position.value.preferredSkills.map((s: any) => s.name),
+      }
+      suggestions.value = await matchStore.fetchAiSuggestions(resumeId, positionCtx)
+    }
   } catch {
     ElMessage.warning('数据加载失败，使用默认数据')
   } finally {

@@ -25,9 +25,11 @@ class LearningStepSchema(BaseModel):
 
 
 class LearningPathCreate(BaseModel):
-    """创建学习路径"""
+    """创建学习路径，可选附带 AI 生成的步骤"""
     name: str = Field(..., min_length=1, max_length=100)
     position_id: str = ""
+    steps: list[LearningStepSchema] = []
+    position_name: str = ""
 
 
 class LearningPathUpdate(BaseModel):

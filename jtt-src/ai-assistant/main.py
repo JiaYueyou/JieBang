@@ -72,6 +72,14 @@ class OptimizeRequest(BaseModel):
 class LearningPathRequest(BaseModel):
     positionName: str
 
+class GoalPathRequest(BaseModel):
+    goal: str = Field(..., min_length=1, description="用户自然语言学习目标")
+
+
+class ResumeOptimizeRequest(BaseModel):
+    resume: dict[str, Any] = Field(..., description="简历全文")
+    position: dict[str, Any] = Field(..., description="岗位上下文（名称+技能要求/差距）")
+
 class ChatResponse(BaseModel):
     code: int = 200
     message: str = "ok"
@@ -780,6 +788,70 @@ async def generate_learning_path(req: LearningPathRequest):
         raise HTTPException(status_code=500, detail={"code": 500, "message": "生成失败：" + str(e), "data": None})
 
 
+# ── Generate Learning Path from Goal (自然语言学习目标 → 个性化路径) ──
+
+@app.post("/api/assistant/generate-learning-path-from-goal")
+async def generate_learning_path_from_goal(req: GoalPathRequest):
+    """根据用户自然语言描述的学习目标，AI 分析后生成从基础到进阶的个性化学习路径"""
+    if not DEEPSEEK_API_KEY:
+        raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
+
+    goal = req.goal.strip()
+    if not goal:
+        raise HTTPException(status_code=400, detail={"code": 400, "message": "请输入学习目标", "data": None})
+
+    system_prompt = (
+        "你是一个专业的学习路径设计师。根据用户描述的学习目标，"
+        "分析其真实需求，生成一条从基础到进阶的具体学习路径。\n\n"
+        "要求：\n"
+        "1. 先分析用户的学习目标，确定需要覆盖的知识领域和技能树\n"
+        "2. 按基础→进阶的顺序组织，每个步骤标注前置依赖关系\n"
+        "3. 每个步骤包含：标题、详细描述（含关键知识点和应达到的程度）、预计学习周期、推荐学习资源\n"
+        "4. 总步骤 5-7 步，总时长合理（4-16 周）\n"
+        "5. 内容要具体可执行，不要泛泛而谈；资源推荐要真实存在的平台或书籍\n"
+        "6. 输出严格的 JSON 格式：\n"
+        "{\n"
+        '  "pathName": "路径名称（简洁概括学习目标，10字以内）",\n'
+        '  "goalAnalysis": "一句话概括你对用户学习目标的理解",\n'
+        '  "steps": [\n'
+        '    {\n'
+        '      "title": "步骤标题",\n'
+        '      "description": "详细描述要学什么、关键知识点、应达到的程度",\n'
+        '      "duration": "X-Y周",\n'
+        '      "resources": [{"title": "资源名", "type": "course|book|video|article|project", "platform": "平台名"}]\n'
+        '    }\n'
+        "  ],\n"
+        '  "totalDuration": "总时长（如 8周）",\n'
+        '  "sourceNote": "基于 AI 知识库生成"\n'
+        "}"
+    )
+
+    try:
+        raw = await call_deepseek([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"用户的学习目标：{goal}\n\n请分析目标并生成学习路径。"},
+        ])
+        parsed = parse_llm_response(raw)
+        steps = parsed.get("steps", [])
+        if not steps:
+            raise ValueError("No steps generated")
+
+        return {
+            "code": 200,
+            "message": "ok",
+            "data": {
+                "pathName": parsed.get("pathName", "学习路径"),
+                "goalAnalysis": parsed.get("goalAnalysis", ""),
+                "steps": steps,
+                "totalDuration": parsed.get("totalDuration", ""),
+                "sourceNote": parsed.get("sourceNote", "基于 AI 知识库生成"),
+            },
+        }
+    except Exception as e:
+        log.error(f"Generate learning path from goal error: {e}")
+        raise HTTPException(status_code=500, detail={"code": 500, "message": "生成失败：" + str(e), "data": None})
+
+
 # ── Optimize Phrase ──
 
 OPTIMIZE_PROMPTS = {
@@ -816,6 +888,69 @@ async def optimize_phrase(req: OptimizeRequest):
     except Exception as e:
         log.error(f"Optimize error: {e}")
         raise HTTPException(status_code=500, detail={"code": 500, "message": "优化失败", "data": None})
+
+
+# ── Optimize Resume（简历优化建议：向目标岗位靠齐）──
+
+RESUME_OPTIMIZE_PROMPT = """你是资深简历优化专家。根据目标岗位要求，对求职者简历给出具体、可落地的修改建议，目标是让简历尽可能向岗位靠齐。
+
+改写原则：
+1. 突出与岗位匹配的技能与成果，用数据量化（如"提升 30%"、"支撑 10 万 QPS"）
+2. 动词开头、结果导向，避免空泛描述
+3. 复用岗位 JD 中的关键词和术语，让表述贴合岗位风格
+4. 只改技能、工作经历、自我评价中可以对照岗位优化的部分，不要编造不存在的技能或经历
+
+输出严格 JSON（不要包含 Markdown 代码块标记）：
+{"suggestions": [{"id": "sg-1", "section": "skills|workExperience|selfEvaluation", "field": "具体字段", "original": "原文", "suggested": "优化后", "reason": "理由", "changeType": "small|large"}]}"""
+
+
+@app.post("/api/assistant/optimize-resume")
+async def optimize_resume(req: ResumeOptimizeRequest):
+    """根据简历 + 目标岗位，AI 生成向岗位靠齐的优化建议"""
+    if not DEEPSEEK_API_KEY:
+        raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
+
+    resume = req.resume or {}
+    position = req.position or {}
+    if not resume and not position:
+        raise HTTPException(status_code=400, detail={"code": 400, "message": "简历或岗位信息为空", "data": None})
+
+    pos_name = position.get("name", "")
+    pos_required = position.get("requiredSkills") or []
+    pos_preferred = position.get("preferredSkills") or []
+    pos_missing = position.get("missingSkills") or []
+    pos_weak = position.get("weakSkills") or []
+    pos_match = position.get("matchSkills") or []
+
+    user_prompt = (
+        f"目标岗位: {pos_name}\n"
+        f"必备技能: {pos_required}\n"
+        f"加分技能: {pos_preferred}\n"
+        f"缺失技能: {pos_missing}\n"
+        f"薄弱技能: {pos_weak}\n"
+        f"已匹配技能: {pos_match}\n\n"
+        f"=== 简历内容 ===\n"
+        f"技能: {resume.get('skills') or []}\n"
+        f"工作经历: {resume.get('workExperience') or []}\n"
+        f"项目经历: {resume.get('projects') or []}\n"
+        f"自我评价: {resume.get('selfEvaluation') or ''}\n\n"
+        f"请逐条给出向岗位靠齐的具体修改建议。"
+    )
+
+    try:
+        raw = await call_deepseek([
+            {"role": "system", "content": RESUME_OPTIMIZE_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ])
+        parsed = parse_llm_response(raw)
+        suggestions = parsed.get("suggestions", [])
+        if not isinstance(suggestions, list):
+            suggestions = []
+    except Exception as e:
+        log.error(f"Optimize resume error: {e}")
+        suggestions = []
+
+    return {"code": 200, "message": "ok", "data": {"suggestions": suggestions}}
 
 
 # ── Main ──

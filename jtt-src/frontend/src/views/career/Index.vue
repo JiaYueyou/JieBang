@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useResumeStore } from '@/stores/resume'
 import { useMatchStore } from '@/stores/match'
 import { useLearningStore } from '@/stores/learning'
@@ -8,6 +8,7 @@ import type { ResumeData, MatchResult } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const resumeStore = useResumeStore()
 const matchStore = useMatchStore()
 const learningStore = useLearningStore()
@@ -27,6 +28,13 @@ const matchResults = ref<MatchResult[]>([])
 const expandedPositionId = ref<string | null>(null)
 
 onMounted(async () => {
+  // 从岗位详情页「一键生成学习路径」跳转时，读取岗位名称并自动填充
+  const posName = route.query.position as string | undefined
+  if (posName) {
+    activeMode.value = 'known'
+    positionKeyword.value = posName
+  }
+
   try {
     await resumeStore.fetchList()
     resumes.value = resumeStore.resumes
@@ -37,6 +45,11 @@ onMounted(async () => {
   }
   if (resumes.value.length > 0) {
     selectedResumeId.value = resumes.value[0]!.id
+  }
+
+  // 有岗位名且已选择简历时，自动触发技能差距分析
+  if (posName && selectedResumeId.value) {
+    await analyzeGap()
   }
 })
 

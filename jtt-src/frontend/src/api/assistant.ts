@@ -56,7 +56,7 @@ export const assistantApi = {
     api.post('/assistant/agent-chat', data, { timeout: 120000 }),
 
   optimizePhrase: (data: OptimizePhraseRequest): Promise<{ code: number; message: string; data: OptimizePhraseResponse }> =>
-    api.post('/assistant/optimize-phrase', data),
+    api.post('/assistant/optimize-phrase', data, { timeout: 90000 }),
 
   generateLearningPath: (positionName: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
     api.post('/assistant/generate-learning-path', { positionName }, { timeout: 90000 }),

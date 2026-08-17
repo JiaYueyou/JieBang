@@ -44,14 +44,30 @@ class LearningService:
         return self._path_to_dict(path)
 
     async def create_path(self, user_id: int, data: dict) -> dict:
-        """创建学习路径"""
-        position = await self.position_repo.get_by_id(data["position_id"])
+        """创建学习路径，若附带 steps 则直接使用（AI 预生成）"""
+        steps = data.get("steps") or []
+        total_duration = ""
+        if steps:
+            total_weeks = 0
+            for s in steps:
+                dur = s.get("duration", "0")
+                try:
+                    total_weeks += int(dur.replace("周", "").split("-")[0] or 0)
+                except (ValueError, AttributeError):
+                    pass
+            total_duration = f"{total_weeks}周" if total_weeks > 0 else ""
+
+        position_name = data.get("position_name") or ""
+        if not position_name and data.get("position_id"):
+            position = await self.position_repo.get_by_id(data["position_id"])
+            position_name = position.name if position else ""
+
         path = await self.repo.create(user_id, {
             "name": data["name"],
-            "position_id": data["position_id"],
-            "position_name": position.name if position else "",
-            "steps": [],
-            "total_duration": "",
+            "position_id": data.get("position_id", ""),
+            "position_name": position_name,
+            "steps": steps,
+            "total_duration": total_duration,
         })
         await self.db.commit()
         return self._path_to_dict(path)

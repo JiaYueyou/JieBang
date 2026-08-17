@@ -3,32 +3,16 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import { useFavoritesStore } from '@/stores/favorites'
-import { useResumeStore } from '@/stores/resume'
 
 const route = useRoute()
 const router = useRouter()
 const positionsStore = usePositionsStore()
 const favoritesStore = useFavoritesStore()
-const resumeStore = useResumeStore()
 const position = ref<any>(null)
-const resumeDialogVisible = ref(false)
-
-const openMatchDialog = () => {
-  resumeDialogVisible.value = true
-}
-
-const selectResumeAndDiagnose = (resumeId: string) => {
-  resumeDialogVisible.value = false
-  const posId = route.params.id as string
-  router.push(`/diagnosis/${resumeId}?positionId=${posId}&focusPos=true`)
-}
 
 onMounted(async () => {
   const id = route.params.id as string
-  await Promise.all([
-    positionsStore.fetchDetail(id),
-    resumeStore.fetchList(),
-  ])
+  await positionsStore.fetchDetail(id)
   position.value = positionsStore.currentPosition
 })
 
@@ -56,6 +40,11 @@ const toggleFav = async () => {
       tags: position.value.techStack || [],
     })
   }
+}
+
+const goGeneratePath = () => {
+  const name = position.value?.name || ''
+  router.push('/career' + (name ? '?position=' + encodeURIComponent(name) : ''))
 }
 
 const stackLabel = (stack?: string) => {
@@ -132,9 +121,6 @@ const parseNumberedText = (text: string): { label?: string; items: string[] }[] 
           @click="toggleFav"
         >
           {{ favoritesStore.isFavorited('position', String(position.id)) ? '已收藏' : '收藏岗位' }}
-        </el-button>
-        <el-button type="primary" @click="openMatchDialog">
-          开始匹配诊断
         </el-button>
       </div>
     </div>
@@ -230,36 +216,14 @@ const parseNumberedText = (text: string): { label?: string; items: string[] }[] 
           </div>
         </el-card>
 
-        <!-- 学习建议 -->
+        <!-- 岗位分析 -->
         <el-card v-if="position.category === 'new'" class="section-card">
-          <template #header><span class="card-header">学习建议</span></template>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">该岗位为新兴岗位，可根据必备技能自动推导学习路径</p>
-          <el-button type="primary" plain size="default" @click="router.push('/career')">一键生成学习路径</el-button>
+          <template #header><span class="card-header">匹配诊断</span></template>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">该岗位为新兴岗位，可通过岗位和简历的匹配诊断生成学习路径</p>
+          <el-button type="primary" plain size="default" @click="goGeneratePath">开始匹配诊断</el-button>
         </el-card>
       </div>
     </div>
-
-    <!-- 简历选择对话框 -->
-    <el-dialog v-model="resumeDialogVisible" title="选择简历开始匹配诊断" width="480px" top="12vh">
-      <div v-if="resumeStore.resumes.length === 0" style="text-align:center;padding:20px;">
-        <p style="color:var(--muted);margin-bottom:12px;">暂无简历，请先创建</p>
-        <el-button type="primary" @click="router.push('/diagnosis')">去创建简历</el-button>
-      </div>
-      <div v-else class="resume-picker-list">
-        <div
-          v-for="r in resumeStore.resumes"
-          :key="r.id"
-          class="resume-picker-item"
-          @click="selectResumeAndDiagnose(r.id)"
-        >
-          <div class="picker-left">
-            <el-icon :size="20"><Document /></el-icon>
-            <span class="picker-name">{{ r.name }}</span>
-          </div>
-          <el-icon :size="16" color="var(--brand)"><ArrowRight /></el-icon>
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -395,16 +359,4 @@ const parseNumberedText = (text: string): { label?: string; items: string[] }[] 
 .info-label { font-size: 13px; color: var(--muted); }
 .info-value { font-size: 13px; color: var(--ink); font-weight: 500; }
 .info-value.salary { color: var(--danger); font-weight: 600; }
-
-/* Resume picker dialog */
-.resume-picker-list { display: flex; flex-direction: column; gap: 8px; }
-.resume-picker-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; border-radius: var(--radius);
-  border: 1px solid var(--hairline); cursor: pointer;
-  transition: all 0.15s;
-}
-.resume-picker-item:hover { background: var(--canvas); border-color: var(--brand); }
-.picker-left { display: flex; align-items: center; gap: 10px; }
-.picker-name { font-size: 14px; font-weight: 500; }
 </style>

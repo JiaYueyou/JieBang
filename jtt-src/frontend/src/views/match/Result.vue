@@ -4,11 +4,12 @@ import { useRoute, useRouter } from 'vue-router'
 import type { MatchResult } from '@/types'
 import { mockMatchResults } from '@/mock/data/match'
 import { pageData } from '@/stores/pageContext'
-import { tailorApi } from '@/api/tailor'
+import { useMatchStore } from '@/stores/match'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
+const matchStore = useMatchStore()
 const result = ref<MatchResult | null>(null)
 const optimizing = ref(false)
 
@@ -31,17 +32,16 @@ const fetchTailorSuggestions = async () => {
   if (!result.value || optimizing.value) return
   optimizing.value = true
   try {
-    const res: any = await tailorApi.getSuggestions(
-      String(result.value.resumeId), String(result.value.positionId)
+    const positionCtx = {
+      name: result.value.positionName,
+      missingSkills: result.value.gapAnalysis.missingSkills.map((s: any) => s.name),
+      weakSkills: result.value.gapAnalysis.weakSkills.map((s: any) => s.name),
+      matchSkills: result.value.gapAnalysis.matchSkills.map((s: any) => s.name),
+    }
+    const fetched = await matchStore.fetchAiSuggestions(
+      String(result.value.resumeId), positionCtx
     )
-    const aiSuggestions = (res.data || []).map((s: any) => ({
-      ...s,
-      id: `ai-${s.id}`,
-      accepted: false,
-      verified: s.verified ?? true,
-      warning: s.warning ?? null,
-      changeType: s.change_type ?? s.changeType ?? 'small',
-    }))
+    const aiSuggestions = fetched.map((s: any) => ({ ...s, id: `ai-${s.id}` }))
     result.value.suggestions = [...aiSuggestions, ...result.value.suggestions.filter(
       (s: any) => !s.id.startsWith('ai-')
     )]
