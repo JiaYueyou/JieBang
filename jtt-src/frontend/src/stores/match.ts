@@ -60,6 +60,7 @@ export const useMatchStore = defineStore('match', () => {
     try {
       await resumeStore.fetchDetail(resumeId)
       const resume = resumeStore.currentResume
+      if (!resume) throw new Error('未找到待优化的简历')
       const res: any = await assistantApi.optimizeResume(resume, positionCtx)
       aiSuggestions.value = (res.data?.suggestions || []).map(suggestionFromApi)
       return aiSuggestions.value
