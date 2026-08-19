@@ -43,11 +43,11 @@
 │  │  Views  │ │Components│ │  Stores   │ │   API     │  │
 │  │  页面    │ │  组件    │ │ (Pinia)   │ │  接口层    │  │
 │  └─────────┘ └──────────┘ └───────────┘ └─────┬─────┘  │
-│                   Vite Proxy /api → 127.0.0.1:8001      │
+│                   Vite Proxy /api → 127.0.0.1:8000      │
 └─────────────────────────────────────────────────────────┘
                         │ HTTP (JSON + JWT)
 ┌─────────────────────────────────────────────────────────┐
-│                后端 (FastAPI, port 8001)                  │
+│                后端 (FastAPI, port 8000)                  │
 │  ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌──────────┐  │
 │  │  Routes  │ │ Services │ │Repositories│ │  Models  │  │
 │  │ (API层)  │ │ (业务层)  │ │  (数据层)   │ │ (ORM)    │  │
@@ -234,7 +234,7 @@ Pydantic v2 模型，定义 API 的请求体和响应体格式，同时提供自
 frontend/
 ├── index.html              # HTML 入口
 ├── package.json            # 依赖和脚本
-├── vite.config.ts          # Vite 构建配置（含 API 代理到 8001）
+├── vite.config.ts          # Vite 构建配置（含 API 代理到 8000）
 ├── tsconfig.json           # TypeScript 配置
 ├── src/
 │   ├── main.ts             # 应用入口（创建 Vue app、注册插件）
@@ -258,7 +258,7 @@ frontend/
 |------|------|
 | `src/main.ts` | **Vue 应用入口**。创建 Pinia、Vue Router、Element Plus 实例，全局注册所有 Element Plus 图标组件 |
 | `src/App.vue` | **根布局组件**。`<AppSidebar>` + `<AppHeader>` + `<router-view>` |
-| `vite.config.ts` | Vite 构建配置，配置了 `/api` → `http://127.0.0.1:8001` 的代理转发 |
+| `vite.config.ts` | Vite 构建配置，配置了 `/api` → `http://127.0.0.1:8000` 的代理转发 |
 
 ### 4.3 API 接口层 (`src/api/`)
 
@@ -550,8 +550,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env，填入数据库密码、JWT密钥等
 
-# 4. 启动（端口 8001，注意不要用 --reload 否则可能卡死）
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+# 4. 启动（端口 8000）
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### 7.3 前端启动
@@ -610,15 +610,15 @@ LLM_MODEL=deepseek-chat
 
 ```bash
 # 后端健康检查
-curl http://127.0.0.1:8001/api/v1/health
+curl http://127.0.0.1:8000/api/v1/health
 
 # 测试登录获取 token
-curl -X POST http://127.0.0.1:8001/api/v1/auth/login \
+curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
 # 测试自动匹配（替换 TOKEN）
-curl -X POST http://127.0.0.1:8001/api/v1/match/auto/2 \
+curl -X POST http://127.0.0.1:8000/api/v1/match/auto/2 \
   -H "Authorization: Bearer <TOKEN>"
 
 # 前端类型检查
@@ -626,4 +626,122 @@ cd jtt-src/frontend && npx vue-tsc --noEmit
 
 # 检查 git 暂存区是否有问题
 git diff --cached --check
+```
+
+---
+
+## 十、新环境准备清单（本地从零跑通 JTT 求职端）
+
+> 本清单适用于新成员拉取代码后，在本机完整跑通 JTT 求职者端（除知识图谱外全部功能）。
+> 共涉及 3 个服务进程 + MySQL，即 4 个终端。以下内容为当前实际可用的启动方式。
+
+### 10.1 服务与端口总览
+
+| 服务 | 目录 | 端口 | 说明 |
+|---|---|---|---|
+| MySQL | 本机服务（本机名为 `mysql97`） | 3306 | 业务库 + 爬虫库 |
+| JTT 后端 | `jtt-src/backend` | **8000** | FastAPI，业务接口 |
+| AI 助手服务 | `jtt-src/ai-assistant` | **8001** | 独立 LLM 代理（DeepSeek） |
+| JTT 前端 | `jtt-src/frontend` | 5173 | Vite dev，代理数据→8000、AI→8001 |
+
+### 10.2 配置文件准备（git 未跟踪，必须手动创建）
+
+**1）JTT 后端 `.env`**
+
+```powershell
+Copy-Item jtt-src\backend\.env.example jtt-src\backend\.env
+```
+
+编辑 `jtt-src/backend/.env`，至少配置：
+
+| 变量 | 必填 | 说明 |
+|---|---|---|
+| `DB_PASSWORD` | ✅ | 本机 MySQL 密码 |
+| `JWT_SECRET_KEY` | ✅ | 任意随机字符串 |
+| `LLM_API_KEY` | 可选 | DeepSeek Key，为空时 AI 功能走规则降级 |
+| `INITIAL_ADMIN_ENABLED` | ✅ | 设为 `true`，自动创建 `admin / admin123` |
+| `NEO4J_*` | 可选 | 无 Neo4j 不影响除图谱外功能 |
+
+**2）AI 助手服务 `.env`**
+
+```powershell
+Copy-Item jtt-src\ai-assistant\.env.example jtt-src\ai-assistant\.env
+```
+
+编辑 `jtt-src/ai-assistant/.env`，必填：
+
+```
+DEEPSEEK_API_KEY=sk-你的Key
+```
+
+### 10.3 数据库准备（MySQL）
+
+需要两个库：
+
+```sql
+CREATE DATABASE jiebang_user CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE jie_bang CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+```
+
+- **`jiebang_user`**（应用数据：用户/简历/学习路径/匹配）：建库即可，后端启动时自动建表并创建 admin 账号。
+- **`jie_bang`**（爬虫岗位数据：`raw_job_record` 等 190 条）：**仓库不包含该库数据，不会自动创建**，需从已有环境导出导入：
+
+```bash
+# 已有环境导出
+mysqldump -h localhost -P 3306 -u root -p jie_bang > jie_bang_full.sql
+
+# 新环境导入（先执行上面的 CREATE DATABASE）
+mysql -h localhost -u root -p < jie_bang_full.sql
+```
+
+未导入 `jie_bang` 时：岗位探索页为空，自动匹配降级为 MySQL `job_position` 的少量种子数据。
+
+### 10.4 启动顺序（4 个终端）
+
+```powershell
+# 1) MySQL（本机服务）
+net start mysql97
+
+# 2) JTT 后端（8000）
+cd "D:\contest\little challenge\JieBang\jtt-src\backend"
+D:\Anaconda\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 3) AI 助手服务（8001）
+cd "D:\contest\little challenge\JieBang\jtt-src\ai-assistant"
+D:\Anaconda\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+# 4) JTT 前端（5173）
+cd "D:\contest\little challenge\JieBang\jtt-src\frontend"
+npm.cmd run dev
+```
+
+> `D:\Anaconda\python.exe` 为示例路径，按本机 Python 环境替换；`--reload` 可选（开发时开启）。
+
+### 10.5 验证
+
+```powershell
+# 后端健康检查（neo4j: unavailable 属正常，不影响使用）
+curl http://localhost:8000/api/v1/health
+
+# 打开浏览器 http://localhost:5173
+# 用 admin / admin123 登录 → 岗位探索应显示 190 条岗位
+```
+
+### 10.6 没有 Neo4j 时的功能边界
+
+| 功能 | 无 Neo4j 是否可用 |
+|---|---|
+| 岗位探索 / 简历 CRUD / 简历诊断 / 一键优化 / 悬浮窗匹配诊断 / 学习路径 / AI 聊天 | ✅ 可用（走 MySQL + AI 服务） |
+| 知识图谱页面 / 图谱富化 | ❌ 空（0 节点） |
+
+> 后端对 Neo4j 连接失败会自动降级（健康检查显示 `unavailable`，启动不受影响）。
+
+### 10.7 常见问题
+
+| 现象 | 原因与解决 |
+|---|---|
+| 后端启动报缺库 | 未执行 10.3 建库 |
+| 岗位探索空白 | `jie_bang` 未导入（见 10.3） |
+| AI 功能 503 / 报错 | `ai-assistant/.env` 的 `DEEPSEEK_API_KEY` 未配置或失效 |
+| 登录失败 | 确认 `INITIAL_ADMIN_ENABLED=true` 且后端已自动建表 |
 ```
