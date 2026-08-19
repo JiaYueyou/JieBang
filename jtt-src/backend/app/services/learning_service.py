@@ -58,13 +58,14 @@ class LearningService:
             total_duration = f"{total_weeks}周" if total_weeks > 0 else ""
 
         position_name = data.get("position_name") or ""
-        if not position_name and data.get("position_id"):
-            position = await self.position_repo.get_by_id(data["position_id"])
+        position_id = data.get("position_id", 0) or 0
+        if not position_name and position_id:
+            position = await self.position_repo.get_by_id(position_id)
             position_name = position.name if position else ""
 
         path = await self.repo.create(user_id, {
             "name": data["name"],
-            "position_id": data.get("position_id", ""),
+            "position_id": position_id,
             "position_name": position_name,
             "steps": steps,
             "total_duration": total_duration,

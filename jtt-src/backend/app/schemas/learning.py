@@ -27,7 +27,7 @@ class LearningStepSchema(BaseModel):
 class LearningPathCreate(BaseModel):
     """创建学习路径，可选附带 AI 生成的步骤"""
     name: str = Field(..., min_length=1, max_length=100)
-    position_id: str = ""
+    position_id: int = 0  # 对应 learning_path.position_id（INT NOT NULL），空填 0
     steps: list[LearningStepSchema] = []
     position_name: str = ""
 
@@ -42,7 +42,7 @@ class LearningPathResponse(BaseModel):
     """学习路径响应"""
     id: int
     name: str
-    position_id: str = ""
+    position_id: int = 0  # 与 DB 列类型一致（INT）
     position_name: str = ""
     steps: list[LearningStepSchema] = []
     total_duration: str = ""

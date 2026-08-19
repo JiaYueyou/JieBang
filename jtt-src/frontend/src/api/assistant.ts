@@ -58,8 +58,16 @@ export const assistantApi = {
   optimizePhrase: (data: OptimizePhraseRequest): Promise<{ code: number; message: string; data: OptimizePhraseResponse }> =>
     api.post('/assistant/optimize-phrase', data, { timeout: 90000 }),
 
+  // 简历优化：AI 服务 /api/assistant/optimize-resume 生成向岗位靠齐的修改建议
+  optimizeResume: (resume: any, position: any): Promise<{ code: number; message: string; data: { suggestions: any[] } }> =>
+    api.post('/assistant/optimize-resume', { resume, position }, { timeout: 120000 }),
+
   generateLearningPath: (positionName: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
     api.post('/assistant/generate-learning-path', { positionName }, { timeout: 90000 }),
+
+  // 按自然语言学习目标生成学习路径
+  generatePathFromGoal: (goal: string): Promise<{ code: number; message: string; data: GeneratePathResponse & { goalAnalysis?: string } }> =>
+    api.post('/assistant/generate-learning-path-from-goal', { goal }, { timeout: 120000 }),
 
   generateLinks: (topic: string): Promise<{ code: number; message: string; data: GenerateLinksResponse }> =>
     api.post('/assistant/generate-links', { message: topic }, { timeout: 90000 }),
