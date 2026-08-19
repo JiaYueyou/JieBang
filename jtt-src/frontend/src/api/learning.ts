@@ -9,7 +9,7 @@ export const learningApi = {
   create: (data: { name: string; positionId?: number; positionName?: string; steps?: any[] }) =>
     api.post('/learning/paths', {
       name: data.name,
-      position_id: data.positionId ?? 1,
+      position_id: data.positionId ?? 0, // DB 列为 INT NOT NULL，空时填 0
       position_name: data.positionName ?? '',
       steps: data.steps ?? [],
     }),
