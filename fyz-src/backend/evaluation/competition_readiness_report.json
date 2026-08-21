@@ -1,6 +1,6 @@
 {
   "schema_version": "competition-readiness-v2",
-  "generated_at": "2026-08-20T03:50:43.984606+00:00",
+  "generated_at": "2026-08-21T08:51:18.186804+00:00",
   "scope": "offline deterministic FYZ release gates",
   "components": [
     {
@@ -8,11 +8,11 @@
       "status": "passed",
       "report": {
         "passed": true,
-        "expected_revision": "20260820_0022",
-        "alembic_revision": "20260820_0022",
-        "table_count": 46,
-        "total_rows": 53932,
-        "sha256": "bd476b22e217e75add3cb12535ba5d6a01aa17275dc7fdd3312c35bbc7f649e1"
+        "expected_revision": "20260820_0025",
+        "alembic_revision": "20260820_0025",
+        "table_count": 47,
+        "total_rows": 54474,
+        "sha256": "ac54bed13bafbb2868167d81576e6fe119018b05ae24db6afaaa473a169db4c8"
       }
     },
     {
@@ -27,9 +27,9 @@
         "retried_runs": 6,
         "total_retries": 7,
         "latency_ms": {
-          "average": 202.9,
-          "p95": 772,
-          "maximum": 2267
+          "average": 203.23,
+          "p95": 769,
+          "maximum": 2275
         },
         "error_codes": {},
         "quality_issues": {},
@@ -66,7 +66,7 @@
       "status": "passed",
       "report": {
         "dataset_version": "fyz-quality-v1",
-        "generated_at": "2026-08-20T03:50:43.964556+00:00",
+        "generated_at": "2026-08-21T08:51:18.141781+00:00",
         "scope": "FYZ backend only",
         "thresholds": {
           "jd_anchor_recall": 0.9,
@@ -89,63 +89,20 @@
         },
         "resume_extraction": {
           "dataset": "deterministic labelled resume skill boundary cases",
-          "records": 60,
-          "true_positive": 180,
-          "false_positive": 3,
+          "records": 100,
+          "true_positive": 300,
+          "false_positive": 0,
           "false_negative": 0,
-          "micro_precision": 0.983607,
+          "micro_precision": 1.0,
           "micro_recall": 1.0,
-          "micro_f1": 0.991736,
-          "exact_case_accuracy": 0.95,
-          "failure_count": 3,
-          "failures": [
-            {
-              "id": "resume-003",
-              "predicted": [
-                "JavaScript",
-                "MySQL",
-                "React",
-                "TypeScript"
-              ],
-              "expected": [
-                "MySQL",
-                "React",
-                "TypeScript"
-              ]
-            },
-            {
-              "id": "resume-027",
-              "predicted": [
-                "JavaScript",
-                "MySQL",
-                "React",
-                "TypeScript"
-              ],
-              "expected": [
-                "MySQL",
-                "React",
-                "TypeScript"
-              ]
-            },
-            {
-              "id": "resume-051",
-              "predicted": [
-                "JavaScript",
-                "MySQL",
-                "React",
-                "TypeScript"
-              ],
-              "expected": [
-                "MySQL",
-                "React",
-                "TypeScript"
-              ]
-            }
-          ]
+          "micro_f1": 1.0,
+          "exact_case_accuracy": 1.0,
+          "failure_count": 0,
+          "failures": []
         },
         "matching": {
           "dataset": "deterministic labelled end-to-end skill coverage cases",
-          "records": 60,
+          "records": 100,
           "exact_score_accuracy": 1.0,
           "exact_matched_set_accuracy": 1.0,
           "mean_absolute_score_error": 0,
@@ -165,7 +122,7 @@
       "status": "passed",
       "report": {
         "schema_version": "phase1-data-quality-eval-v1",
-        "generated_at": "2026-08-20T03:50:43.978302Z",
+        "generated_at": "2026-08-21T08:51:18.181791Z",
         "golden_set": "evaluation\\phase0_golden_set.json",
         "review_summary": {
           "review_type": "codex_engineering_semantic_review",

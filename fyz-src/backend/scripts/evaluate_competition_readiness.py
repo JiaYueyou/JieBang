@@ -114,7 +114,7 @@ def run_competition_evaluation() -> dict[str, Any]:
         _component("l45_offline_stability", _l45_offline_gate, lambda value: bool(value["accepted"])),
         _component("crawler_checkpoint_semantics", run_checkpoint_self_check, lambda value: bool(value["passed"])),
         _component("graph_analytics_contract", _graph_analytics_contract_gate, lambda value: bool(value["passed"])),
-        _component("fyz_quality", lambda: run_evaluation(jd_limit=100, case_count=60), lambda value: bool(value["all_quality_gates_passed"])),
+        _component("fyz_quality", lambda: run_evaluation(jd_limit=100, case_count=100), lambda value: bool(value["all_quality_gates_passed"])),
         _component("data_quality", evaluate_data_quality, lambda value: all(value["metrics"][key] >= threshold for key, threshold in DATA_QUALITY_THRESHOLDS.items())),
         _component("standardization", evaluate_standardization, lambda value: bool(value["passed"])),
     ]

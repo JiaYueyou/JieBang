@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-10T06:27:06.343477+00:00",
+  "generated_at": "2026-08-21T08:08:35.652237+00:00",
   "scope": "FYZ app/services executable lines",
   "method": "CPython line-table executable lines + sys.settrace execution",
   "python": "3.10.20",
   "threshold": 0.6,
-  "executable_lines": 8644,
-  "covered_lines": 7233,
-  "coverage": 0.836765,
+  "executable_lines": 9940,
+  "covered_lines": 8507,
+  "coverage": 0.855835,
   "coverage_gate_passed": true,
   "pytest_exit_code": 0,
   "files": [
@@ -30,9 +30,9 @@
     },
     {
       "file": "app/services/analysis_service.py",
-      "executable_lines": 1176,
-      "covered_lines": 1034,
-      "coverage": 0.879252
+      "executable_lines": 1186,
+      "covered_lines": 1045,
+      "coverage": 0.881113
     },
     {
       "file": "app/services/auth_service.py",
@@ -42,9 +42,9 @@
     },
     {
       "file": "app/services/career_service.py",
-      "executable_lines": 218,
-      "covered_lines": 180,
-      "coverage": 0.825688
+      "executable_lines": 186,
+      "covered_lines": 168,
+      "coverage": 0.903226
     },
     {
       "file": "app/services/crawler_runtime.py",
@@ -54,9 +54,9 @@
     },
     {
       "file": "app/services/crawler_service.py",
-      "executable_lines": 752,
-      "covered_lines": 569,
-      "coverage": 0.756649
+      "executable_lines": 812,
+      "covered_lines": 615,
+      "coverage": 0.757389
     },
     {
       "file": "app/services/dashboard_service.py",
@@ -72,9 +72,9 @@
     },
     {
       "file": "app/services/graph_service.py",
-      "executable_lines": 1274,
-      "covered_lines": 1071,
-      "coverage": 0.840659
+      "executable_lines": 1443,
+      "covered_lines": 1246,
+      "coverage": 0.863479
     },
     {
       "file": "app/services/historical_baseline_service.py",
@@ -84,15 +84,15 @@
     },
     {
       "file": "app/services/import_service.py",
-      "executable_lines": 468,
-      "covered_lines": 449,
-      "coverage": 0.959402
+      "executable_lines": 869,
+      "covered_lines": 807,
+      "coverage": 0.928654
     },
     {
       "file": "app/services/internal_transfer_service.py",
-      "executable_lines": 466,
-      "covered_lines": 399,
-      "coverage": 0.856223
+      "executable_lines": 690,
+      "covered_lines": 573,
+      "coverage": 0.830435
     },
     {
       "file": "app/services/jd_generation_service.py",
@@ -102,9 +102,9 @@
     },
     {
       "file": "app/services/job_import_schema.py",
-      "executable_lines": 75,
-      "covered_lines": 61,
-      "coverage": 0.813333
+      "executable_lines": 78,
+      "covered_lines": 64,
+      "coverage": 0.820513
     },
     {
       "file": "app/services/job_service.py",
@@ -114,21 +114,21 @@
     },
     {
       "file": "app/services/matching_service.py",
-      "executable_lines": 378,
-      "covered_lines": 362,
-      "coverage": 0.957672
+      "executable_lines": 439,
+      "covered_lines": 420,
+      "coverage": 0.95672
     },
     {
       "file": "app/services/observed_job_service.py",
-      "executable_lines": 121,
-      "covered_lines": 117,
-      "coverage": 0.966942
+      "executable_lines": 122,
+      "covered_lines": 118,
+      "coverage": 0.967213
     },
     {
       "file": "app/services/pipeline_service.py",
-      "executable_lines": 589,
-      "covered_lines": 231,
-      "coverage": 0.39219
+      "executable_lines": 736,
+      "covered_lines": 496,
+      "coverage": 0.673913
     },
     {
       "file": "app/services/pipeline_status_cache.py",
@@ -144,9 +144,15 @@
     },
     {
       "file": "app/services/resume_parser.py",
-      "executable_lines": 43,
-      "covered_lines": 23,
-      "coverage": 0.534884
+      "executable_lines": 168,
+      "covered_lines": 120,
+      "coverage": 0.714286
+    },
+    {
+      "file": "app/services/resume_profile_extractor.py",
+      "executable_lines": 75,
+      "covered_lines": 75,
+      "coverage": 1.0
     },
     {
       "file": "app/services/resume_storage.py",
@@ -156,15 +162,15 @@
     },
     {
       "file": "app/services/retrieval_service.py",
-      "executable_lines": 561,
-      "covered_lines": 444,
-      "coverage": 0.791444
+      "executable_lines": 609,
+      "covered_lines": 495,
+      "coverage": 0.812808
     },
     {
       "file": "app/services/skill_extractor.py",
-      "executable_lines": 129,
-      "covered_lines": 128,
-      "coverage": 0.992248
+      "executable_lines": 133,
+      "covered_lines": 100,
+      "coverage": 0.75188
     },
     {
       "file": "app/services/skill_service.py",

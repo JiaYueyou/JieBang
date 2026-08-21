@@ -19,18 +19,25 @@ from db_transfer_common import (  # noqa: E402
     table_counts,
 )
 from app.core.database import async_session, engine  # noqa: E402
-from app.core.config import CHROMA_MODE, CHROMA_PERSIST_PATH  # noqa: E402
+from app.core.config import (  # noqa: E402
+    CHROMA_MODE,
+    CHROMA_PERSIST_PATH,
+    RETRIEVAL_EMBEDDING_PROVIDER,
+)
 from app.core.neo4j import close_driver, health_detail  # noqa: E402
 from app.models import GraphSnapshot, RetrievalIndexVersion  # noqa: E402
 from app.providers.vector_store import ChromaVectorStore  # noqa: E402
 from app.repositories.graph_repository import Neo4jGraphRepository  # noqa: E402
 
 DERIVED_TABLES = {
+    "evidence_chunk",
     "graph_enrichment_candidate",
     "graph_snapshot",
     "graph_sync_batch",
     "standard_job",
     "standard_job_source",
+    "retrieval_index_entry",
+    "retrieval_index_version",
 }
 
 
@@ -87,6 +94,33 @@ async def verify() -> None:
             )
         if counts["nodes"] <= 0 or counts["edges"] <= 0:
             raise RuntimeError(f"Neo4j graph is unexpectedly empty: {counts}")
+
+        local_embedding = RETRIEVAL_EMBEDDING_PROVIDER.casefold() in {
+            "local_hash",
+            "local_deterministic",
+        }
+        if local_embedding:
+            async with async_session() as session:
+                local_index = (
+                    await session.execute(
+                        select(RetrievalIndexVersion)
+                        .where(
+                            RetrievalIndexVersion.backend == "local_hash",
+                            RetrievalIndexVersion.status == "ready",
+                        )
+                        .order_by(RetrievalIndexVersion.created_at.desc())
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+            if local_index is None or local_index.entry_count <= 0:
+                raise RuntimeError("No ready local-hash retrieval index exists.")
+            print(
+                f"[5/5] Verification passed: {len(actual)} MySQL tables, "
+                f"{sum(actual.values())} current rows, {counts['nodes']} Neo4j nodes, "
+                f"{counts['edges']} Neo4j relationships, local-hash index "
+                f"{local_index.version} with {local_index.entry_count} vectors."
+            )
+            return
 
         if CHROMA_MODE != "persistent":
             raise RuntimeError(

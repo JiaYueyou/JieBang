@@ -53,50 +53,50 @@
       "records": 10,
       "mean_text_accuracy": 1.0,
       "mean_token_recall": 1.0,
-      "skill_precision": 0.984848,
+      "skill_precision": 1.0,
       "skill_recall": 1.0,
-      "skill_micro_f1": 0.992366
+      "skill_micro_f1": 1.0
     },
     "docx": {
       "records": 10,
       "mean_text_accuracy": 1.0,
       "mean_token_recall": 1.0,
-      "skill_precision": 0.984848,
+      "skill_precision": 1.0,
       "skill_recall": 1.0,
-      "skill_micro_f1": 0.992366
+      "skill_micro_f1": 1.0
     },
     "png": {
       "records": 10,
       "mean_text_accuracy": 0.998592,
       "mean_token_recall": 0.994444,
-      "skill_precision": 0.984615,
+      "skill_precision": 1.0,
       "skill_recall": 0.984615,
-      "skill_micro_f1": 0.984615
+      "skill_micro_f1": 0.992248
     },
     "jpg": {
       "records": 10,
       "mean_text_accuracy": 0.998592,
       "mean_token_recall": 0.994444,
-      "skill_precision": 0.984615,
+      "skill_precision": 1.0,
       "skill_recall": 0.984615,
-      "skill_micro_f1": 0.984615
+      "skill_micro_f1": 0.992248
     },
     "jpeg": {
       "records": 10,
       "mean_text_accuracy": 0.998592,
       "mean_token_recall": 0.994444,
-      "skill_precision": 0.984615,
+      "skill_precision": 1.0,
       "skill_recall": 0.984615,
-      "skill_micro_f1": 0.984615
+      "skill_micro_f1": 0.992248
     }
   },
   "overall": {
     "records": 50,
     "mean_text_accuracy": 0.999155,
     "mean_token_recall": 0.996667,
-    "skill_precision": 0.984709,
+    "skill_precision": 1.0,
     "skill_recall": 0.990769,
-    "skill_micro_f1": 0.98773
+    "skill_micro_f1": 0.995363
   },
   "gates": {
     "text_accuracy_at_least_90_percent": true,
@@ -184,162 +184,6 @@
         "linux",
         "python",
         "嵌入式"
-      ],
-      "warnings": [
-        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
-      ]
-    },
-    {
-      "id": "chip-010",
-      "role": "AI Accelerator Engineer",
-      "format": "pdf",
-      "text_accuracy": 1.0,
-      "token_recall": 1.0,
-      "skill_tp": 7,
-      "skill_fp": 1,
-      "skill_fn": 0,
-      "predicted_skills": [
-        "c",
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "expected_skills": [
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "warnings": []
-    },
-    {
-      "id": "chip-010",
-      "role": "AI Accelerator Engineer",
-      "format": "docx",
-      "text_accuracy": 1.0,
-      "token_recall": 1.0,
-      "skill_tp": 7,
-      "skill_fp": 1,
-      "skill_fn": 0,
-      "predicted_skills": [
-        "c",
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "expected_skills": [
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "warnings": []
-    },
-    {
-      "id": "chip-010",
-      "role": "AI Accelerator Engineer",
-      "format": "png",
-      "text_accuracy": 1.0,
-      "token_recall": 1.0,
-      "skill_tp": 7,
-      "skill_fp": 1,
-      "skill_fn": 0,
-      "predicted_skills": [
-        "c",
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "expected_skills": [
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "warnings": [
-        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
-      ]
-    },
-    {
-      "id": "chip-010",
-      "role": "AI Accelerator Engineer",
-      "format": "jpg",
-      "text_accuracy": 1.0,
-      "token_recall": 1.0,
-      "skill_tp": 7,
-      "skill_fp": 1,
-      "skill_fn": 0,
-      "predicted_skills": [
-        "c",
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "expected_skills": [
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "warnings": [
-        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
-      ]
-    },
-    {
-      "id": "chip-010",
-      "role": "AI Accelerator Engineer",
-      "format": "jpeg",
-      "text_accuracy": 1.0,
-      "token_recall": 1.0,
-      "skill_tp": 7,
-      "skill_fp": 1,
-      "skill_fn": 0,
-      "predicted_skills": [
-        "c",
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
-      ],
-      "expected_skills": [
-        "cpp",
-        "fpga",
-        "linux",
-        "python",
-        "pytorch",
-        "tensorflow",
-        "神经网络"
       ],
       "warnings": [
         "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"

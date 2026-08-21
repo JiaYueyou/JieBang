@@ -490,8 +490,16 @@ class RetrievalService:
                 "signed-token-hash"
             )
             if (
-                (deterministic_baseline and keyword <= 0)
-                or (keyword <= 0 and vector <= 0)
+                (
+                    deterministic_baseline
+                    and keyword <= 0
+                    and not authoritative_match
+                )
+                or (
+                    keyword <= 0
+                    and vector <= 0
+                    and not authoritative_match
+                )
                 or (
                     not authoritative_match
                     and keyword <= 0

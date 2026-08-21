@@ -73,6 +73,33 @@ def test_preflight_completes_before_first_subprocess(monkeypatch) -> None:
     ]
 
 
+def test_local_embedding_deployment_rebuilds_index_instead_of_restoring_chroma(
+    monkeypatch,
+) -> None:
+    module = _load_module()
+    events: list[tuple[str, list[str]]] = []
+    monkeypatch.setenv("RETRIEVAL_EMBEDDING_PROVIDER", "local_hash")
+    monkeypatch.setattr(
+        module,
+        "load_manifest",
+        lambda: {"alembic_revision": "x", "table_count": 47, "total_rows": 1},
+    )
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda command, **kwargs: events.append((Path(command[1]).name, command)),
+    )
+    monkeypatch.setattr(sys, "argv", [str(MODULE_PATH), "--replace"])
+
+    module.main()
+
+    names = [name for name, _ in events]
+    assert "rebuild_retrieval_index.py" in names
+    assert "restore_chroma_from_mysql.py" not in names
+    rebuild = next(command for name, command in events if name == "rebuild_retrieval_index.py")
+    assert rebuild[-2:] == ["--backend", "local_hash"]
+
+
 def test_powershell_entry_delegates_to_preflighted_orchestrator() -> None:
     script = (SCRIPTS_DIR / "Import-TeamDatabase.ps1").read_text(encoding="utf-8")
 

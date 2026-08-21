@@ -28,6 +28,21 @@ def test_rule_extraction_and_preferred_context():
     assert by_name["Kubernetes"].confidence >= 0.9
 
 
+def test_short_aliases_do_not_match_inside_language_or_framework_names():
+    result = RuleSkillExtractor().extract(
+        jd_text="使用 C++、C#、React.js 开发，同时具备独立 C 和 JS 经验。"
+    )
+    names = {item.name for item in result.skills}
+    assert {"C++", "C#", "React", "C", "JavaScript"} <= names
+
+    without_standalone_short_names = RuleSkillExtractor().extract(
+        jd_text="使用 C++、C# 和 React.js 开发。"
+    )
+    names = {item.name for item in without_standalone_short_names.skills}
+    assert "C" not in names
+    assert "JavaScript" not in names
+
+
 def test_content_fingerprint_is_stable_and_content_sensitive():
     row = {"source": "A", "url": "u", "title": "Java", "company": "C", "jd_text": "MySQL"}
     assert content_fingerprint(row) == content_fingerprint(dict(row))

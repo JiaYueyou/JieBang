@@ -54,6 +54,13 @@ def content_fingerprint(record: dict) -> str:
 def _pattern(term: str) -> re.Pattern:
     escaped = re.escape(term)
     if term.isascii() and term.replace(" ", "").replace(".", "").replace("/", "").replace("+", "").replace("#", "").isalnum():
+        # Short aliases require narrower guards than ordinary terms: ``C``
+        # must not fire inside C++/C#, and ``js`` must not fire in React.js.
+        # A period remains a valid sentence boundary for all other terms.
+        if term.casefold() == "c":
+            return re.compile(rf"(?<![A-Za-z0-9]){escaped}(?![A-Za-z0-9+#])", re.IGNORECASE)
+        if term.casefold() == "js":
+            return re.compile(rf"(?<![A-Za-z0-9.]){escaped}(?![A-Za-z0-9])", re.IGNORECASE)
         return re.compile(rf"(?<![A-Za-z0-9]){escaped}(?![A-Za-z0-9])", re.IGNORECASE)
     return re.compile(escaped, re.IGNORECASE)
 

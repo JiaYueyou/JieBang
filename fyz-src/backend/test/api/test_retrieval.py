@@ -163,6 +163,52 @@ async def test_admin_rebuilds_and_users_search_traceable_evidence(
     assert "没有足够" in no_answer.json()["data"]["warnings"][0]
 
 
+async def test_local_hash_keeps_exact_authoritative_skill_match_for_short_query(
+    client,
+    auth_headers,
+):
+    await _seed_verified_fact()
+    async with async_session() as db:
+        skill = await db.scalar(select(Skill).where(Skill.canonical_name == "FastAPI"))
+        skill.name = "C"
+        skill.canonical_name = "C"
+        skill.canonical_key = "c"
+        fact = await db.scalar(select(JobSkillFact))
+        fact.evidence_text = "具备 C 语言开发经验"
+        await db.commit()
+
+    rebuild = await client.post(
+        "/api/v1/retrieval/indexes/rebuild",
+        headers=auth_headers,
+        json={"backend": "local_hash"},
+    )
+    assert rebuild.status_code == 200
+    search = await client.post(
+        "/api/v1/retrieval/search",
+        headers=auth_headers,
+        json={"query": "C", "top_k": 5},
+    )
+    assert search.status_code == 200
+    assert [item["skill_name"] for item in search.json()["data"]["items"]] == ["C"]
+
+    class ZeroHashProvider:
+        model = "signed-token-hash-v1"
+        dimension = 256
+
+        async def embed_texts(self, texts):
+            return [[0.0] * self.dimension for _ in texts]
+
+    async with async_session() as db:
+        service = RetrievalService(db, embedding_provider=ZeroHashProvider())
+        service._provider_for_index = lambda index: ZeroHashProvider()
+        result = await service.search(
+            RetrievalSearchRequest(query="C", standard_job_id=1, top_k=5),
+            user_id=1,
+            log_query=False,
+        )
+        assert [item.skill_name for item in result.items] == ["C"]
+
+
 async def test_index_rebuild_requires_admin(client):
     login = await client.post(
         "/api/v1/auth/login",

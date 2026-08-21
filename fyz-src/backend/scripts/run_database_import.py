@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -49,14 +50,27 @@ def main() -> None:
     # mutate the target services.
     preflight_snapshot_package()
 
-    commands = (
-        [sys.executable, str(SCRIPTS_DIR / "01_prepare_mysql_schema.py")],
-        [sys.executable, str(SCRIPTS_DIR / "02_import_mysql_snapshot.py"), "--replace"],
+    local_embedding = os.getenv(
+        "RETRIEVAL_EMBEDDING_PROVIDER", ""
+    ).strip().casefold() in {"local_hash", "local_deterministic"}
+    retrieval_command = (
         [
+            sys.executable,
+            str(SCRIPTS_DIR / "rebuild_retrieval_index.py"),
+            "--backend",
+            "local_hash",
+        ]
+        if local_embedding
+        else [
             sys.executable,
             str(SCRIPTS_DIR / "restore_chroma_from_mysql.py"),
             "--replace",
-        ],
+        ]
+    )
+    commands = (
+        [sys.executable, str(SCRIPTS_DIR / "01_prepare_mysql_schema.py")],
+        [sys.executable, str(SCRIPTS_DIR / "02_import_mysql_snapshot.py"), "--replace"],
+        retrieval_command,
         [sys.executable, str(SCRIPTS_DIR / "03_rebuild_neo4j.py")],
         [sys.executable, str(SCRIPTS_DIR / "04_verify_database_import.py")],
     )

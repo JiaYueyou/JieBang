@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 
 from db_transfer_common import (
     SNAPSHOT_PATH,
@@ -12,6 +13,23 @@ from db_transfer_common import (
     load_manifest,
     table_counts,
 )
+
+
+_REDACTED_EMBEDDING_FRACTION = re.compile(r"(-?0)\.\[已脱敏证件\]")
+
+
+def repair_redacted_embedding_literals(statement: str) -> tuple[str, int]:
+    """Repair transport-only redaction damage without changing the snapshot file.
+
+    Sanitization can replace long decimal digit runs inside JSON embedding
+    arrays with ``[已脱敏证件]``.  MySQL correctly rejects those JSON
+    literals.  The source snapshot and its checksum remain untouched; damaged
+    vector components are imported as zero and the deployment bootstrap builds
+    a fresh active index from authoritative evidence afterwards.
+    """
+    if not statement.startswith("INSERT INTO `retrieval_index_entry`"):
+        return statement, 0
+    return _REDACTED_EMBEDDING_FRACTION.subn(r"\1.0", statement)
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,17 +69,29 @@ async def import_snapshot(*, replace: bool) -> None:
             if line.strip() and not line.lstrip().startswith("--")
         ]
         print(f"[2/4] Importing {len(statements)} snapshot statements...")
+        repaired_components = 0
         async with connection.cursor() as cursor:
             await cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
             try:
                 for statement in statements:
-                    await cursor.execute(statement)
+                    repaired_statement, repaired = repair_redacted_embedding_literals(
+                        statement
+                    )
+                    repaired_components += repaired
+                    await cursor.execute(repaired_statement)
                 await connection.commit()
             except Exception:
                 await connection.rollback()
                 raise
             finally:
                 await cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        if repaired_components:
+            print(
+                "[2/4] Repaired "
+                f"{repaired_components} redacted embedding components in memory; "
+                "the checked-in snapshot was not modified."
+            )
 
         actual_counts = await table_counts(connection)
         expected_counts = {
