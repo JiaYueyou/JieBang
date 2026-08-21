@@ -89,9 +89,17 @@ def deployment_evidence(manager_root: Path) -> dict:
 
 def package_raw_materials() -> None:
     RAW.mkdir(parents=True, exist_ok=True)
+    for legacy_name in (
+        "competition_jd_test_cases.json",
+        "additional_jd_100_cases.json",
+        "graph_job_fit_report.json",
+    ):
+        legacy_path = RAW / legacy_name
+        if legacy_path.exists():
+            legacy_path.unlink()
     names = (
-        "competition_jd_test_cases.json", "additional_jd_100_cases.json",
-        "graph_job_fit_report.json", "competition_rag_golden_set.json",
+        "competition_jd_200_cases.json", "graph_job_fit_200_report.json",
+        "competition_rag_golden_set.json",
         "competition_rag_report.json", "competition_rag_report.md",
         "hallucination_control_report.json", "fyz_quality_metrics.json",
         "resume_format_cases.json", "resume_format_metrics.json",
@@ -127,9 +135,8 @@ def main() -> int:
     parser.add_argument("--manager-root", type=Path, default=Path(r"E:\Project\jiebang-manager"))
     args = parser.parse_args()
 
-    jd = load("competition_jd_test_cases.json")
-    added_jd = load("additional_jd_100_cases.json")
-    graph = load("graph_job_fit_report.json")
+    jd = load("competition_jd_200_cases.json")
+    graph = load("graph_job_fit_200_report.json")
     quality = load("fyz_quality_metrics.json")
     resume = load("resume_format_metrics.json")
     rag = load("competition_rag_report.json")
@@ -142,12 +149,16 @@ def main() -> int:
     )
 
     jdm = jd["metrics"]
-    ajm = added_jd["metrics"]
     gm = graph["metrics"]
     qresume = quality["resume_extraction"]
     matching = quality["matching"]
     rm = rag["metrics"]
     hm = hallucination["metrics"]
+    surface_rows = "\n".join(
+        f"| {surface} | {values['cases']} | {values['passed']} | "
+        f"{'; '.join(values['observable_effects'])} |"
+        for surface, values in hallucination["surface_metrics"].items()
+    )
     generated = datetime.now(timezone.utc).isoformat()
 
     report = f"""# 智联职引作品评选标准测试报告
@@ -170,17 +181,17 @@ def main() -> int:
 | 验证项 | 测试规模 | 结果 |
 |---|---|---|
 | 真实 JD 数据闭环 | 200 条，8 个来源 | 200 条内容指纹唯一，逐条保留原文、来源、字段与结果 |
-| 新增跨来源 JD | 100 条，6 个官方招聘来源 | 字节 39、京东 25、美团 18、智谱 AI 12、DeepSeek 3、长鑫存储 3 |
+| 真实 JD 来源覆盖 | 200 条，8 个招聘来源 | 科大讯飞 50、智联 50、字节 39、京东 25、美团 18、智谱 AI 12、DeepSeek 3、长鑫存储 3 |
 | 后端自动化测试 | {tests['tests']} 项 | 失败与错误 {tests['failures'] + tests['errors']} 项 |
 | 服务层可执行行覆盖率 | {coverage['covered_lines']}/{coverage['executable_lines']} | {pct(coverage['coverage'])} |
 | 独立 Docker 部署 | {deploy['running_services']} 个运行服务 | 管理端健康接口 HTTP {deploy['health_http_status']} |
 | 数据快照校验 | 源目录与独立部署目录 SHA-256 | {'一致' if deploy['snapshot_unchanged'] else '校验异常'} |
 
-新增 100 条 JD 的每条原始文本、公司、岗位、城市、薪资、经验、学历、来源 URL、抓取时间、内容哈希、标准岗位映射、技能事实与图谱断言均保存在原始测试数据中。
+200 条 JD 的每条原始文本、公司、岗位、城市、薪资、经验、学历、来源 URL、抓取时间、内容哈希、标准岗位映射、技能事实与图谱断言均保存在原始测试数据中，200 条内容指纹全部唯一。
 
 ### 能力图谱精准贴合岗位实际需求
 
-本项以新增 100 条真实 JD 为输入，按“JD 原文 → 技能证据 → 标准岗位 → 技能领域 → 技能节点 → 来源支持关系”逐条验证，共检查 {gm['verified_skill_fact_count']} 条岗位技能事实。
+本项以完整 200 条真实 JD 为输入，按“JD 原文 → 技能证据 → 标准岗位 → 技能领域 → 技能节点 → 来源支持关系”逐条验证，共检查 {gm['verified_skill_fact_count']} 条岗位技能事实。
 
 | 图谱贴合指标 | 计算方式 | 结果 |
 |---|---|---:|
@@ -192,7 +203,7 @@ def main() -> int:
 
 ## 2. 技术创新性（25分）
 
-系统将岗位知识图谱、混合检索和生成结果证据约束组合使用。RAG 测试使用 `local_deterministic` 嵌入模型，模型标识为 `signed-token-hash-v1`、向量维度 256，检索后端为 `local_hash`；语料覆盖 {rag['coverage']['evidence_count']} 条已认证证据、{rag['coverage']['standard_job_count']} 个标准岗位、{rag['coverage']['skill_count']} 项技能和 {rag['coverage']['source_platform_count']} 个来源平台。
+系统将岗位知识图谱、混合检索和生成结果证据约束组合使用。RAG 实测使用向量模型 `{rag['embedding']['model']}`，向量维度 {rag['embedding']['dimension']}，检索后端为 `{', '.join(rag['backends'])}`；评测索引元数据记录模型、维度、索引版本与后端，语料覆盖 {rag['coverage']['evidence_count']} 条已认证证据、{rag['coverage']['standard_job_count']} 个标准岗位、{rag['coverage']['skill_count']} 项技能和 {rag['coverage']['source_platform_count']} 个来源平台。
 
 测试集包含 135 条检索用例，其中 85 条有答案、50 条无答案；无答案部分由 35 条冲突/越界样本与 15 条语义困难负样本组成，困难样本特意加入概念邻近和局部词面重合。另设 50 组职责不同但公共文本相似的近重复负例。
 
@@ -209,13 +220,17 @@ def main() -> int:
 
 无答案准确率按“50 条无答案查询中返回空证据集的正确次数 ÷ 50”计算。48 条正确拒答、2 条因局部高重合返回候选证据，得到 96.00%；该结果来自困难负样本实测，不使用全为显式冲突条件的简单样本推导。
 
-防幻觉测试共 {hm['cases']} 个可观察案例，{hm['passed']} 个符合预期；伪造证据编号、低置信度声明、证据数量不足和语义不匹配均触发拒绝，不支持声明拦截率为 {pct(hm['unsupported_claim_block_rate'])}。界面会显示拒绝原因与对应证据，便于评审直接观察。
+防幻觉测试覆盖系统全部 {hm['ai_surface_count']} 类 AI 生成入口，共 {hm['cases']} 个可观察案例，{hm['passed']} 个符合预期；系统分别执行系统字段恢复、JD 原文精确证据校验、匹配快照引用校验、岗位差距限定、置信度门禁和独立来源门禁。伪造证据编号、无原文支持技能、岗位差距之外的规划步骤、低置信度图谱声明和伪多来源引用均被阻断，不支持声明拦截率为 {pct(hm['unsupported_claim_block_rate'])}。
+
+| AI 生成入口 | 案例数 | 符合预期 | 评审可观察结果 |
+|---|---:|---:|---|
+{surface_rows}
 
 ## 3. 用户体验（15分）
 
 使用真实浏览器完成登录、管理驾驶舱、岗位图谱筛选、匹配详情和证据展开流程。图谱筛选前后节点与关系数量会随检索条件变化，候选人页面直观展示匹配分数、已匹配技能、能力差距和原文证据。
 
-证据编号不是乱码：系统将简历原文证据标为“简历证据（R，Resume）”，将岗位 JD 原文证据标为“岗位证据（J，Job）”。报告和界面说明统一采用“简历证据编号/岗位证据编号”，评审可据此逐条展开并核对双方原文。
+匹配详情支持逐项展开简历原文证据与岗位 JD 原文证据，展示证据片段、技能名称、来源位置及其与匹配结论的对应关系。浏览器测试已完成从匹配分数、已匹配技能、能力差距到双方原文证据的逐项核对流程。
 
 前端 49 项单元测试全部通过，Vue TypeScript 检查与 Vite 生产构建通过。浏览器截图包括驾驶舱、岗位图谱、RAG 图谱筛选和匹配证据展开，均随原始材料提交。
 
@@ -223,11 +238,11 @@ def main() -> int:
 
 | 赛题量化项 | 测试数据 | 结果 | 赛题要求 |
 |---|---|---|---|
-| 岗位 JD 解析 | 200 条真实爬虫 JD；首批讯飞/智联 100 条 + 新增 6 个官方来源 100 条 | 首批综合逐项准确率 {pct(jdm['jd_parse_labelled_unit_accuracy'])}；新增记录完整率 {pct(ajm['complete_record_rate'])} | ≥90% |
+| 岗位 JD 解析 | 200 条真实爬虫 JD，8 个来源；共 {jdm['jd_parse_verified_unit_total']} 个字段与技能证据验证单元 | {jdm['jd_parse_verified_unit_correct']}/{jdm['jd_parse_verified_unit_total']}，逐单元准确率 {pct(jdm['jd_parse_verified_unit_accuracy'])} | ≥90% |
 | 简历内容/技能提取 | 100 条技能边界样本 | micro-F1 {pct(qresume['micro_f1'])}；逐例完全准确率 {pct(qresume['exact_case_accuracy'])} | ≥90% |
 | 多格式简历解析 | 10 个脱敏档案 × PDF、DOCX、PNG、JPG、JPEG，共 50 文件 | 文本准确率 {pct(resume['overall']['mean_text_accuracy'])}；技能 micro-F1 {pct(resume['overall']['skill_micro_f1'])} | ≥90% |
 | 人岗匹配 | 100 条端到端标注样本 | 分数与技能集合准确率 {pct(matching['exact_score_accuracy'])} | ≥90% |
-| 能力图谱贴合岗位需求 | 新增 100 条 JD、{gm['verified_skill_fact_count']} 条技能事实 | 岗位实际需求贴合综合分 {pct(gm['job_requirement_graph_fit_score'])} | ≥95% |
+| 能力图谱贴合岗位需求 | 200 条 JD、{gm['verified_skill_fact_count']} 条技能事实 | 岗位实际需求贴合综合分 {pct(gm['job_requirement_graph_fit_score'])} | ≥95% |
 
 测试结果证明系统能够把不同来源的真实岗位文本转化为结构化岗位与能力需求，以图谱组织并追溯这些需求，再将简历能力与岗位需求进行量化匹配。所有汇总指标均可由 `raw-data` 中的逐例输入、逐例输出和计算说明重新核验。
 """
@@ -240,10 +255,10 @@ def main() -> int:
         f"SELECT '1. 作品完整性' AS criterion, '200条JD、{tests['tests']}项后端测试、图谱需求贴合{pct(gm['job_requirement_graph_fit_score'])}' AS evidence, '达标' AS status",
         f"SELECT '2. 技术创新性', 'KG + RAG；Recall@5 {pct(rm['recall_at_5'])}；无答案{pct(rm['no_answer_accuracy'])}', '达标'",
         "SELECT '3. 用户体验', '浏览器流程、图谱筛选、简历/岗位原文证据展开、49项前端测试', '达标'",
-        f"SELECT '4. 实用价值', 'JD {pct(jdm['jd_parse_labelled_unit_accuracy'])}、简历 {pct(qresume['micro_f1'])}、匹配 {pct(matching['exact_score_accuracy'])}', '达标'",
+        f"SELECT '4. 实用价值', 'JD {pct(jdm['jd_parse_verified_unit_accuracy'])}、简历 {pct(qresume['micro_f1'])}、匹配 {pct(matching['exact_score_accuracy'])}', '达标'",
     ])
     accuracy_query = "\nUNION ALL\n".join([
-        f"SELECT 'JD解析' AS metric, {jdm['jd_parse_labelled_unit_accuracy'] * 100:.6f} AS result, 90 AS threshold",
+        f"SELECT 'JD解析' AS metric, {jdm['jd_parse_verified_unit_accuracy'] * 100:.6f} AS result, 90 AS threshold",
         f"SELECT '简历技能抽取', {qresume['micro_f1'] * 100:.6f}, 90",
         f"SELECT '人岗匹配', {matching['exact_score_accuracy'] * 100:.6f}, 90",
         f"SELECT '图谱岗位贴合', {gm['job_requirement_graph_fit_score'] * 100:.6f}, 95",
@@ -260,8 +275,8 @@ def main() -> int:
         ]
     sources = [
         {"id": "criteria", "label": "赛题第六节作品评选标准", "path": "../XH-202621_多源异构数据驱动岗位和能力图谱构建与动态演化分析研究.pdf"},
-        {"id": "jd", "label": "200条真实JD逐例数据", "path": "raw-data/competition_jd_test_cases.json；raw-data/additional_jd_100_cases.json"},
-        {"id": "graph", "label": "能力图谱岗位需求贴合测试", "path": "raw-data/graph_job_fit_report.json"},
+        {"id": "jd", "label": "200条真实JD逐例数据", "path": "raw-data/competition_jd_200_cases.json"},
+        {"id": "graph", "label": "能力图谱岗位需求贴合测试", "path": "raw-data/graph_job_fit_200_report.json"},
         {"id": "rag", "label": "RAG测试集与逐例结果", "path": "raw-data/competition_rag_golden_set.json；raw-data/competition_rag_report.json"},
         {"id": "hallucination", "label": "防幻觉可观察案例", "path": "raw-data/hallucination_control_report.json"},
         {"id": "deployment", "label": "独立Docker部署证据", "path": "raw-data/docker_deployment_evidence.json"},

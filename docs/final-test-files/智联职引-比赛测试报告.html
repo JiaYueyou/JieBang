@@ -35,44 +35,45 @@ html,body{max-width:100%;overflow-x:clip}
 </style>
 </head>
 <body>
-<main id="data-analytics-portable-fallback" class="portable-fallback" data-portable-fallback="true" data-portable-surface="report"><header class="portable-page-header"><div class="portable-page-heading"><p class="portable-surface-label">Data Analytics report</p><h1>智联职引作品评选标准测试报告</h1><p class="portable-description">按比赛四项作品评选标准组织的验收报告。</p></div><div class="portable-page-meta"><time datetime="2026-08-21T11:00:59.741639+00:00">Aug 21, 2026, 11:00 AM UTC</time></div></header><div class="portable-block-stack"><div class="portable-block portable-layout-full" data-artifact-block-id="intro" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>Executive Summary｜评审摘要</h2>
-<p>本报告严格按照赛题第六节“作品评选标准”的四个部分组织。测试覆盖 200 条真实岗位 JD、8 个招聘来源、135 条 RAG 检索用例、50 组近重复负例、6 个防幻觉案例、100 条简历技能边界样本、50 个多格式简历文件和 100 条人岗匹配样本。四项评选标准均形成“原始输入—系统处理—量化结果—可回溯证据”的闭环。</p>
-<p>| 评选部分 | 核心测试结论 | |---|---| | 作品完整性 | 多源 JD、标准岗位、能力图谱、简历解析、人岗匹配、证据回溯和独立部署全链路可运行 | | 技术创新性 | 知识图谱与 RAG 联动；Recall@5 89.94%，引用准确率 95.61%，困难无答案准确率 96.00% | | 用户体验 | 管理驾驶舱、图谱筛选、匹配解释和原文证据展开均完成浏览器流程验证 | | 实用价值 | JD 解析、简历技能抽取、人岗匹配三项核心量化指标均高于赛题 90% 要求 |</p></section></div>
-<div class="portable-block portable-layout-full" data-artifact-block-id="matrix" data-artifact-block-type="table" data-layout="full"><section class="portable-content-card portable-table-card" data-artifact-id="criteria" data-artifact-kind="table" data-table-id="criteria" data-portable-visual-title="四项评选标准验收矩阵"><header class="portable-visual-header"><h2>四项评选标准验收矩阵</h2></header><div class="portable-inline-source portable-source-summary" data-source-id="source"><div class="portable-inline-source-content portable-source-summary-content"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 四项评选标准验收矩阵</span><strong>Source: sqlite</strong><p class="portable-source-description-data">汇总四项评选标准证据</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT &#39;1. 作品完整性&#39; AS criterion, &#39;200条JD、392项后端测试、图谱需求贴合99.47%&#39; AS evidence, &#39;达标&#39; AS status
+<main id="data-analytics-portable-fallback" class="portable-fallback" data-portable-fallback="true" data-portable-surface="report"><header class="portable-page-header"><div class="portable-page-heading"><p class="portable-surface-label">Data Analytics report</p><h1>智联职引作品评选标准测试报告</h1><p class="portable-description">按比赛四项作品评选标准组织的验收报告。</p></div><div class="portable-page-meta"><time datetime="2026-08-21T12:37:11.262332+00:00">Aug 21, 2026, 12:37 PM UTC</time></div></header><div class="portable-block-stack"><div class="portable-block portable-layout-full" data-artifact-block-id="intro" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>Executive Summary｜评审摘要</h2>
+<p>本报告严格按照赛题第六节“作品评选标准”的四个部分组织。测试覆盖 200 条真实岗位 JD、8 个招聘来源、135 条 RAG 检索用例、50 组近重复负例、24 个防幻觉案例、100 条简历技能边界样本、50 个多格式简历文件和 100 条人岗匹配样本。四项评选标准均形成“原始输入—系统处理—量化结果—可回溯证据”的闭环。</p>
+<p>| 评选部分 | 核心测试结论 | |---|---| | 作品完整性 | 多源 JD、标准岗位、能力图谱、简历解析、人岗匹配、证据回溯和独立部署全链路可运行 | | 技术创新性 | 知识图谱与 RAG 联动；Recall@5 94.29%，引用准确率 97.41%，困难无答案准确率 96.00% | | 用户体验 | 管理驾驶舱、图谱筛选、匹配解释和原文证据展开均完成浏览器流程验证 | | 实用价值 | JD 解析、简历技能抽取、人岗匹配三项核心量化指标均高于赛题 90% 要求 |</p></section></div>
+<div class="portable-block portable-layout-full" data-artifact-block-id="matrix" data-artifact-block-type="table" data-layout="full"><section class="portable-content-card portable-table-card" data-artifact-id="criteria" data-artifact-kind="table" data-table-id="criteria" data-portable-visual-title="四项评选标准验收矩阵"><header class="portable-visual-header"><h2>四项评选标准验收矩阵</h2></header><div class="portable-inline-source portable-source-summary" data-source-id="source"><div class="portable-inline-source-content portable-source-summary-content"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 四项评选标准验收矩阵</span><strong>Source: sqlite</strong><p class="portable-source-description-data">汇总四项评选标准证据</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT &#39;1. 作品完整性&#39; AS criterion, &#39;200条JD、395项后端测试、图谱需求贴合99.81%&#39; AS evidence, &#39;达标&#39; AS status
 UNION ALL
-SELECT &#39;2. 技术创新性&#39;, &#39;KG + RAG；Recall@5 89.94%；无答案96.00%&#39;, &#39;达标&#39;
+SELECT &#39;2. 技术创新性&#39;, &#39;KG + RAG；Recall@5 94.29%；无答案96.00%&#39;, &#39;达标&#39;
 UNION ALL
 SELECT &#39;3. 用户体验&#39;, &#39;浏览器流程、图谱筛选、简历/岗位原文证据展开、49项前端测试&#39;, &#39;达标&#39;
 UNION ALL
-SELECT &#39;4. 实用价值&#39;, &#39;JD 99.93%、简历 100.00%、匹配 100.00%&#39;, &#39;达标&#39;</code></pre></div></div><div class="portable-table-source-region"><div class="portable-table-scroll"><table><caption>四项评选标准验收矩阵</caption><thead><tr><th scope="col">评选部分</th><th scope="col">核心证据</th><th scope="col">结论</th></tr></thead><tbody><tr><td>1. 作品完整性</td><td>200条JD、392项后端测试、图谱需求贴合99.47%</td><td>达标</td></tr><tr><td>2. 技术创新性</td><td>KG + RAG；Recall@5 89.94%；无答案96.00%</td><td>达标</td></tr><tr><td>3. 用户体验</td><td>浏览器流程、图谱筛选、简历/岗位原文证据展开、49项前端测试</td><td>达标</td></tr><tr><td>4. 实用价值</td><td>JD 99.93%、简历 100.00%、匹配 100.00%</td><td>达标</td></tr></tbody></table></div></div></section></div>
+SELECT &#39;4. 实用价值&#39;, &#39;JD 99.71%、简历 100.00%、匹配 100.00%&#39;, &#39;达标&#39;</code></pre></div></div><div class="portable-table-source-region"><div class="portable-table-scroll"><table><caption>四项评选标准验收矩阵</caption><thead><tr><th scope="col">评选部分</th><th scope="col">核心证据</th><th scope="col">结论</th></tr></thead><tbody><tr><td>1. 作品完整性</td><td>200条JD、395项后端测试、图谱需求贴合99.81%</td><td>达标</td></tr><tr><td>2. 技术创新性</td><td>KG + RAG；Recall@5 94.29%；无答案96.00%</td><td>达标</td></tr><tr><td>3. 用户体验</td><td>浏览器流程、图谱筛选、简历/岗位原文证据展开、49项前端测试</td><td>达标</td></tr><tr><td>4. 实用价值</td><td>JD 99.71%、简历 100.00%、匹配 100.00%</td><td>达标</td></tr></tbody></table></div></div></section></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="part1" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>1. 作品完整性（30分）</h2>
 <p>系统实现“多源 JD 采集 → 数据清洗与岗位标准化 → 岗位需求技能抽取 → 五层能力图谱构建 → 简历解析 → 人岗匹配与能力差距 → 原文证据回溯”的完整业务链路。能力需求从原始岗位文本进入图谱，再被匹配与决策功能使用，结果可回到原始 JD 和简历内容核验。</p>
-<p>| 验证项 | 测试规模 | 结果 | |---|---|---| | 真实 JD 数据闭环 | 200 条，8 个来源 | 200 条内容指纹唯一，逐条保留原文、来源、字段与结果 | | 新增跨来源 JD | 100 条，6 个官方招聘来源 | 字节 39、京东 25、美团 18、智谱 AI 12、DeepSeek 3、长鑫存储 3 | | 后端自动化测试 | 392 项 | 失败与错误 0 项 | | 服务层可执行行覆盖率 | 8507/9940 | 85.58% | | 独立 Docker 部署 | 9 个运行服务 | 管理端健康接口 HTTP 200 | | 数据快照校验 | 源目录与独立部署目录 SHA-256 | 一致 |</p>
-<p>新增 100 条 JD 的每条原始文本、公司、岗位、城市、薪资、经验、学历、来源 URL、抓取时间、内容哈希、标准岗位映射、技能事实与图谱断言均保存在原始测试数据中。</p>
+<p>| 验证项 | 测试规模 | 结果 | |---|---|---| | 真实 JD 数据闭环 | 200 条，8 个来源 | 200 条内容指纹唯一，逐条保留原文、来源、字段与结果 | | 真实 JD 来源覆盖 | 200 条，8 个招聘来源 | 科大讯飞 50、智联 50、字节 39、京东 25、美团 18、智谱 AI 12、DeepSeek 3、长鑫存储 3 | | 后端自动化测试 | 395 项 | 失败与错误 0 项 | | 服务层可执行行覆盖率 | 8507/9940 | 85.58% | | 独立 Docker 部署 | 9 个运行服务 | 管理端健康接口 HTTP 200 | | 数据快照校验 | 源目录与独立部署目录 SHA-256 | 一致 |</p>
+<p>200 条 JD 的每条原始文本、公司、岗位、城市、薪资、经验、学历、来源 URL、抓取时间、内容哈希、标准岗位映射、技能事实与图谱断言均保存在原始测试数据中，200 条内容指纹全部唯一。</p>
 <h3>能力图谱精准贴合岗位实际需求</h3>
-<p>本项以新增 100 条真实 JD 为输入，按“JD 原文 → 技能证据 → 标准岗位 → 技能领域 → 技能节点 → 来源支持关系”逐条验证，共检查 375 条岗位技能事实。</p>
-<p>| 图谱贴合指标 | 计算方式 | 结果 | |---|---|---:| | JD 原文证据落地率 | 证据片段可在原始 JD/职责/要求中定位 ÷ 技能事实数 | 98.40% | | 岗位—技能域—技能完整路径率 | 具备完整图谱路径的技能事实 ÷ 技能事实数 | 99.73% | | 来源可追溯率 | 同时具备“来源支持岗位/技能”关系的事实 ÷ 技能事实数 | 99.73% | | 生产抽取确认率 | 生产抽取技能被岗位事实确认 ÷ 生产抽取技能数 | 100.00% | | 岗位实际需求贴合综合分 | 上述四项等权平均 | 99.47% |</p></section></div>
+<p>本项以完整 200 条真实 JD 为输入，按“JD 原文 → 技能证据 → 标准岗位 → 技能领域 → 技能节点 → 来源支持关系”逐条验证，共检查 1081 条岗位技能事实。</p>
+<p>| 图谱贴合指标 | 计算方式 | 结果 | |---|---|---:| | JD 原文证据落地率 | 证据片段可在原始 JD/职责/要求中定位 ÷ 技能事实数 | 99.44% | | 岗位—技能域—技能完整路径率 | 具备完整图谱路径的技能事实 ÷ 技能事实数 | 99.91% | | 来源可追溯率 | 同时具备“来源支持岗位/技能”关系的事实 ÷ 技能事实数 | 99.91% | | 生产抽取确认率 | 生产抽取技能被岗位事实确认 ÷ 生产抽取技能数 | 100.00% | | 岗位实际需求贴合综合分 | 上述四项等权平均 | 99.81% |</p></section></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="part2" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>2. 技术创新性（25分）</h2>
-<p>系统将岗位知识图谱、混合检索和生成结果证据约束组合使用。RAG 测试使用 <code>local_deterministic</code> 嵌入模型，模型标识为 <code>signed-token-hash-v1</code>、向量维度 256，检索后端为 <code>local_hash</code>；语料覆盖 529 条已认证证据、37 个标准岗位、44 项技能和 8 个来源平台。</p>
+<p>系统将岗位知识图谱、混合检索和生成结果证据约束组合使用。RAG 实测使用向量模型 <code>text-embedding-3-large</code>，向量维度 3072，检索后端为 <code>chroma</code>；评测索引元数据记录模型、维度、索引版本与后端，语料覆盖 529 条已认证证据、37 个标准岗位、44 项技能和 8 个来源平台。</p>
 <p>测试集包含 135 条检索用例，其中 85 条有答案、50 条无答案；无答案部分由 35 条冲突/越界样本与 15 条语义困难负样本组成，困难样本特意加入概念邻近和局部词面重合。另设 50 组职责不同但公共文本相似的近重复负例。</p>
-<p>| RAG 指标 | 结果 | 验收线 | 结论 | |---|---:|---:|---| | Recall@5 | 89.94% | ≥85% | 达标 | | MRR@10 | 98.24% | ≥75% | 达标 | | Citation Precision@5 | 95.61% | ≥95% | 达标 | | Top-1 命中率 | 96.47% | ≥80% | 达标 | | 无答案准确率 | 96.00%（48/50） | ≥95% | 达标 | | 过滤违规率 | 0.00% | 0% | 达标 | | 近重复误报率 | 0.00% | ≤5% | 达标 | | 热查询 P95 延迟 | 205 ms | ≤500 ms | 达标 |</p>
+<p>| RAG 指标 | 结果 | 验收线 | 结论 | |---|---:|---:|---| | Recall@5 | 94.29% | ≥85% | 达标 | | MRR@10 | 94.71% | ≥75% | 达标 | | Citation Precision@5 | 97.41% | ≥95% | 达标 | | Top-1 命中率 | 89.41% | ≥80% | 达标 | | 无答案准确率 | 96.00%（48/50） | ≥95% | 达标 | | 过滤违规率 | 0.00% | 0% | 达标 | | 近重复误报率 | 0.00% | ≤5% | 达标 | | 热查询 P95 延迟 | 124 ms | ≤500 ms | 达标 |</p>
 <p>无答案准确率按“50 条无答案查询中返回空证据集的正确次数 ÷ 50”计算。48 条正确拒答、2 条因局部高重合返回候选证据，得到 96.00%；该结果来自困难负样本实测，不使用全为显式冲突条件的简单样本推导。</p>
-<p>防幻觉测试共 6 个可观察案例，6 个符合预期；伪造证据编号、低置信度声明、证据数量不足和语义不匹配均触发拒绝，不支持声明拦截率为 100.00%。界面会显示拒绝原因与对应证据，便于评审直接观察。</p></section></div>
+<p>防幻觉测试覆盖系统全部 6 类 AI 生成入口，共 24 个可观察案例，24 个符合预期；系统分别执行系统字段恢复、JD 原文精确证据校验、匹配快照引用校验、岗位差距限定、置信度门禁和独立来源门禁。伪造证据编号、无原文支持技能、岗位差距之外的规划步骤、低置信度图谱声明和伪多来源引用均被阻断，不支持声明拦截率为 100.00%。</p>
+<p>| AI 生成入口 | 案例数 | 符合预期 | 评审可观察结果 | |---|---:|---:|---| | JD生成 | 4 | 4 | 公开招聘草稿不展示内部流转字段; 岗位名称保持为用户确认值; 未知信息进入假设和复核区域; 返回可编辑的确定性模板并标注生成模式 | | JD输入建议 | 4 | 4 | 复核提示随建议同步展示; 建议保持候选列表形态，由用户选择后写入; 接口仅返回建议和复核信息，不产生可自动发布JD; 返回与岗位名称匹配的确定性技能建议 | | 人岗匹配解释 | 4 | 4 | 展示解释及其原文证据; 拒绝解释并显示证据校验原因 | | 岗位技能抽取增强 | 4 | 4 | 不进入技能事实与能力图谱; 保留为待审核技能事实 | | 职业规划 | 4 | 4 | 使用确定性差距补齐学习步骤; 已有技能不重复进入差距路径; 归一到岗位真实技能缺口; 移除与岗位差距无关的学习步骤 | | 能力图谱L4/L5补全 | 4 | 4 | 拒绝候选图谱内容并展示校验原因; 进入人工审核和持久化 |</p></section></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="part3" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>3. 用户体验（15分）</h2>
 <p>使用真实浏览器完成登录、管理驾驶舱、岗位图谱筛选、匹配详情和证据展开流程。图谱筛选前后节点与关系数量会随检索条件变化，候选人页面直观展示匹配分数、已匹配技能、能力差距和原文证据。</p>
-<p>证据编号不是乱码：系统将简历原文证据标为“简历证据（R，Resume）”，将岗位 JD 原文证据标为“岗位证据（J，Job）”。报告和界面说明统一采用“简历证据编号/岗位证据编号”，评审可据此逐条展开并核对双方原文。</p>
+<p>匹配详情支持逐项展开简历原文证据与岗位 JD 原文证据，展示证据片段、技能名称、来源位置及其与匹配结论的对应关系。浏览器测试已完成从匹配分数、已匹配技能、能力差距到双方原文证据的逐项核对流程。</p>
 <p>前端 49 项单元测试全部通过，Vue TypeScript 检查与 Vite 生产构建通过。浏览器截图包括驾驶舱、岗位图谱、RAG 图谱筛选和匹配证据展开，均随原始材料提交。</p></section></div>
-<div class="portable-block portable-layout-full" data-artifact-block-id="accuracy-chart" data-artifact-block-type="chart" data-layout="full"><figure class="portable-content-card portable-chart-summary" data-artifact-id="accuracy" data-artifact-kind="chart" data-chart-id="accuracy" data-portable-visual-title="核心指标与验收线" data-portable-source-host="true" tabindex="0" aria-label="核心指标与验收线" aria-describedby="portable-source-tooltip-1"><figcaption class="portable-visual-header"><strong>核心指标与验收线</strong></figcaption><div class="portable-inline-source" data-source-id="source"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-1" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 核心指标与验收线</span><strong>Source: sqlite</strong><p class="portable-source-description-data">汇总核心准确率与验收线</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT &#39;JD解析&#39; AS metric, 99.929000 AS result, 90 AS threshold
+<div class="portable-block portable-layout-full" data-artifact-block-id="accuracy-chart" data-artifact-block-type="chart" data-layout="full"><figure class="portable-content-card portable-chart-summary" data-artifact-id="accuracy" data-artifact-kind="chart" data-chart-id="accuracy" data-portable-visual-title="核心指标与验收线" data-portable-source-host="true" tabindex="0" aria-label="核心指标与验收线" aria-describedby="portable-source-tooltip-1"><figcaption class="portable-visual-header"><strong>核心指标与验收线</strong></figcaption><div class="portable-inline-source" data-source-id="source"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-1" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 核心指标与验收线</span><strong>Source: sqlite</strong><p class="portable-source-description-data">汇总核心准确率与验收线</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT &#39;JD解析&#39; AS metric, 99.711700 AS result, 90 AS threshold
 UNION ALL
 SELECT &#39;简历技能抽取&#39;, 100.000000, 90
 UNION ALL
 SELECT &#39;人岗匹配&#39;, 100.000000, 90
 UNION ALL
-SELECT &#39;图谱岗位贴合&#39;, 99.466700, 95
+SELECT &#39;图谱岗位贴合&#39;, 99.815000, 95
 UNION ALL
-SELECT &#39;RAG无答案&#39;, 96.000000, 95</code></pre></div></div><div class="portable-table-scroll"><table><caption>核心指标与验收线 data</caption><thead><tr><th scope="col">指标</th><th scope="col" class="portable-table-number">结果（%）</th><th scope="col" class="portable-table-number">验收线（%）</th></tr></thead><tbody><tr><td>JD解析</td><td class="portable-table-number">99.93</td><td class="portable-table-number">90</td></tr><tr><td>简历技能抽取</td><td class="portable-table-number">100</td><td class="portable-table-number">90</td></tr><tr><td>人岗匹配</td><td class="portable-table-number">100</td><td class="portable-table-number">90</td></tr><tr><td>图谱岗位贴合</td><td class="portable-table-number">99.47</td><td class="portable-table-number">95</td></tr><tr><td>RAG无答案</td><td class="portable-table-number">96</td><td class="portable-table-number">95</td></tr></tbody></table></div></figure></div>
+SELECT &#39;RAG无答案&#39;, 96.000000, 95</code></pre></div></div><div class="portable-table-scroll"><table><caption>核心指标与验收线 data</caption><thead><tr><th scope="col">指标</th><th scope="col" class="portable-table-number">结果（%）</th><th scope="col" class="portable-table-number">验收线（%）</th></tr></thead><tbody><tr><td>JD解析</td><td class="portable-table-number">99.71</td><td class="portable-table-number">90</td></tr><tr><td>简历技能抽取</td><td class="portable-table-number">100</td><td class="portable-table-number">90</td></tr><tr><td>人岗匹配</td><td class="portable-table-number">100</td><td class="portable-table-number">90</td></tr><tr><td>图谱岗位贴合</td><td class="portable-table-number">99.82</td><td class="portable-table-number">95</td></tr><tr><td>RAG无答案</td><td class="portable-table-number">96</td><td class="portable-table-number">95</td></tr></tbody></table></div></figure></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="part4" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>4. 实用价值（30分）</h2>
-<p>| 赛题量化项 | 测试数据 | 结果 | 赛题要求 | |---|---|---|---| | 岗位 JD 解析 | 200 条真实爬虫 JD；首批讯飞/智联 100 条 + 新增 6 个官方来源 100 条 | 首批综合逐项准确率 99.93%；新增记录完整率 100.00% | ≥90% | | 简历内容/技能提取 | 100 条技能边界样本 | micro-F1 100.00%；逐例完全准确率 100.00% | ≥90% | | 多格式简历解析 | 10 个脱敏档案 × PDF、DOCX、PNG、JPG、JPEG，共 50 文件 | 文本准确率 99.92%；技能 micro-F1 99.54% | ≥90% | | 人岗匹配 | 100 条端到端标注样本 | 分数与技能集合准确率 100.00% | ≥90% | | 能力图谱贴合岗位需求 | 新增 100 条 JD、375 条技能事实 | 岗位实际需求贴合综合分 99.47% | ≥95% |</p>
+<p>| 赛题量化项 | 测试数据 | 结果 | 赛题要求 | |---|---|---|---| | 岗位 JD 解析 | 200 条真实爬虫 JD，8 个来源；共 2081 个字段与技能证据验证单元 | 2075/2081，逐单元准确率 99.71% | ≥90% | | 简历内容/技能提取 | 100 条技能边界样本 | micro-F1 100.00%；逐例完全准确率 100.00% | ≥90% | | 多格式简历解析 | 10 个脱敏档案 × PDF、DOCX、PNG、JPG、JPEG，共 50 文件 | 文本准确率 99.92%；技能 micro-F1 99.54% | ≥90% | | 人岗匹配 | 100 条端到端标注样本 | 分数与技能集合准确率 100.00% | ≥90% | | 能力图谱贴合岗位需求 | 200 条 JD、1081 条技能事实 | 岗位实际需求贴合综合分 99.81% | ≥95% |</p>
 <p>测试结果证明系统能够把不同来源的真实岗位文本转化为结构化岗位与能力需求，以图谱组织并追溯这些需求，再将简历能力与岗位需求进行量化匹配。所有汇总指标均可由 <code>raw-data</code> 中的逐例输入、逐例输出和计算说明重新核验。</p></section></div></div></main>
 <script data-data-analytics-portable-source-tooltips="true">(() => {
   const RUNTIME_FLAG = "__dataAnalyticsPortableSourceTooltipsInitialized";
@@ -414,89 +415,98 @@ SELECT &#39;RAG无答案&#39;, 96.000000, 95</code></pre></div></div><div class=
 })();</script>
 <div id="data-analytics-portable-reader" aria-hidden="true" inert></div>
 <template id="data-analytics-portable-artifact-payload-source" data-compression="gzip-base64">
-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
-/2tdvPgfvIR0oHIpAAA=
+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
+C9cNrWkuAAA=
 </template>
 <template id="data-analytics-portable-reader-runtime-source" data-compression="gzip-base64">
 H4sIAAAAAAACCuy9a3fjNrYg+v38CilTV0MeQ4pk15MyyqfiR6e665VyVdLVjseESUhCTIEKCNnl

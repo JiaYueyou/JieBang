@@ -1,18 +1,21 @@
 {
-  "dataset_version": "competition-graph-job-fit-100-v1",
-  "generated_at": "2026-08-21T10:28:25.028213+00:00",
+  "dataset_version": "competition-graph-job-fit-200-v1",
+  "generated_at": "2026-08-21T12:12:34.749051+00:00",
   "test_chain": "original JD -> verified skill fact -> standard job/skill-area/skill graph path -> source support edges",
   "metric_definitions": {
     "jd_evidence_grounding_rate": "verified skill facts whose evidence text appears in the original JD / all verified skill facts",
     "job_area_skill_graph_path_rate": "verified skill facts represented by complete Job->SkillArea->TechStack paths / all verified skill facts",
     "source_traceability_rate": "verified skill facts with SourceDocument->Skill and SourceDocument->Job support edges / all verified skill facts",
     "production_extraction_confirmation_rate": "production-extracted skills confirmed by verified job facts / all production-extracted skills",
-    "job_requirement_graph_fit_score": "mean of evidence grounding, complete graph path, source traceability, and production extraction confirmation rates"
+    "job_requirement_graph_fit_score": "mean of evidence grounding, complete graph path, source traceability, and production extraction confirmation rates",
+    "jd_parse_verified_unit_accuracy": "correct required field checks plus source-grounded skill facts / all required field checks plus verified skill facts"
   },
   "metrics": {
-    "jd_count": 100,
-    "source_count": 6,
+    "jd_count": 200,
+    "source_count": 8,
     "source_distribution": {
+      "科大讯飞招聘": 50,
+      "智联招聘": 50,
       "字节跳动招聘": 39,
       "京东官方社会招聘门户（zhaopin.jd.com）": 25,
       "美团官方社会招聘门户（zhaopin.meituan.com）": 18,
@@ -20,20 +23,23 @@
       "DeepSeek官方招聘门户（talent.deepseek.com）": 3,
       "长鑫存储官方招聘门户（北森；由 cxmt.com/join.html 链接）": 3
     },
-    "unique_url_count": 76,
-    "unique_content_count": 100,
+    "unique_url_count": 176,
+    "unique_content_count": 200,
     "complete_record_rate": 1.0,
     "standard_job_mapping_rate": 1.0,
-    "verified_skill_fact_count": 375,
-    "jd_evidence_grounding_rate": 0.984,
-    "job_area_skill_graph_path_rate": 0.997333,
-    "source_traceability_rate": 0.997333,
+    "verified_skill_fact_count": 1081,
+    "jd_evidence_grounding_rate": 0.99445,
+    "job_area_skill_graph_path_rate": 0.999075,
+    "source_traceability_rate": 0.999075,
     "production_extraction_confirmation_rate": 1.0,
-    "job_requirement_graph_fit_score": 0.994667
+    "jd_parse_verified_unit_correct": 2075,
+    "jd_parse_verified_unit_total": 2081,
+    "jd_parse_verified_unit_accuracy": 0.997117,
+    "job_requirement_graph_fit_score": 0.99815
   },
   "gates": {
-    "additional_100_real_jds": true,
-    "six_new_official_sources": true,
+    "competition_200_real_jds": true,
+    "eight_recruitment_sources": true,
     "all_jd_contents_unique": true,
     "complete_record_rate_at_least_95_percent": true,
     "standard_job_mapping_at_least_95_percent": true,
@@ -41,8 +47,9 @@
     "graph_path_at_least_95_percent": true,
     "source_traceability_at_least_95_percent": true,
     "extraction_confirmation_at_least_90_percent": true,
-    "job_requirement_graph_fit_at_least_95_percent": true
+    "job_requirement_graph_fit_at_least_95_percent": true,
+    "jd_parse_verified_unit_accuracy_at_least_90_percent": true
   },
   "passed": true,
-  "case_reference": "additional_jd_100_cases.json"
+  "case_reference": "competition_jd_200_cases.json"
 }

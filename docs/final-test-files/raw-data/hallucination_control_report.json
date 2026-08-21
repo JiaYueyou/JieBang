@@ -1,102 +1,538 @@
 {
-  "benchmark": "competition anti-hallucination observable cases",
-  "policy": {
-    "minimum_confidence": 0.75,
-    "minimum_distinct_citations": 2,
-    "semantic_threshold": 0.12,
-    "persistence_rule": "only accepted claims may be persisted"
-  },
+  "benchmark": "competition AI-output anti-hallucination benchmark",
+  "scope": "all six production surfaces that can display or persist AI-generated content",
+  "control_chain": "model output -> system-owned field restoration / exact-source grounding / snapshot citation validation / confidence and multi-source gate -> display, hold, or reject",
   "metrics": {
-    "cases": 6,
-    "passed": 6,
+    "ai_surface_count": 6,
+    "cases": 24,
+    "passed": 24,
     "failed": 0,
     "case_pass_rate": 1.0,
+    "unsupported_case_count": 12,
     "unsupported_claim_block_rate": 1.0
+  },
+  "surface_metrics": {
+    "JD生成": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "公开招聘草稿不展示内部流转字段",
+        "岗位名称保持为用户确认值",
+        "未知信息进入假设和复核区域",
+        "返回可编辑的确定性模板并标注生成模式"
+      ]
+    },
+    "JD输入建议": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "复核提示随建议同步展示",
+        "建议保持候选列表形态，由用户选择后写入",
+        "接口仅返回建议和复核信息，不产生可自动发布JD",
+        "返回与岗位名称匹配的确定性技能建议"
+      ]
+    },
+    "人岗匹配解释": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "展示解释及其原文证据",
+        "拒绝解释并显示证据校验原因"
+      ]
+    },
+    "岗位技能抽取增强": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "不进入技能事实与能力图谱",
+        "保留为待审核技能事实"
+      ]
+    },
+    "职业规划": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "使用确定性差距补齐学习步骤",
+        "已有技能不重复进入差距路径",
+        "归一到岗位真实技能缺口",
+        "移除与岗位差距无关的学习步骤"
+      ]
+    },
+    "能力图谱L4/L5补全": {
+      "cases": 4,
+      "passed": 4,
+      "observable_effects": [
+        "拒绝候选图谱内容并展示校验原因",
+        "进入人工审核和持久化"
+      ]
+    }
   },
   "cases": [
     {
-      "id": "AH-01",
-      "scenario": "有两条已知独立证据且置信度充分",
-      "expected_visible_effect": "内容通过，可进入人工审核/持久化阶段",
-      "expected_pass": true,
-      "expected_issues": [],
-      "actual_pass": true,
-      "actual_issues": [],
+      "id": "AH-JDG-01",
+      "ai_surface": "JD生成",
+      "scenario": "模型尝试覆盖系统岗位名称",
+      "input": {
+        "requested_title": "后端工程师",
+        "model_title": "首席量子芯片科学家"
+      },
+      "expected_visible_effect": "岗位名称保持为用户确认值",
+      "actual_result": {
+        "title": "后端工程师"
+      },
+      "unsupported_claim": true,
       "test_passed": true
     },
     {
-      "id": "AH-02",
+      "id": "AH-JDG-02",
+      "ai_surface": "JD生成",
+      "scenario": "公开招聘输出夹带内部流转字段",
+      "input": {
+        "target": "public",
+        "model_trainable_skills": [
+          "量子芯片流片"
+        ]
+      },
+      "expected_visible_effect": "公开招聘草稿不展示内部流转字段",
+      "actual_result": {
+        "trainable_skills": [],
+        "transfer_profile": [],
+        "manager_confirmations": []
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDG-03",
+      "ai_surface": "JD生成",
+      "scenario": "模型输出未知薪资与到岗信息",
+      "input": {
+        "assumptions": [
+          "薪资和到岗时间未提供"
+        ]
+      },
+      "expected_visible_effect": "未知信息进入假设和复核区域",
+      "actual_result": {
+        "assumptions": [
+          "薪资和到岗时间未提供"
+        ],
+        "warnings": [
+          "需招聘负责人复核"
+        ]
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDG-04",
+      "ai_surface": "JD生成",
+      "scenario": "模型服务不可用",
+      "input": {
+        "provider_enabled": false
+      },
+      "expected_visible_effect": "返回可编辑的确定性模板并标注生成模式",
+      "actual_result": {
+        "generation_mode": "template",
+        "warnings": [
+          "未配置 DeepSeek，已生成可编辑模板草稿。"
+        ]
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDS-01",
+      "ai_surface": "JD输入建议",
+      "scenario": "模型仅返回候选要求",
+      "input": {
+        "mode": "requirements"
+      },
+      "expected_visible_effect": "建议保持候选列表形态，由用户选择后写入",
+      "actual_result": {
+        "suggestions": [
+          "Java",
+          "Spring Boot",
+          "MySQL"
+        ],
+        "generation_mode": "llm"
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDS-02",
+      "ai_surface": "JD输入建议",
+      "scenario": "模型提示需要业务确认",
+      "input": {
+        "model_warnings": [
+          "请结合团队技术栈复核"
+        ]
+      },
+      "expected_visible_effect": "复核提示随建议同步展示",
+      "actual_result": {
+        "warnings": [
+          "请结合团队技术栈复核"
+        ]
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDS-03",
+      "ai_surface": "JD输入建议",
+      "scenario": "模型不可用时请求建议",
+      "input": {
+        "provider_enabled": false,
+        "title": "高级 Java 开发工程师"
+      },
+      "expected_visible_effect": "返回与岗位名称匹配的确定性技能建议",
+      "actual_result": {
+        "suggestions": [
+          "Java",
+          "Spring Boot",
+          "MySQL",
+          "Redis",
+          "微服务架构"
+        ],
+        "generation_mode": "template"
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-JDS-04",
+      "ai_surface": "JD输入建议",
+      "scenario": "建议接口被要求生成完整JD",
+      "input": {
+        "mode": "requirements",
+        "returned_fields": [
+          "generation_mode",
+          "mode",
+          "suggestions",
+          "target",
+          "title",
+          "warnings"
+        ]
+      },
+      "expected_visible_effect": "接口仅返回建议和复核信息，不产生可自动发布JD",
+      "actual_result": {
+        "has_jd_text": false
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-SK-01",
+      "ai_surface": "岗位技能抽取增强",
+      "scenario": "模型技能证据可在JD原文定位",
+      "input": {
+        "jd_text": "负责 FastAPI 服务开发，并维护 MySQL 数据库。",
+        "model_evidence": "负责 FastAPI 服务开发"
+      },
+      "expected_visible_effect": "保留为待审核技能事实",
+      "actual_result": {
+        "evidence_grounded": true,
+        "persistence": "pending_review"
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-SK-02",
+      "ai_surface": "岗位技能抽取增强",
+      "scenario": "模型技能证据可在JD原文定位",
+      "input": {
+        "jd_text": "负责 FastAPI 服务开发，并维护 MySQL 数据库。",
+        "model_evidence": "维护 MySQL 数据库"
+      },
+      "expected_visible_effect": "保留为待审核技能事实",
+      "actual_result": {
+        "evidence_grounded": true,
+        "persistence": "pending_review"
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-SK-03",
+      "ai_surface": "岗位技能抽取增强",
+      "scenario": "模型技能证据缺失或无法在JD原文定位",
+      "input": {
+        "jd_text": "负责 FastAPI 服务开发，并维护 MySQL 数据库。",
+        "model_evidence": "精通量子芯片流片"
+      },
+      "expected_visible_effect": "不进入技能事实与能力图谱",
+      "actual_result": {
+        "evidence_grounded": false,
+        "persistence": "blocked"
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-SK-04",
+      "ai_surface": "岗位技能抽取增强",
+      "scenario": "模型技能证据缺失或无法在JD原文定位",
+      "input": {
+        "jd_text": "负责 FastAPI 服务开发，并维护 MySQL 数据库。",
+        "model_evidence": ""
+      },
+      "expected_visible_effect": "不进入技能事实与能力图谱",
+      "actual_result": {
+        "evidence_grounded": false,
+        "persistence": "blocked"
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-CP-01",
+      "ai_surface": "职业规划",
+      "scenario": "模型把已有Python列为学习缺口",
+      "input": {
+        "existing": [
+          "Python"
+        ],
+        "proposed": "Python"
+      },
+      "expected_visible_effect": "已有技能不重复进入差距路径",
+      "actual_result": {
+        "learning_skills": [
+          "Transformer",
+          "RAG"
+        ]
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-CP-02",
+      "ai_surface": "职业规划",
+      "scenario": "模型生成与真实差距相符的Transformer步骤",
+      "input": {
+        "gaps": [
+          "Transformer",
+          "RAG"
+        ],
+        "proposed": "Transformer架构深入"
+      },
+      "expected_visible_effect": "归一到岗位真实技能缺口",
+      "actual_result": {
+        "learning_skills": [
+          "Transformer",
+          "RAG"
+        ]
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-CP-03",
+      "ai_surface": "职业规划",
+      "scenario": "模型生成岗位差距之外的量子芯片步骤",
+      "input": {
+        "gaps": [
+          "Transformer",
+          "RAG"
+        ],
+        "proposed": "量子芯片流片"
+      },
+      "expected_visible_effect": "移除与岗位差距无关的学习步骤",
+      "actual_result": {
+        "learning_skills": [
+          "Transformer",
+          "RAG"
+        ]
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-CP-04",
+      "ai_surface": "职业规划",
+      "scenario": "模型漏掉RAG差距",
+      "input": {
+        "gaps": [
+          "Transformer",
+          "RAG"
+        ],
+        "model_steps": [
+          "Python",
+          "Transformer架构深入",
+          "量子芯片流片"
+        ]
+      },
+      "expected_visible_effect": "使用确定性差距补齐学习步骤",
+      "actual_result": {
+        "learning_skills": [
+          "Transformer",
+          "RAG"
+        ]
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-ME-01",
+      "ai_surface": "人岗匹配解释",
+      "scenario": "生成解释引用匹配快照并校验语义支持",
+      "input": {
+        "claim": "候选人具备Python项目经验",
+        "evidence_text": "简历显示Python项目经验",
+        "evidence_ids": [
+          "match_evidence:1"
+        ]
+      },
+      "expected_visible_effect": "展示解释及其原文证据",
+      "actual_result": {
+        "grounding_score": 1.0,
+        "accepted": true,
+        "reason": null
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-ME-02",
+      "ai_surface": "人岗匹配解释",
+      "scenario": "生成解释引用匹配快照并校验语义支持",
+      "input": {
+        "claim": "候选人精通量子芯片流片",
+        "evidence_text": "简历显示Vue页面开发经验",
+        "evidence_ids": [
+          "match_evidence:1"
+        ]
+      },
+      "expected_visible_effect": "拒绝解释并显示证据校验原因",
+      "actual_result": {
+        "grounding_score": 0.0,
+        "accepted": false,
+        "reason": "semantic_mismatch"
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-ME-03",
+      "ai_surface": "人岗匹配解释",
+      "scenario": "生成解释引用匹配快照并校验语义支持",
+      "input": {
+        "claim": "候选人具备FastAPI服务经验",
+        "evidence_text": "岗位要求FastAPI服务开发",
+        "evidence_ids": [
+          "unknown:999"
+        ]
+      },
+      "expected_visible_effect": "拒绝解释并显示证据校验原因",
+      "actual_result": {
+        "grounding_score": 1.0,
+        "accepted": false,
+        "reason": "unknown_evidence_id"
+      },
+      "unsupported_claim": true,
+      "test_passed": true
+    },
+    {
+      "id": "AH-ME-04",
+      "ai_surface": "人岗匹配解释",
+      "scenario": "生成解释引用匹配快照并校验语义支持",
+      "input": {
+        "claim": "岗位存在Redis能力差距",
+        "evidence_text": "岗位要求Redis缓存设计",
+        "evidence_ids": [
+          "match_evidence:2"
+        ]
+      },
+      "expected_visible_effect": "展示解释及其原文证据",
+      "actual_result": {
+        "grounding_score": 1.0,
+        "accepted": true,
+        "reason": null
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-GR-01",
+      "ai_surface": "能力图谱L4/L5补全",
+      "scenario": "两条已知独立证据且置信度充分",
+      "input": {
+        "evidence_ids": [
+          "JD-IFLY-001",
+          "JD-ZL-001"
+        ],
+        "confidence": 0.92
+      },
+      "expected_visible_effect": "进入人工审核和持久化",
+      "actual_result": {
+        "accepted": true,
+        "issues": []
+      },
+      "unsupported_claim": false,
+      "test_passed": true
+    },
+    {
+      "id": "AH-GR-02",
+      "ai_surface": "能力图谱L4/L5补全",
       "scenario": "模型引用不存在的证据编号",
-      "expected_visible_effect": "内容被拒绝，界面可显示 unknown_citation",
-      "expected_pass": false,
-      "expected_issues": [
-        "unknown_citation"
-      ],
-      "actual_pass": false,
-      "actual_issues": [
-        "unknown_citation"
-      ],
+      "input": {
+        "evidence_ids": [
+          "JD-IFLY-001",
+          "FAKE-999"
+        ],
+        "confidence": 0.92
+      },
+      "expected_visible_effect": "拒绝候选图谱内容并展示校验原因",
+      "actual_result": {
+        "accepted": false,
+        "issues": [
+          "unknown_citation"
+        ]
+      },
+      "unsupported_claim": true,
       "test_passed": true
     },
     {
-      "id": "AH-03",
-      "scenario": "模型输出置信度低于 0.75",
-      "expected_visible_effect": "内容被拒绝，界面可显示 low_confidence_claim",
-      "expected_pass": false,
-      "expected_issues": [
-        "low_confidence_claim"
-      ],
-      "actual_pass": false,
-      "actual_issues": [
-        "low_confidence_claim"
-      ],
+      "id": "AH-GR-03",
+      "ai_surface": "能力图谱L4/L5补全",
+      "scenario": "模型输出置信度低于0.75",
+      "input": {
+        "evidence_ids": [
+          "JD-IFLY-001",
+          "JD-ZL-001"
+        ],
+        "confidence": 0.51
+      },
+      "expected_visible_effect": "拒绝候选图谱内容并展示校验原因",
+      "actual_result": {
+        "accepted": false,
+        "issues": [
+          "low_confidence_claim"
+        ]
+      },
+      "unsupported_claim": true,
       "test_passed": true
     },
     {
-      "id": "AH-04",
-      "scenario": "模型重复同一证据，形式为两项但实际仅一条引用",
-      "expected_visible_effect": "内容被拒绝，界面可显示 insufficient_citations",
-      "expected_pass": false,
-      "expected_issues": [
-        "insufficient_citations"
-      ],
-      "actual_pass": false,
-      "actual_issues": [
-        "insufficient_citations"
-      ],
-      "test_passed": true
-    },
-    {
-      "id": "AH-05",
-      "scenario": "生成内容与引用证据主题一致",
-      "claim": "岗位需要使用 Python 构建 RAG 检索服务",
-      "anchor": "Python",
-      "evidence": "岗位要求掌握 Python、向量数据库和 RAG 评估。",
-      "threshold": 0.12,
-      "expected_accept": true,
-      "expected_visible_effect": "语义证据闸门允许该主张",
-      "grounding_score": 1.0,
-      "actual_accept": true,
-      "actual_issue": null,
-      "test_passed": true
-    },
-    {
-      "id": "AH-06",
-      "scenario": "生成内容声称量子芯片能力，但证据只讨论前端",
-      "claim": "岗位必须精通量子芯片流片与低温测量",
-      "anchor": "量子芯片",
-      "evidence": "岗位负责 Vue 页面开发、交互设计和前端性能优化。",
-      "threshold": 0.12,
-      "expected_accept": false,
-      "expected_visible_effect": "语义证据闸门拒绝该主张并标记 semantic_mismatch",
-      "grounding_score": 0.032258,
-      "actual_accept": false,
-      "actual_issue": "semantic_mismatch",
+      "id": "AH-GR-04",
+      "ai_surface": "能力图谱L4/L5补全",
+      "scenario": "模型重复同一证据形成伪多来源",
+      "input": {
+        "evidence_ids": [
+          "JD-IFLY-001",
+          "JD-IFLY-001"
+        ],
+        "confidence": 0.92
+      },
+      "expected_visible_effect": "拒绝候选图谱内容并展示校验原因",
+      "actual_result": {
+        "accepted": false,
+        "issues": [
+          "insufficient_citations"
+        ]
+      },
+      "unsupported_claim": true,
       "test_passed": true
     }
-  ],
-  "limitations": [
-    "该基准验证确定性证据闸门，不代表对任意自然语言事实进行开放域真伪判定。",
-    "通过闸门的内容仍保留来源展示和人工审核入口。"
   ]
 }

@@ -1,4 +1,4 @@
-"""Incrementally ground rule-extracted skills for the 100-JD graph-fit test.
+"""Ground rule-extracted skills for the complete 200-JD graph-fit test.
 
 The imported database snapshot remains untouched. This deployment-time step only
 adds missing, source-grounded facts to the running MySQL database and then rebuilds

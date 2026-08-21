@@ -1,25 +1,25 @@
 # FYZ Phase 2 检索评测报告
 
-## Overall Assessment: Needs revision
+## Overall Assessment: Ready to share
 
-- 生成时间：`2026-08-21T10:32:47.296895Z`
-- 索引版本：`20260821T082048-bf184331`
-- 检索后端：`local_hash`
-- Embedding：`signed-token-hash-v1 / 256d / local_deterministic`
-- Recall@5：`89.94%`
-- MRR@10：`98.24%`
-- Citation Precision@5：`95.61%`
-- Top-1 命中率：`96.47%`
+- 生成时间：`2026-08-21T12:26:40.318219Z`
+- 索引版本：`20260821T120928-26d661ec`
+- 检索后端：`chroma`
+- Embedding：`text-embedding-3-large / 3072d / openai_compatible`
+- Recall@5：`94.29%`
+- MRR@10：`94.71%`
+- Citation Precision@5：`97.41%`
+- Top-1 命中率：`89.41%`
 - 拒答准确率：`96.00%`
 - 过滤违规率：`0.00%`
 - 近重复负样本误报率：`0.00%`
-- 暖态延迟 P50 / P95 / Max：`6 / 205 / 259 ms`
+- 暖态延迟 P50 / P95 / Max：`51 / 124 / 141 ms`
 
 ## 发布门禁
 
-- 性能门禁：`False`
+- 性能门禁：`True`
 - 覆盖门禁：`True`
-- 最终发布门禁：`False`
+- 最终发布门禁：`True`
 - 未达阈值指标：`无`
 - 未通过检索样本：`2`
 
@@ -27,14 +27,14 @@
 
 | 分区 | 样本数 | Recall@5 | Citation Precision@5 | 拒答准确率 | P95 | 门禁 |
 |---|---:|---:|---:|---:|---:|---|
-| 开发 | 75 | 89.11% | 93.69% | 100.00% | 205ms | False |
-| 验证 | 30 | 83.67% | 98.67% | 93.33% | 184ms | False |
-| 冻结测试 | 30 | 100.00% | 100.00% | 93.75% | 224ms | True |
+| 开发 | 75 | 92.68% | 96.07% | 94.74% | 133ms | False |
+| 验证 | 30 | 95.00% | 100.00% | 100.00% | 118ms | True |
+| 冻结测试 | 30 | 100.00% | 100.00% | 93.75% | 124ms | False |
 
 ## 方法与边界
 
 - 指标均由冻结 JSON 输入重算，报告记录 Golden Set SHA-256、索引版本、检索后端和逐样本结果。
 - 当前覆盖为 37 个标准岗位、44 个技能、8 个来源；未满足覆盖门禁时不得升级为发布测试集。
 - 样本仅经过透明工程审核，`human_domain_gold=false`，不能宣称为业务专家金标。
-- 当前向量为 `signed-token-hash-v1` （256 维，local_deterministic）。
+- 当前向量为 `text-embedding-3-large` （3072 维，openai_compatible）。
 - 本报告属于开发集闭环评测，结果已用于诊断排序；在形成按岗位隔离的冻结测试集前，不代表未见查询表现。

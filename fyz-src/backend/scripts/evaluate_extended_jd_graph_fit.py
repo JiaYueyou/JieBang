@@ -1,4 +1,4 @@
-"""Evaluate 100 additional official-source JDs and their graph grounding."""
+"""Evaluate the complete 200-JD competition set and its graph grounding."""
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ from app.services.skill_extractor import RuleSkillExtractor  # noqa: E402
 
 
 SOURCE_QUOTAS = (
+    ("科大讯飞招聘", 50),
+    ("智联招聘", 50),
     ("字节跳动招聘", 39),
     ("京东官方社会招聘门户（zhaopin.jd.com）", 25),
     ("美团官方社会招聘门户（zhaopin.meituan.com）", 18),
@@ -120,6 +122,7 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     total_facts = graph_paths = source_traces = grounded_facts = 0
     extracted_total = extracted_confirmed = complete_fields = 0
+    field_units_total = field_units_correct = 0
     source_counts: dict[str, int] = defaultdict(int)
     for index, (raw, document, standard_job) in enumerate(selected, 1):
         source_counts[document.source] += 1
@@ -141,6 +144,8 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
             "standard_job": raw.standard_job_id is not None,
         }
         complete_fields += int(all(required_fields.values()))
+        field_units_total += len(required_fields)
+        field_units_correct += sum(required_fields.values())
         fact_outputs = []
         for fact, skill in facts:
             graph = graph_lookup.get((raw.id, skill.id), {})
@@ -179,7 +184,7 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
             "crawled_at": raw.crawled_at.isoformat() if raw.crawled_at else raw.crawled_at_text,
         }
         cases.append({
-            "case_id": f"ADD-JD-{index:03d}",
+            "case_id": f"JD-{index:03d}",
             "input_sha256": hashlib.sha256(
                 json.dumps(raw_input, ensure_ascii=False, sort_keys=True).encode("utf-8")
             ).hexdigest(),
@@ -212,6 +217,12 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
         "production_extraction_confirmation_rate": ratio(
             extracted_confirmed, extracted_total
         ),
+        "jd_parse_verified_unit_correct": field_units_correct + grounded_facts,
+        "jd_parse_verified_unit_total": field_units_total + total_facts,
+        "jd_parse_verified_unit_accuracy": ratio(
+            field_units_correct + grounded_facts,
+            field_units_total + total_facts,
+        ),
     }
     fit_components = (
         metrics["jd_evidence_grounding_rate"],
@@ -223,8 +234,8 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
         sum(fit_components) / len(fit_components), 6
     )
     gates = {
-        "additional_100_real_jds": len(cases) == 100,
-        "six_new_official_sources": len(source_counts) == 6,
+        "competition_200_real_jds": len(cases) == 200,
+        "eight_recruitment_sources": len(source_counts) == 8,
         # Official portals may reuse a generic detail URL; content identity is the
         # correct deduplication key for raw JD records.
         "all_jd_contents_unique": metrics["unique_content_count"] == len(cases),
@@ -235,19 +246,20 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
         "source_traceability_at_least_95_percent": metrics["source_traceability_rate"] >= 0.95,
         "extraction_confirmation_at_least_90_percent": metrics["production_extraction_confirmation_rate"] >= 0.90,
         "job_requirement_graph_fit_at_least_95_percent": metrics["job_requirement_graph_fit_score"] >= 0.95,
+        "jd_parse_verified_unit_accuracy_at_least_90_percent": metrics["jd_parse_verified_unit_accuracy"] >= 0.90,
     }
     generated = datetime.now(timezone.utc).isoformat()
     raw_report = {
-        "dataset_version": "competition-additional-jd-100-v1",
+        "dataset_version": "competition-jd-200-v1",
         "generated_at": generated,
-        "scope": "100 additional technical JDs from six official recruitment portals",
+        "scope": "200 technical JDs from eight recruitment sources",
         "metrics": metrics,
         "gates": gates,
         "passed": all(gates.values()),
         "cases": cases,
     }
     graph_report = {
-        "dataset_version": "competition-graph-job-fit-100-v1",
+        "dataset_version": "competition-graph-job-fit-200-v1",
         "generated_at": generated,
         "test_chain": "original JD -> verified skill fact -> standard job/skill-area/skill graph path -> source support edges",
         "metric_definitions": {
@@ -256,11 +268,12 @@ async def evaluate() -> tuple[dict[str, Any], dict[str, Any]]:
             "source_traceability_rate": "verified skill facts with SourceDocument->Skill and SourceDocument->Job support edges / all verified skill facts",
             "production_extraction_confirmation_rate": "production-extracted skills confirmed by verified job facts / all production-extracted skills",
             "job_requirement_graph_fit_score": "mean of evidence grounding, complete graph path, source traceability, and production extraction confirmation rates",
+            "jd_parse_verified_unit_accuracy": "correct required field checks plus source-grounded skill facts / all required field checks plus verified skill facts",
         },
         "metrics": metrics,
         "gates": gates,
         "passed": all(gates.values()),
-        "case_reference": "additional_jd_100_cases.json",
+        "case_reference": "competition_jd_200_cases.json",
     }
     return raw_report, graph_report
 
@@ -280,8 +293,8 @@ async def main_async(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--jd-output", type=Path, default=BACKEND / "evaluation" / "additional_jd_100_cases.json")
-    parser.add_argument("--graph-output", type=Path, default=BACKEND / "evaluation" / "graph_job_fit_report.json")
+    parser.add_argument("--jd-output", type=Path, default=BACKEND / "evaluation" / "competition_jd_200_cases.json")
+    parser.add_argument("--graph-output", type=Path, default=BACKEND / "evaluation" / "graph_job_fit_200_report.json")
     return asyncio.run(main_async(parser.parse_args()))
 
 

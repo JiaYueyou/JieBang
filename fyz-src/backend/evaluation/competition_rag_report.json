@@ -1,23 +1,23 @@
 {
   "schema_version": "phase2-retrieval-eval-v1",
-  "generated_at": "2026-08-21T10:32:47.296895Z",
-  "golden_set": "evaluation/competition_rag_golden_set.json",
-  "golden_set_sha256": "0f7ff472787805db8ca0e2e171f24cba21c76463c9408b0534031b071eeb04a4",
+  "generated_at": "2026-08-21T12:26:40.318219Z",
+  "golden_set": "evaluation/competition_rag_golden_set_135.json",
+  "golden_set_sha256": "dc5e3698ad3118f93020a4b1c74b7cfa79e7478d8f3bc00c5d40b9141aa49113",
   "evaluation_top_k": 10,
   "retrieval_policy": {
     "relative_score_window": 0.04,
     "semantic_score_floor": 0.3
   },
   "embedding": {
-    "provider": "local_deterministic",
-    "model": "signed-token-hash-v1",
-    "dimension": 256
+    "provider": "openai_compatible",
+    "model": "text-embedding-3-large",
+    "dimension": 3072
   },
   "index_versions": [
-    "20260821T082048-bf184331"
+    "20260821T120928-26d661ec"
   ],
   "backends": [
-    "local_hash"
+    "chroma"
   ],
   "coverage": {
     "evidence_count": 529,
@@ -102,7 +102,7 @@
     "mrr_at_10": 0.75,
     "citation_precision_at_5": 0.95,
     "top1_expected_accuracy": 0.8,
-    "no_answer_accuracy": 0.9,
+    "no_answer_accuracy": 0.95,
     "filter_violation_rate": 0.0,
     "duplicate_negative_fpr": 0.05,
     "warm_latency_p95_ms": 500
@@ -110,15 +110,15 @@
   "metrics": {
     "grounded_case_count": 85,
     "no_answer_case_count": 50,
-    "recall_at_5": 0.899412,
-    "mrr_at_10": 0.982353,
-    "citation_precision_at_5": 0.956078,
-    "top1_expected_accuracy": 0.964706,
+    "recall_at_5": 0.942941,
+    "mrr_at_10": 0.947059,
+    "citation_precision_at_5": 0.974118,
+    "top1_expected_accuracy": 0.894118,
     "no_answer_accuracy": 0.96,
     "filter_violation_rate": 0.0,
-    "warm_latency_p50_ms": 6,
-    "warm_latency_p95_ms": 205,
-    "warm_latency_max_ms": 259,
+    "warm_latency_p50_ms": 51,
+    "warm_latency_p95_ms": 124,
+    "warm_latency_max_ms": 141,
     "duplicate_negative_fpr": 0.0
   },
   "threshold_results": {
@@ -135,29 +135,29 @@
     "development": {
       "grounded_case_count": 56,
       "no_answer_case_count": 19,
-      "recall_at_5": 0.891071,
-      "mrr_at_10": 0.973214,
-      "citation_precision_at_5": 0.936905,
-      "top1_expected_accuracy": 0.946429,
-      "no_answer_accuracy": 1.0,
+      "recall_at_5": 0.926786,
+      "mrr_at_10": 0.919643,
+      "citation_precision_at_5": 0.960714,
+      "top1_expected_accuracy": 0.839286,
+      "no_answer_accuracy": 0.947368,
       "filter_violation_rate": 0.0,
-      "warm_latency_p50_ms": 7,
-      "warm_latency_p95_ms": 205,
-      "warm_latency_max_ms": 244,
+      "warm_latency_p50_ms": 68,
+      "warm_latency_p95_ms": 133,
+      "warm_latency_max_ms": 141,
       "duplicate_negative_fpr": 0.0
     },
     "validation": {
       "grounded_case_count": 15,
       "no_answer_case_count": 15,
-      "recall_at_5": 0.836667,
+      "recall_at_5": 0.95,
       "mrr_at_10": 1.0,
-      "citation_precision_at_5": 0.986667,
+      "citation_precision_at_5": 1.0,
       "top1_expected_accuracy": 1.0,
-      "no_answer_accuracy": 0.933333,
+      "no_answer_accuracy": 1.0,
       "filter_violation_rate": 0.0,
-      "warm_latency_p50_ms": 7,
-      "warm_latency_p95_ms": 184,
-      "warm_latency_max_ms": 226,
+      "warm_latency_p50_ms": 63,
+      "warm_latency_p95_ms": 118,
+      "warm_latency_max_ms": 122,
       "duplicate_negative_fpr": 0.0
     },
     "test": {
@@ -169,9 +169,9 @@
       "top1_expected_accuracy": 1.0,
       "no_answer_accuracy": 0.9375,
       "filter_violation_rate": 0.0,
-      "warm_latency_p50_ms": 6,
-      "warm_latency_p95_ms": 224,
-      "warm_latency_max_ms": 259,
+      "warm_latency_p50_ms": 36,
+      "warm_latency_p95_ms": 124,
+      "warm_latency_max_ms": 125,
       "duplicate_negative_fpr": 0.0
     }
   },
@@ -179,15 +179,15 @@
     "development": {
       "recall_at_5": true,
       "mrr_at_10": true,
-      "citation_precision_at_5": false,
+      "citation_precision_at_5": true,
       "top1_expected_accuracy": true,
-      "no_answer_accuracy": true,
+      "no_answer_accuracy": false,
       "filter_violation_rate": true,
       "duplicate_negative_fpr": true,
       "warm_latency_p95_ms": true
     },
     "validation": {
-      "recall_at_5": false,
+      "recall_at_5": true,
       "mrr_at_10": true,
       "citation_precision_at_5": true,
       "top1_expected_accuracy": true,
@@ -201,7 +201,7 @@
       "mrr_at_10": true,
       "citation_precision_at_5": true,
       "top1_expected_accuracy": true,
-      "no_answer_accuracy": true,
+      "no_answer_accuracy": false,
       "filter_violation_rate": true,
       "duplicate_negative_fpr": true,
       "warm_latency_p95_ms": true
@@ -209,33 +209,33 @@
   },
   "split_performance_gates": {
     "development": false,
-    "validation": false,
-    "test": true
+    "validation": true,
+    "test": false
   },
-  "performance_gate": false,
+  "performance_gate": true,
   "coverage_gate": true,
-  "release_gate": false,
-  "overall_assessment": "needs_revision",
+  "release_gate": true,
+  "overall_assessment": "ready_to_share",
   "category_metrics": {
     "skill_exact": {
       "case_count": 25,
       "pass_rate": 1.0,
-      "recall_at_5": 0.896,
+      "recall_at_5": 0.934,
       "mrr_at_10": 1.0,
       "no_answer_accuracy": null
     },
     "responsibility_paraphrase": {
       "case_count": 25,
       "pass_rate": 1.0,
-      "recall_at_5": 0.862,
-      "mrr_at_10": 0.94,
+      "recall_at_5": 0.926,
+      "mrr_at_10": 0.84,
       "no_answer_accuracy": null
     },
     "job_skill_filter": {
       "case_count": 20,
       "pass_rate": 1.0,
-      "recall_at_5": 0.875,
-      "mrr_at_10": 1.0,
+      "recall_at_5": 0.9325,
+      "mrr_at_10": 0.975,
       "no_answer_accuracy": null
     },
     "source_quality_filter": {
@@ -680,7 +680,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 132
+        "standard_job_id": 132,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -692,9 +693,9 @@
       ],
       "returned_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
+        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90",
         "ev_6620b608231d4c53742945c4e4e3d81325a5b249",
         "ev_35320a144bce9032822360b21dab98ab507c3e12",
-        "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90",
         "ev_6943a1f2fa4adb1df170340f56714502fb49bd69"
       ],
       "recall_at_5": 1.0,
@@ -703,12 +704,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 13,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -721,7 +720,8 @@
       },
       "query": "Python",
       "filters": {
-        "standard_job_id": 134
+        "standard_job_id": 134,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -738,12 +738,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 47,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -756,7 +754,8 @@
       },
       "query": "LLM",
       "filters": {
-        "standard_job_id": 155
+        "standard_job_id": 155,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -771,12 +770,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 36,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -789,7 +786,8 @@
       },
       "query": "Git",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -797,8 +795,8 @@
         "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
       ],
       "returned_evidence_ids": [
-        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4",
-        "ev_da5639875d78f242e544373b10fcdf23edfcc8be"
+        "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
+        "ev_7f0efc2001f046302e39ba6d158aee72125db7c4"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -806,12 +804,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 92,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -824,7 +820,8 @@
       },
       "query": "Java",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -835,26 +832,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
-        "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
+        "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
+        "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
-      "recall_at_5": 0.6,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 0.6,
+      "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 8,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 68,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -867,7 +862,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 199
+        "standard_job_id": 199,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -877,8 +873,8 @@
         "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
       ],
       "returned_evidence_ids": [
-        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
         "ev_515f0242fadf1f4bf53fceacea605a7e96d2ade1",
+        "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
         "ev_82849351f19cbe36be77dfef3b6374d2c0075149",
         "ev_b14530321bcf44e6467fec82cd3b01e59fec9968"
       ],
@@ -888,12 +884,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 91,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -906,7 +900,8 @@
       },
       "query": "大模型",
       "filters": {
-        "standard_job_id": 204
+        "standard_job_id": 204,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -917,23 +912,22 @@
         "ev_da6bed8cb9f91bf2f27f033cfb1004a5ca3c9ce8"
       ],
       "returned_evidence_ids": [
-        "ev_2580d0dd731156cc953d7366259ca36a5e0779df",
         "ev_d26eb9a54e9a8a53813030e3ae3ec4359fd6ee1b",
-        "ev_da6bed8cb9f91bf2f27f033cfb1004a5ca3c9ce8",
-        "ev_22ea343628a3791df4bddee246903ef4ecc8471f"
+        "ev_2580d0dd731156cc953d7366259ca36a5e0779df",
+        "ev_22ea343628a3791df4bddee246903ef4ecc8471f",
+        "ev_dcc0cbfde8fc4246983eabc4d6d2145154e73a7d",
+        "ev_da6bed8cb9f91bf2f27f033cfb1004a5ca3c9ce8"
       ],
       "recall_at_5": 0.8,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 1.0,
+      "citation_precision_at_5": 0.8,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 74,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -946,7 +940,8 @@
       },
       "query": "大模型",
       "filters": {
-        "standard_job_id": 260
+        "standard_job_id": 260,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -954,20 +949,19 @@
         "ev_1fe812c37512fee83b8602ba8d655220f5801a60"
       ],
       "returned_evidence_ids": [
-        "ev_56bbedf131006e9115fce42426e27972db144fee"
+        "ev_56bbedf131006e9115fce42426e27972db144fee",
+        "ev_1fe812c37512fee83b8602ba8d655220f5801a60"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 34,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -980,7 +974,8 @@
       },
       "query": "LLM",
       "filters": {
-        "standard_job_id": 2119
+        "standard_job_id": 2119,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -988,8 +983,8 @@
         "ev_9731ac37ba63036fe6d8c717af8793ae4fad1ca8"
       ],
       "returned_evidence_ids": [
-        "ev_25c7ad026b83c4cdb527f36e4ccbe752a05a4c03",
-        "ev_9731ac37ba63036fe6d8c717af8793ae4fad1ca8"
+        "ev_9731ac37ba63036fe6d8c717af8793ae4fad1ca8",
+        "ev_25c7ad026b83c4cdb527f36e4ccbe752a05a4c03"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -997,12 +992,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 24,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1015,7 +1008,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 2121
+        "standard_job_id": 2121,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1032,12 +1026,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 30,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1050,7 +1042,8 @@
       },
       "query": "Rust",
       "filters": {
-        "standard_job_id": 2127
+        "standard_job_id": 2127,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1067,12 +1060,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1085,7 +1076,8 @@
       },
       "query": "Go",
       "filters": {
-        "standard_job_id": 2128
+        "standard_job_id": 2128,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1097,25 +1089,24 @@
       ],
       "returned_evidence_ids": [
         "ev_178a184e43e0991ae8c63eca5e349a692e9ef70e",
+        "ev_71469604e546bbb7b049aa7d402ba55a524f72ab",
         "ev_1f20e3fa54cd22874b372b5cc1d3a7f0d69f5c21",
         "ev_c01de3b98355717f84d3e1f0b1172fa0403ceed0",
-        "ev_71469604e546bbb7b049aa7d402ba55a524f72ab",
+        "ev_58182a366a4ff81d004acff44c73ef040cc6ec79",
         "ev_f961019e0f2198607eae1caa08cb93d1e7eace1d",
-        "ev_ef04e53cc6d4be8cc85714bef1bfc8dc0a4f96f0",
-        "ev_f1f5319499c2a0facc108c8b6e2187d78f0a0d51"
+        "ev_f1f5319499c2a0facc108c8b6e2187d78f0a0d51",
+        "ev_a6db399172b954997f87fe115843f2ab4751d08f"
       ],
-      "recall_at_5": 1.0,
+      "recall_at_5": 0.8,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 1.0,
+      "citation_precision_at_5": 0.8,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 96,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1128,7 +1119,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 2135
+        "standard_job_id": 2135,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1149,12 +1141,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 103,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1167,7 +1157,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 2139
+        "standard_job_id": 2139,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1184,12 +1175,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 68,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1202,7 +1191,8 @@
       },
       "query": "Go",
       "filters": {
-        "standard_job_id": 2156
+        "standard_job_id": 2156,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1212,22 +1202,20 @@
         "ev_bc88c9809a069bd37f98edcbedda00c036da5a71"
       ],
       "returned_evidence_ids": [
-        "ev_0e49550e6dcff07edb6c84162b0d6b60200783f7",
         "ev_3bc44872c3c930f483f1b2555cce97e7f9710e84",
-        "ev_dd9f7c26008646456fb8959da10b980f2f0244eb"
+        "ev_0e49550e6dcff07edb6c84162b0d6b60200783f7",
+        "ev_bc88c9809a069bd37f98edcbedda00c036da5a71"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 0.75,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 0.666667,
+      "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 8,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 86,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1240,7 +1228,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 2162
+        "standard_job_id": 2162,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1259,12 +1248,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 9,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 89,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1277,7 +1264,8 @@
       },
       "query": "Python",
       "filters": {
-        "standard_job_id": 2165
+        "standard_job_id": 2165,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1296,12 +1284,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 40,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1314,7 +1300,8 @@
       },
       "query": "Python",
       "filters": {
-        "standard_job_id": 2172
+        "standard_job_id": 2172,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1329,12 +1316,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 29,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1347,7 +1332,8 @@
       },
       "query": "Python",
       "filters": {
-        "standard_job_id": 2273
+        "standard_job_id": 2273,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1364,12 +1350,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 72,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1382,7 +1366,8 @@
       },
       "query": "大模型",
       "filters": {
-        "standard_job_id": 3323
+        "standard_job_id": 3323,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1390,21 +1375,18 @@
         "ev_47ab2fef67c760a81df058c983fb9e626a772a1b"
       ],
       "returned_evidence_ids": [
-        "ev_1f8594012347cc062b01d40b59f0a4d9fee151b8",
-        "ev_47ab2fef67c760a81df058c983fb9e626a772a1b"
+        "ev_1f8594012347cc062b01d40b59f0a4d9fee151b8"
       ],
-      "recall_at_5": 1.0,
+      "recall_at_5": 0.5,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 31,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1417,7 +1399,8 @@
       },
       "query": "Java",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1434,12 +1417,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 33,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1452,7 +1433,8 @@
       },
       "query": "PyTorch",
       "filters": {
-        "standard_job_id": 3454
+        "standard_job_id": 3454,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1468,12 +1450,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 54,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1486,7 +1466,8 @@
       },
       "query": "Go",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1501,12 +1482,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 52,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1519,7 +1498,8 @@
       },
       "query": "Go",
       "filters": {
-        "standard_job_id": 3596
+        "standard_job_id": 3596,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1538,12 +1518,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 70,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1556,7 +1534,8 @@
       },
       "query": "C",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1564,20 +1543,19 @@
         "ev_5378ea20d149586b641c46448b8a924923c878cb"
       ],
       "returned_evidence_ids": [
-        "ev_a7e06721da399b25cce543979e49872d1b09cb9a"
+        "ev_a7e06721da399b25cce543979e49872d1b09cb9a",
+        "ev_5378ea20d149586b641c46448b8a924923c878cb"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 28,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1590,7 +1568,8 @@
       },
       "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1607,12 +1586,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 17,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 105,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1625,7 +1602,8 @@
       },
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1636,26 +1614,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
       "recall_at_5": 0.8,
-      "reciprocal_rank_at_10": 1.0,
+      "reciprocal_rank_at_10": 0.5,
       "citation_precision_at_5": 0.8,
-      "top1_expected": true,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 86,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1668,7 +1644,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1685,12 +1662,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 51,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1703,7 +1678,8 @@
       },
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1712,8 +1688,8 @@
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "returned_evidence_ids": [
-        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
+        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "recall_at_5": 1.0,
@@ -1722,12 +1698,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 80,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1740,7 +1714,8 @@
       },
       "query": "AI开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4240
+        "standard_job_id": 4240,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1748,8 +1723,8 @@
         "ev_142e2cbc447d4d14c57dab15809704500256e28a"
       ],
       "returned_evidence_ids": [
-        "ev_142e2cbc447d4d14c57dab15809704500256e28a",
-        "ev_641ba3de3e3141f493ff2953d58953ee42243241"
+        "ev_641ba3de3e3141f493ff2953d58953ee42243241",
+        "ev_142e2cbc447d4d14c57dab15809704500256e28a"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -1757,12 +1732,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 42,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1775,7 +1748,8 @@
       },
       "query": "大模型算法通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4266
+        "standard_job_id": 4266,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1790,12 +1764,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 124,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1808,7 +1780,8 @@
       },
       "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1825,12 +1798,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 18,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 141,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1843,7 +1814,8 @@
       },
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1854,26 +1826,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
       "recall_at_5": 0.8,
-      "reciprocal_rank_at_10": 1.0,
+      "reciprocal_rank_at_10": 0.5,
       "citation_precision_at_5": 0.8,
-      "top1_expected": true,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 96,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1886,7 +1856,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1903,12 +1874,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 39,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1921,7 +1890,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1940,12 +1910,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 8,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 74,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1958,7 +1926,8 @@
       },
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -1967,8 +1936,8 @@
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "returned_evidence_ids": [
-        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
+        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "recall_at_5": 1.0,
@@ -1977,12 +1946,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 50,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -1995,7 +1962,8 @@
       },
       "query": "AI开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4240
+        "standard_job_id": 4240,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2003,8 +1971,8 @@
         "ev_142e2cbc447d4d14c57dab15809704500256e28a"
       ],
       "returned_evidence_ids": [
-        "ev_142e2cbc447d4d14c57dab15809704500256e28a",
-        "ev_641ba3de3e3141f493ff2953d58953ee42243241"
+        "ev_641ba3de3e3141f493ff2953d58953ee42243241",
+        "ev_142e2cbc447d4d14c57dab15809704500256e28a"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -2012,12 +1980,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 26,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2030,7 +1996,8 @@
       },
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2041,28 +2008,24 @@
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12"
       ],
       "returned_evidence_ids": [
-        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_801b391ba05435ae980b39a451d6a99acf393684",
+        "ev_104d07837f468fa133d88fd3c155ba047b27a346",
         "ev_7cc2a387f2f3019e92faf07735ce31954cd7bcc3",
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
-        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
-        "ev_26b16335b42d11ee9d5475e82f2552f8ed8fb540",
-        "ev_801b391ba05435ae980b39a451d6a99acf393684",
-        "ev_115ef3b81d90d803177f6e7f6d226168734e6502",
-        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632",
-        "ev_104d07837f468fa133d88fd3c155ba047b27a346"
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632"
       ],
-      "recall_at_5": 0.6,
+      "recall_at_5": 0.8,
       "reciprocal_rank_at_10": 0.5,
-      "citation_precision_at_5": 0.6,
+      "citation_precision_at_5": 0.8,
       "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 18,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 133,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2075,7 +2038,8 @@
       },
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2086,26 +2050,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
       "recall_at_5": 0.8,
-      "reciprocal_rank_at_10": 1.0,
+      "reciprocal_rank_at_10": 0.5,
       "citation_precision_at_5": 0.8,
-      "top1_expected": true,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 11,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 94,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2118,7 +2080,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2137,12 +2100,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 11,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 72,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2155,7 +2116,8 @@
       },
       "query": "C端产品运营通常要求理解业务场景并拆解软件功能要求的能力",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2163,20 +2125,19 @@
         "ev_49ceb269fba8bb7ef71fc9c8e653110e02e28c5f"
       ],
       "returned_evidence_ids": [
-        "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869"
+        "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869",
+        "ev_49ceb269fba8bb7ef71fc9c8e653110e02e28c5f"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 32,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2189,7 +2150,8 @@
       },
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2198,8 +2160,8 @@
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "returned_evidence_ids": [
-        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
+        "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "recall_at_5": 1.0,
@@ -2208,12 +2170,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 48,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2226,7 +2186,8 @@
       },
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2237,28 +2198,24 @@
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12"
       ],
       "returned_evidence_ids": [
-        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_801b391ba05435ae980b39a451d6a99acf393684",
+        "ev_104d07837f468fa133d88fd3c155ba047b27a346",
         "ev_7cc2a387f2f3019e92faf07735ce31954cd7bcc3",
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
-        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
-        "ev_26b16335b42d11ee9d5475e82f2552f8ed8fb540",
-        "ev_801b391ba05435ae980b39a451d6a99acf393684",
-        "ev_115ef3b81d90d803177f6e7f6d226168734e6502",
-        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632",
-        "ev_104d07837f468fa133d88fd3c155ba047b27a346"
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632"
       ],
-      "recall_at_5": 0.6,
+      "recall_at_5": 0.8,
       "reciprocal_rank_at_10": 0.5,
-      "citation_precision_at_5": 0.6,
+      "citation_precision_at_5": 0.8,
       "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 18,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 139,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2271,7 +2228,8 @@
       },
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2282,26 +2240,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
       "recall_at_5": 0.8,
-      "reciprocal_rank_at_10": 1.0,
+      "reciprocal_rank_at_10": 0.5,
       "citation_precision_at_5": 0.8,
-      "top1_expected": true,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 86,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2314,7 +2270,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2333,12 +2290,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 9,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 72,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2351,7 +2306,8 @@
       },
       "query": "AIAgent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3596
+        "standard_job_id": 3596,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2371,12 +2327,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 93,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2389,7 +2343,8 @@
       },
       "query": "C端产品运营通常要求理解业务场景并拆解软件功能要求的能力",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2397,20 +2352,19 @@
         "ev_49ceb269fba8bb7ef71fc9c8e653110e02e28c5f"
       ],
       "returned_evidence_ids": [
-        "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869"
+        "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869",
+        "ev_49ceb269fba8bb7ef71fc9c8e653110e02e28c5f"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 34,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2423,7 +2377,8 @@
       },
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2434,28 +2389,24 @@
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12"
       ],
       "returned_evidence_ids": [
-        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
+        "ev_801b391ba05435ae980b39a451d6a99acf393684",
+        "ev_104d07837f468fa133d88fd3c155ba047b27a346",
         "ev_7cc2a387f2f3019e92faf07735ce31954cd7bcc3",
         "ev_6ca5a25afb0a8084eb51deca2239e76a13f8dd12",
-        "ev_2f18705f3b2489caba0c083c914fd7f4d750cc9b",
-        "ev_26b16335b42d11ee9d5475e82f2552f8ed8fb540",
-        "ev_801b391ba05435ae980b39a451d6a99acf393684",
-        "ev_115ef3b81d90d803177f6e7f6d226168734e6502",
-        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632",
-        "ev_104d07837f468fa133d88fd3c155ba047b27a346"
+        "ev_0bea31b9d6d0df03b5e5860df20ff519b71394fc",
+        "ev_7a8a3831a93900a6dd4caa5086c965915ff36632"
       ],
-      "recall_at_5": 0.6,
+      "recall_at_5": 0.8,
       "reciprocal_rank_at_10": 0.5,
-      "citation_precision_at_5": 0.6,
+      "citation_precision_at_5": 0.8,
       "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 18,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 133,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2468,7 +2419,8 @@
       },
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2479,26 +2431,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
       "recall_at_5": 0.8,
-      "reciprocal_rank_at_10": 1.0,
+      "reciprocal_rank_at_10": 0.5,
       "citation_precision_at_5": 0.8,
-      "top1_expected": true,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 11,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 104,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2511,7 +2461,8 @@
       },
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2530,12 +2481,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 9,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 71,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2551,7 +2500,8 @@
         "standard_job_id": 3674,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2564,26 +2514,22 @@
       "returned_evidence_ids": [
         "ev_803f862249eb029c2ddcaf0a771a6bf2a9eb063c",
         "ev_b34dcf3ea7742c4f4b5f056adaf55990fb0eda78",
-        "ev_1622c67b7095a831b3ccb88dd557cdcaee329159",
-        "ev_f4fc6a8e69e0c848de2e554db65accfe1bfd5202",
-        "ev_8546e4287b5a05b53993784f703c8ff9e2e484b8",
-        "ev_cefc1f928d3142c93f4aedf0c37d732f0843b690",
         "ev_e4d30fcf421c45297f4a1255865b302259a1a4df",
+        "ev_8546e4287b5a05b53993784f703c8ff9e2e484b8",
+        "ev_1622c67b7095a831b3ccb88dd557cdcaee329159",
         "ev_a11bd0f10a75339a5a5ac0ac5325c4c8e9ac98f5",
-        "ev_db4c17b6d83aae10cfd7d25895229f5fec6e5305"
+        "ev_f4fc6a8e69e0c848de2e554db65accfe1bfd5202"
       ],
-      "recall_at_5": 0.8,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 0.8,
+      "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 10,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 56,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2599,7 +2545,8 @@
         "standard_job_id": 3712,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2615,12 +2562,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 26,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2636,7 +2581,8 @@
         "standard_job_id": 3735,
         "skill_ids": [
           83
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2644,8 +2590,8 @@
         "ev_9e9774abb92de6459bf1b8aeb166e4665ec66ce4"
       ],
       "returned_evidence_ids": [
-        "ev_9e9774abb92de6459bf1b8aeb166e4665ec66ce4",
-        "ev_0fa9581d4d0271997cc98386885dfaf4c2042ad4"
+        "ev_0fa9581d4d0271997cc98386885dfaf4c2042ad4",
+        "ev_9e9774abb92de6459bf1b8aeb166e4665ec66ce4"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -2653,12 +2599,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 29,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2674,7 +2618,8 @@
         "standard_job_id": 3796,
         "skill_ids": [
           14
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2691,12 +2636,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 27,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2712,7 +2655,8 @@
         "standard_job_id": 3821,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2723,10 +2667,10 @@
         "ev_76d7b9ec401475289da0665570d6fe3fb7691ef6"
       ],
       "returned_evidence_ids": [
-        "ev_76269fded4c70a2f95bebd15c6a45f04b112ede6",
-        "ev_8580fbae7ad3561e141a92aea4c62190fa408696",
-        "ev_437c90e8960ac2810fa94bbb481bd8a5ae6bda20",
         "ev_43376e87898e028901ec61e01734d0402d5083a1",
+        "ev_437c90e8960ac2810fa94bbb481bd8a5ae6bda20",
+        "ev_8580fbae7ad3561e141a92aea4c62190fa408696",
+        "ev_76269fded4c70a2f95bebd15c6a45f04b112ede6",
         "ev_76d7b9ec401475289da0665570d6fe3fb7691ef6"
       ],
       "recall_at_5": 1.0,
@@ -2735,12 +2679,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 45,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2756,7 +2698,8 @@
         "standard_job_id": 3885,
         "skill_ids": [
           85
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2771,12 +2714,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 23,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2792,7 +2733,8 @@
         "standard_job_id": 3890,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2801,9 +2743,9 @@
         "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "returned_evidence_ids": [
-        "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d",
+        "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
         "ev_f99a3b33e7b26a05a82480d14b6f59c56a109105",
-        "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708"
+        "ev_0eaff0c713b9b853932e0c04dd29d851bac29c2d"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -2811,12 +2753,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 30,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2832,7 +2772,8 @@
         "standard_job_id": 4064,
         "skill_ids": [
           543
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2849,12 +2790,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2870,7 +2809,8 @@
         "standard_job_id": 4136,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2878,8 +2818,8 @@
         "ev_f639006a572e0e2b23cc7bedd6643bb241efe352"
       ],
       "returned_evidence_ids": [
-        "ev_bd7df5c790f223f6eac03c333f91bec72d7887c6",
-        "ev_f639006a572e0e2b23cc7bedd6643bb241efe352"
+        "ev_f639006a572e0e2b23cc7bedd6643bb241efe352",
+        "ev_bd7df5c790f223f6eac03c333f91bec72d7887c6"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -2887,12 +2827,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2908,7 +2846,8 @@
         "standard_job_id": 4240,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2925,12 +2864,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2946,7 +2883,8 @@
         "standard_job_id": 4250,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2954,8 +2892,8 @@
         "ev_468861ad5719288047981c9090c4ee4afbcad7a3"
       ],
       "returned_evidence_ids": [
-        "ev_468861ad5719288047981c9090c4ee4afbcad7a3",
-        "ev_1131236036993ec460c73b5efcfb13a359499d46"
+        "ev_1131236036993ec460c73b5efcfb13a359499d46",
+        "ev_468861ad5719288047981c9090c4ee4afbcad7a3"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -2963,12 +2901,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 30,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -2984,7 +2920,8 @@
         "standard_job_id": 4266,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -2999,12 +2936,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 29,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3020,7 +2955,8 @@
         "standard_job_id": 132,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3031,23 +2967,22 @@
         "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90"
       ],
       "returned_evidence_ids": [
+        "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
         "ev_95a6a77a8975a7203fc6af2ed2dacb0d60eb6e90",
+        "ev_6620b608231d4c53742945c4e4e3d81325a5b249",
         "ev_35320a144bce9032822360b21dab98ab507c3e12",
-        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69",
-        "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103"
+        "ev_6943a1f2fa4adb1df170340f56714502fb49bd69"
       ],
-      "recall_at_5": 0.8,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 43,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3063,7 +2998,8 @@
         "standard_job_id": 134,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3080,12 +3016,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 26,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3101,7 +3035,8 @@
         "standard_job_id": 155,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3118,12 +3053,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 26,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3139,7 +3072,8 @@
         "standard_job_id": 163,
         "skill_ids": [
           79
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3156,12 +3090,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3177,7 +3109,8 @@
         "standard_job_id": 179,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3188,24 +3121,24 @@
         "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf"
       ],
       "returned_evidence_ids": [
-        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
-        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
-        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
         "ev_4616cb4a02c0052f96c229c9bccdcc09fce5e509",
+        "ev_e700b2641a9de74525e277d168af844e8b7ebb80",
+        "ev_17b8266d6e7de5716b3a891a2f864f580e48adbf",
+        "ev_becb9f334f83f1be2392d30cd8a16da4f5fd1b67",
+        "ev_907dcef09752b9f5efb66a57714d51da4df69db0",
+        "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
         "ev_901f29fc6856f13a6f03fcaf3e10ddce37c92dbc"
       ],
-      "recall_at_5": 0.6,
-      "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 0.6,
-      "top1_expected": true,
+      "recall_at_5": 0.8,
+      "reciprocal_rank_at_10": 0.5,
+      "citation_precision_at_5": 0.8,
+      "top1_expected": false,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 39,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3221,7 +3154,8 @@
         "standard_job_id": 199,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3232,20 +3166,19 @@
       ],
       "returned_evidence_ids": [
         "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
-        "ev_515f0242fadf1f4bf53fceacea605a7e96d2ade1"
+        "ev_515f0242fadf1f4bf53fceacea605a7e96d2ade1",
+        "ev_82849351f19cbe36be77dfef3b6374d2c0075149"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 0.75,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 32,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3261,7 +3194,8 @@
         "standard_job_id": 204,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3274,22 +3208,18 @@
       "returned_evidence_ids": [
         "ev_d26eb9a54e9a8a53813030e3ae3ec4359fd6ee1b",
         "ev_2580d0dd731156cc953d7366259ca36a5e0779df",
-        "ev_dcc0cbfde8fc4246983eabc4d6d2145154e73a7d",
-        "ev_22ea343628a3791df4bddee246903ef4ecc8471f",
-        "ev_da6bed8cb9f91bf2f27f033cfb1004a5ca3c9ce8"
+        "ev_22ea343628a3791df4bddee246903ef4ecc8471f"
       ],
-      "recall_at_5": 0.8,
+      "recall_at_5": 0.6,
       "reciprocal_rank_at_10": 1.0,
-      "citation_precision_at_5": 0.8,
+      "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 43,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3305,7 +3235,8 @@
         "standard_job_id": 260,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3313,20 +3244,19 @@
         "ev_1fe812c37512fee83b8602ba8d655220f5801a60"
       ],
       "returned_evidence_ids": [
-        "ev_56bbedf131006e9115fce42426e27972db144fee"
+        "ev_56bbedf131006e9115fce42426e27972db144fee",
+        "ev_1fe812c37512fee83b8602ba8d655220f5801a60"
       ],
-      "recall_at_5": 0.5,
+      "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
       "citation_precision_at_5": 1.0,
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 26,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3346,7 +3276,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8716
+        "minimum_quality_score": 0.8716,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3361,12 +3292,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 7,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 25,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3386,7 +3315,8 @@
         "source_platforms": [
           "智谱AI官网招聘（官网加入我们页跳转的Moka招聘站）"
         ],
-        "minimum_quality_score": 0.835
+        "minimum_quality_score": 0.835,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3401,12 +3331,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 24,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3426,7 +3354,8 @@
         "source_platforms": [
           "智谱AI官网招聘（官网加入我们页跳转的Moka招聘站）"
         ],
-        "minimum_quality_score": 0.7416
+        "minimum_quality_score": 0.7416,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3441,12 +3370,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 21,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3466,7 +3393,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8211
+        "minimum_quality_score": 0.8211,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3476,8 +3404,8 @@
       ],
       "returned_evidence_ids": [
         "ev_178a184e43e0991ae8c63eca5e349a692e9ef70e",
-        "ev_1f20e3fa54cd22874b372b5cc1d3a7f0d69f5c21",
-        "ev_71469604e546bbb7b049aa7d402ba55a524f72ab"
+        "ev_71469604e546bbb7b049aa7d402ba55a524f72ab",
+        "ev_1f20e3fa54cd22874b372b5cc1d3a7f0d69f5c21"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -3485,12 +3413,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 27,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3510,7 +3436,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.9018
+        "minimum_quality_score": 0.9018,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3525,12 +3452,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 21,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3550,7 +3475,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.6846
+        "minimum_quality_score": 0.6846,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3565,12 +3491,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 23,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3590,7 +3514,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8475
+        "minimum_quality_score": 0.8475,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3598,8 +3523,8 @@
         "ev_0e49550e6dcff07edb6c84162b0d6b60200783f7"
       ],
       "returned_evidence_ids": [
-        "ev_0e49550e6dcff07edb6c84162b0d6b60200783f7",
-        "ev_3bc44872c3c930f483f1b2555cce97e7f9710e84"
+        "ev_3bc44872c3c930f483f1b2555cce97e7f9710e84",
+        "ev_0e49550e6dcff07edb6c84162b0d6b60200783f7"
       ],
       "recall_at_5": 1.0,
       "reciprocal_rank_at_10": 1.0,
@@ -3607,12 +3532,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 23,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3632,7 +3555,8 @@
         "source_platforms": [
           "美团官方社会招聘门户（zhaopin.meituan.com）"
         ],
-        "minimum_quality_score": 0.955
+        "minimum_quality_score": 0.955,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3647,12 +3571,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 19,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3672,7 +3594,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.9382
+        "minimum_quality_score": 0.9382,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3689,12 +3612,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 28,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3714,7 +3635,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.9575
+        "minimum_quality_score": 0.9575,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3729,12 +3651,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 21,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3754,7 +3674,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8221
+        "minimum_quality_score": 0.8221,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3771,12 +3692,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 30,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3796,7 +3715,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.6612
+        "minimum_quality_score": 0.6612,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3811,12 +3731,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 22,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3836,7 +3754,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8457
+        "minimum_quality_score": 0.8457,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3851,12 +3770,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 22,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3876,7 +3793,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.5982
+        "minimum_quality_score": 0.5982,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3891,12 +3809,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 22,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3916,7 +3832,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.8308
+        "minimum_quality_score": 0.8308,
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "grounded",
       "expected_evidence_ids": [
@@ -3931,12 +3848,10 @@
       "top1_expected": true,
       "no_answer_correct": null,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 24,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": true
     },
     {
@@ -3952,7 +3867,8 @@
         "standard_job_id": 3596,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -3963,12 +3879,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 19,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -3985,7 +3900,8 @@
         "standard_job_id": 3663,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -3996,12 +3912,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4018,7 +3933,8 @@
         "standard_job_id": 3674,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4029,12 +3945,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4051,7 +3966,8 @@
         "standard_job_id": 3712,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4062,12 +3978,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4084,7 +3999,8 @@
         "standard_job_id": 3735,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4095,12 +4011,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4117,7 +4032,8 @@
         "standard_job_id": 3796,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4128,12 +4044,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4150,7 +4065,8 @@
         "standard_job_id": 3821,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4161,12 +4077,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4183,7 +4098,8 @@
         "standard_job_id": 3890,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4194,12 +4110,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 4,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4216,7 +4131,8 @@
         "standard_job_id": 4064,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4227,12 +4143,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 6,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4249,7 +4164,8 @@
         "standard_job_id": 4136,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4260,12 +4176,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 5,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4282,7 +4197,8 @@
         "standard_job_id": 4240,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4293,12 +4209,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4315,7 +4230,8 @@
         "standard_job_id": 4250,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4326,12 +4242,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 15,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4348,7 +4263,8 @@
         "standard_job_id": 4266,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4359,12 +4275,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4381,7 +4296,8 @@
         "standard_job_id": 132,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4392,12 +4308,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4414,7 +4329,8 @@
         "standard_job_id": 155,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
@@ -4425,12 +4341,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 3,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 14,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4443,7 +4358,9 @@
         "standard_job_name": null
       },
       "query": "quantum photolithography calibration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4453,12 +4370,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 150,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 104,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4471,7 +4387,9 @@
         "standard_job_name": null
       },
       "query": "marine coral genome sequencing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4481,12 +4399,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 153,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 104,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4499,7 +4416,9 @@
         "standard_job_name": null
       },
       "query": "medieval manuscript restoration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4509,12 +4428,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 216,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 107,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4527,7 +4445,9 @@
         "standard_job_name": null
       },
       "query": "orbital telescope mirror coating",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4537,12 +4457,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 150,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4555,7 +4474,9 @@
         "standard_job_name": null
       },
       "query": "deep sea submersible ballast",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4565,12 +4486,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 151,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 107,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4583,7 +4503,9 @@
         "standard_job_name": null
       },
       "query": "nuclear fusion plasma confinement",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4593,12 +4515,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 161,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 107,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4611,7 +4532,9 @@
         "standard_job_name": null
       },
       "query": "archaeological pottery thermoluminescence",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4621,12 +4544,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 151,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 118,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4639,7 +4561,9 @@
         "standard_job_name": null
       },
       "query": "avian migration isotope tracing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4649,12 +4573,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 158,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 103,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4667,7 +4590,9 @@
         "standard_job_name": null
       },
       "query": "volcanic ash mineral classification",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4677,12 +4602,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 172,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 103,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4695,7 +4619,9 @@
         "standard_job_name": null
       },
       "query": "satellite attitude control gyroscope",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4705,12 +4631,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 158,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 105,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4723,7 +4648,9 @@
         "standard_job_name": null
       },
       "query": "cryogenic superconducting magnet winding",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4733,12 +4660,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 244,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 114,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4751,7 +4677,9 @@
         "standard_job_name": null
       },
       "query": "paleoclimate ice core drilling",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4761,12 +4689,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 216,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 128,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4779,7 +4706,9 @@
         "standard_job_name": null
       },
       "query": "ocean salinity buoy calibration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4789,12 +4718,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 180,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 116,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4807,7 +4735,9 @@
         "standard_job_name": null
       },
       "query": "radio telescope interference mitigation",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4817,12 +4747,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 172,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 110,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4835,7 +4764,9 @@
         "standard_job_name": null
       },
       "query": "plant pathology spore microscopy",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4845,12 +4776,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 184,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4863,7 +4793,9 @@
         "standard_job_name": null
       },
       "query": "aerospace composite fatigue testing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4873,12 +4805,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 173,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 118,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4891,7 +4822,9 @@
         "standard_job_name": null
       },
       "query": "seismic tomography inversion",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4901,12 +4834,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 181,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 122,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4919,7 +4851,9 @@
         "standard_job_name": null
       },
       "query": "ancient coin metallurgical analysis",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4929,12 +4863,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 259,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 116,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4947,7 +4880,9 @@
         "standard_job_name": null
       },
       "query": "glacier mass balance surveying",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4957,12 +4892,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 168,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 115,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -4975,7 +4909,9 @@
         "standard_job_name": null
       },
       "query": "particle accelerator beam collimation",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -4985,12 +4921,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 164,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 113,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5003,7 +4938,9 @@
         "standard_job_name": null
       },
       "query": "量子纠错码表面码解码经验",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5013,12 +4950,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 158,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5031,7 +4967,9 @@
         "standard_job_name": null
       },
       "query": "DO-178C航空软件适航认证",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5041,12 +4979,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 153,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5059,7 +4996,9 @@
         "standard_job_name": null
       },
       "query": "核聚变托卡马克等离子体控制",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5069,12 +5008,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 158,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5087,7 +5025,9 @@
         "standard_job_name": null
       },
       "query": "超导量子芯片稀释制冷",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5097,12 +5037,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 161,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 110,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5115,7 +5054,9 @@
         "standard_job_name": null
       },
       "query": "密码芯片侧信道防护",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5125,12 +5066,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 151,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 122,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5143,7 +5083,9 @@
         "standard_job_name": null
       },
       "query": "农业无人机植保航线规划",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5153,12 +5095,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 224,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 125,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5171,24 +5112,25 @@
         "standard_job_name": null
       },
       "query": "汽车功能安全ISO 26262认证",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
-      "returned_evidence_ids": [],
+      "returned_evidence_ids": [
+        "ev_ab3cacd31a3600b862cdb15fb3261ea46cf39822"
+      ],
       "recall_at_5": null,
       "reciprocal_rank_at_10": null,
       "citation_precision_at_5": null,
       "top1_expected": null,
-      "no_answer_correct": true,
+      "no_answer_correct": false,
       "filter_violations": [],
-      "latency_ms": 205,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
-      "passed": true
+      "latency_ms": 113,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
+      "passed": false
     },
     {
       "id": "RET-128",
@@ -5199,25 +5141,25 @@
         "standard_job_name": null
       },
       "query": "卫星姿轨控与星敏感器标定",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
-      "returned_evidence_ids": [
-        "ev_83a29206bec544b86811cfb2eff8e4fc147d5387"
-      ],
+      "returned_evidence_ids": [],
       "recall_at_5": null,
       "reciprocal_rank_at_10": null,
       "citation_precision_at_5": null,
       "top1_expected": null,
-      "no_answer_correct": false,
+      "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 168,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 109,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
-      "passed": false
+      "passed": true
     },
     {
       "id": "RET-129",
@@ -5228,7 +5170,9 @@
         "standard_job_name": null
       },
       "query": "海洋声呐阵列信号处理",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5238,12 +5182,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 156,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 109,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5256,7 +5199,9 @@
         "standard_job_name": null
       },
       "query": "生物信息蛋白质结构预测实验",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5266,12 +5211,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 162,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 109,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5284,7 +5228,9 @@
         "standard_job_name": null
       },
       "query": "光刻机双工件台运动控制",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5294,12 +5240,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 155,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5312,7 +5257,9 @@
         "standard_job_name": null
       },
       "query": "核电站反应堆热工水力分析",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5322,12 +5269,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 154,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 112,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5340,7 +5286,9 @@
         "standard_job_name": null
       },
       "query": "航空发动机叶片气膜冷却仿真",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5350,12 +5298,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 154,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 111,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5368,7 +5315,9 @@
         "standard_job_name": null
       },
       "query": "密码学零知识证明电路审计",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [],
@@ -5378,12 +5327,11 @@
       "top1_expected": null,
       "no_answer_correct": true,
       "filter_violations": [],
-      "latency_ms": 226,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
+      "latency_ms": 114,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
       "warnings": [
-        "当前过滤条件下没有足够的已认证证据",
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
+        "当前过滤条件下没有足够的已认证证据"
       ],
       "passed": true
     },
@@ -5396,20 +5344,16 @@
         "standard_job_name": null
       },
       "query": "Python 量子",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "answer_mode": "insufficient_evidence",
       "expected_evidence_ids": [],
       "returned_evidence_ids": [
-        "ev_2ec6b2f064029cd3bf906fc36ba02be7086728e4",
-        "ev_803f862249eb029c2ddcaf0a771a6bf2a9eb063c",
-        "ev_282d1b80e4dad73bf511600c7e1db812c13a1d3d",
-        "ev_cf689b20f6eb744bbe42d5ca79b607a5c023912a",
-        "ev_bb0125280ba2055fce78f99ce3575c63e4959102",
-        "ev_83a29206bec544b86811cfb2eff8e4fc147d5387",
-        "ev_6bfb0d1d035f7924a184c9a1e0ed871dc2530287",
-        "ev_ec7543c6155cea23066b2f13f249da5c24794dd0",
-        "ev_fa47c267eec593807b589e7a3978ec4d5b726698",
-        "ev_b34dcf3ea7742c4f4b5f056adaf55990fb0eda78"
+        "ev_15126e2a5b98d12751fb8934fa8cc3c3cee74d49",
+        "ev_d7c586a101f0c96e50cd8c654870c35ed161dc48",
+        "ev_94b73bd853c26e14a71377c53077687ef631e615",
+        "ev_53e2eb0faf7f90a0bc47f3e887bbc6bd013afcd2"
       ],
       "recall_at_5": null,
       "reciprocal_rank_at_10": null,
@@ -5417,19 +5361,17 @@
       "top1_expected": null,
       "no_answer_correct": false,
       "filter_violations": [],
-      "latency_ms": 81,
-      "index_version": "20260821T082048-bf184331",
-      "backend": "local_hash",
-      "warnings": [
-        "当前向量为确定性离线基线，不等同于语义 Embedding"
-      ],
+      "latency_ms": 104,
+      "index_version": "20260821T120928-26d661ec",
+      "backend": "chroma",
+      "warnings": [],
       "passed": false
     }
   ],
   "limitations": [
     "The retrieval set is deterministically generated from foreign-key-linked MySQL evidence and engineering-reviewed; it is not human domain gold.",
     "Retrieval cases are grouped by standard job into development, validation and test; the split job IDs are recorded in the report.",
-    "The current embedding is signed-token-hash-v1 at 256 dimensions through local_deterministic.",
+    "The current embedding is text-embedding-3-large at 3072 dimensions through openai_compatible.",
     "Only the development jobs were used for the final retriever tuning pass; the replacement validation and test jobs were frozen before their first evaluation."
   ]
 }

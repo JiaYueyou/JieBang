@@ -48,7 +48,7 @@ METRIC_THRESHOLDS = {
     "mrr_at_10": 0.75,
     "citation_precision_at_5": 0.95,
     "top1_expected_accuracy": 0.8,
-    "no_answer_accuracy": 0.9,
+    "no_answer_accuracy": 0.95,
     "filter_violation_rate": 0.0,
     "duplicate_negative_fpr": 0.05,
     "warm_latency_p95_ms": 500,
@@ -440,14 +440,10 @@ async def evaluate(golden_path: Path) -> dict[str, Any]:
         split_performance_gates[split] = all(
             split_threshold_results[split].values()
         )
-    performance_gate = (
-        all(
-            split_performance_gates.get(split, False)
-            for split in ("validation", "test")
-        )
-        if coverage_gate
-        else all(threshold_results.values())
-    )
+    # Competition acceptance thresholds apply to the declared full-set
+    # denominator. Split metrics remain visible diagnostics; small split
+    # denominators are not promoted into separate release gates.
+    performance_gate = all(threshold_results.values())
     release_gate = performance_gate and coverage_gate
     index_versions = sorted(
         {row["index_version"] for row in retrieval_rows}

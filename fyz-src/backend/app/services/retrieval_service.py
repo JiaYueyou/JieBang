@@ -173,8 +173,17 @@ class RetrievalService:
                 evidence_text=fact.evidence_text,
                 skill_name=skill.canonical_name,
             )
-            seen_ids.add(window.evidence_id)
             chunk = await self.db.get(EvidenceChunk, window.evidence_id)
+            if chunk is None:
+                # A reviewed fact can receive a corrected evidence span, which
+                # changes the content-derived candidate ID. Keep the existing
+                # chunk identity so the one-fact/one-chunk constraint and
+                # historical citations remain stable across index rebuilds.
+                chunk = await self.db.scalar(
+                    select(EvidenceChunk).where(
+                        EvidenceChunk.job_skill_fact_id == fact.id
+                    )
+                )
             if chunk is None:
                 chunk = EvidenceChunk(
                     id=window.evidence_id,
@@ -219,6 +228,7 @@ class RetrievalService:
                 )
                 chunk.content_fingerprint = source.content_fingerprint
                 chunk.near_duplicate_group_id = raw.near_duplicate_group_id
+            seen_ids.add(chunk.id)
             active_chunks.append(chunk)
             index_texts.append(
                 build_index_text(
@@ -489,6 +499,8 @@ class RetrievalService:
                     + 0.15 * graph
                     + 0.1 * semantic_skill,
                 )
+            if authoritative_match:
+                score = max(score, payload.minimum_retrieval_score)
             deterministic_baseline = query_vector is not None and (
                 index.backend == "local_hash"
                 or embedding_provider.model.startswith("signed-token-hash")
@@ -512,7 +524,10 @@ class RetrievalService:
                     and keyword <= 0
                     and vector < RETRIEVAL_SEMANTIC_SCORE_FLOOR
                 )
-                or score < payload.minimum_retrieval_score
+                or (
+                    score < payload.minimum_retrieval_score
+                    and not authoritative_match
+                )
             ):
                 continue
             ranked.append(

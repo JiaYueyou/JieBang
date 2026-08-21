@@ -304,6 +304,32 @@ async def test_rebuild_rejects_an_empty_index_after_a_nonempty_ready_version():
         assert [item.skill_name for item in fallback.items] == ["FastAPI"]
 
 
+async def test_rebuild_keeps_chunk_identity_after_evidence_span_review():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        original_chunk = await db.scalar(select(EvidenceChunk))
+        original_id = original_chunk.id
+        fact = await db.scalar(
+            select(JobSkillFact).where(
+                JobSkillFact.verification_status == "verified"
+            )
+        )
+        fact.evidence_text = "FastAPI、MySQL"
+        await db.commit()
+
+        await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+
+        chunks = list((await db.execute(select(EvidenceChunk))).scalars())
+        assert len(chunks) == 1
+        assert chunks[0].id == original_id
+        assert "FastAPI、MySQL" in chunks[0].chunk_text
+
+
 async def test_search_degrades_to_lexical_when_persisted_embedding_provider_is_offline():
     await _seed_verified_fact()
     async with async_session() as db:

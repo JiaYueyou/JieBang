@@ -1385,7 +1385,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 132
+        "standard_job_id": 132,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -1416,7 +1417,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Python",
       "filters": {
-        "standard_job_id": 134
+        "standard_job_id": 134,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_cf689b20f6eb744bbe42d5ca79b607a5c023912a",
@@ -1444,7 +1446,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "LLM",
       "filters": {
-        "standard_job_id": 155
+        "standard_job_id": 155,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_4d4635a8882f79102bb0d669403ef85e5a9bdffa"
@@ -1471,7 +1474,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Git",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
@@ -1499,7 +1503,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -1530,7 +1535,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 199
+        "standard_job_id": 199,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
@@ -1560,7 +1566,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "大模型",
       "filters": {
-        "standard_job_id": 204
+        "standard_job_id": 204,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_d26eb9a54e9a8a53813030e3ae3ec4359fd6ee1b",
@@ -1591,7 +1598,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "大模型",
       "filters": {
-        "standard_job_id": 260
+        "standard_job_id": 260,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_56bbedf131006e9115fce42426e27972db144fee",
@@ -1619,7 +1627,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "LLM",
       "filters": {
-        "standard_job_id": 2119
+        "standard_job_id": 2119,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_25c7ad026b83c4cdb527f36e4ccbe752a05a4c03",
@@ -1647,7 +1656,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 2121
+        "standard_job_id": 2121,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8f106552a4b0b057d55fb02674e2754b248d23d4",
@@ -1675,7 +1685,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Rust",
       "filters": {
-        "standard_job_id": 2127
+        "standard_job_id": 2127,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_d39542e4e69bb21511f2def76cd9e0e916e3594d",
@@ -1703,7 +1714,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Go",
       "filters": {
-        "standard_job_id": 2128
+        "standard_job_id": 2128,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_178a184e43e0991ae8c63eca5e349a692e9ef70e",
@@ -1734,7 +1746,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 2135
+        "standard_job_id": 2135,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_747df95ba07b170f213c69e15b8e70ebedee5660",
@@ -1764,7 +1777,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 2139
+        "standard_job_id": 2139,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_f815c1bd96400510efbd3345463fbaa202b770b0",
@@ -1792,7 +1806,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Go",
       "filters": {
-        "standard_job_id": 2156
+        "standard_job_id": 2156,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_3bc44872c3c930f483f1b2555cce97e7f9710e84",
@@ -1822,7 +1837,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 2162
+        "standard_job_id": 2162,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0dea456b97ff6b9d0c4a173c896a8114ed1e5847",
@@ -1851,7 +1867,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Python",
       "filters": {
-        "standard_job_id": 2165
+        "standard_job_id": 2165,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_c2761ad80ad82de5bdb24682a610ab20ce04774b",
@@ -1880,7 +1897,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Python",
       "filters": {
-        "standard_job_id": 2172
+        "standard_job_id": 2172,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_cee39537fa4edacf226a59b2c9c2865c7c474d1b"
@@ -1907,7 +1925,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Python",
       "filters": {
-        "standard_job_id": 2273
+        "standard_job_id": 2273,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_20192985b22add387b2534adc8ea9e14aca638ea",
@@ -1935,7 +1954,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "大模型",
       "filters": {
-        "standard_job_id": 3323
+        "standard_job_id": 3323,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_1f8594012347cc062b01d40b59f0a4d9fee151b8",
@@ -1963,7 +1983,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_b391ed66ff14b28d8cbf87af7058950a050026a5",
@@ -1991,7 +2012,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "PyTorch",
       "filters": {
-        "standard_job_id": 3454
+        "standard_job_id": 3454,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_ceddf9465ddce0239a4d5a2185668fc8fdfe1218",
@@ -2019,7 +2041,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Go",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_b38cfb131cc2ae2f1ca5ab0a4adc6c566ac1ac14"
@@ -2046,7 +2069,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Go",
       "filters": {
-        "standard_job_id": 3596
+        "standard_job_id": 3596,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_26b5d24718416c22b20c08a0813f070008e12030",
@@ -2075,7 +2099,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a7e06721da399b25cce543979e49872d1b09cb9a",
@@ -2103,7 +2128,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
@@ -2131,7 +2157,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -2162,7 +2189,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_b391ed66ff14b28d8cbf87af7058950a050026a5",
@@ -2190,7 +2218,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
@@ -2219,7 +2248,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "AI开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4240
+        "standard_job_id": 4240,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_641ba3de3e3141f493ff2953d58953ee42243241",
@@ -2247,7 +2277,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "大模型算法通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4266
+        "standard_job_id": 4266,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_6660e86cacbf5a89694cb8a5daced445869722a3"
@@ -2274,7 +2305,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java开发工程师通常要求代码版本管理、分支协作与变更追踪能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
@@ -2302,7 +2334,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -2333,7 +2366,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3417
+        "standard_job_id": 3417,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_b391ed66ff14b28d8cbf87af7058950a050026a5",
@@ -2361,7 +2395,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0ccb85a513c3ba250f8be87d2472ba1db578c51b",
@@ -2390,7 +2425,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
@@ -2419,7 +2455,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "AI开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 4240
+        "standard_job_id": 4240,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_641ba3de3e3141f493ff2953d58953ee42243241",
@@ -2447,7 +2484,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_801b391ba05435ae980b39a451d6a99acf393684",
@@ -2478,7 +2516,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -2509,7 +2548,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0ccb85a513c3ba250f8be87d2472ba1db578c51b",
@@ -2538,7 +2578,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C端产品运营通常要求理解业务场景并拆解软件功能要求的能力",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869",
@@ -2566,7 +2607,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Agent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3890
+        "standard_job_id": 3890,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
@@ -2595,7 +2637,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_801b391ba05435ae980b39a451d6a99acf393684",
@@ -2626,7 +2669,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -2657,7 +2701,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0ccb85a513c3ba250f8be87d2472ba1db578c51b",
@@ -2686,7 +2731,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "AIAgent开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3596
+        "standard_job_id": 3596,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_dcb520a56cc2d737c5b3e9d58f46f26a84598b85",
@@ -2716,7 +2762,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "C端产品运营通常要求理解业务场景并拆解软件功能要求的能力",
       "filters": {
-        "standard_job_id": 3663
+        "standard_job_id": 3663,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_2662da9ddf20b5335d96ec6d4792e1aa9a587869",
@@ -2744,7 +2791,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 163
+        "standard_job_id": 163,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_801b391ba05435ae980b39a451d6a99acf393684",
@@ -2775,7 +2823,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "Java后端开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 179
+        "standard_job_id": 179,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -2806,7 +2855,8 @@
       "corpus_kind": "real_mysql_evidence",
       "query": "测试开发工程师通常要求面向对象的服务端编程语言与工程化能力",
       "filters": {
-        "standard_job_id": 3580
+        "standard_job_id": 3580,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0ccb85a513c3ba250f8be87d2472ba1db578c51b",
@@ -2838,7 +2888,8 @@
         "standard_job_id": 3674,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_803f862249eb029c2ddcaf0a771a6bf2a9eb063c",
@@ -2872,7 +2923,8 @@
         "standard_job_id": 3712,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_e8792ab48840c37537c0c5ef2527b927eca5dd83",
@@ -2903,7 +2955,8 @@
         "standard_job_id": 3735,
         "skill_ids": [
           83
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0fa9581d4d0271997cc98386885dfaf4c2042ad4",
@@ -2934,7 +2987,8 @@
         "standard_job_id": 3796,
         "skill_ids": [
           14
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8c3fc130a7808886813134d90a5f90315a53190b",
@@ -2965,7 +3019,8 @@
         "standard_job_id": 3821,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_43376e87898e028901ec61e01734d0402d5083a1",
@@ -2999,7 +3054,8 @@
         "standard_job_id": 3885,
         "skill_ids": [
           85
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a6c2065103ca45ee2433af4c750dd8463377176f"
@@ -3029,7 +3085,8 @@
         "standard_job_id": 3890,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_a6c93f85d054245f1f70ec9cd1812f260a46a708",
@@ -3061,7 +3118,8 @@
         "standard_job_id": 4064,
         "skill_ids": [
           543
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_9093ce6d7b697bd58e379e9ef6a11d2b24d5cf93",
@@ -3092,7 +3150,8 @@
         "standard_job_id": 4136,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_bd7df5c790f223f6eac03c333f91bec72d7887c6",
@@ -3123,7 +3182,8 @@
         "standard_job_id": 4240,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_641ba3de3e3141f493ff2953d58953ee42243241",
@@ -3154,7 +3214,8 @@
         "standard_job_id": 4250,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_1131236036993ec460c73b5efcfb13a359499d46",
@@ -3185,7 +3246,8 @@
         "standard_job_id": 4266,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_6660e86cacbf5a89694cb8a5daced445869722a3"
@@ -3215,7 +3277,8 @@
         "standard_job_id": 132,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -3249,7 +3312,8 @@
         "standard_job_id": 134,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_cf689b20f6eb744bbe42d5ca79b607a5c023912a",
@@ -3280,7 +3344,8 @@
         "standard_job_id": 155,
         "skill_ids": [
           12
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_233be275b12a5cb67b3dceee8d406dae1c5e65b4",
@@ -3311,7 +3376,8 @@
         "standard_job_id": 163,
         "skill_ids": [
           79
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_da5639875d78f242e544373b10fcdf23edfcc8be",
@@ -3342,7 +3408,8 @@
         "standard_job_id": 179,
         "skill_ids": [
           11
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_8b90b8d3c03b5211715a37bacf0f7d2f73302cb3",
@@ -3376,7 +3443,8 @@
         "standard_job_id": 199,
         "skill_ids": [
           6
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_c28498db57109ed3d732eabd8f06f9e8202290dc",
@@ -3409,7 +3477,8 @@
         "standard_job_id": 204,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_d26eb9a54e9a8a53813030e3ae3ec4359fd6ee1b",
@@ -3443,7 +3512,8 @@
         "standard_job_id": 260,
         "skill_ids": [
           40
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_56bbedf131006e9115fce42426e27972db144fee",
@@ -3478,7 +3548,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8716
+        "minimum_quality_score": 0.8716,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_9731ac37ba63036fe6d8c717af8793ae4fad1ca8"
@@ -3512,7 +3583,8 @@
         "source_platforms": [
           "智谱AI官网招聘（官网加入我们页跳转的Moka招聘站）"
         ],
-        "minimum_quality_score": 0.835
+        "minimum_quality_score": 0.835,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_12419a35a2bb171b8ea377d8bd780690589d2bad"
@@ -3546,7 +3618,8 @@
         "source_platforms": [
           "智谱AI官网招聘（官网加入我们页跳转的Moka招聘站）"
         ],
-        "minimum_quality_score": 0.7416
+        "minimum_quality_score": 0.7416,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_9b5e3fe210699ddba20ca661ac9ec7a02e246964"
@@ -3580,7 +3653,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8211
+        "minimum_quality_score": 0.8211,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_178a184e43e0991ae8c63eca5e349a692e9ef70e",
@@ -3616,7 +3690,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.9018
+        "minimum_quality_score": 0.9018,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_c9709e01011d27279e3ba7eee19d0c8602546c4c"
@@ -3650,7 +3725,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.6846
+        "minimum_quality_score": 0.6846,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_e195f9d3b3d2b5c957155d456bb92a9cb2f668f5"
@@ -3684,7 +3760,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8475
+        "minimum_quality_score": 0.8475,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_3bc44872c3c930f483f1b2555cce97e7f9710e84",
@@ -3719,7 +3796,8 @@
         "source_platforms": [
           "美团官方社会招聘门户（zhaopin.meituan.com）"
         ],
-        "minimum_quality_score": 0.955
+        "minimum_quality_score": 0.955,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_57bc236797c3d729ccb3fcf434da3f121873ec79"
@@ -3753,7 +3831,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.9382
+        "minimum_quality_score": 0.9382,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_c2761ad80ad82de5bdb24682a610ab20ce04774b",
@@ -3788,7 +3867,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.9575
+        "minimum_quality_score": 0.9575,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_822fc8c98149e2c0eb55a93a9de968e6a7975b8c"
@@ -3822,7 +3902,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8221
+        "minimum_quality_score": 0.8221,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_20192985b22add387b2534adc8ea9e14aca638ea",
@@ -3857,7 +3938,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.6612
+        "minimum_quality_score": 0.6612,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_47ab2fef67c760a81df058c983fb9e626a772a1b"
@@ -3891,7 +3973,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.8457
+        "minimum_quality_score": 0.8457,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_f88772a0bf75a7fbd06a07b51b2b6f41855ffdfe"
@@ -3925,7 +4008,8 @@
         "source_platforms": [
           "字节跳动招聘"
         ],
-        "minimum_quality_score": 0.5982
+        "minimum_quality_score": 0.5982,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_837499d130eed5798b214f14b4396e34aeb37bfa"
@@ -3959,7 +4043,8 @@
         "source_platforms": [
           "京东官方社会招聘门户（zhaopin.jd.com）"
         ],
-        "minimum_quality_score": 0.8308
+        "minimum_quality_score": 0.8308,
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [
         "ev_0ccb85a513c3ba250f8be87d2472ba1db578c51b"
@@ -3989,7 +4074,8 @@
         "standard_job_id": 3596,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -4547,7 +4633,8 @@
         "standard_job_id": 3663,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -5105,7 +5192,8 @@
         "standard_job_id": 3674,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -5663,7 +5751,8 @@
         "standard_job_id": 3712,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -6221,7 +6310,8 @@
         "standard_job_id": 3735,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -6779,7 +6869,8 @@
         "standard_job_id": 3796,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -7337,7 +7428,8 @@
         "standard_job_id": 3821,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -7895,7 +7987,8 @@
         "standard_job_id": 3890,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -8453,7 +8546,8 @@
         "standard_job_id": 4064,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -9011,7 +9105,8 @@
         "standard_job_id": 4136,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -9569,7 +9664,8 @@
         "standard_job_id": 4240,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -10127,7 +10223,8 @@
         "standard_job_id": 4250,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -10685,7 +10782,8 @@
         "standard_job_id": 4266,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -11243,7 +11341,8 @@
         "standard_job_id": 132,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -11801,7 +11900,8 @@
         "standard_job_id": 155,
         "source_platforms": [
           "不存在的数据源"
-        ]
+        ],
+        "minimum_retrieval_score": 0.4
       },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
@@ -12355,7 +12455,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "quantum photolithography calibration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -12908,7 +13010,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "marine coral genome sequencing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -13461,7 +13565,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "medieval manuscript restoration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -14014,7 +14120,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "orbital telescope mirror coating",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -14567,7 +14675,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "deep sea submersible ballast",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -15120,7 +15230,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "nuclear fusion plasma confinement",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -15673,7 +15785,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "archaeological pottery thermoluminescence",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -16226,7 +16340,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "avian migration isotope tracing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -16779,7 +16895,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "volcanic ash mineral classification",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -17332,7 +17450,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "satellite attitude control gyroscope",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -17885,7 +18005,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "cryogenic superconducting magnet winding",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -18438,7 +18560,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "paleoclimate ice core drilling",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -18991,7 +19115,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "ocean salinity buoy calibration",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -19544,7 +19670,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "radio telescope interference mitigation",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -20097,7 +20225,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "plant pathology spore microscopy",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -20650,7 +20780,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "aerospace composite fatigue testing",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -21203,7 +21335,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "seismic tomography inversion",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -21756,7 +21890,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "ancient coin metallurgical analysis",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -22309,7 +22445,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "glacier mass balance surveying",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -22862,7 +23000,9 @@
       "category": "out_of_scope_no_answer",
       "corpus_kind": "real_mysql_evidence",
       "query": "particle accelerator beam collimation",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -23415,7 +23555,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "量子纠错码表面码解码经验",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -23968,7 +24110,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "DO-178C航空软件适航认证",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -24521,7 +24665,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "核聚变托卡马克等离子体控制",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -25074,7 +25220,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "超导量子芯片稀释制冷",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -25627,7 +25775,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "密码芯片侧信道防护",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -26180,7 +26330,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "农业无人机植保航线规划",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -26733,7 +26885,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "汽车功能安全ISO 26262认证",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -27286,7 +27440,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "卫星姿轨控与星敏感器标定",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -27839,7 +27995,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "海洋声呐阵列信号处理",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -28392,7 +28550,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "生物信息蛋白质结构预测实验",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -28945,7 +29105,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "光刻机双工件台运动控制",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -29498,7 +29660,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "核电站反应堆热工水力分析",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -30051,7 +30215,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "航空发动机叶片气膜冷却仿真",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -30604,7 +30770,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "密码学零知识证明电路审计",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
@@ -31157,7 +31325,9 @@
       "category": "semantic_hard_negative",
       "corpus_kind": "real_mysql_evidence",
       "query": "Python 量子",
-      "filters": {},
+      "filters": {
+        "minimum_retrieval_score": 0.4
+      },
       "expected_evidence_ids": [],
       "forbidden_evidence_ids": [
         "ev_2ab18cbfd0fd1060abe4895c5cc4b20018db6103",
