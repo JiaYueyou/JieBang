@@ -6,7 +6,7 @@ import api from './index'
 export const learningApi = {
   // 学习路径 CRUD
   getList: () => api.get('/learning/paths'),
-  create: (data: { name: string; positionId?: number; positionName?: string; steps?: any[] }) =>
+  create: (data: { name: string; positionId?: string; positionName?: string; steps?: any[] }) =>
     api.post('/learning/paths', {
       name: data.name,
       position_id: data.positionId ?? 0, // DB 列为 INT NOT NULL，空时填 0

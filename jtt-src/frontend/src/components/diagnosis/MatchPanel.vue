@@ -75,8 +75,10 @@ const fetchTailorSuggestions = async () => {
       (s: ImprovementSuggestion) => !s.id.startsWith('ai-')
     )]
     ElMessage.success(`AI 已生成 ${aiSuggestions.length} 条优化建议`)
-  } catch {
-    ElMessage.error('AI 优化请求失败，请稍后重试')
+  } catch (error: any) {
+    const detail = error?.response?.data?.detail
+    const message = detail?.message || error?.response?.data?.message || error?.message
+    ElMessage.error(message || 'AI 优化请求失败，请稍后重试')
   } finally {
     optimizing.value = false
   }

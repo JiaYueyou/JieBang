@@ -946,9 +946,23 @@ async def optimize_resume(req: ResumeOptimizeRequest):
         suggestions = parsed.get("suggestions", [])
         if not isinstance(suggestions, list):
             suggestions = []
+    except httpx.HTTPStatusError as e:
+        upstream_status = e.response.status_code
+        log.error("Optimize resume upstream error: %s", upstream_status)
+        message = "DeepSeek 账户余额不足，请充值或更换 API Key" if upstream_status == 402 else f"LLM 服务暂不可用（{upstream_status}）"
+        raise HTTPException(status_code=502, detail={
+            "code": 502, "message": message, "data": None,
+        }) from e
+    except httpx.TimeoutException as e:
+        log.error("Optimize resume timeout")
+        raise HTTPException(status_code=504, detail={
+            "code": 504, "message": "LLM 请求超时，请稍后重试", "data": None,
+        }) from e
     except Exception as e:
         log.error(f"Optimize resume error: {e}")
-        suggestions = []
+        raise HTTPException(status_code=502, detail={
+            "code": 502, "message": "AI 简历优化失败，请稍后重试", "data": None,
+        }) from e
 
     return {"code": 200, "message": "ok", "data": {"suggestions": suggestions}}
 

@@ -1,7 +1,7 @@
 """
 学习路径相关 Schema —— 学习路径 CRUD、AI 助手对话。
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class LearningResourceSchema(BaseModel):
@@ -30,6 +30,14 @@ class LearningPathCreate(BaseModel):
     position_id: int = 0  # 对应 learning_path.position_id（INT NOT NULL），空填 0
     steps: list[LearningStepSchema] = []
     position_name: str = ""
+
+    @field_validator("position_id", mode="before")
+    @classmethod
+    def normalize_position_id(cls, value):
+        """兼容旧版前端传入的数字岗位 ID。"""
+        if value is None:
+            return ""
+        return str(value)
 
 
 class LearningPathUpdate(BaseModel):

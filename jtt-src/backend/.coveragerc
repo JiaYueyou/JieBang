@@ -1,0 +1,13 @@
+[run]
+source = app
+omit =
+    app/seed.py
+    app/core/neo4j.py
+    app/repositories/graph_repository.py
+
+[report]
+show_missing = true
+skip_covered = false
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
