@@ -54,6 +54,9 @@ from app.schemas.retrieval import (
 )
 
 
+DETERMINISTIC_MIN_LEXICAL_COVERAGE = 0.35
+
+
 class RetrievalService:
     def __init__(
         self,
@@ -486,14 +489,18 @@ class RetrievalService:
                     + 0.15 * graph
                     + 0.1 * semantic_skill,
                 )
-            deterministic_baseline = query_vector is not None and embedding_provider.model.startswith(
-                "signed-token-hash"
+            deterministic_baseline = query_vector is not None and (
+                index.backend == "local_hash"
+                or embedding_provider.model.startswith("signed-token-hash")
             )
             if (
                 (
-                    deterministic_baseline
-                    and keyword <= 0
-                    and not authoritative_match
+                    not authoritative_match
+                    and keyword < DETERMINISTIC_MIN_LEXICAL_COVERAGE
+                    and (
+                        deterministic_baseline
+                        or vector < RETRIEVAL_SEMANTIC_SCORE_FLOOR
+                    )
                 )
                 or (
                     keyword <= 0

@@ -162,6 +162,15 @@ async def test_admin_rebuilds_and_users_search_traceable_evidence(
     assert no_answer.json()["data"]["items"] == []
     assert "没有足够" in no_answer.json()["data"]["warnings"][0]
 
+    sparse_overlap = await client.post(
+        "/api/v1/retrieval/search",
+        headers=auth_headers,
+        json={"query": "Python 量子芯片光刻设备维护", "top_k": 5},
+    )
+    assert sparse_overlap.status_code == 200
+    assert sparse_overlap.json()["data"]["items"] == []
+    assert "没有足够" in sparse_overlap.json()["data"]["warnings"][0]
+
 
 async def test_local_hash_keeps_exact_authoritative_skill_match_for_short_query(
     client,

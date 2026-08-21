@@ -44,7 +44,7 @@ def test_phase2_dataset_has_required_scale_and_review_boundary():
     validate_dataset(dataset)
 
     assert len(dataset["duplicate_negative_cases"]) == 50
-    assert len(dataset["retrieval_cases"]) == 120
+    assert len(dataset["retrieval_cases"]) == sum(RETRIEVAL_DISTRIBUTION.values())
     assert dataset["distribution"] == {
         "near_duplicate_negative": 50,
         **RETRIEVAL_DISTRIBUTION,
@@ -59,7 +59,7 @@ def test_phase2_dataset_has_required_scale_and_review_boundary():
         "strategy": "group_by_standard_job",
         "labels_frozen": True,
         "holdout_status": "not_available",
-        "development": 120,
+        "development": sum(RETRIEVAL_DISTRIBUTION.values()),
         "validation": 0,
         "test": 0,
         "standard_job_ids": {
@@ -72,7 +72,9 @@ def test_phase2_dataset_has_required_scale_and_review_boundary():
             "有代表性的验证集和冻结测试集。"
         ),
     }
-    assert dataset["review_summary"]["approved"] == 170
+    assert dataset["review_summary"]["approved"] == (
+        50 + sum(RETRIEVAL_DISTRIBUTION.values())
+    )
 
 
 def test_coverage_ready_dataset_is_grouped_by_standard_job():

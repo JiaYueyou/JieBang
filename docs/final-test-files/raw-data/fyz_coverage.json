@@ -1,0 +1,200 @@
+{
+  "generated_at": "2026-08-21T08:08:35.652237+00:00",
+  "scope": "FYZ app/services executable lines",
+  "method": "CPython line-table executable lines + sys.settrace execution",
+  "python": "3.10.20",
+  "threshold": 0.6,
+  "executable_lines": 9940,
+  "covered_lines": 8507,
+  "coverage": 0.855835,
+  "coverage_gate_passed": true,
+  "pytest_exit_code": 0,
+  "files": [
+    {
+      "file": "app/services/agent_grounding_service.py",
+      "executable_lines": 264,
+      "covered_lines": 260,
+      "coverage": 0.984848
+    },
+    {
+      "file": "app/services/agent_run_service.py",
+      "executable_lines": 67,
+      "covered_lines": 62,
+      "coverage": 0.925373
+    },
+    {
+      "file": "app/services/ai_agent_task_service.py",
+      "executable_lines": 81,
+      "covered_lines": 67,
+      "coverage": 0.82716
+    },
+    {
+      "file": "app/services/analysis_service.py",
+      "executable_lines": 1186,
+      "covered_lines": 1045,
+      "coverage": 0.881113
+    },
+    {
+      "file": "app/services/auth_service.py",
+      "executable_lines": 31,
+      "covered_lines": 31,
+      "coverage": 1.0
+    },
+    {
+      "file": "app/services/career_service.py",
+      "executable_lines": 186,
+      "covered_lines": 168,
+      "coverage": 0.903226
+    },
+    {
+      "file": "app/services/crawler_runtime.py",
+      "executable_lines": 5,
+      "covered_lines": 5,
+      "coverage": 1.0
+    },
+    {
+      "file": "app/services/crawler_service.py",
+      "executable_lines": 812,
+      "covered_lines": 615,
+      "coverage": 0.757389
+    },
+    {
+      "file": "app/services/dashboard_service.py",
+      "executable_lines": 343,
+      "covered_lines": 337,
+      "coverage": 0.982507
+    },
+    {
+      "file": "app/services/data_quality_service.py",
+      "executable_lines": 135,
+      "covered_lines": 125,
+      "coverage": 0.925926
+    },
+    {
+      "file": "app/services/graph_service.py",
+      "executable_lines": 1443,
+      "covered_lines": 1246,
+      "coverage": 0.863479
+    },
+    {
+      "file": "app/services/historical_baseline_service.py",
+      "executable_lines": 217,
+      "covered_lines": 205,
+      "coverage": 0.9447
+    },
+    {
+      "file": "app/services/import_service.py",
+      "executable_lines": 869,
+      "covered_lines": 807,
+      "coverage": 0.928654
+    },
+    {
+      "file": "app/services/internal_transfer_service.py",
+      "executable_lines": 690,
+      "covered_lines": 573,
+      "coverage": 0.830435
+    },
+    {
+      "file": "app/services/jd_generation_service.py",
+      "executable_lines": 171,
+      "covered_lines": 152,
+      "coverage": 0.888889
+    },
+    {
+      "file": "app/services/job_import_schema.py",
+      "executable_lines": 78,
+      "covered_lines": 64,
+      "coverage": 0.820513
+    },
+    {
+      "file": "app/services/job_service.py",
+      "executable_lines": 179,
+      "covered_lines": 164,
+      "coverage": 0.916201
+    },
+    {
+      "file": "app/services/matching_service.py",
+      "executable_lines": 439,
+      "covered_lines": 420,
+      "coverage": 0.95672
+    },
+    {
+      "file": "app/services/observed_job_service.py",
+      "executable_lines": 122,
+      "covered_lines": 118,
+      "coverage": 0.967213
+    },
+    {
+      "file": "app/services/pipeline_service.py",
+      "executable_lines": 736,
+      "covered_lines": 496,
+      "coverage": 0.673913
+    },
+    {
+      "file": "app/services/pipeline_status_cache.py",
+      "executable_lines": 45,
+      "covered_lines": 45,
+      "coverage": 1.0
+    },
+    {
+      "file": "app/services/query_cache.py",
+      "executable_lines": 75,
+      "covered_lines": 70,
+      "coverage": 0.933333
+    },
+    {
+      "file": "app/services/resume_parser.py",
+      "executable_lines": 168,
+      "covered_lines": 120,
+      "coverage": 0.714286
+    },
+    {
+      "file": "app/services/resume_profile_extractor.py",
+      "executable_lines": 75,
+      "covered_lines": 75,
+      "coverage": 1.0
+    },
+    {
+      "file": "app/services/resume_storage.py",
+      "executable_lines": 32,
+      "covered_lines": 26,
+      "coverage": 0.8125
+    },
+    {
+      "file": "app/services/retrieval_service.py",
+      "executable_lines": 609,
+      "covered_lines": 495,
+      "coverage": 0.812808
+    },
+    {
+      "file": "app/services/skill_extractor.py",
+      "executable_lines": 133,
+      "covered_lines": 100,
+      "coverage": 0.75188
+    },
+    {
+      "file": "app/services/skill_service.py",
+      "executable_lines": 272,
+      "covered_lines": 223,
+      "coverage": 0.819853
+    },
+    {
+      "file": "app/services/task_service.py",
+      "executable_lines": 52,
+      "covered_lines": 50,
+      "coverage": 0.961538
+    },
+    {
+      "file": "app/services/task_status_cache.py",
+      "executable_lines": 117,
+      "covered_lines": 99,
+      "coverage": 0.846154
+    },
+    {
+      "file": "app/services/user_activity_service.py",
+      "executable_lines": 308,
+      "covered_lines": 244,
+      "coverage": 0.792208
+    }
+  ]
+}

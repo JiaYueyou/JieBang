@@ -1,0 +1,48 @@
+{
+  "dataset_version": "competition-graph-job-fit-100-v1",
+  "generated_at": "2026-08-21T10:28:25.028213+00:00",
+  "test_chain": "original JD -> verified skill fact -> standard job/skill-area/skill graph path -> source support edges",
+  "metric_definitions": {
+    "jd_evidence_grounding_rate": "verified skill facts whose evidence text appears in the original JD / all verified skill facts",
+    "job_area_skill_graph_path_rate": "verified skill facts represented by complete Job->SkillArea->TechStack paths / all verified skill facts",
+    "source_traceability_rate": "verified skill facts with SourceDocument->Skill and SourceDocument->Job support edges / all verified skill facts",
+    "production_extraction_confirmation_rate": "production-extracted skills confirmed by verified job facts / all production-extracted skills",
+    "job_requirement_graph_fit_score": "mean of evidence grounding, complete graph path, source traceability, and production extraction confirmation rates"
+  },
+  "metrics": {
+    "jd_count": 100,
+    "source_count": 6,
+    "source_distribution": {
+      "字节跳动招聘": 39,
+      "京东官方社会招聘门户（zhaopin.jd.com）": 25,
+      "美团官方社会招聘门户（zhaopin.meituan.com）": 18,
+      "智谱AI官网招聘（官网加入我们页跳转的Moka招聘站）": 12,
+      "DeepSeek官方招聘门户（talent.deepseek.com）": 3,
+      "长鑫存储官方招聘门户（北森；由 cxmt.com/join.html 链接）": 3
+    },
+    "unique_url_count": 76,
+    "unique_content_count": 100,
+    "complete_record_rate": 1.0,
+    "standard_job_mapping_rate": 1.0,
+    "verified_skill_fact_count": 375,
+    "jd_evidence_grounding_rate": 0.984,
+    "job_area_skill_graph_path_rate": 0.997333,
+    "source_traceability_rate": 0.997333,
+    "production_extraction_confirmation_rate": 1.0,
+    "job_requirement_graph_fit_score": 0.994667
+  },
+  "gates": {
+    "additional_100_real_jds": true,
+    "six_new_official_sources": true,
+    "all_jd_contents_unique": true,
+    "complete_record_rate_at_least_95_percent": true,
+    "standard_job_mapping_at_least_95_percent": true,
+    "jd_evidence_grounding_at_least_95_percent": true,
+    "graph_path_at_least_95_percent": true,
+    "source_traceability_at_least_95_percent": true,
+    "extraction_confirmation_at_least_90_percent": true,
+    "job_requirement_graph_fit_at_least_95_percent": true
+  },
+  "passed": true,
+  "case_reference": "additional_jd_100_cases.json"
+}
