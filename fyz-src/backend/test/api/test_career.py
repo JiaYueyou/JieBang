@@ -1,4 +1,5 @@
 from app.services.career_service import CareerService
+from app.services.resume_parser import ResumeParser
 from test.api.test_internal_transfer import position_payload
 
 
@@ -62,6 +63,25 @@ async def test_resume_text_extraction_and_degraded_career_plan(client, auth_head
     assert row["learning_plan"][0]["skill"] == "Redis"
     run = await client.get(f"/api/v1/agents/runs/{data['agent_run_id']}", headers=auth_headers)
     assert run.json()["data"]["status"] == "degraded"
+
+
+async def test_resume_image_extraction_endpoint_uses_ocr(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        ResumeParser,
+        "_ocr_image",
+        lambda self, content: "AI 工程师\nPython FastAPI Docker",
+    )
+
+    response = await client.post(
+        "/api/v1/career/resume-extractions",
+        headers=auth_headers,
+        files={"file": ("resume.jpeg", b"image", "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["text"] == "AI 工程师\nPython FastAPI Docker"
+    assert any("OCR" in warning for warning in data["warnings"])
 
 
 async def test_career_analysis_rejects_empty_input(client, auth_headers):

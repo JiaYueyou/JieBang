@@ -1,5 +1,12 @@
 # 用户端后端技术与功能说明
 
+> 文档类型：早期设计与接口草案
+> 状态：历史参考，部分内容已与代码漂移
+> 核验日期：2026-08-12（`c995a09e`）
+> 当前代码已注册 auth、positions、resume、match、tailor、learning、favorites、graph 八组
+> 路由；实际 Schema、端点和依赖以 `app/` 与运行时 OpenAPI 为准。本文所列 Elasticsearch、
+> 讯飞、BERT、完整 RAG、Docker 拓扑等多项仍是目标设计，不应表述为已实现。
+
 > **项目名称**：多源异构数据驱动岗位和能力图谱构建与动态演化分析研究项目
 > **项目定位**：人才分析与决策系统 —— 利用知识图谱与大模型技术，实现从简历解析到人岗匹配的精准决策。
 
@@ -628,7 +635,7 @@ Level 3 (branch)      ─┤
 Level 4 (module)      专项能力模块              微服务架构, 数据库设计, 分布式系统
        │                  includes
 Level 5 (knowledge)   细分知识点                 Spring Boot, SQL优化, Kafka
-       
+
        ═══════════════ cross_ref (跨分支多对多连接) ═══════════════
 ```
 
@@ -708,7 +715,7 @@ CREATE (r)-[:DERIVES {weight: 5}]->(p)
 ```python
 def verify_suggestion(suggestion, position_id, graph_db):
     """图谱回查校验单条建议"""
-    
+
     # 1. 技能类建议：提取建议中新增的技能名
     if suggestion.section == "skills":
         new_skills = extract_skill_names(suggestion.suggested)
@@ -719,14 +726,14 @@ def verify_suggestion(suggestion, position_id, graph_db):
                 -[:COMPOSES*1..3]->(k:Knowledge {label: $skill})
                 RETURN count(k) > 0
             """, position_id=position_id, skill=skill)
-            
+
             if not exists:
                 suggestion.verified = False
                 suggestion.warning = f"技能 '{skill}' 未在目标岗位知识图谱中找到，请人工确认"
                 continue
-        
+
         suggestion.verified = True
-    
+
     # 2. 经验类建议：验证技术栈匹配
     if suggestion.section == "workExperience":
         technologies = extract_tech_names(suggestion.suggested)
@@ -736,11 +743,11 @@ def verify_suggestion(suggestion, position_id, graph_db):
                 -[:COMPOSES|CONTAINS|INCLUDES*1..3]->(n {label: $tech})
                 RETURN count(n) > 0
             """, position_id=position_id, tech=tech)
-            
+
             if not related:
                 suggestion.verified = False
                 suggestion.warning = f"技术 '{tech}' 与目标岗位关联度低"
-    
+
     return suggestion
 ```
 
@@ -839,7 +846,7 @@ def verify_suggestion(suggestion, position_id, graph_db):
 - 经验匹配 (30%): 工作年限、行业领域、项目规模
   - 年限: 分段函数映射到 0-100 分
   - 行业: 基于行业分类的 Jaccard 相似度
-  
+
 - 学历匹配 (15%): 学历层次、专业相关度
   - 学历层次: 博士100/硕士85/本科70/大专50/...
   - 专业: 基于专业分类树的距离

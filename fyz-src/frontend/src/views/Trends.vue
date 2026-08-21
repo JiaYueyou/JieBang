@@ -195,6 +195,7 @@ import { useTrendStore } from "@/stores/trends";
 import DataState from "@/components/common/DataState.vue";
 import ReferenceBaseline from "@/components/analysis/ReferenceBaseline.vue";
 import type { TrendQuery } from "@/domain/types";
+import { skillCategoryLabel } from "@/utils/displayLabels";
 
 use([LineChart, BarChart, HeatmapChart, GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CanvasRenderer]);
 
@@ -229,47 +230,6 @@ const newJobPageSize = ref(10);
 const isPageLoading = ref(false);
 const pageLoadingText = ref("正在加载趋势数据…");
 let loadSequence = 0;
-
-const SKILL_CATEGORY_LABELS: Record<string, string> = {
-  programming_language: "编程语言",
-  framework: "开发框架",
-  library: "技术库",
-  database: "数据库",
-  tool: "开发工具",
-  cloud: "云计算",
-  domain_knowledge: "领域知识",
-  soft_skill: "通用能力",
-  artificial_intelligence: "人工智能",
-  machine_learning: "机器学习",
-  "Machine Learning": "机器学习",
-  AI: "人工智能",
-  "AI/ML": "人工智能/机器学习",
-  "AI/LLM": "人工智能/大语言模型",
-  ai_ml: "人工智能/机器学习",
-  "AI Agent": "智能体技术",
-  "AI Application": "人工智能应用",
-  "AI Engineering": "人工智能工程",
-  "AI Infrastructure": "人工智能基础设施",
-  "AI Technology": "人工智能技术",
-  "AI Tools": "人工智能工具",
-  "Cloud Computing": "云计算",
-  Backend: "后端技术",
-  Frontend: "前端技术",
-  Language: "语言技术",
-  Programming: "编程技术",
-  "Data Analysis": "数据分析",
-  "Data Engineering": "数据工程",
-  "Data Processing": "数据处理",
-  "Deep Learning": "深度学习",
-  LLM: "大语言模型",
-  MLOps: "机器学习运维",
-  NLP: "自然语言处理",
-  DevOps: "开发运维",
-};
-
-function skillCategoryLabel(category: string) {
-  return SKILL_CATEGORY_LABELS[category] || "其他专业技能";
-}
 
 async function loadTrends() {
   const sequence = ++loadSequence;

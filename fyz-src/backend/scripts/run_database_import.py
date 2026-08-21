@@ -8,6 +8,25 @@ import sys
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from db_transfer_common import load_manifest  # noqa: E402
+
+
+def preflight_snapshot_package() -> None:
+    """Validate the complete package before any target-side command can run.
+
+    ``load_manifest`` is deliberately offline: it reads repository files and
+    Alembic migration metadata only. It does not connect to MySQL, Chroma, or
+    Neo4j and therefore remains safe to run before the destructive workflow.
+    """
+    manifest = load_manifest()
+    print(
+        "[0/5] Snapshot package verified: "
+        f"revision={manifest['alembic_revision']}, "
+        f"tables={manifest['table_count']}, rows={manifest['total_rows']}."
+    )
 
 
 def main() -> None:
@@ -25,6 +44,10 @@ def main() -> None:
     args = parser.parse_args()
     if not args.replace:
         parser.error("--replace is required; verify the target .env before continuing")
+
+    # Fail closed before spawning Alembic or any process that can connect to or
+    # mutate the target services.
+    preflight_snapshot_package()
 
     commands = (
         [sys.executable, str(SCRIPTS_DIR / "01_prepare_mysql_schema.py")],

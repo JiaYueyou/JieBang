@@ -28,6 +28,7 @@ async def _add_raw(db, standard, skill, title, month, sequence, index):
     await db.flush()
     raw = RawJobRecord(
         source_document_id=document.id,
+        standard_job_id=standard.id,
         title=title,
         standardized_title=title,
         company=f"示例企业{index}",
@@ -275,8 +276,8 @@ async def test_known_historical_technology_is_not_reported_as_new_when_local_bas
         assert overview.stats.new_skills == 1
 
 
-async def test_new_job_overview_keeps_low_evidence_first_observations():
-    """The total represents all new observations, not only confirmed ones."""
+async def test_new_job_overview_separates_observations_from_confirmed_candidates():
+    """Single-source noise is counted but not presented as a decision candidate."""
     async with async_session() as db:
         _, _, _ = await seed_analysis_data(db)
         skill = (await db.execute(
@@ -297,8 +298,8 @@ async def test_new_job_overview_keeps_low_evidence_first_observations():
             new_job_page_size=100,
         )
 
-        assert "单来源新岗位" in {job.name for job in overview.new_jobs}
-        assert overview.new_jobs_total == overview.new_job_observation_total
+        assert "单来源新岗位" not in {job.name for job in overview.new_jobs}
+        assert overview.new_job_observation_total > overview.new_jobs_total
 
 
 async def test_new_skill_overview_keeps_single_source_first_observation():

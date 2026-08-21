@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page">
-    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
+    <DataState :loading="loading && !loaded" :error="error" @retry="store.refresh()" />
     <nav class="admin-nav anim-fade-up">
       <div class="admin-nav-items">
         <button
@@ -17,7 +17,7 @@
       <div class="admin-status" :class="overallStatus">
         <span class="status-pulse"></span>
         <div><strong>{{ overallStatusLabel }}</strong><small>最后巡检：{{ generatedAtLabel }}</small></div>
-        <button type="button" @click="refreshSystem"><el-icon><Refresh /></el-icon>刷新</button>
+        <button type="button" :disabled="manualRefreshing" @click="refreshSystem"><el-icon :class="{ 'is-loading': manualRefreshing }"><Refresh /></el-icon>刷新</button>
       </div>
     </nav>
 
@@ -509,8 +509,16 @@
       <div class="section-heading">
         <div><span>GRAPH AGENT</span><h2>L4/L5 图谱补充审核</h2><p>机器校验、人工审核和图谱发布相互独立；只有已批准候选会进入正式图谱。</p></div>
         <div class="section-actions">
-          <el-button type="primary" :plain="graphGenerating" :loading="graphGenerating" :disabled="graphTasks.anyRunning.value && !graphGenerating" @click="generateGraphCandidates">一键生成候选</el-button>
-          <el-button type="primary" :loading="graphPublishing" :disabled="graphTasks.anyRunning.value && !graphPublishing" @click="publishGraphCandidates">发布已批准项</el-button>
+          <el-button
+            class="graph-heading-action"
+            type="danger"
+            plain
+            :disabled="graphMachineFailedPendingCount === 0"
+            :loading="graphAutoRejecting"
+            @click="rejectAllMachineFailedCandidates"
+          >一键驳回机器未通过（{{ graphMachineFailedPendingCount }}）</el-button>
+          <el-button class="graph-heading-action" type="primary" :plain="graphGenerating" :loading="graphGenerating" :disabled="graphTasks.anyRunning.value && !graphGenerating" @click="generateGraphCandidates">一键生成候选</el-button>
+          <el-button class="graph-heading-action" type="primary" :loading="graphPublishing" :disabled="graphTasks.anyRunning.value && !graphPublishing" @click="publishGraphCandidates">发布已批准项</el-button>
         </div>
       </div>
       <div v-if="graphBackgroundTask" class="graph-agent-progress" role="status" aria-live="polite">
@@ -524,13 +532,6 @@
           <el-option label="已批准" value="approved" />
           <el-option label="已驳回" value="rejected" />
         </el-select>
-        <el-button
-          type="danger"
-          plain
-          :disabled="graphMachineFailedPendingCount === 0"
-          :loading="graphAutoRejecting"
-          @click="rejectAllMachineFailedCandidates"
-        >一键驳回机器未通过（{{ graphMachineFailedPendingCount }}）</el-button>
         <span>共 {{ graphCandidateTotal }} 条候选</span>
       </div>
       <div v-loading="graphCandidatesLoading" class="graph-candidate-grid">
@@ -770,6 +771,7 @@ const store = useAdminStore();
 const {
   data: admin,
   loading,
+  loaded,
   error,
   agentRuns,
   agentRunsLoading,
@@ -816,6 +818,7 @@ const allPageFactsSelected = computed(() => currentPageFactIds.value.length > 0
 const somePageFactsSelected = computed(() => !allPageFactsSelected.value
   && currentPageFactIds.value.some(id => selectedFactIds.value.includes(id)));
 const graphCandidates = ref<GraphEnrichmentCandidate[]>([]);
+const manualRefreshing = ref(false);
 const graphCandidatesLoading = ref(false);
 const graphCandidateTotal = ref(0);
 const graphMachineFailedPendingCount = ref(0);
@@ -845,7 +848,7 @@ async function pollResources() {
 async function pollPipeline() {
   if (document.hidden || pipelineRequestRunning || activeSection.value !== "crawler") return;
   pipelineRequestRunning = true;
-  try { await store.load(true); } finally { pipelineRequestRunning = false; }
+  try { await store.refreshSilently(); } finally { pipelineRequestRunning = false; }
 }
 onMounted(async () => {
   graphTasks.resume();
@@ -957,7 +960,15 @@ const validationPassed = computed(() => lastImportResult.value?.validation.reduc
 const validationWarnings = computed(() => lastImportResult.value?.validation.reduce((sum, item) => sum + item.warning_count, 0) ?? 0);
 const filteredLogs = computed(() => logs.value.filter((log) => (!logLevel.value || log.level === logLevel.value) && (!logKeyword.value || `${log.service} ${log.message}`.toLowerCase().includes(logKeyword.value.toLowerCase()))));
 
-async function refreshSystem() { await store.refresh(); ElMessage.success("系统状态已刷新"); }
+async function refreshSystem() {
+  manualRefreshing.value = true;
+  try {
+    await store.refreshSilently();
+    ElMessage.success("系统状态已刷新");
+  } finally {
+    manualRefreshing.value = false;
+  }
+}
 async function selectSection(section: Section) {
   activeSection.value = section;
   if (section === "crawler") await refreshQuality(1);
@@ -1169,10 +1180,10 @@ async function runCrawler(crawler: any) {
             }
           }
         }
-        await store.load(true);
+        await store.refreshSilently();
       } else {
         // 仍在运行，刷新进度
-        await store.load(true);
+        await store.refreshSilently();
       }
     } catch (error) {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
@@ -1429,7 +1440,7 @@ function formatReviewDate(value: string | null) {
 .graph-agent-progress span { display: block; }
 .graph-agent-progress span { margin-top: 4px; color: var(--text-muted); font-size: 13px; }
 @scope (.admin-page) {
-:scope{max-width:1480px;margin:0 auto;--admin-dark:#202437}.admin-status{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:9px 10px 9px 17px;border-left:1px solid var(--color-border);border-radius:0 9px 9px 0;background:var(--color-success-light)}.status-pulse{width:9px;height:9px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 5px rgba(52,179,126,.12)}.admin-status div{display:flex;flex-direction:column;margin-right:4px}.admin-status strong{font-size:14px;color:var(--text-primary)}.admin-status small{font-size:14px;color:var(--text-muted)}.admin-status button,.card-heading button{display:flex;align-items:center;gap:5px;border:0;background:#fff;border-radius:8px;padding:7px 9px;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}
+:scope{max-width:1480px;margin:0 auto;--admin-dark:#202437}.admin-status{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:9px 10px 9px 17px;border-left:1px solid var(--color-border);border-radius:0 9px 9px 0;background:var(--color-success-light)}.status-pulse{width:9px;height:9px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 5px rgba(52,179,126,.12)}.admin-status div{display:flex;flex-direction:column;margin-right:4px}.admin-status strong{font-size:14px;color:var(--text-primary)}.admin-status small{font-size:14px;color:var(--text-muted)}.admin-status button,.card-heading button{display:flex;align-items:center;gap:5px;border:0;background:#fff;border-radius:8px;padding:7px 9px;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.admin-status button:disabled{cursor:wait;opacity:.72}
 .admin-nav{display:flex;align-items:stretch;gap:6px;padding:6px;margin-bottom:17px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.admin-nav-items{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;min-width:0;flex:1}.admin-nav-items button{position:relative;display:flex;align-items:center;gap:7px;min-width:0;padding:8px 7px;border:0;border-radius:9px;background:transparent;text-align:left;cursor:pointer;color:var(--text-secondary);transition:.2s}.admin-nav-items button:hover{background:var(--color-bg-muted)}.admin-nav-items button.active{background:var(--color-brand-light);color:var(--color-brand)}.nav-icon{display:grid;width:30px;height:30px;flex:0 0 30px;place-items:center;border-radius:8px;background:var(--color-bg-muted);font-size:15px}.admin-nav-items button.active .nav-icon{background:#fff}.admin-nav-items button>span:nth-child(2){display:flex;min-width:0;flex-direction:column}.admin-nav strong{overflow:hidden;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.admin-nav small{overflow:hidden;margin-top:1px;color:var(--text-muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.admin-nav-items button>i{position:absolute;right:5px;top:5px;min-width:17px;padding:1px 5px;border-radius:999px;background:var(--color-danger);color:#fff;font:700 11px var(--font-mono);text-align:center}
 .admin-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:13px}.metric-card{display:flex;align-items:center;gap:11px;min-width:0;padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.metric-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:11px;font-size:17px}.brand{background:var(--color-brand-light);color:var(--color-brand)}.green{background:var(--color-success-light);color:var(--color-success)}.amber{background:var(--color-warning-light);color:var(--color-warning)}.rose{background:var(--color-danger-light);color:var(--color-danger)}.violet{background:#f0edff;color:#7c6ff7}.blue{background:var(--color-info-light);color:var(--color-info)}.metric-copy{display:flex;min-width:0;flex:1;flex-direction:column}.metric-copy span{font-size:14px;color:var(--text-muted)}.metric-copy strong{font:700 22px var(--font-mono);letter-spacing:-.04em}.metric-copy small{font-size:14px}.positive,.green{color:var(--color-success)}.warning,.amber{color:var(--color-warning)}.metric-bars,.spark-bars{display:flex;align-items:flex-end;gap:2px;height:38px}.metric-bars i,.spark-bars i{width:3px;min-height:4px;border-radius:2px;background:var(--color-brand);opacity:.55}.overview-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:13px}.admin-card{border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.card-heading{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 11px}.card-heading>div{display:flex;flex-direction:column}.card-heading span,.section-heading>div>span{font:700 14px var(--font-mono);letter-spacing:.09em;color:var(--text-muted);text-transform:uppercase}.card-heading h2{font-size:14px;margin-top:2px}.healthy-chip,.event-count{padding:4px 8px;border-radius:999px;background:var(--color-success-light);color:var(--color-success)!important;font:700 14px var(--font-sans)!important;letter-spacing:0!important}.service-list,.task-list,.event-list{padding:0 18px 12px}.service-row,.task-row{display:flex;align-items:center;gap:10px;padding:10px 0}.service-row+.service-row,.task-row+.task-row{border-top:1px solid var(--color-border-light)}.service-logo,.task-state{display:grid;width:31px;height:31px;flex:0 0 31px;place-items:center;border-radius:9px}.service-name,.task-row>div{display:flex;min-width:0;flex:1;flex-direction:column}.service-name strong,.task-row strong{font-size:14px}.service-name small,.task-row small{font-size:14px;color:var(--text-muted)}.latency{display:flex;flex-direction:column;align-items:flex-end}.latency strong{font:600 14px var(--font-mono)}.latency small{font-size:14px;color:var(--text-muted)}.service-state{display:flex;align-items:center;gap:4px;color:var(--color-success);font-size:14px;font-weight:600}.service-state i,.live-label i{width:6px;height:6px;border-radius:50%;background:currentColor}.resource-card{padding-bottom:14px}.live-label{display:flex;align-items:center;gap:5px;color:var(--color-success)!important;font:700 14px var(--font-mono)!important}.resource-rings{display:flex;justify-content:space-around;padding:12px 15px 16px}.resource-item{display:flex;align-items:center;flex-direction:column}.resource-ring{display:grid;width:76px;height:76px;place-items:center;border-radius:50%;background:conic-gradient(var(--ring-color) calc(var(--value)*1%),var(--color-bg-muted) 0);position:relative}.resource-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}.resource-ring span{z-index:1;font:700 17px var(--font-mono)}.resource-ring small{font-size:14px}.resource-item>strong{font-size:14px;margin-top:7px}.resource-item>small{font-size:14px;color:var(--text-muted)}.traffic-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px}.traffic-strip div{display:flex;align-items:center;gap:6px;padding:9px;border-radius:8px;background:var(--color-bg-muted);font-size:14px}.traffic-strip strong{margin-left:auto;font:600 14px var(--font-mono)}.task-state.success{background:var(--color-success-light);color:var(--color-success)}.task-state.running{background:var(--color-brand-light);color:var(--color-brand)}.task-state.warning{background:var(--color-warning-light);color:var(--color-warning)}.task-count{font:600 14px var(--font-mono);color:var(--text-secondary)}.task-status{min-width:48px;text-align:right;font-size:14px;font-weight:700}.task-status.success{color:var(--color-success)}.task-status.running{color:var(--color-brand)}.task-status.warning{color:var(--color-warning)}.event-card .event-count{background:var(--color-danger-light);color:var(--color-danger)!important}.event-list button{display:flex;align-items:center;gap:9px;width:100%;padding:10px 0;border:0;border-top:1px solid var(--color-border-light);background:transparent;text-align:left;cursor:pointer}.event-level{display:grid;width:29px;height:29px;place-items:center;border-radius:8px}.event-level.warning{background:var(--color-warning-light)}.event-level.danger{background:var(--color-danger-light);color:var(--color-danger)}.event-level.info{background:var(--color-info-light);color:var(--color-info)}.event-list button>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column}.event-list strong{font-size:14px}.event-list small{font-size:14px;color:var(--text-muted)}.event-list time{font:500 14px var(--font-mono);color:var(--text-muted)}
 .section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:8px 2px 16px}.section-heading h2{font-size:20px;letter-spacing:-.03em}.section-heading p{font-size:14px;color:var(--text-muted);margin-top:3px}.section-actions{display:flex;gap:8px}.crawler-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.crawler-summary>div{display:flex;flex-direction:column;padding:14px 16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.crawler-summary span{font-size:14px;color:var(--text-muted)}.crawler-summary strong{font:700 20px var(--font-mono)}.crawler-summary small{font-size:14px;color:var(--text-muted)}.crawler-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:13px}.crawler-card{padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff;transition:.2s}.crawler-card.paused{opacity:.72;background:var(--color-bg-muted)}.crawler-head{display:flex;align-items:center;gap:10px}.source-logo{display:grid;width:39px;height:39px;place-items:center;border-radius:11px;background:var(--color-brand-light);color:var(--color-brand);font-weight:700}.crawler-head>div{min-width:0;flex:1}.crawler-head h3{font-size:14px}.crawler-head p{font-size:14px;color:var(--text-muted)}.crawler-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.crawler-stats div{display:flex;flex-direction:column;padding:8px;border-radius:8px;background:var(--color-bg-muted)}.crawler-stats span,.crawler-progress span,.crawler-meta{font-size:14px;color:var(--text-muted)}.crawler-stats strong{font:600 14px var(--font-mono)}.crawler-progress>div{display:flex;justify-content:space-between;margin-bottom:5px}.crawler-progress strong{font:600 14px var(--font-mono)}.crawler-meta{display:flex;justify-content:space-between;margin-top:9px}.crawler-meta span{display:flex;align-items:center;gap:4px}.crawler-card footer{display:flex;gap:5px;padding-top:11px;margin-top:11px;border-top:1px solid var(--color-border-light)}.crawler-card footer button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;height:29px;border:1px solid var(--color-border);border-radius:7px;background:#fff;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.crawler-card footer button:first-child{border-color:var(--color-brand);color:var(--color-brand)}.crawler-card footer button:disabled{opacity:.5;cursor:not-allowed}.quality-panel{padding-bottom:16px}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 18px}.quality-grid>div{padding:12px;border-radius:9px;background:var(--color-bg-muted)}.quality-grid span{font-size:14px;color:var(--text-muted)}.quality-grid strong{display:block;font:700 17px var(--font-mono);margin:2px 0 7px}.quality-grid small{font-size:14px;color:var(--text-muted)}
@@ -1445,6 +1456,7 @@ function formatReviewDate(value: string | null) {
 @media(max-width:540px){.quality-review-summary{grid-template-columns:1fr}}
 }
 .graph-review-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; color:var(--text-muted); }
+.graph-heading-action { height:40px; padding-inline:18px; border-radius:10px; }
 .review-toolbar{flex-wrap:wrap}.review-toolbar .el-input{max-width:360px}.approve-all-button{margin-left:2px}.review-card{position:relative}.review-select{position:absolute;z-index:2;right:17px;top:46px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .graph-candidate-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; min-height:120px; }
 .graph-candidate-card { display:flex; flex-direction:column; gap:14px; padding:20px; border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-bg-elevated); box-shadow:var(--shadow-sm); }

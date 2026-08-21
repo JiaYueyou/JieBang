@@ -8,14 +8,18 @@ const dragging = ref(false)
 const file = ref<File | null>(null)
 const parsing = ref(false)
 const parsed = ref(false)
+const supportedExtensions = ['.pdf', '.docx', '.png', '.jpg', '.jpeg']
+
+const isSupportedFile = (name: string) =>
+  supportedExtensions.some((extension) => name.toLowerCase().endsWith(extension))
 
 const handleDrop = (e: DragEvent) => {
   dragging.value = false
   const f = e.dataTransfer?.files?.[0]
-  if (f && (f.name.endsWith('.pdf') || f.name.endsWith('.doc') || f.name.endsWith('.docx'))) {
+  if (f && isSupportedFile(f.name)) {
     file.value = f
   } else {
-    ElMessage.warning('请上传 PDF 或 Word 文档')
+    ElMessage.warning('请上传 PDF、DOCX、PNG、JPG 或 JPEG 文件')
   }
 }
 
@@ -38,7 +42,7 @@ const startParse = async () => {
   <div class="upload-page">
     <div class="upload-card" v-if="!parsed">
       <h3>上传简历</h3>
-      <p class="upload-desc">支持 PDF、Word 格式，解析准确率 ≥ 90%</p>
+      <p class="upload-desc">支持 PDF、DOCX、PNG、JPG、JPEG 格式，解析准确率目标 ≥ 90%</p>
 
       <div
         class="drop-zone"
@@ -49,7 +53,7 @@ const startParse = async () => {
       >
         <template v-if="!file">
           <el-icon :size="48" class="upload-icon"><UploadFilled /></el-icon>
-          <p>拖拽文件到此处，或 <label class="file-label">点击上传<input type="file" accept=".pdf,.doc,.docx" hidden @change="handleFileChange" /></label></p>
+          <p>拖拽文件到此处，或 <label class="file-label">点击上传<input type="file" accept=".pdf,.docx,.png,.jpg,.jpeg" hidden @change="handleFileChange" /></label></p>
         </template>
         <template v-else>
           <el-icon :size="40" class="file-icon"><Document /></el-icon>

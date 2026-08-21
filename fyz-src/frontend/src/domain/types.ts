@@ -213,6 +213,22 @@ export interface EnterpriseEmployeeDirectory {
   synced_at: string;
 }
 
+export type EnterpriseEmployeeDirectoryInput = Omit<EnterpriseEmployeeDirectory, "id" | "in_talent_pool" | "synced_at">;
+
+export interface EnterpriseDepartment {
+  id: EntityId;
+  code: string;
+  name: string;
+  manager?: string | null;
+  location?: string | null;
+  status: "active" | "inactive";
+  employee_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EnterpriseDepartmentInput = Omit<EnterpriseDepartment, "id" | "employee_count" | "created_at" | "updated_at">;
+
 export interface TransferRuleSet {
   id: EntityId;
   name: string;
@@ -228,6 +244,13 @@ export interface TransferRuleSet {
 }
 
 export type TransferRuleSetCreate = Omit<TransferRuleSet, "id" | "version" | "created_at" | "updated_at">;
+
+export interface ResumeAdmissionPayload {
+  department: string;
+  current_position: string;
+  level: string;
+  location?: string | null;
+}
 
 export interface InternalMatchResult {
   talent_id: EntityId;
@@ -369,6 +392,8 @@ export interface TalentSummary {
   urgent?: boolean;
   company?: string;
   location?: string;
+  phone?: string;
+  email?: string;
   salary?: string;
   matches?: TalentMatch[];
 }
@@ -383,8 +408,19 @@ export interface ResumeSkillDetail {
 
 export interface TalentMatch extends MatchReport {
   job_title: string;
+  job_department?: string;
+  job_level?: string;
   algorithm_version: string;
   urgent: boolean;
+  evidence?: MatchEvidence[];
+}
+
+export interface MatchEvidence {
+  id: EntityId;
+  evidence_type: "resume_skill" | "job_requirement" | string;
+  skill_name: string;
+  evidence_text: string;
+  source_ref: Record<string, unknown>;
 }
 
 export interface TalentDetail extends TalentSummary {
@@ -522,6 +558,19 @@ export interface MatchExplanation {
   generation_mode: "llm" | "template";
   warnings: string[];
   agent_run_id: string;
+  evidence: MatchEvidence[];
+}
+
+export interface TalentUpdatePayload {
+  name: string;
+  phone: string;
+  email: string;
+  current_position: string;
+  experience: string;
+  education: string;
+  department: string;
+  company: string;
+  location: string;
 }
 
 export interface GraphNode {

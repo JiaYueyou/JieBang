@@ -1,0 +1,108 @@
+{
+  "dataset_version": "resume-format-public-demo-v1",
+  "privacy": "Only fictional, template, or deliberately de-identified profiles are used. No private resume or contact detail is included.",
+  "sources": [
+    {
+      "name": "VibeResume mock demo",
+      "url": "https://github.com/LiuMengxuan04/vibe-resume",
+      "license": "MIT",
+      "note": "Repository explicitly identifies its resume as mock data."
+    },
+    {
+      "name": "Resume Builder Skill fictional example",
+      "url": "https://github.com/dabydat/resume-builder-skill",
+      "license": "MIT",
+      "note": "Repository documents a fictional senior software engineer example."
+    },
+    {
+      "name": "ATS Resume Agent example",
+      "url": "https://github.com/NullSpace-BitCradle/ats-resume-agent",
+      "license": "MIT / CC-BY-4.0 template",
+      "note": "Repository provides fake example career data and sample output."
+    },
+    {
+      "name": "JSON Resume fake profiles",
+      "url": "https://github.com/jsonresume/jsonresume-fake",
+      "license": "Unlicense",
+      "note": "Project publishes generated fake resume records."
+    },
+    {
+      "name": "Software engineer resume template",
+      "url": "https://github.com/dphang/resume",
+      "license": "MIT",
+      "note": "Public template used only as a structural reference."
+    }
+  ],
+  "cases": [
+    {
+      "id": "ai-001",
+      "role": "AI Application Engineer",
+      "source": "VibeResume mock demo",
+      "text": "候选人 A01\n目标岗位：AI 应用工程师\n技能：Python、FastAPI、React、Docker、Redis、Git\n项目：构建大模型知识问答服务与可观测 API。\n教育：计算机科学硕士。",
+      "expected_skills": ["Python", "FastAPI", "React", "Docker", "Redis", "Git", "大模型"]
+    },
+    {
+      "id": "ml-002",
+      "role": "Machine Learning Engineer",
+      "source": "Resume Builder Skill fictional example",
+      "text": "候选人 A02\n目标岗位：机器学习工程师\n技能：Python、PyTorch、TensorFlow、Kubernetes、PostgreSQL、Git\n项目：完成图像分类训练、模型评估与容器化部署。\n教育：人工智能硕士。",
+      "expected_skills": ["Python", "PyTorch", "TensorFlow", "Kubernetes", "PostgreSQL", "Git", "机器学习"]
+    },
+    {
+      "id": "data-003",
+      "role": "Data Engineer",
+      "source": "JSON Resume fake profiles",
+      "text": "候选人 A03\n目标岗位：数据工程师\n技能：Python、Java、Kafka、MySQL、Elasticsearch、Docker\n项目：建设实时数据管道和检索平台。\n教育：软件工程本科。",
+      "expected_skills": ["Python", "Java", "Kafka", "MySQL", "Elasticsearch", "Docker"]
+    },
+    {
+      "id": "backend-004",
+      "role": "Backend Engineer",
+      "source": "Software engineer resume template",
+      "text": "候选人 A04\n目标岗位：后端工程师\n技能：Java、Django、PostgreSQL、Redis、RabbitMQ、Docker\n项目：开发高并发订单服务和异步任务系统。\n教育：计算机科学本科。",
+      "expected_skills": ["Java", "Django", "PostgreSQL", "Redis", "RabbitMQ", "Docker"]
+    },
+    {
+      "id": "cloud-005",
+      "role": "Cloud Platform Engineer",
+      "source": "ATS Resume Agent example",
+      "text": "候选人 A05\n目标岗位：云平台工程师\n技能：Go、Kubernetes、Docker、Jenkins、Redis、Git\n项目：交付多集群发布平台与持续集成流水线。\n教育：网络工程本科。",
+      "expected_skills": ["Go", "Kubernetes", "Docker", "Jenkins", "Redis", "Git"]
+    },
+    {
+      "id": "frontend-006",
+      "role": "AI Frontend Engineer",
+      "source": "VibeResume mock demo",
+      "text": "候选人 A06\n目标岗位：AI 前端工程师\n技能：TypeScript、React、Angular、GraphQL、Git、Docker\n项目：实现智能助手工作台和流式响应界面。\n教育：数字媒体技术本科。",
+      "expected_skills": ["TypeScript", "React", "Angular", "GraphQL", "Git", "Docker"]
+    },
+    {
+      "id": "graph-007",
+      "role": "Knowledge Graph Engineer",
+      "source": "JSON Resume fake profiles",
+      "text": "候选人 A07\n目标岗位：知识图谱工程师\n技能：Python、Neo4j、Elasticsearch、FastAPI、PostgreSQL、Docker\n项目：构建岗位技能图谱与语义检索服务。\n教育：数据科学硕士。",
+      "expected_skills": ["Python", "Neo4j", "Elasticsearch", "FastAPI", "PostgreSQL", "Docker", "数据科学", "知识图谱"]
+    },
+    {
+      "id": "infra-008",
+      "role": "Distributed Systems Engineer",
+      "source": "Resume Builder Skill fictional example",
+      "text": "候选人 A08\n目标岗位：分布式系统工程师\n技能：Rust、Go、Kafka、Redis、Kubernetes、Git\n项目：研发低延迟消息处理与服务治理组件。\n教育：计算机工程硕士。",
+      "expected_skills": ["Rust", "Go", "Kafka", "Redis", "Kubernetes", "Git"]
+    },
+    {
+      "id": "edge-009",
+      "role": "Edge AI Embedded Engineer",
+      "source": "ATS Resume Agent example",
+      "text": "候选人 A09\n目标岗位：边缘 AI 嵌入式工程师\n技能：C++、C、Python、Linux、IoT、嵌入式\n项目：完成端侧模型推理、传感器接入与固件联调。\n教育：电子信息工程本科。",
+      "expected_skills": ["C++", "C", "Python", "Linux", "IoT", "嵌入式"]
+    },
+    {
+      "id": "chip-010",
+      "role": "AI Accelerator Engineer",
+      "source": "Software engineer resume template",
+      "text": "候选人 A10\n目标岗位：AI 加速器工程师\n技能：C++、Python、PyTorch、TensorFlow、Linux、FPGA\n项目：开发神经网络算子与硬件加速验证平台。\n教育：微电子科学本科。",
+      "expected_skills": ["C++", "Python", "PyTorch", "TensorFlow", "Linux", "FPGA", "神经网络"]
+    }
+  ]
+}

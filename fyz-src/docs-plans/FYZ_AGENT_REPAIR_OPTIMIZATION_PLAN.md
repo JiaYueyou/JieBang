@@ -1,9 +1,15 @@
 # FYZ 管理端 Agent 开发、修复与优化规划
 
+> 文档类型：专项实施记录
+> 状态：核心 MVP 已实现，统计为历史采样
+> 2026-08-12 复核：独立 Agent 包 12 项测试通过，FYZ 后端拆分执行 311 项通过；本文中
+> 更早的测试计数仅代表当时提交，不是当前总数。现状见
+> [当前实现状态](../../docs/implementation-status.md)。
+
 > 文档状态：实施中（核心 MVP 已完成）
-> 编制日期：2026-07-25  
-> 适用范围：`fyz-src` 管理端及其直接关联的 `agent-development` Agent 运行时  
-> 主要负责人范围：FYZ 管理端 Agent、Agent 直接关联的前后端功能、审计与验收  
+> 编制日期：2026-07-25
+> 适用范围：`fyz-src` 管理端及其直接关联的 `agent-development` Agent 运行时
+> 主要负责人范围：FYZ 管理端 Agent、Agent 直接关联的前后端功能、审计与验收
 > 关联文档：[FULLSTACK_PLAN.md](./FULLSTACK_PLAN.md)、[GRAPH_ARCHITECTURE.md](./GRAPH_ARCHITECTURE.md)
 
 ## 1. 文档目标

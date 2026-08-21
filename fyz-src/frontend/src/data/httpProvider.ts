@@ -297,6 +297,7 @@ export const httpDataProvider: DataProvider = {
   talents: {
     list:()=>get("/talents"), get:(id)=>get(`/talents/${id}`),
     getDetails: (id) => get(`/talents/${id}/details`),
+    updateDetails: (id, input) => put(`/talents/${id}/details`, input),
     upload: async (input) => {
       const form = new FormData();
       form.append("file", input.file);
@@ -362,8 +363,20 @@ export const httpDataProvider: DataProvider = {
     },
   },
   internalTransfer: {
-    searchEmployeeDirectory: (keyword) => get("/internal-transfer/employee-directory", { keyword, limit: 10 }),
+    searchEmployeeDirectory: (keyword, department) => get("/internal-transfer/employee-directory", {
+      keyword,
+      ...(department ? { department } : {}),
+      limit: 50,
+    }),
+    listDepartments: () => get("/internal-transfer/departments"),
+    createDepartment: (input) => post("/internal-transfer/departments", input),
+    updateDepartment: (id, input) => put(`/internal-transfer/departments/${id}`, input),
+    removeDepartment: async (id) => { await request.delete(`/internal-transfer/departments/${id}`); },
+    createEmployee: (input) => post("/internal-transfer/employee-directory", input),
+    updateEmployee: (id, input) => put(`/internal-transfer/employee-directory/${id}`, input),
+    removeEmployee: async (id) => { await request.delete(`/internal-transfer/employee-directory/${id}`); },
     createTalentFromDirectory: (employeeId) => post(`/internal-transfer/talents/from-directory/${employeeId}`, {}),
+    admitResume: (resumeId, input) => post(`/internal-transfer/talents/from-resume/${resumeId}`, input),
     listPositions: async () => (
       await httpDataProvider.internalTransfer.listPositionsPage({ page: 1, pageSize: 100 })
     ).items,
@@ -392,6 +405,9 @@ export const httpDataProvider: DataProvider = {
     listSkillDemands: () => get("/internal-transfer/skill-demands"),
     listRuleSets: () => get("/internal-transfer/rule-sets"),
     createRuleSet: (input) => post("/internal-transfer/rule-sets", input),
+    getRuleSet: (id) => get(`/internal-transfer/rule-sets/${id}`),
+    updateRuleSet: (id, input) => put(`/internal-transfer/rule-sets/${id}`, input),
+    removeRuleSet: async (id) => { await request.delete(`/internal-transfer/rule-sets/${id}`); },
     matchByTalent: (input) => post("/internal-transfer/matches/by-talent", input),
     matchByPosition: (input) => post("/internal-transfer/matches/by-position", input),
     listDecisions: () => get("/internal-transfer/decisions"),

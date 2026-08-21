@@ -50,6 +50,12 @@ class MeituanSpider(BaseSpider):
         super().__init__()
         self.start_date = start_date
         self.end_date = end_date
+        self.snapshot_scope = {
+            "collector": self.name,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "job_family": "technology",
+        }
         self.max_pages = max(1, max_pages)
         self._last_page_size = 0
         self._last_total_pages = 0
@@ -157,6 +163,7 @@ class MeituanSpider(BaseSpider):
         }
 
     def run(self):
+        exhausted = False
         for page_num in range(1, self.max_pages + 1):
             LOGGER.info("正在采集第 %s/%s 页...", page_num, self.max_pages)
             records = self.parse(page_num)
@@ -166,7 +173,13 @@ class MeituanSpider(BaseSpider):
             if self._last_page_size == 0 or (
                 self._last_total_pages and page_num >= self._last_total_pages
             ):
+                exhausted = True
                 break
+        self.snapshot_complete = (
+            exhausted
+            and self.stats["errors"] == 0
+            and not (self.max_records and len(self.observed_data) >= self.max_records)
+        )
         self.print_stats()
         return self.save()
 

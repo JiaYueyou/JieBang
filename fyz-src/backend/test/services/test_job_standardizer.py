@@ -55,7 +55,7 @@ def test_region_and_company_are_dimensions_not_standard_job_identity():
     assert beijing.city_code == "110000"
     assert shanghai.city_code == "310000"
     assert beijing.company_key == shanghai.company_key == "示例科技"
-    assert beijing.version == "job-title-v3"
+    assert beijing.version == "job-title-v5"
 
 
 def test_seniority_is_part_of_standard_job_identity():
@@ -77,3 +77,14 @@ def test_business_line_suffix_is_not_part_of_standard_job_identity():
     assert product.canonical_key == "ai产品经理:middle"
     assert fde.name == "前置部署工程师"
     assert fde.role_family == "devops"
+
+
+def test_business_line_prefix_is_not_part_of_standard_job_identity():
+    flash_sale = normalize_job_title("闪购-Java开发工程师")
+    company_label = normalize_job_title("Keeta技术-Java工程师")
+
+    assert flash_sale.name == "Java开发工程师"
+    assert flash_sale.canonical_key == "java开发工程师:middle"
+    assert company_label.name == "Java开发工程师"
+    assert company_label.canonical_key == flash_sale.canonical_key
+    assert company_label.role_family == "backend"

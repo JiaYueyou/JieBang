@@ -74,18 +74,28 @@ class SkillGraphCompletionAgent:
         self.timeout_seconds = timeout_seconds
         self.max_attempts = max(1, max_attempts)
 
-    async def complete(self, request: SkillGraphCompletionInput) -> GraphEnrichmentOutput:
-        output = await self.llm.generate_structured(
-            system_prompt=SYSTEM_PROMPT,
-            user_prompt=build_user_prompt(request.model_dump(mode="json")),
-            response_schema=GraphEnrichmentOutput,
-            timeout_seconds=self.timeout_seconds,
-            metadata={
-                "agent_type": self.agent_type,
-                "prompt_version": self.prompt_version,
-                "max_attempts": self.max_attempts,
-            },
-        )
+    async def complete(
+        self,
+        request: SkillGraphCompletionInput,
+        *,
+        diagnostics: dict | None = None,
+    ) -> GraphEnrichmentOutput:
+        metadata = {
+            "agent_type": self.agent_type,
+            "prompt_version": self.prompt_version,
+            "max_attempts": self.max_attempts,
+        }
+        try:
+            output = await self.llm.generate_structured(
+                system_prompt=SYSTEM_PROMPT,
+                user_prompt=build_user_prompt(request.model_dump(mode="json")),
+                response_schema=GraphEnrichmentOutput,
+                timeout_seconds=self.timeout_seconds,
+                metadata=metadata,
+            )
+        finally:
+            if diagnostics is not None:
+                diagnostics.update(metadata.get("provider_diagnostics") or {})
         normalized = output.model_copy(
             update={
                 "skill_name": request.tech_stack,
@@ -107,6 +117,7 @@ class SkillGraphCompletionAgent:
         evidence: list[dict],
         skill_area: str = "未分类",
         job_directions: list[str] | None = None,
+        diagnostics: dict | None = None,
     ) -> GraphEnrichmentOutput:
         """兼容旧调用入口。"""
 
@@ -116,7 +127,8 @@ class SkillGraphCompletionAgent:
                 skill_area=skill_area,
                 tech_stack=skill_name,
                 evidence=evidence,
-            )
+            ),
+            diagnostics=diagnostics,
         )
 
 

@@ -46,6 +46,12 @@ class JdSpider(BaseSpider):
         super().__init__()
         self.start_date = start_date
         self.end_date = end_date
+        self.snapshot_scope = {
+            "collector": self.name,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "job_type": "YANFA",
+        }
         self.max_pages = max(1, max_pages)
         self._last_page_size = 0
 
@@ -142,6 +148,7 @@ class JdSpider(BaseSpider):
         }
 
     def run(self):
+        exhausted = False
         for page_num in range(1, self.max_pages + 1):
             LOGGER.info("正在采集第 %s/%s 页...", page_num, self.max_pages)
             records = self.parse(page_num)
@@ -149,7 +156,13 @@ class JdSpider(BaseSpider):
             for record in records:
                 self.add_job(record)
             if self._last_page_size < 50:
+                exhausted = True
                 break
+        self.snapshot_complete = (
+            exhausted
+            and self.stats["errors"] == 0
+            and not (self.max_records and len(self.observed_data) >= self.max_records)
+        )
         self.print_stats()
         return self.save()
 

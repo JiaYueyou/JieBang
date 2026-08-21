@@ -26,7 +26,8 @@ from app.core.exceptions import ResourceNotFoundError
 from app.core.database import TESTING
 from app.core.time import utc_now_naive
 from app.domain.skill_dictionary import HISTORICALLY_ESTABLISHED_SKILLS
-from app.domain.job_standardizer import normalize_city_names
+from app.domain.job_standardizer import normalize_city_names, normalize_job_title
+from app.domain.job_lifecycle import current_external_job_condition
 from app.schemas.analysis import (
     AnalysisBaseline,
     AnalysisDataQuality,
@@ -98,7 +99,9 @@ class AnalysisService:
     MIN_NEW_JOB_CLUSTERS = 3
     MIN_NEW_JOB_COMPANIES = 2
     MIN_NEW_JOB_SOURCES = 2
-    MIN_NEW_JOB_PERIODS = 2
+    # Cross-company/source evidence can confirm a role within the same month;
+    # waiting for a second month would defeat near-real-time discovery.
+    MIN_NEW_JOB_PERIODS = 1
     JOB_MATURE_MIN_CLUSTERS = 5
     JOB_MATURE_MIN_PERIODS = 3
     JOB_ESTABLISHED_MIN_CLUSTERS = 3
@@ -405,24 +408,29 @@ class AnalysisService:
 
         needle = (skill or "").strip().casefold()
         emerging_jobs: list[EmergingJobInsight] = []
+        seen_job_keys: set[str] = set()
         for standard in standard_jobs:
+            normalized_job = normalize_job_title(standard.name)
+            display_name = normalized_job.name
+            if normalized_job.canonical_key in seen_job_keys:
+                continue
+            seen_job_keys.add(normalized_job.canonical_key)
             counts = Counter(
                 fact_skill.name
                 for raw_id in source_ids.get(standard.id, set())
                 for fact_skill in skills_by_raw.get(raw_id, [])
             )
             core_skills = [name for name, _ in counts.most_common(6)]
-            if needle and needle not in " ".join([standard.name, *core_skills]).casefold():
+            if needle and needle not in " ".join([display_name, *core_skills]).casefold():
                 continue
             confidence = min(99, 60 + standard.source_count * 6 + len(core_skills) * 2)
             emerging_jobs.append(EmergingJobInsight(
                 id=standard.id,
-                name=standard.name,
+                name=display_name,
                 core_skills=core_skills,
-                description=(
-                    standard.description
-                    or f"由 {standard.source_count} 条独立岗位来源聚合形成。"
-                ),
+                description=(standard.description.replace(standard.name, display_name)
+                    if standard.description
+                    else f"由 {standard.source_count} 条独立岗位来源聚合形成。"),
                 confidence=confidence,
                 source_count=standard.source_count,
                 first_seen_at=standard.first_seen_at,
@@ -501,11 +509,8 @@ class AnalysisService:
                 SourceDocument,
                 RawJobRecord.source_document_id == SourceDocument.id,
             )
+            .where(current_external_job_condition())
         )).all()
-        mappings = dict((await self.db.execute(
-            select(StandardJobSource.source_id, StandardJobSource.standard_job_id)
-            .where(StandardJobSource.source_type == "raw")
-        )).all())
         needle = (keyword or "").strip().casefold()
         requested_cities = normalize_city_names(city)
         city_filter = requested_cities[0] if requested_cities else None
@@ -547,8 +552,8 @@ class AnalysisService:
                 used_fallback_time=used_fallback_time,
                 salary_k=self.parse_salary_k(row.salary_text),
                 cluster_key=(
-                    f"standard:{mappings[row.id]}"
-                    if row.id in mappings
+                    f"standard:{row.standard_job_id}"
+                    if row.standard_job_id is not None
                     else f"fallback:{title_key}|{company_key}|{city_key}"
                 ),
                 company_key=company_key or f"unknown:{row.id}",
@@ -1506,12 +1511,16 @@ class AnalysisService:
                 item.evidence_unit("month")
                 for item in items
             }
-            # Keep every first-observed standard job in the overview.  The old
-            # implementation silently discarded single-source or single-month
-            # observations, which made the displayed total describe only a
-            # small high-confidence subset rather than the factual number of
-            # newly observed jobs.  Confidence and evidence counts retain the
-            # distinction between an observation and cross-market confirmation.
+            # The candidate list is a decision surface, not a raw anomaly log.
+            # Keep all first observations in new_job_observation_total, while
+            # only publishing cross-company/source/time confirmations here.
+            if not (
+                len(clusters) >= self.MIN_NEW_JOB_CLUSTERS
+                and len(companies) >= self.MIN_NEW_JOB_COMPANIES
+                and len(sources) >= self.MIN_NEW_JOB_SOURCES
+                and len(periods) >= self.MIN_NEW_JOB_PERIODS
+            ):
+                continue
             skill_counts = Counter(
                 skill_name
                 for item in items

@@ -16,7 +16,14 @@ export const useAdminStore=defineStore("admin",()=>{
   const agentRunPage=ref(1),agentRunPageSize=ref(10);
   const agentRunStatus=ref<AgentRunStatus|undefined>(),agentRunType=ref("");
   const qualityPage=ref<DataQualityPage|null>(null),qualityLoading=ref(false),qualityError=ref("");
-  async function load(force=false){if(loaded.value&&!force)return;loading.value=true;error.value="";try{data.value=await dataProvider.admin.getOverview();loaded.value=true;}catch(e){error.value=e instanceof Error?e.message:"加载失败";}finally{loading.value=false;}}
+  async function load(force=false,silent=false){
+    if(loaded.value&&!force)return;
+    const showLoading=!silent||!loaded.value;
+    if(showLoading){loading.value=true;error.value="";}
+    try{data.value=await dataProvider.admin.getOverview();loaded.value=true;if(!silent)error.value="";}
+    catch(e){if(!silent||!loaded.value)error.value=e instanceof Error?e.message:"加载失败";}
+    finally{if(showLoading)loading.value=false;}
+  }
   async function refreshResources():Promise<AdminResourceSnapshot>{
     const snapshot=await dataProvider.admin.getResources();
     if(data.value){
@@ -60,7 +67,7 @@ export const useAdminStore=defineStore("admin",()=>{
   }
   return {
     data,loading,loaded,error,qualityPage,qualityLoading,qualityError,
-    load,refresh:()=>load(true),loadQuality,decideQuality,toggleCrawler,runCrawler,startPipeline,
+    load,refresh:()=>load(true),refreshSilently:()=>load(true,true),loadQuality,decideQuality,toggleCrawler,runCrawler,startPipeline,
     getCrawlerAutomation,saveCrawlerAutomation,
     pollCrawler,importCrawlerOutput,agentRuns,agentRunsLoading,agentRunsTotal,
     agentRunPage,agentRunPageSize,agentRunStatus,agentRunType,loadAgentRuns,refreshResources,

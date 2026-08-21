@@ -1,0 +1,19 @@
+{
+  "format_version": 1,
+  "status": "passed",
+  "verified_at": "2026-08-20T06:59:31.340122+00:00",
+  "alembic_revision": "20260820_0025",
+  "snapshot_sha256": "ac54bed13bafbb2868167d81576e6fe119018b05ae24db6afaaa473a169db4c8",
+  "manifest_sha256": "d15bdbf3bb9e617b2f2353d688086d36bc3edf9209859cc2c9e49458ddbddb03",
+  "table_count": 47,
+  "total_rows": 54474,
+  "checks": {
+    "source_revision_matches_repository_head": true,
+    "required_migration_tables_present": true,
+    "consistent_snapshot_transaction": true,
+    "sql_grammar_valid": true,
+    "sql_row_counts_match_manifest": true,
+    "sql_checksum_matches_manifest": true,
+    "per_table_checksums_match_manifest": true
+  }
+}

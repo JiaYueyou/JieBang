@@ -38,6 +38,13 @@ class DataSource(Base):
 
     # 运行状态
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime, comment="最后运行时间")
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime, index=True, comment="最后成功时间"
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, comment="最近失败摘要")
+    freshness_slo_minutes: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=2880, comment="数据新鲜度 SLO（分钟）"
+    )
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime, comment="下次运行时间")
     consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="连续失败次数")
 

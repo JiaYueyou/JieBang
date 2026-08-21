@@ -1,12 +1,18 @@
 # Agent 开发工作区
 
+> 文档类型：现行模块说明
+> 状态：基本实现
+> 核验日期：2026-08-12（`c995a09e`）；独立包 16 项测试全部通过。
+> 仓库级状态见 [当前实现状态](../docs/implementation-status.md)。
+
 本目录是 `feat/fyz-job-agent` 分支上 Agent 需求、接口契约、Prompt、运行时代码和验收用例的独立工作区。后端只保留加载适配、HTTP/进程内异步编排和审计持久化；Agent 执行不依赖 Redis/Celery。本目录不放密钥、真实简历或模型原始响应。
 
 ## 当前交付
 
 - [接口契约](AGENT_API_CONTRACT.md)：Agent 范围、前后端字段、HTTP 接口、异步状态、审计和错误约定。
 - [开发计划](DEVELOPMENT_PLAN.md)：按依赖关系拆分的实现顺序、每阶段产出和验收标准。
-- [当前下一阶段](DEVELOPMENT_PLAN.md#下一阶段career-planning-消费匹配快照)：让职业规划优先复用已持久化的匹配差距与证据。
+- [开发计划](DEVELOPMENT_PLAN.md) 中的“下一阶段”是历史任务描述；当前优先缺口是统一技能
+  抽取公共入口、Emerging Job Review 和外部模型稳定性验证。
 
 ## 目录约定
 
@@ -36,6 +42,7 @@ agent-development/
 - **集成位置**：`GraphTaskService`、`GraphService` 与 `/api/v1/graph/enrichment/*`
 - **审核链路**：异步生成候选 → 机器校验 → 人工批准/驳回 → 发布 → Neo4j
 - **测试入口**：`python -m pytest tests -q`
+- **稳定性验收**：[L45_STABILITY_ACCEPTANCE.md](L45_STABILITY_ACCEPTANCE.md)，包含离线故障注入、真实模型压测和人工审核质量门槛
 
 `l45_agent/` 只保留早期设计参考，不再通过后端脚本直接运行。详细迁移说明见
 [l45_agent/README.md](l45_agent/README.md)。
@@ -46,7 +53,7 @@ agent-development/
 | --- | --- | --- |
 | JD Generation | 已完成输入建议增强 | 岗位名称自动补全、异步任务、审计、结构化草稿和规则模板降级可用 |
 | Skill Extraction | 部分完成 | 岗位技能抽取与补全可用，统一文本/简历公共入口待开发 |
-| Skill L4/L5 Completion | 已完成首版 | L1-L3 上下文、双来源和 `0.75` 门槛可用 |
+| Skill L4/L5 Completion | 已完成稳定性收尾 | L1-L3 上下文、双来源、`0.75` 门槛、分类重试、审计指标与人工批准复检可用 |
 | Career Planning | 已完成首版 | 文件文本解析、即时确定性推荐、学习路径和 FYZ 联调可用 |
 | Match Explanation | 已完成首版 | 私有简历、确定性快照、证据引用、模板降级和 FYZ 联调可用 |
 | Emerging Job Review | 待开发 | 在匹配解释闭环后实施 |

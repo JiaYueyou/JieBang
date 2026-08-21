@@ -168,7 +168,14 @@
                 </div>
                 <div class="db-match-pos">{{ item.position }}</div>
                 <div class="db-match-gap" v-if="item.missing.length">
-                  缺：<span v-for="s in item.missing.slice(0,2)" :key="s">{{ s }} </span>
+                  <span class="db-match-gap-label">缺：</span>
+                  <span
+                    v-for="s in item.missing.slice(0, 2)"
+                    :key="s"
+                    class="db-match-gap-skill"
+                  >
+                    {{ s }}
+                  </span>
                 </div>
               </div>
               <div class="db-match-score">
@@ -270,7 +277,7 @@
               <div class="db-skill-rank" :class="{ hot: (emergingPage - 1) * emergingPageSize + i < 2 }">{{ (emergingPage - 1) * emergingPageSize + i + 1 }}</div>
               <div class="db-skill-body">
                 <div class="db-skill-name">{{ sk.name }}</div>
-                <div class="db-skill-combo">{{ sk.combo }}</div>
+                <div class="db-skill-combo">{{ skillSummaryLabel(sk.combo) }}</div>
               </div>
               <div class="db-skill-right">
                 <span class="db-skill-growth" :class="{ hot: sk.growth > 0 }">近30天 +{{ sk.growth }} 条</span>
@@ -362,6 +369,7 @@ import DataState from "@/components/common/DataState.vue";
 import { dataProvider } from "@/data";
 import { useDashboardStore } from "@/stores/dashboard";
 import type { DashboardOverview, TalentSummary } from "@/domain/types";
+import { skillSummaryLabel } from "@/utils/displayLabels";
 
 use([LineChart, GridComponent, CanvasRenderer]);
 

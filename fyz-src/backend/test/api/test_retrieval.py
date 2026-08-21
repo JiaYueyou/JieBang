@@ -7,11 +7,14 @@ from app.models import (
     EvidenceChunk,
     JobSkillFact,
     RawJobRecord,
+    RetrievalIndexVersion,
     RetrievalQueryLog,
     Skill,
     SourceDocument,
     StandardJob,
 )
+from app.services.retrieval_service import RetrievalService
+from app.schemas.retrieval import RetrievalSearchRequest
 
 
 async def _seed_verified_fact() -> None:
@@ -205,3 +208,69 @@ async def test_admin_rebuilds_chroma_index_and_searches_it(
     assert data["backend"] == "chroma"
     assert [item["skill_name"] for item in data["items"]] == ["FastAPI"]
     assert not any("Chroma 向量召回不可用" in item for item in data["warnings"])
+
+
+async def test_rebuild_rejects_an_empty_index_after_a_nonempty_ready_version():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        first = await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        fact = await db.scalar(select(JobSkillFact))
+        fact.verification_status = "unverified"
+        await db.commit()
+
+        try:
+            await RetrievalService(db).rebuild_index(
+                created_by=None, backend="local_hash"
+            )
+        except RuntimeError as exc:
+            assert "activation rejected" in str(exc)
+        else:
+            raise AssertionError("empty replacement index must fail activation")
+
+        ready = list((await db.execute(
+            select(RetrievalIndexVersion).where(
+                RetrievalIndexVersion.status == "ready"
+            )
+        )).scalars())
+        assert [row.version for row in ready] == [first.version]
+        chunk = await db.scalar(select(EvidenceChunk))
+        assert chunk.verification_status == "machine_validated"
+        fallback = await RetrievalService(db).search(
+            RetrievalSearchRequest(
+                query="FastAPI",
+                index_version=first.version,
+                top_k=5,
+            ),
+            user_id=1,
+            log_query=False,
+        )
+        assert [item.skill_name for item in fallback.items] == ["FastAPI"]
+
+
+async def test_search_degrades_to_lexical_when_persisted_embedding_provider_is_offline():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        built = await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        class OfflineEmbeddingProvider:
+            model = "text-embedding-3-large"
+
+            async def embed_texts(self, texts):
+                raise RuntimeError("offline")
+
+        service = RetrievalService(db)
+        service._provider_for_index = lambda index: OfflineEmbeddingProvider()
+
+        result = await service.search(
+            RetrievalSearchRequest(
+                query="FastAPI", index_version=built.version, top_k=5
+            ),
+            user_id=1,
+            log_query=False,
+        )
+
+        assert [item.skill_name for item in result.items] == ["FastAPI"]
+        assert any("已降级为关键词" in warning for warning in result.warnings)

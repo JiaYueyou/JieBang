@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ResourceNotFoundError
+from app.domain.job_lifecycle import current_external_job_condition
 from app.models import JobSkillFact, RawJobRecord, Skill, SourceDocument
 from app.schemas.common import PageMeta
 from app.schemas.job import (
@@ -28,7 +29,7 @@ class ObservedJobService:
         city: str | None,
         source: str | None,
     ) -> tuple[list[ObservedJobSummary], PageMeta]:
-        conditions = []
+        conditions = [current_external_job_condition()]
         if keyword:
             pattern = f"%{keyword.strip()}%"
             conditions.append(or_(

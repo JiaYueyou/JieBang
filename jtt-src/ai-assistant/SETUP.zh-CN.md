@@ -1,5 +1,11 @@
 # AI 助手独立服务 — 配置说明
 
+> 文档类型：配置草案
+> 状态：部分过时
+> 核验日期：2026-08-12（`c995a09e`）
+> API Key 与服务启动步骤仍可参考；“前端自动透传”目前不成立，必须先修正 Axios/Vite
+> 的主后端与 AI 服务分流。参见 [前端 README](../frontend/README.md)。
+
 ## 1. 获取 DeepSeek API Key
 
 1. 访问 https://platform.deepseek.com/

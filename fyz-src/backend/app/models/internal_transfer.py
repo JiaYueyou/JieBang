@@ -10,6 +10,22 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
+class EnterpriseDepartment(Base):
+    """企业部门主数据，供员工目录、录用和内部岗位统一引用。"""
+
+    __tablename__ = "enterprise_department"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(30), nullable=False, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    manager: Mapped[str | None] = mapped_column(String(100))
+    location: Mapped[str | None] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+
 class EnterpriseTalent(Base):
     __tablename__ = "enterprise_talent"
 

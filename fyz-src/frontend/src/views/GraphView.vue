@@ -115,7 +115,7 @@
               <span>技术方向</span>
             </div>
             <div>
-              <strong>{{ activeNode.level }}</strong>
+              <strong>{{ levelLabel(activeNode.level) }}</strong>
               <span>适配级别</span>
             </div>
             <div>
@@ -128,7 +128,7 @@
             <div class="graph-card-title with-gap">技术内容</div>
             <p>{{ activeNode.description || "该知识点暂未补充详细说明。" }}</p>
             <dl>
-              <div><dt>难度</dt><dd>{{ activeNode.difficulty || "未分级" }}</dd></div>
+              <div><dt>难度</dt><dd>{{ difficultyLabel(activeNode.difficulty) }}</dd></div>
               <div><dt>证据数</dt><dd>{{ activeNode.source_count ?? activeNode.evidence_ids?.length ?? 0 }}</dd></div>
               <div v-if="activeNode.prerequisites?.length"><dt>前置知识</dt><dd>{{ activeNode.prerequisites.join("、") }}</dd></div>
             </dl>
@@ -142,7 +142,7 @@
                 <b>{{ solution.name }}</b><p>{{ solution.purpose }}</p>
               </article>
             </div>
-            <el-button class="knowledge-more-btn" type="primary" plain @click="knowledgeDialogVisible = true">
+            <el-button class="knowledge-more-btn" plain @click="knowledgeDialogVisible = true">
               查看知识要点详情
             </el-button>
           </div>
@@ -202,7 +202,7 @@
           </article>
         </section>
         <section class="knowledge-dialog-meta">
-          <span>难度：{{ activeNode.difficulty || "未分级" }}</span>
+          <span>难度：{{ difficultyLabel(activeNode.difficulty) }}</span>
           <span>证据数：{{ activeNode.source_count ?? activeNode.evidence_ids?.length ?? 0 }}</span>
           <span v-if="activeNode.prerequisites?.length">前置知识：{{ activeNode.prerequisites.join("、") }}</span>
         </section>
@@ -224,6 +224,7 @@ import { getNodeNeighbors, getOverview, getPanorama } from "@/api/graph";
 import type { GraphSubgraph } from "@/api/graph";
 import DataState from "@/components/common/DataState.vue";
 import { useGraphTasks } from "@/composables/useGraphTasks";
+import { difficultyLabel, levelLabel } from "@/utils/displayLabels";
 import type { GraphNode, GraphType } from "@/domain/types";
 
 type FilterType = GraphType | "all";
@@ -765,7 +766,20 @@ watch([keyword, selectedStack, selectedLevel], () => {
   color: #fff;
 }
 
-.knowledge-more-btn { width: 100%; margin-top: 14px; }
+.knowledge-more-btn {
+  width: 100%;
+  margin-top: 14px;
+  border-color: var(--color-border);
+  background: #fff;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.knowledge-more-btn:hover,
+.knowledge-more-btn:focus-visible {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
 
 :global(.knowledge-dialog .el-dialog__body) { padding-top: 8px; }
 .knowledge-dialog-body h2 { margin: 6px 0 12px; color: var(--text-primary); font-size: 24px; }

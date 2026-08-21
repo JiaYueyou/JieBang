@@ -1,5 +1,10 @@
 # 数据库、数据导入与运行指南
 
+> 文档类型：FYZ 运行说明
+> 状态：现行
+> 核验日期：2026-08-12（`c995a09e`）
+> JTT 使用独立后端、模型和迁移链，见 [当前实现状态](implementation-status.md)。
+
 ## 1. 数据边界
 
 - MySQL 是用户、岗位、技能事实、来源证据、任务和图谱审计的事实库。
@@ -7,7 +12,8 @@
   可以删除后重建，不是事实来源。
 - Neo4j 是由 MySQL 已验证事实重建的查询模型，不是事实来源。
 - Neo4j 业务节点和关系使用 `namespace=jiebang` 隔离。
-- Redis 只负责 Celery 消息和任务结果，不保存最终业务事实。
+- Redis 不保存最终业务事实：一套实例用于 Celery Broker/结果，另一套可选实例用于查询、
+  任务状态与预热缓存；缓存连接失败时 FYZ 后端降级为直接查询。
 - DeepSeek 是可选增强项；未配置时系统必须保留规则抽取和基础图谱能力。
 
 ## 2. 环境配置
@@ -83,12 +89,16 @@ base
 → 20260712_0006  私有简历、匹配快照与解释证据
 → 20260715_0007～20260731_0015  转岗、员工、来源、审核、审计、质量与 RAG
 → 20260801_0016  岗位标准化 v2
-→ 20260801_0017  L4/L5 图谱补全工作流（当前 head）
+→ 20260801_0017  L4/L5 图谱补全工作流
+→ 20260808_0018  分析参考基线快照
+→ 20260809_0019  岗位来源观测
+→ 20260809_0020  自动流水线持久化（当前 head）
 ```
 
-### ⚠ 当前 `20260801_0017` 数据库版本
+### ⚠ 当前 `20260809_0020` 数据库版本
 
-该迁移创建 `resume`、`resume_parse_result`、`resume_skill`、`match_record` 和 `match_evidence`，供 FYZ 人才匹配与 Match Explanation 使用。拉取包含该 revision 的代码后，先执行：
+当前 head 已包含私有简历与匹配、L4/L5 审核、分析基线、岗位来源观测和持久化自动流水线。
+拉取代码后先执行：
 
 ```powershell
 cd fyz-src\backend
@@ -96,7 +106,7 @@ alembic upgrade head
 alembic current
 ```
 
-确认当前版本为 `20260801_0017 (head)` 后再重启 FastAPI。不要使用
+确认当前版本为 `20260809_0020 (head)` 后再重启 FastAPI。不要使用
 `alembic stamp head` 跳过 DDL；否则会造成路由已存在、但查询因岗位标准化或
 图谱审核表缺失而失败。
 
@@ -144,38 +154,13 @@ alembic upgrade head
 
 ### 导入团队完整数据库快照
 
-团队本地环境统一使用 `fyz-src/backend/scripts/` 的五阶段迁移包。它先创建或
-升级 MySQL 表并导入全部事实/审计/预计算向量数据，再从 MySQL 复原 ChromaDB、
-重建 Neo4j，最后核对三类存储；不要再使用多个离线脚本分别导入同一批 JD、
-技能、向量或图谱数据。
+`fyz-src/backend/scripts/` 提供完整迁移包的导出、离线校验和接收端导入流程。当前共享快照
+已于 2026-08-12 按 `20260809_0020` 重导，包含 42 张表、41667 行，并配套 manifest、
+逐表内容摘要和 `mysql_snapshot_verification.json`；离线严格校验状态为 `passed`。
 
-```powershell
-cd fyz-src\backend
-python scripts\01_prepare_mysql_schema.py
-python scripts\02_import_mysql_snapshot.py --replace
-python scripts\restore_chroma_from_mysql.py --replace
-python scripts\03_rebuild_neo4j.py
-python scripts\04_verify_database_import.py
-```
-
-也可以一键运行：
-
-```powershell
-.\scripts\Import-TeamDatabase.ps1 -Replace
-```
-
-也可以运行跨平台 Python 入口：
-
-```text
-python scripts/run_database_import.py --replace
-```
-
-导入会覆盖目标 MySQL 的现有业务数据、`jiebang-evidence-` Chroma collection
-和 Neo4j `namespace=jiebang`。Chroma 直接使用 SQL 中已经保存的向量，不调用
-外部 Embedding API。来源方更新数据库内容后，运行
-`python scripts\export_mysql_snapshot.py` 来刷新 `mysql_snapshot.sql` 与其
-SHA-256 manifest。完整安全边界、校验项和故障处理见
-[数据库迁移脚本说明](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)。
+导入前必须先执行 `python scripts/verify_mysql_snapshot_package.py`。覆盖式接收流程会替换
+目标 MySQL、Chroma 和 `namespace=jiebang` 的 Neo4j 数据，因此只能在已备份、明确指定的
+隔离目标环境执行；当前源库未执行自覆盖式验收。
 
 ## 4. 初始管理员
 

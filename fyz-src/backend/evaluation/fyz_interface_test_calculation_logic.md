@@ -688,15 +688,15 @@ cache_key = namespace + operation + generation + canonicalized(params)
 
 对应测试：`test/core/test_cache.py`、`test/services/test_query_cache.py`、Dashboard/Analysis/Graph API 测试。
 
-## 3.16 占位兼容接口
+## 3.16 兼容模块入口
 
 ### 接口
 
-- `GET /api/v1/changes/`
-- `GET /api/v1/changes/health`
 - `GET /api/v1/matching/`
 
-这些接口用于兼容已有模块健康检查和前端入口，不代表已完成的独立计算功能。测试只验证统一响应、鉴权和不存在路由的 404 行为。策划书中不应将占位接口计入算法准确率。
+`matching/` 用于兼容已有模块健康检查和前端入口，不代表独立计算功能。旧
+`/changes/` 与 `/changes/health` 无消费者，其需求已由 Analysis 和岗位版本接口覆盖，
+于 2026-08-12 移除；回归测试验证两条旧路径返回 404。
 
 ## 4. 覆盖率计算方法
 

@@ -12,13 +12,17 @@ from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.time import utc_now_naive
 from app.schemas.common import PageMeta
 from app.models import (
+    EnterpriseDepartment,
     EnterpriseEmployeeDirectory,
     EnterpriseTalent,
     InternalPosition,
     TransferDecision,
     TransferRuleSet,
+    Resume,
 )
 from app.schemas.internal_transfer import (
+    EnterpriseDepartmentCreate,
+    EnterpriseDepartmentSummary,
     EmployeeDirectoryCreate,
     EmployeeDirectorySummary,
     EnterpriseTalentCreate,
@@ -31,7 +35,9 @@ from app.schemas.internal_transfer import (
     TransferDecisionCreate,
     TransferDecisionSummary,
     TransferRuleSetCreate,
+    TransferRuleSetUpdate,
     TransferRuleSetSummary,
+    ResumeAdmissionRequest,
 )
 
 
@@ -41,6 +47,13 @@ def _clean_list(values: list[str]) -> list[str]:
 
 def _skill_key(value: str) -> str:
     return re.sub(r"[^0-9a-z\u4e00-\u9fff]+", "", value.casefold())
+
+
+def _experience_months(value: str | None) -> int:
+    text = str(value or "")
+    years = re.search(r"(\d+(?:\.\d+)?)\s*年", text)
+    months = re.search(r"(\d+)\s*个?月", text)
+    return min(720, round(float(years.group(1)) * 12) if years else int(months.group(1)) if months else 0)
 
 
 class InternalTransferService:
@@ -97,6 +110,24 @@ class InternalTransferService:
             synced_at=row.synced_at,
         )
 
+    async def department_summary(self, row: EnterpriseDepartment) -> EnterpriseDepartmentSummary:
+        employee_count = int(await self.db.scalar(
+            select(func.count(EnterpriseEmployeeDirectory.id)).where(
+                EnterpriseEmployeeDirectory.department == row.name
+            )
+        ) or 0)
+        return EnterpriseDepartmentSummary(
+            id=row.id,
+            code=row.code,
+            name=row.name,
+            manager=row.manager,
+            location=row.location,
+            status=row.status,
+            employee_count=employee_count,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
     @staticmethod
     def position_summary(row: InternalPosition) -> InternalPositionSummary:
         return InternalPositionSummary(
@@ -143,6 +174,88 @@ class InternalTransferService:
             updated_at=row.updated_at,
         )
 
+    async def list_departments(self, *, user_id: int) -> list[EnterpriseDepartmentSummary]:
+        rows = list((await self.db.execute(
+            select(EnterpriseDepartment).order_by(EnterpriseDepartment.code)
+        )).scalars())
+        existing_names = {row.name for row in rows}
+        source_names: set[str] = set()
+        for model in (EnterpriseEmployeeDirectory, EnterpriseTalent, InternalPosition):
+            source_names.update(str(value).strip() for value in (await self.db.execute(
+                select(model.department).distinct()
+            )).scalars() if value and str(value).strip())
+        if missing := sorted(source_names - existing_names):
+            used_codes = {row.code for row in rows}
+            next_number = 1
+            for name in missing:
+                while f"D{next_number:03d}" in used_codes:
+                    next_number += 1
+                code = f"D{next_number:03d}"
+                row = EnterpriseDepartment(code=code, name=name, status="active", created_by=user_id)
+                self.db.add(row)
+                rows.append(row)
+                used_codes.add(code)
+            await self.db.commit()
+            for row in rows:
+                await self.db.refresh(row)
+        return [await self.department_summary(row) for row in rows]
+
+    async def create_department(
+        self, payload: EnterpriseDepartmentCreate, *, user_id: int
+    ) -> EnterpriseDepartmentSummary:
+        duplicate = await self.db.scalar(select(EnterpriseDepartment.id).where(or_(
+            EnterpriseDepartment.code == payload.code.strip(),
+            EnterpriseDepartment.name == payload.name.strip(),
+        )))
+        if duplicate is not None:
+            raise InvalidParameterError("部门编号或名称已存在")
+        values = payload.model_dump()
+        values["code"] = payload.code.strip()
+        values["name"] = payload.name.strip()
+        row = EnterpriseDepartment(**values, created_by=user_id)
+        self.db.add(row)
+        await self.db.commit()
+        await self.db.refresh(row)
+        return await self.department_summary(row)
+
+    async def update_department(
+        self, department_id: int, payload: EnterpriseDepartmentCreate
+    ) -> EnterpriseDepartmentSummary:
+        row = await self.db.get(EnterpriseDepartment, department_id)
+        if row is None:
+            raise ResourceNotFoundError("企业部门不存在")
+        duplicate = await self.db.scalar(select(EnterpriseDepartment.id).where(
+            EnterpriseDepartment.id != department_id,
+            or_(EnterpriseDepartment.code == payload.code.strip(), EnterpriseDepartment.name == payload.name.strip()),
+        ))
+        if duplicate is not None:
+            raise InvalidParameterError("部门编号或名称已存在")
+        old_name = row.name
+        for field, value in payload.model_dump().items():
+            setattr(row, field, value.strip() if isinstance(value, str) else value)
+        if old_name != row.name:
+            for model in (EnterpriseEmployeeDirectory, EnterpriseTalent, InternalPosition):
+                linked = list((await self.db.execute(select(model).where(model.department == old_name))).scalars())
+                for item in linked:
+                    item.department = row.name
+        await self.db.commit()
+        await self.db.refresh(row)
+        return await self.department_summary(row)
+
+    async def delete_department(self, department_id: int) -> None:
+        row = await self.db.get(EnterpriseDepartment, department_id)
+        if row is None:
+            raise ResourceNotFoundError("企业部门不存在")
+        linked_count = 0
+        for model in (EnterpriseEmployeeDirectory, EnterpriseTalent, InternalPosition):
+            linked_count += int(await self.db.scalar(
+                select(func.count(model.id)).where(model.department == row.name)
+            ) or 0)
+        if linked_count:
+            raise InvalidParameterError("该部门仍有关联员工、人才或岗位，请先迁移数据")
+        await self.db.delete(row)
+        await self.db.commit()
+
     async def list_talents(self) -> list[EnterpriseTalentSummary]:
         rows = list((await self.db.execute(
             select(EnterpriseTalent).order_by(EnterpriseTalent.updated_at.desc(), EnterpriseTalent.id.desc())
@@ -150,12 +263,12 @@ class InternalTransferService:
         return [self.talent_summary(row) for row in rows]
 
     async def search_employee_directory(
-        self, keyword: str, *, limit: int = 10
+        self, keyword: str, *, department: str | None = None, limit: int = 10
     ) -> list[EmployeeDirectorySummary]:
         keyword = keyword.strip()
-        statement = select(EnterpriseEmployeeDirectory).where(
-            EnterpriseEmployeeDirectory.status == "active"
-        )
+        statement = select(EnterpriseEmployeeDirectory)
+        if department and (department_name := department.strip()):
+            statement = statement.where(EnterpriseEmployeeDirectory.department == department_name)
         if keyword:
             pattern = f"%{keyword}%"
             statement = statement.where(or_(
@@ -201,6 +314,49 @@ class InternalTransferService:
             EnterpriseTalent.employee_no == row.employee_no
         )) is not None
         return self.employee_summary(row, in_talent_pool=in_pool)
+
+    async def update_employee_directory(
+        self, employee_id: int, payload: EmployeeDirectoryCreate, *, user_id: int
+    ) -> EmployeeDirectorySummary:
+        row = await self.db.get(EnterpriseEmployeeDirectory, employee_id)
+        if row is None:
+            raise ResourceNotFoundError("员工目录记录不存在")
+        duplicate = await self.db.scalar(select(EnterpriseEmployeeDirectory.id).where(
+            EnterpriseEmployeeDirectory.employee_no == payload.employee_no,
+            EnterpriseEmployeeDirectory.id != employee_id,
+        ))
+        if duplicate is not None:
+            raise InvalidParameterError("员工编号已存在")
+        old_employee_no = row.employee_no
+        values = payload.model_dump(exclude={"skills", "project_highlights"})
+        values["skills"] = _clean_list(payload.skills)
+        values["project_highlights"] = _clean_list(payload.project_highlights)
+        for field, value in values.items():
+            setattr(row, field, value)
+        row.synced_by = user_id
+        row.synced_at = utc_now_naive()
+        talent = await self.db.scalar(select(EnterpriseTalent).where(
+            EnterpriseTalent.employee_no == old_employee_no
+        ))
+        if talent is not None:
+            for field in ("employee_no", "name", "department", "current_position", "level", "location", "tenure_months", "position_tenure_months", "skills", "project_highlights"):
+                setattr(talent, field, getattr(row, field))
+            talent.status = "active" if row.status == "active" else "inactive"
+        await self.db.commit()
+        await self.db.refresh(row)
+        return self.employee_summary(row, in_talent_pool=talent is not None)
+
+    async def delete_employee_directory(self, employee_id: int) -> None:
+        row = await self.db.get(EnterpriseEmployeeDirectory, employee_id)
+        if row is None:
+            raise ResourceNotFoundError("员工目录记录不存在")
+        in_pool = await self.db.scalar(select(EnterpriseTalent.id).where(
+            EnterpriseTalent.employee_no == row.employee_no
+        ))
+        if in_pool is not None:
+            raise InvalidParameterError("该员工已在企业人才池，请先将员工状态设为停用")
+        await self.db.delete(row)
+        await self.db.commit()
 
     async def create_talent(self, payload: EnterpriseTalentCreate, *, user_id: int) -> EnterpriseTalentSummary:
         exists = await self.db.scalar(select(EnterpriseTalent.id).where(EnterpriseTalent.employee_no == payload.employee_no))
@@ -257,6 +413,84 @@ class InternalTransferService:
         await self.db.commit()
         await self.db.refresh(row)
         return self.talent_summary(row)
+
+    async def admit_resume(
+        self, resume_id: int, payload: ResumeAdmissionRequest, *, user_id: int
+    ) -> EnterpriseTalentSummary:
+        """录用外部候选人，分配工号并同步员工目录与企业人才池。"""
+        resume = await self.db.scalar(select(Resume).where(
+            Resume.id == resume_id,
+            Resume.created_by == user_id,
+            Resume.deleted_at.is_(None),
+        ))
+        if resume is None:
+            raise ResourceNotFoundError("候选人简历不存在")
+        source = f"external_resume:{resume_id}"
+        existing_directory = await self.db.scalar(select(EnterpriseEmployeeDirectory).where(
+            EnterpriseEmployeeDirectory.source == source
+        ))
+        if existing_directory is not None:
+            raise InvalidParameterError(f"该候选人已录用，企业工号为 {existing_directory.employee_no}")
+
+        year_prefix = str(utc_now_naive().year)
+        generated_numbers = list((await self.db.execute(
+            select(EnterpriseEmployeeDirectory.employee_no).where(
+                EnterpriseEmployeeDirectory.source.like("external_resume:%"),
+                EnterpriseEmployeeDirectory.employee_no.like(f"{year_prefix}%"),
+            )
+        )).scalars())
+        used_sequences = {
+            int(number[len(year_prefix):])
+            for number in generated_numbers
+            if number[len(year_prefix):].isdigit()
+        }
+        sequence = max(used_sequences, default=0) + 1
+        while True:
+            employee_no = f"{year_prefix}{sequence:04d}"
+            exists = await self.db.scalar(select(EnterpriseEmployeeDirectory.id).where(
+                EnterpriseEmployeeDirectory.employee_no == employee_no
+            ))
+            if exists is None:
+                break
+            sequence += 1
+
+        profile = resume.parse_result.profile if resume.parse_result else {}
+        skills = _clean_list([skill.name for skill in resume.skills])
+        highlights = _clean_list(list(profile.get("project_highlights") or []))
+        tenure_months = _experience_months(resume.experience)
+        directory = EnterpriseEmployeeDirectory(
+            employee_no=employee_no,
+            name=resume.name,
+            department=payload.department.strip(),
+            current_position=payload.current_position.strip(),
+            level=payload.level.strip(),
+            location=payload.location.strip() if payload.location else resume.location,
+            tenure_months=tenure_months,
+            position_tenure_months=0,
+            skills=skills,
+            project_highlights=highlights,
+            status="active",
+            source=source,
+            synced_by=user_id,
+        )
+        talent = EnterpriseTalent(
+            employee_no=employee_no,
+            name=resume.name,
+            department=directory.department,
+            current_position=directory.current_position,
+            level=directory.level,
+            location=directory.location,
+            tenure_months=directory.tenure_months,
+            position_tenure_months=0,
+            skills=skills,
+            project_highlights=highlights,
+            status="active",
+            created_by=user_id,
+        )
+        self.db.add_all([directory, talent])
+        await self.db.commit()
+        await self.db.refresh(talent)
+        return self.talent_summary(talent)
 
     async def list_positions(
         self,
@@ -326,6 +560,12 @@ class InternalTransferService:
         )).scalars())
         return [self.rule_summary(row) for row in rows]
 
+    async def get_rule_set(self, rule_id: int) -> TransferRuleSetSummary:
+        row = await self.db.get(TransferRuleSet, rule_id)
+        if row is None:
+            raise ResourceNotFoundError("转岗规则不存在")
+        return self.rule_summary(row)
+
     async def create_rule_set(self, payload: TransferRuleSetCreate, *, user_id: int) -> TransferRuleSetSummary:
         if payload.status == "active":
             active_rows = list((await self.db.execute(
@@ -345,6 +585,36 @@ class InternalTransferService:
         await self.db.commit()
         await self.db.refresh(row)
         return self.rule_summary(row)
+
+    async def update_rule_set(
+        self, rule_id: int, payload: TransferRuleSetUpdate
+    ) -> TransferRuleSetSummary:
+        row = await self.db.get(TransferRuleSet, rule_id)
+        if row is None:
+            raise ResourceNotFoundError("转岗规则不存在")
+        if payload.status == "active":
+            active_rows = list((await self.db.execute(
+                select(TransferRuleSet).where(
+                    TransferRuleSet.status == "active", TransferRuleSet.id != rule_id
+                )
+            )).scalars())
+            for active in active_rows:
+                active.status = "inactive"
+        for field, value in payload.model_dump().items():
+            setattr(row, field, value)
+        row.updated_at = utc_now_naive()
+        await self.db.commit()
+        await self.db.refresh(row)
+        return self.rule_summary(row)
+
+    async def delete_rule_set(self, rule_id: int) -> None:
+        row = await self.db.get(TransferRuleSet, rule_id)
+        if row is None:
+            raise ResourceNotFoundError("转岗规则不存在")
+        if row.status == "active":
+            raise InvalidParameterError("当前生效规则不能删除，请先启用其他规则")
+        await self.db.delete(row)
+        await self.db.commit()
 
     async def list_skill_demands(self) -> list[SkillDemandSummary]:
         positions = list((await self.db.execute(

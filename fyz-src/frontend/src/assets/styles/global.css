@@ -1557,7 +1557,9 @@ a { color: inherit; text-decoration: none; }
 .db-match-body{flex:1;min-width:0;}
 .db-match-name{font-size:14px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:4px;}
 .db-match-pos{font-size:14px;color:var(--text-muted);margin-top:1px;}
-.db-match-gap{font-size:14px;color:var(--color-danger);margin-top:1px;}
+.db-match-gap{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px;min-width:0;}
+.db-match-gap-label{flex-shrink:0;color:var(--color-danger);font-size:12px;line-height:20px;}
+.db-match-gap-skill{max-width:100%;padding:1px 6px;border:1px solid rgba(232,93,93,.42);border-radius:4px;background:rgba(232,93,93,.06);color:var(--color-danger);font-size:11px;line-height:18px;overflow-wrap:anywhere;}
 .db-match-score{flex-shrink:0;}
 .db-match-pop-btn{width:22px;height:22px;border:none;background:transparent;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;opacity:0;transition:all var(--duration-fast);}
 .db-match-item:hover .db-match-pop-btn{opacity:1;}
