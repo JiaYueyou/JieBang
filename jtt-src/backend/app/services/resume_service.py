@@ -6,12 +6,43 @@ import re
 import os
 import subprocess
 import tempfile
+import logging
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from app.core.exceptions import ResourceNotFoundError, InvalidParameterError
 from app.repositories.resume_repository import ResumeRepository
+
+logger = logging.getLogger(__name__)
+MAX_LLM_TEXT_LENGTH = 30_000
+RULE_SKILLS = (
+    "Python", "Java", "C++", "C#", "C", "JavaScript", "TypeScript", "SQL", "MySQL",
+    "Redis", "Docker", "Kubernetes", "Git", "GitHub", "Linux", "FastAPI", "Django",
+    "Flask", "Vue", "React", "PyTorch", "TensorFlow", "LangChain", "LangGraph",
+    "Neo4j", "RAG", "NLP", "LLM", "DeepSeek", "YOLOv8", "DeepSort", "NumPy",
+    "Pandas", "Matplotlib", "Pydantic", "SQLAlchemy", "Celery", "Alembic", "FAISS",
+    "OpenCV", "MQTT", "Ollama", "vLLM", "BERT", "GPT", "Qwen", "STM32", "MATLAB",
+    "Keil", "Keil5", "Excel", "PyCharm", "EDA", "Altium Designer", "OpenGL",
+    "Llama", "Llama-Factory", "Llama.cpp", "MCP", "OCR", "VLM", "Embedding",
+    "StateGraph", "Structured Output", "Tool Calling", "Prompt Engineering",
+    "Prompt Template", "CNN", "K-means", "PID", "Office", "主成分分析",
+    "控制算法", "聚类", "串口调试工具", "图像处理", "序列模型", "模型微调",
+    "模型推理", "模型部署", "模型量化", "深度学习", "自然语言处理",
+    "内容指纹去重", "多模态问答", "字段标准化", "来源回溯", "目标检测",
+    "知识库导入", "视频帧处理", "车辆跟踪", "车道计数", "递归切分",
+    "速度估算", "防幻觉设计",
+)
+
+
+def extract_rule_skills(raw_text: str) -> list[str]:
+    """Extract only explicitly mentioned technical terms as an LLM safety net."""
+    found = []
+    for skill in RULE_SKILLS:
+        if re.search(rf"(?<![A-Za-z0-9+#]){re.escape(skill)}(?![A-Za-z0-9+#])", raw_text, re.I):
+            if skill not in found:
+                found.append(skill)
+    return found
 
 # 上传文件存储根目录
 UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent.parent / "uploads" / "resumes"
@@ -43,6 +74,13 @@ def extract_text_docx(file_content: bytes) -> str:
             if row_text:
                 parts.append(row_text)
 
+    for section in doc.sections:
+        for container in (section.header, section.footer):
+            for para in container.paragraphs:
+                text = para.text.strip()
+                if text and text not in parts:
+                    parts.append(text)
+
     return "\n".join(parts)
 
 
@@ -70,11 +108,13 @@ def extract_text_pdf(file_content: bytes) -> str:
                 if text:
                     parts.append(text)
 
-            for table in page.extract_tables():
-                for row in table:
-                    row_text = " | ".join(str(cell).strip() if cell else "" for cell in row)
-                    if row_text.strip():
-                        parts.append(row_text)
+            page_text = parts[-1] if parts else ""
+            if len(page_text.strip()) < 40:
+                for table in page.extract_tables():
+                    for row in table:
+                        row_text = " | ".join(str(cell).strip() if cell else "" for cell in row)
+                        if row_text.strip():
+                            parts.append(row_text)
 
     return "\n".join(parts)
 
@@ -181,7 +221,7 @@ async def llm_extract(raw_text: str) -> dict | None:
 
     import httpx
 
-    prompt = RESUME_EXTRACTION_PROMPT.replace("{raw_text}", raw_text)
+    prompt = RESUME_EXTRACTION_PROMPT.replace("{raw_text}", raw_text[:MAX_LLM_TEXT_LENGTH])
     payload = {
         "model": LLM_MODEL,
         "messages": [
@@ -207,8 +247,35 @@ async def llm_extract(raw_text: str) -> dict | None:
             data = resp.json()
             content = data["choices"][0]["message"]["content"]
             return json.loads(content)
-    except Exception:
+    except Exception as exc:
+        logger.warning("Resume LLM extraction failed: %s: %s", type(exc).__name__, exc)
         return None
+
+
+def calculate_parse_completeness(parsed: dict | None, raw_text: str) -> float:
+    """Measure populated resume fields; this is not model accuracy."""
+    if not raw_text.strip():
+        return 0.0
+    if not parsed:
+        fallback = regex_extract(raw_text)
+        present = sum(bool(fallback.get(key)) for key in (
+            "personal_name", "personal_email", "personal_phone", "personal_location"
+        ))
+        return round(present / 8, 4)
+
+    personal = parsed.get("personal_info") or {}
+    intent = parsed.get("job_intent") or {}
+    checks = (
+        bool(personal.get("name")),
+        bool(personal.get("email") or personal.get("phone")),
+        bool(personal.get("location")),
+        bool(intent.get("desired_position")),
+        bool(parsed.get("education")),
+        bool(parsed.get("work_experience")),
+        bool(parsed.get("projects")),
+        bool(parsed.get("skills")),
+    )
+    return round(sum(checks) / len(checks), 4)
 
 
 # ========== 正则降级提取 ==========
@@ -366,7 +433,7 @@ class ResumeService:
 
         # Step 3: LLM 结构化提取
         parsed = await llm_extract(raw_text)
-        parse_accuracy = 0.85 if parsed else 0.0
+        parse_accuracy = calculate_parse_completeness(parsed, raw_text)
         extracted_skills: list[str] = []
 
         # Step 4: 构建数据库写入数据
@@ -405,6 +472,14 @@ class ResumeService:
             if parsed.get("skills"):
                 db_data["skill_list"] = parsed["skills"]
                 extracted_skills = [s.get("name", "") for s in parsed["skills"] if s.get("name")]
+            # Merge deterministic, source-grounded terms that the model omitted.
+            known = {s.casefold() for s in extracted_skills}
+            for skill in extract_rule_skills(raw_text):
+                if skill.casefold() not in known:
+                    extracted_skills.append(skill)
+                    db_data.setdefault("skill_list", []).append({
+                        "name": skill, "category": "rule_extracted",
+                    })
             if parsed.get("self_evaluation"):
                 db_data["self_evaluation"] = str(parsed["self_evaluation"])
         else:
@@ -412,6 +487,12 @@ class ResumeService:
             regex_result = regex_extract(raw_text)
             db_data.update(regex_result)
             db_data["self_evaluation"] = raw_text[:2000]
+            extracted_skills = extract_rule_skills(raw_text)
+            if extracted_skills:
+                db_data["skill_list"] = [
+                    {"name": skill, "category": "rule_extracted"}
+                    for skill in extracted_skills
+                ]
 
         # Step 5: 创建简历记录
         resume = await self.repo.create(user_id, db_data)

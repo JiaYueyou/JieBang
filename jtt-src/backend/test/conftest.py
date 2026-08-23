@@ -43,6 +43,12 @@ async def client():
 
 
 @pytest_asyncio.fixture
+async def db_session():
+    async with async_session() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
 async def auth_headers(client: AsyncClient):
     """获取测试用户的 Bearer token 请求头"""
     resp = await client.post("/api/v1/auth/login", json={
