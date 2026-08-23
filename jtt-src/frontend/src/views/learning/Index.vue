@@ -40,20 +40,6 @@ const buildUserContext = () => {
 // ========== 路径展开 ==========
 const expandedId = ref<string | null>(null)
 
-// AI 生成路径的序号：扫描已有路径名里的「学习路径X：」，取当前存在的最大编号 +1 顺延
-const nextPathSeq = () => {
-  const cnMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 }
-  let max = 0
-  for (const p of learningStore.paths) {
-    const m = (p.name || '').match(/学习路径([一二三四五六七八九十]|\d+)[：:]/)
-    if (m && m[1]) {
-      const n = cnMap[m[1]] ?? parseInt(m[1], 10)
-      if (!isNaN(n) && n > max) max = n
-    }
-  }
-  return max + 1
-}
-
 // ========== 对话框：新增/重命名路径 ==========
 const dialogVisible = ref(false)
 const dialogLoading = ref(false)
@@ -181,9 +167,10 @@ const handleDialogConfirm = async () => {
   if (dialogMode.value === 'add') {
     dialogLoading.value = true
     try {
-      await learningStore.addPath(dialogName.value.trim())
+      const newPath = await learningStore.addPath(dialogName.value.trim())
       ElMessage.success('AI 学习路径已生成')
       dialogVisible.value = false
+      if (newPath) nextTick(() => { expandedId.value = newPath.id })
     } catch {
       ElMessage.error('AI 生成失败，请检查网络后重试')
     } finally {
@@ -403,7 +390,7 @@ const sendMessage = async () => {
 
       // Add to learning paths store (right panel)
       // 命名与既有路径统一：「学习路径一：xxx」…（按当前存在的最大编号顺延，删除后编号复用）
-      const nextSeq = nextPathSeq()
+      const nextSeq = learningStore.nextPathSeq()
       const cnNum = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
       const seqLabel = nextSeq <= 10 ? cnNum[nextSeq - 1] : String(nextSeq)
       const newPath: any = {

@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class RawJobRepository:
     """爬虫招聘数据访问层（只读，raw SQL）"""
 
-    # 基础 JOIN 片段
+    # 基础 JOIN 片段（爬虫数据在 jie_bang 库，显式加 schema 前缀）
     BASE_JOIN = """
-        FROM raw_job_record r
-        JOIN source_document sd ON r.source_document_id = sd.id
-        JOIN standard_job_source sjs ON sjs.source_id = sd.id AND sjs.source_type = 'raw'
-        JOIN standard_job sj ON sj.id = sjs.standard_job_id
+        FROM jie_bang.raw_job_record r
+        JOIN jie_bang.source_document sd ON r.source_document_id = sd.id
+        JOIN jie_bang.standard_job_source sjs ON sjs.source_id = sd.id AND sjs.source_type = 'raw'
+        JOIN jie_bang.standard_job sj ON sj.id = sjs.standard_job_id
     """
 
     def __init__(self, db: AsyncSession):
@@ -67,7 +67,7 @@ class RawJobRepository:
 
     async def get_all_ids(self) -> list[int]:
         """获取所有 raw_job_record 的 ID 列表"""
-        result = await self.db.execute(text("SELECT id FROM raw_job_record ORDER BY id"))
+        result = await self.db.execute(text("SELECT id FROM jie_bang.raw_job_record ORDER BY id"))
         return [row[0] for row in result]
 
     async def get_by_id(self, job_id: int) -> dict | None:

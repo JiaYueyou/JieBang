@@ -14,7 +14,7 @@ class LearningPath(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, comment="用户ID")
     name: Mapped[str] = mapped_column(String(100), nullable=False, comment="路径名称")
-    position_id: Mapped[str] = mapped_column(String(200), default="", comment="目标岗位ID（可能来自不同数据源）")
+    position_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="目标岗位ID（对应 job_position.id，数据库为 INT NOT NULL）")
     position_name: Mapped[str] = mapped_column(String(100), default="", comment="目标岗位名称")
     # 步骤和资源以 JSON 存储
     steps: Mapped[list] = mapped_column(JSON, default=list, comment="学习步骤列表")

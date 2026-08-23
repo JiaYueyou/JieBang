@@ -4,19 +4,20 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePositionsStore } from '@/stores/positions'
 import { useLearningStore } from '@/stores/learning'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useMatchStore } from '@/stores/match'
 import { pageData } from '@/stores/pageContext'
 import { assistantApi } from '@/api/assistant'
 import { resumeApi } from '@/api/resume'
 import { matchApi } from '@/api/match'
 import type { ChatMessage, PageContext, ChatAction } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
-import { mockPositions } from '@/mock/data/positions'
 
 const route = useRoute()
 const router = useRouter()
 const positionsStore = usePositionsStore()
 const learningStore = useLearningStore()
 const favoritesStore = useFavoritesStore()
+const matchStore = useMatchStore()
 
 // ── State ──
 const visible = ref(false)
@@ -399,29 +400,77 @@ const handleMatchDiagnose = async () => {
   )
 }
 
-const showMatchResults = (resumeId: string) => {
-  const resume = realResumes.value.find((r: any) => String(r.id) === resumeId)
-  const resumeSkills: string[] = (resume ? getResumeSkills(resume) : []).map((s: any) => (s.name || '').toLowerCase())
+const showMatchResults = async (resumeId: string) => {
+  // 拉取简历完整详情（供 LLM 读取真实技能/经历）
+  let resume = realResumes.value.find((r: any) => String(r.id) === resumeId)
+  try {
+    const detailRes: any = await resumeApi.getDetail(resumeId)
+    if (detailRes?.data) resume = detailRes.data
+  } catch { /* 列表数据兜底 */ }
+  const resumeName = resume ? getResumeName(resume) : ''
 
-  // Compute scores for each position
-  const scored = mockPositions.map(pos => {
-    const posSkills = [...(pos.requiredSkills || []), ...(pos.preferredSkills || [])].map(s => s.name.toLowerCase())
-    const matched = posSkills.filter(s => resumeSkills.some(rs => rs.includes(s) || s.includes(rs)))
-    const matchRate = posSkills.length ? Math.round((matched.length / posSkills.length) * 100) : 0
-    return { pos, score: Math.min(matchRate + Math.floor(Math.random() * 15), 100) }
-  })
+  // 1) 真实自动匹配（与简历诊断页同一数据源：后端 /match/auto，真实岗位 + 真实打分）
+  loading.value = true
+  let results: any[] = []
+  try {
+    results = (await matchStore.doAutoMatch(resumeId)) || []
+  } catch {
+    loading.value = false
+    addAssistantMsg('⚠️ 匹配诊断失败，请稍后重试')
+    return
+  }
+  if (results.length === 0) {
+    loading.value = false
+    addAssistantMsg(`简历「${resumeName}」暂时没有匹配到合适的岗位，建议去简历诊断页查看。`, [
+      { label: '📋 简历诊断页', to: '/diagnosis', icon: 'Search' },
+    ])
+    return
+  }
 
-  scored.sort((a, b) => b.score - a.score)
-  const top = scored.slice(0, 8)
-
-  const results = top.map((s, i) =>
-    (i + 1) + '. **' + s.pos.name + '** — ' + s.score + ' 分' + (s.score >= 80 ? ' 🟢' : s.score >= 50 ? ' 🟡' : ' 🔴')
+  // 让 LLM agent 能读到真实简历数据
+  selectedResume.value = resume
+  const top = results.slice(0, 8)
+  const listText = top.map((r: any, i: number) =>
+    `${i + 1}. ${r.positionName} — ${r.totalScore} 分（缺失技能：${(r.gapAnalysis.missingSkills || []).map((s: any) => s.name).join('、') || '无'}）`
   ).join('\n')
 
-  addAssistantMsg(
-    '根据你的简历「' + (resume ? getResumeName(resume) : '') + '」，以下是匹配度最高的岗位：\n\n' + results,
-    top.map(s => ({ label: s.pos.name + '（' + s.score + '分）', to: '__match_position__:' + resumeId + ':' + s.pos.id, icon: 'DataAnalysis' }))
-  )
+  // 2) LLM 生成匹配诊断
+  const thinkMsg: ChatMessage = {
+    id: `m-${++msgId}`,
+    role: 'assistant',
+    content: '🔍 正在生成匹配诊断…',
+    timestamp: Date.now(),
+  }
+  messages.value.push(thinkMsg)
+  scrollToBottom(true)
+  try {
+    const res: any = await assistantApi.agentChat({
+      message: `请对我的简历「${resumeName}」做一份匹配诊断。\n以下是系统真实匹配出的前 ${top.length} 个岗位（含匹配分与技能差距）：\n\n${listText}\n\n请给出：\n1. 我的核心优势与主要不足\n2. 最值得投递的 2-3 个岗位及理由\n3. 提升匹配度的具体建议（按优先级排序）`,
+      pageContext: pageContext.value,
+      history: conversationHistory.value,
+    })
+    const d = res.data
+    const steps: { icon: string; text: string }[] = d?.thinkingSteps || []
+    for (let i = 0; i < steps.length; i++) {
+      thinkMsg.content = steps.slice(0, i + 1).map(s => s.icon + ' ' + s.text).join('\n')
+      scrollToBottom(true)
+      await new Promise(r => setTimeout(r, 500))
+    }
+    await new Promise(r => setTimeout(r, 300))
+    messages.value.push({
+      id: `m-${++msgId}`,
+      role: 'assistant',
+      content: d?.reply || '抱歉，我暂时无法完成匹配诊断。',
+      timestamp: Date.now(),
+      followUpQuestions: d?.followUpQuestions,
+      actions: [{ label: '📋 完整匹配诊断', to: '/diagnosis', icon: 'Search' }],
+    })
+  } catch {
+    thinkMsg.content = '⚠️ 匹配诊断失败，请稍后重试'
+  } finally {
+    loading.value = false
+    scrollToBottom(true)
+  }
 }
 
 // ── Send ──
@@ -571,12 +620,6 @@ const onActionClick = async (act: ChatAction) => {
   if (act.to.startsWith('__match_resume__:')) {
     const resumeId = act.to.split(':')[1] || ''
     if (resumeId) showMatchResults(resumeId)
-    return
-  }
-  // Match flow: position selected → navigate to match result
-  if (act.to.startsWith('__match_position__:')) {
-    const parts = act.to.split(':')
-    router.push('/match/result/' + parts[1] + '/' + parts[2])
     return
   }
   router.push(act.to)
