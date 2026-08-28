@@ -114,7 +114,7 @@ async def health_check():
     }
 
 
-# 启动命令: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 启动命令: uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8002, reload=True)

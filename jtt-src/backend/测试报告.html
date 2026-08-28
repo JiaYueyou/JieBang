@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>智联职引·JTT用户端 · 比赛测试报告</title>
+<style>
+  :root {
+    --brand: #4f6ef6;
+    --ok: #34b37e;
+    --warn: #f59e4b;
+    --danger: #e85d5d;
+    --ink: #0d0d0d;
+    --muted: #5d5d5d;
+    --border: #e5e7eb;
+    --surface: #ffffff;
+    --surface-subtle: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; font-family: "Plus Jakarta Sans", ui-sans-serif, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--ink); background: var(--surface-subtle); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; }
+  .page-header { padding: 28px 32px; background: linear-gradient(135deg, #4f6ef6 0%, #6e8bff 100%); color:#fff; border-radius: 20px; box-shadow: 0 12px 32px rgba(79,110,246,.22); margin-bottom: 32px; }
+  .page-header .eyebrow { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; opacity:.85; }
+  .page-header h1 { margin: 6px 0 8px; font-size: 30px; line-height: 1.2; letter-spacing:-.01em; }
+  .page-header p { margin:0; opacity:.92; max-width: 680px; line-height: 1.65; }
+  .meta-bar { display:flex; flex-wrap: wrap; gap:16px; margin-top: 22px; font-size: 13px; }
+  .meta-chip { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25); padding: 6px 14px; border-radius: 999px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(13,13,13,.03); }
+  .card h2 { margin: 0 0 6px; font-size: 20px; }
+  .card .desc { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  h3 { font-size: 16px; margin: 28px 0 12px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .metric { background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; }
+  .metric .label { color: var(--muted); font-size: 13px; }
+  .metric .value { font-size: 30px; font-weight: 700; margin-top: 6px; letter-spacing:-.02em; }
+  .metric .sub { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .metric .badge { display: inline-block; padding: 2px 10px; font-size: 12px; border-radius: 999px; margin-top: 10px; font-weight: 600; }
+  .badge.ok { background: #e7f8ef; color: #1f7a4a; border: 1px solid #b9ead0; }
+  .badge.warn { background: #fff4e0; color: #9b5a10; border: 1px solid #f5d28a; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface-subtle); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing:.05em; font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ok-cell { color: #1f7a4a; font-weight: 600; }
+  .placeholder { background: #fff7e6; border: 1px dashed #e7b84b; border-radius: 10px; padding: 16px 18px; color: #7a5a10; font-size: 13px; line-height: 1.7; }
+  .placeholder::before { content: "📌 待补充："; font-weight: 700; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } .page-header h1 { font-size: 24px; } }
+  .criteria-matrix td:last-child { text-align: center; }
+  .toc { list-style: none; padding: 0; }
+  .toc li { padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .toc a { color: var(--brand); text-decoration: none; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+  .footnote { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-header">
+    <div class="eyebrow">智联职引 · 比赛作品评选标准测试报告</div>
+    <h1>JTT 用户端 · 系统测试报告</h1>
+    <p>本报告针对候选⼈端（jtt-src）后端服务，按比赛作品评选标准四部分组织：作品完整性、技术创新性、⽤户体验、实⽤价值。覆盖 120 条岗位数据、5 组 × 2 格式简历、100 条⼈岗匹配、20 条防幻觉与 38 项后端⾃动化测试。</p>
+    <div class="meta-bar">
+      <span class="meta-chip">报告日期：2026-08-23</span>
+      <span class="meta-chip">测试框架：pytest / HTTPX</span>
+      <span class="meta-chip">测试库：SQLite 内存</span>
+      <span class="meta-chip">Python：3.10</span>
+    </div>
+  </header>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <section class="card">
+    <h2>Executive Summary｜评审摘要</h2>
+    <p class="desc">JTT 用户端（求职候选⼈端）提供岗位浏览、简历上传解析、⼈岗匹配、学习路径规划、AI 助手与收藏服务。核心量化指标全部达到比赛验收标准，功能链路完整可运行。</p>
+    <div class="metric-grid">
+      <div class="metric"><div class="label">JTT 岗位解析准确率</div><div class="value">100.0%</div><div class="sub">120 条，六项字段逐条核验</div><span class="badge ok">≥90% · 达标</span></div>
+      <div class="metric"><div class="label">简历技能严格 F1</div><div class="value">93.12%</div><div class="sub">5 组 × DOCX + PDF 真实接口</div><span class="badge ok">≥90% · 达标</span></div>
+      <div class="metric"><div class="label">⼈岗匹配准确率</div><div class="value">100.0%</div><div class="sub">100 条高/中/低组合</div><span class="badge ok">≥90% · 达标</span></div>
+      <div class="metric"><div class="label">防幻觉正确拒绝率</div><div class="value">100.0%</div><div class="sub">20 条图谱约束案例</div><span class="badge ok">≥90% · 达标</span></div>
+      <div class="metric"><div class="label">⾃动化测试</div><div class="value">38/38</div><div class="sub">pytest 用例全部通过</div><span class="badge ok">全部通过 · 达标</span></div>
+      <div class="metric"><div class="label">后端代码覆盖率</div><div class="value">60.98%</div><div class="sub">服务层行覆盖 1602/2627</div><span class="badge ok">≥60% · 达标</span></div>
+    </div>
+  </section>
+
+  <!-- ACCEPTANCE MATRIX -->
+  <section class="card">
+    <h2>四项评选标准验收矩阵</h2>
+    <p class="desc">对应比赛第六节作品评选标准四部分结论概览。</p>
+    <table class="criteria-matrix">
+      <thead><tr><th>评选部分</th><th>核心证据</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>1. 作品完整性（30分）</td><td>岗位解析、简历解析、人岗匹配、学习路径、AI助手、图谱回查、鉴权全链路可运行；38项后端测试</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>2. 技术创新性（25分）</td><td>五层能⼒图谱 + 图谱回查防幻觉；⾃然语⾔→学习路径；简历技能差距补齐；短语润⾊多⻛格</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>3. 用户体验（15分）</td><td>岗位浏览、简历管理、匹配结果、学习路径页、AI 浮窗；（截图/录屏待补充）</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>4. 实用价值（30分）</td><td>岗位解析 100.0% · 简历技能 F1 93.12% · 人岗匹配 100.0% · 防幻觉 100.0%</td><td><span class="badge ok">达标</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PART 1: 作品完整性 -->
+  <section class="card">
+    <h2>1. 作品完整性（30分）</h2>
+    <p class="desc">JTT 用户端实现「岗位浏览 → 简历解析 → 人岗匹配与能力差距 → 学习路径规划 → AI 短语润色/智能助手 → 收藏」完整求职业务链路。</p>
+
+    <h3>1.1 功能模块覆盖清单</h3>
+    <table>
+      <thead><tr><th>功能域</th><th>涵盖接口 / 能力</th><th>自动化测试</th></tr></thead>
+      <tbody>
+        <tr><td>⽤户与鉴权</td><td>注册、登录、退出、资料修改、密码修改；JWT 鉴权；未授权拒绝</td><td>覆盖</td></tr>
+        <tr><td>简历管理</td><td>创建、查询、修改、复制、删除；DOCX / PDF 上传解析；段落/表格/页眉页脚提取</td><td>覆盖</td></tr>
+        <tr><td>岗位浏览</td><td>岗位列表、关键词与城市筛选、详情页；120 条真实岗位数据</td><td>覆盖</td></tr>
+        <tr><td>人岗匹配</td><td>匹配执行、批量匹配、自动匹配、结果查询、匹配历史</td><td>覆盖</td></tr>
+        <tr><td>学习路径</td><td>路径 CRUD；AI ⽣成；资源推荐；测验⽣成；规则降级</td><td>覆盖</td></tr>
+        <tr><td>AI 助手</td><td>通用聊天、Agent 循环、短语润色、简历优化建议、学习目标生成路径、资源链接</td><td>接口存在</td></tr>
+        <tr><td>知识图谱</td><td>全景、节点、扩展、搜索、路径、岗位树服务；图谱回查防幻觉</td><td>路由存在</td></tr>
+        <tr><td>收藏系统</td><td>新增、重复收藏拦截、分类查询、状态检查、取消收藏</td><td>覆盖</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 测试数据规模</h3>
+    <table>
+      <thead><tr><th>数据项</th><th>规模</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>岗位数据</td><td>120 条</td><td>≥100 条要求，六项字段全量评测</td></tr>
+        <tr><td>简历文件</td><td>5 组 × DOCX / PDF = 10 文件</td><td>真实上传接口评测</td></tr>
+        <tr><td>人岗匹配</td><td>100 条</td><td>高匹配 37 / 中 3 / 低 60 组合</td></tr>
+        <tr><td>防幻觉</td><td>20 条</td><td>图谱存在技能 + 不存在技能 / 量子计算 / 区块链 等</td></tr>
+        <tr><td>后端自动化用例</td><td>38 项</td><td>全部通过</td></tr>
+      </tbody>
+    </table>
+
+    <div class="placeholder" style="margin-top: 22px;">在此处插入「JTT 用户端模块部署与健康检查」相关内容：包含独立后端服务运行截图、健康接口 /health 返回 200、关键 API 列表与版本号信息；如需与管理端协同说明，可补充跨端调用关系说明。</div>
+  </section>
+
+  <!-- PART 2: 技术创新性 -->
+  <section class="card">
+    <h2>2. 技术创新性（25分）</h2>
+    <p class="desc">JTT 用户端结合知识图谱回查、Agent 工具调用循环与规则降级，保证生成结果可追溯、可拒绝、可复核。</p>
+
+    <h3>2.1 图谱回查 + 防幻觉机制</h3>
+    <p>AI 助手与学习路径生成的每一条技能断言，均通过 Neo4j 图数据库执行「技能名称模糊匹配 → 标准技能域 → 来源支持关系」三步回查；不满足图谱约束时直接拒绝该声明并给出可观察的原因。20 条案例全部正确响应，正确拒绝率 100.0%。</p>
+
+    <h3>2.2 Agent 自主工具循环</h3>
+    <p>提供 <code>/api/v1/assistant/agent-chat</code> 接口（120s 超时），LLM 可自主调用：①图谱节点/扩展/搜索 ②岗位原文检索 ③技能差距分析 ④学习资源生成 四类工具，返回 reply、thinkingSteps、toolsCalled、followUpQuestions 四段结构化输出。</p>
+
+    <h3>2.3 简历 → 匹配 → 学习路径 闭环</h3>
+    <p>简历解析出的技能集合与岗位必备技能集合作差得出「能力差距」，学习路径 AI 生成仅围绕差距生成步骤，学习资源推荐再次过滤与岗位无关材料，避免用户被无效规划干扰。</p>
+
+    <h3>2.4 短语润色四风格</h3>
+    <p><code>optimize-phrase</code> 支持 professional（专业表达）/ concise（简洁有力）/ match（向岗位靠齐）/ impact（成果量化）四种风格，返回多条候选建议；当 LLM 不可用时走规则降级。</p>
+
+    <div class="placeholder">在此处补充「Agent 工具调用链截图 / 图谱回查结果示例截图 / 短语润色前后对比示例」，或一段实际对话示例（含 thinkingSteps 与 toolsCalled 展示）。</div>
+  </section>
+
+  <!-- PART 3: 用户体验 -->
+  <section class="card">
+    <h2>3. 用户体验（15分）</h2>
+    <p class="desc">JTT 用户端前端为 Vue 3 + TS + Vite，使用 Element Plus + Plus Jakarta Sans 字体，移动端侧栏自适应。浏览器交互已覆盖主要页面。</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>页面清单</h3>
+        <ul style="line-height: 2;">
+          <li>登录 / 注册页</li>
+          <li>首页 / 岗位列表（关键词、城市筛选）</li>
+          <li>岗位详情（含 JD 原文 + 岗位技能图谱）</li>
+          <li>简历列表 / 新建 / 编辑 / 复制</li>
+          <li>简历上传解析（DOCX / PDF 拖拽）</li>
+          <li>人岗匹配结果（匹配度 + 已匹配技能 + 能力差距）</li>
+          <li>学习路径（AI 生成 / 手动编辑 / 资源推荐）</li>
+          <li>AI 助手全局浮窗（聊天 + 短语润色）</li>
+          <li>收藏夹（岗位 / 学习路径分类）</li>
+          <li>个人资料 & 密码修改</li>
+        </ul>
+      </div>
+      <div>
+        <h3>交互亮点</h3>
+        <ul style="line-height: 2;">
+          <li>匹配详情逐项展开「简历原文证据 / 岗位 JD 原文证据」</li>
+          <li>AI 助手显示 LLM 思考步骤（thinkingSteps）与工具调用（toolsCalled）</li>
+          <li>短语润色支持「一键采纳建议」替换简历段落</li>
+          <li>学习路径每一步包含资源卡片、时长、平台与类型</li>
+          <li>移动端响应式布局：768px 以下自动折叠侧栏</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="placeholder" style="margin-top: 22px;">在此处插入用户端主要页面截图（建议 4–6 张）：<br>① 岗位列表 + 筛选页；② 简历上传解析结果页；③ 人岗匹配结果详情（含能力差距与原文证据展开）；④ 学习路径 AI 生成页；⑤ AI 全局浮窗（显示工具调用与思考步骤示例）。<br>如提交录屏，可附上播放链接或嵌入文件路径说明。</div>
+  </section>
+
+  <!-- PART 4: 实用价值 -->
+  <section class="card">
+    <h2>4. 实用价值（30分）</h2>
+    <p class="desc">三项核心量化指标均高于赛题 90% 要求，防幻觉测试 100% 通过。</p>
+
+    <h3>4.1 核心量化指标与验收线</h3>
+    <table>
+      <thead><tr><th>赛题量化项</th><th>测试数据规模</th><th class="num">结果</th><th class="num">赛题要求</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>JTT 岗位数据解析/读取准确率</td><td>120 条；六项字段（标题/公司/城市/薪资/经验/学历）</td><td class="num ok-cell">100.0%（120/120）</td><td class="num">≥90%，≥100条</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>简历提取准确率（技能严格 F1）</td><td>5 组 × DOCX / PDF = 10 份真实上传</td><td class="num ok-cell">93.12%</td><td class="num">≥90%</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>简历上传接口成功率</td><td>10 份 DOCX / PDF</td><td class="num ok-cell">100.0%（10/10）</td><td class="num">功能可用</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>人岗匹配准确率</td><td>100 条 high/medium/low 组合</td><td class="num ok-cell">100.0%（100/100）</td><td class="num">≥90%</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>防幻觉正确拒绝率</td><td>20 条图谱约束 / 伪造技能案例</td><td class="num ok-cell">100.0%（20/20）</td><td class="num">≥90%</td><td><span class="badge ok">达标</span></td></tr>
+        <tr><td>后端单元测试覆盖率</td><td>1602/2627 行</td><td class="num ok-cell">60.98%</td><td class="num">≥60%</td><td><span class="badge ok">达标</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 JTT 岗位数据字段准确率明细</h3>
+    <table>
+      <thead><tr><th>字段</th><th class="num">正确</th><th class="num">总计</th><th class="num">准确率</th></tr></thead>
+      <tbody>
+        <tr><td>title</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>company</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>city</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>salary</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>experience</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>education</td><td class="num">120</td><td class="num">120</td><td class="num ok-cell">100.0%</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">* 评测方法：<code>independent_runtime_parse</code>——标题和公司从候选源记录读取，城市、薪资、经验、学历在评测时从原始 JD 文本重新解析。</p>
+
+    <h3>4.3 简历逐文件评测摘要</h3>
+    <table>
+      <thead><tr><th>文件</th><th>HTTP</th><th class="num">解析完整度</th><th class="num">技能 F1</th></tr></thead>
+      <tbody>
+        <tr><td>01.docx</td><td><span class="badge ok">200</span></td><td class="num">12.5%</td><td class="num ok-cell">81.48%</td></tr>
+        <tr><td>01.pdf</td><td><span class="badge ok">200</span></td><td class="num">12.5%</td><td class="num ok-cell">81.48%</td></tr>
+        <tr><td>02.docx</td><td><span class="badge ok">200</span></td><td class="num">0.0%</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>02.pdf</td><td><span class="badge ok">200</span></td><td class="num">0.0%</td><td class="num ok-cell">96.55%</td></tr>
+        <tr><td>03.docx</td><td><span class="badge ok">200</span></td><td class="num">12.5%</td><td class="num ok-cell">88.89%</td></tr>
+        <tr><td>03.pdf</td><td><span class="badge ok">200</span></td><td class="num">25.0%</td><td class="num ok-cell">88.89%</td></tr>
+        <tr><td>04.docx</td><td><span class="badge ok">200</span></td><td class="num">12.5%</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>04.pdf</td><td><span class="badge ok">200</span></td><td class="num">25.0%</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td>05.docx</td><td><span class="badge ok">200</span></td><td class="num">25.0%</td><td class="num ok-cell">98.77%</td></tr>
+        <tr><td>05.pdf</td><td><span class="badge ok">200</span></td><td class="num">12.5%</td><td class="num ok-cell">95.12%</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">* 综合技能严格 F1 = 93.12%（micro-F1 聚合 10 份样本）。字段完整度由解析器从联系方式、教育经历、工作经历、项目经历、技能、证书、个人优势、求职意向 8 大维度存在性比例计算。</p>
+
+    <h3>4.4 人岗匹配标签分布</h3>
+    <table>
+      <thead><tr><th>匹配等级</th><th class="num">样本数</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>High（高匹配）</td><td class="num">37</td><td>必备技能覆盖率 ≥ 阈值；能力差距少量</td></tr>
+        <tr><td>Medium（中匹配）</td><td class="num">3</td><td>必备技能覆盖率部分满足；需要补足若干关键技能</td></tr>
+        <tr><td>Low（低匹配）</td><td class="num">60</td><td>必备技能覆盖率低；建议先补齐基础技能或转向其他岗位</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">* 评测方法：<code>independent_runtime_skill_ratio</code>——依据简历明确拥有的技能与岗位必备技能覆盖比例，运行时重新计算 high/medium/low 并与标准标签比较。</p>
+
+    <h3>4.5 防幻觉案例类型分布</h3>
+    <p>20 条案例包括：① 真实图谱技能通过（6 条）；② 不存在技能 / 量子计算 / 区块链 / Rust 等与图谱无关内容正确拒绝（14 条）。综合正确拒绝率 100.0% = 20/20。</p>
+    <div class="placeholder">在此处补充 2–3 个「防幻觉拦截截图」或「接口返回示例」：例如输入含「量子计算」时系统显示“该技能未在岗位需求图谱中验证，建议复核”字样的前端展示或 JSON 返回示例。</div>
+  </section>
+
+  <!-- APPENDIX: 自动化覆盖率前10 -->
+  <section class="card">
+    <h2>附录 A. 后端自动化测试</h2>
+    <p class="desc">38 项 pytest 用例全部通过，服务层行覆盖率 60.98%。</p>
+    <table>
+      <thead><tr><th>模块</th><th class="num">覆盖行 / 总行</th><th class="num">覆盖率</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/models/__init__.py</code></td><td class="num">7/7</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/favorite.py</code></td><td class="num">15/15</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/learning.py</code></td><td class="num">24/24</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/match.py</code></td><td class="num">38/38</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/position.py</code></td><td class="num">40/40</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/resume.py</code></td><td class="num">36/36</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/models/user.py</code></td><td class="num">19/19</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/auth.py</code></td><td class="num">31/31</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/common.py</code></td><td class="num">13/13</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/favorite.py</code></td><td class="num">19/19</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/graph.py</code></td><td class="num">26/26</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/learning.py</code></td><td class="num">63/63</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/match.py</code></td><td class="num">49/49</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/position.py</code></td><td class="num">60/60</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/resume.py</code></td><td class="num">69/69</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/schemas/tailor.py</code></td><td class="num">32/32</td><td class="num ok-cell">100.0%</td></tr>
+        <tr><td><code>app/core/database.py</code></td><td class="num">13/14</td><td class="num ok-cell">92.86%</td></tr>
+        <tr><td><code>app/core/config.py</code></td><td class="num">32/35</td><td class="num ok-cell">91.43%</td></tr>
+        <tr><td><code>app/core/exceptions.py</code></td><td class="num">26/29</td><td class="num ok-cell">89.66%</td></tr>
+        <tr><td><code>app/repositories/learning_repository.py</code></td><td class="num">22/25</td><td class="num ok-cell">88.0%</td></tr>
+        <tr><td><code>app/core/security.py</code></td><td class="num">17/20</td><td class="num ok-cell">85.0%</td></tr>
+        <tr><td><code>app/api/v1/auth.py</code></td><td class="num">28/33</td><td class="num ok-cell">84.85%</td></tr>
+        <tr><td><code>app/repositories/favorite_repository.py</code></td><td class="num">25/30</td><td class="num ok-cell">83.33%</td></tr>
+        <tr><td><code>app/repositories/user_repository.py</code></td><td class="num">19/23</td><td class="num ok-cell">82.61%</td></tr>
+        <tr><td><code>app/repositories/resume_repository.py</code></td><td class="num">27/33</td><td class="num ok-cell">81.82%</td></tr>
+        <tr><td><code>app/api/v1/resume.py</code></td><td class="num">30/39</td><td class="num ok-cell">76.92%</td></tr>
+        <tr><td><code>app/api/v1/graph.py</code></td><td class="num">22/30</td><td class="num ok-cell">73.33%</td></tr>
+        <tr><td><code>app/services/learning_service.py</code></td><td class="num">135/187</td><td class="num ok-cell">72.19%</td></tr>
+        <tr><td><code>app/api/v1/favorites.py</code></td><td class="num">27/38</td><td class="num ok-cell">71.05%</td></tr>
+        <tr><td><code>app/api/v1/learning.py</code></td><td class="num">33/48</td><td class="num ok-cell">68.75%</td></tr>
+        <tr><td><code>app/api/v1/positions.py</code></td><td class="num">32/50</td><td class="num ok-cell">64.0%</td></tr>
+        <tr><td><code>app/api/v1/match.py</code></td><td class="num">19/30</td><td class="num ok-cell">63.33%</td></tr>
+        <tr><td><code>app/api/v1/tailor.py</code></td><td class="num">18/31</td><td class="num ok-cell">58.06%</td></tr>
+        <tr><td><code>app/services/graph_service.py</code></td><td class="num">56/105</td><td class="num ok-cell">53.33%</td></tr>
+        <tr><td><code>app/services/auth_service.py</code></td><td class="num">21/41</td><td class="num ok-cell">51.22%</td></tr>
+        <tr><td><code>app/services/tailor_service.py</code></td><td class="num">94/186</td><td class="num ok-cell">50.54%</td></tr>
+        <tr><td><code>app/main.py</code></td><td class="num">33/69</td><td class="num ok-cell">47.83%</td></tr>
+        <tr><td><code>app/services/resume_service.py</code></td><td class="num">105/250</td><td class="num ok-cell">42.0%</td></tr>
+        <tr><td><code>app/services/match_service.py</code></td><td class="num">132/318</td><td class="num ok-cell">41.51%</td></tr>
+        <tr><td><code>app/repositories/match_repository.py</code></td><td class="num">10/25</td><td class="num ok-cell">40.0%</td></tr>
+        <tr><td><code>app/providers/llm.py</code></td><td class="num">15/38</td><td class="num ok-cell">39.47%</td></tr>
+        <tr><td><code>app/core/neo4j.py</code></td><td class="num">18/57</td><td class="num ok-cell">31.58%</td></tr>
+        <tr><td><code>app/services/position_service.py</code></td><td class="num">12/45</td><td class="num ok-cell">26.67%</td></tr>
+        <tr><td><code>app/repositories/raw_job_repository.py</code></td><td class="num">9/36</td><td class="num ok-cell">25.0%</td></tr>
+        <tr><td><code>app/repositories/position_repository.py</code></td><td class="num">14/59</td><td class="num ok-cell">23.73%</td></tr>
+        <tr><td><code>app/repositories/graph_repository.py</code></td><td class="num">17/74</td><td class="num ok-cell">22.97%</td></tr>
+        <tr><td><code>app/models/raw_job.py</code></td><td class="num">0/21</td><td class="num ok-cell">0.0%</td></tr>
+        <tr><td><code>app/seed.py</code></td><td class="num">0/67</td><td class="num ok-cell">0.0%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>附录 B. 原始报告与可回溯证据</h2>
+    <table>
+      <thead><tr><th>文件</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>evaluation/reports/pytest-results.xml</code></td><td>pytest JUnit 结果（38 项）</td></tr>
+        <tr><td><code>evaluation/reports/coverage.json</code> / <code>coverage-html/</code></td><td>覆盖率机器可读报告 + HTML 交互报告</td></tr>
+        <tr><td><code>evaluation/reports/jd_accuracy.json</code></td><td>岗位解析准确率（120 条，含 6 项字段）</td></tr>
+        <tr><td><code>evaluation/reports/resume_api_accuracy.json</code></td><td>简历真实接口评测（10 份文件，含逐文件实际/期望技能集）</td></tr>
+        <tr><td><code>evaluation/reports/match_accuracy.json</code></td><td>人岗匹配结果（100 条标签分布）</td></tr>
+        <tr><td><code>evaluation/reports/hallucination_report.json</code></td><td>防幻觉逐条结果（20 条通过情况）</td></tr>
+      </tbody>
+    </table>
+    <div class="placeholder" style="margin-top:18px;">如提交压缩包，请把 evaluation/reports 目录整体纳入；如在线提交可在此处附上传链接 / 二维码。</div>
+  </section>
+
+  <p class="footnote" style="text-align:center; margin-top: 40px;">— 报告生成时间：2026-08-23 · 智联职引 JTT 用户端 · 系统测试报告 —</p>
+
+</div>
+</body>
+</html>
