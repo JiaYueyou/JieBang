@@ -10,9 +10,9 @@ x-fyz-environment: &fyz-environment
   JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
   JWT_ALGORITHM: HS256
   JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-120}
-  INITIAL_ADMIN_ENABLED: ${INITIAL_ADMIN_ENABLED:-false}
+  INITIAL_ADMIN_ENABLED: "true"
   INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
-  INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+  INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?INITIAL_ADMIN_PASSWORD is required}
   NEO4J_URI: bolt://neo4j:7687
   NEO4J_USER: neo4j
   NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD is required}
@@ -46,9 +46,11 @@ x-fyz-environment: &fyz-environment
   LOCAL_STORAGE_PATH: /app/storage
   JIEBANG_AGENT_PATH: /app/agent-development/src
   AUTO_PIPELINE_ENABLED: ${AUTO_PIPELINE_ENABLED:-false}
+  RECOVER_PENDING_TASKS_ON_STARTUP: ${RECOVER_PENDING_TASKS_ON_STARTUP:-false}
   AUTO_PIPELINE_INTERVAL_MINUTES: ${AUTO_PIPELINE_INTERVAL_MINUTES:-1440}
   AUTO_PIPELINE_STARTUP_DELAY_SECONDS: ${AUTO_PIPELINE_STARTUP_DELAY_SECONDS:-60}
   AUTO_PIPELINE_SOURCE_IDS: ${AUTO_PIPELINE_SOURCE_IDS:-4,5,6}
+  FYZ_SNAPSHOT_BOOTSTRAP_MODE: ${FYZ_SNAPSHOT_BOOTSTRAP_MODE:-if-empty}
   TZ: Asia/Shanghai
 
 services:
@@ -141,11 +143,30 @@ services:
 
   fyz-migrate:
     image: jiebang-fyz-backend:local
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.fyz
     restart: "no"
     environment: *fyz-environment
     command: ["alembic", "upgrade", "head"]
     depends_on:
       mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  fyz-bootstrap-snapshot:
+    image: jiebang-fyz-backend:local
+    restart: "no"
+    environment: *fyz-environment
+    command: ["python", "scripts/bootstrap_competition_snapshot.py"]
+    volumes:
+      - ${FYZ_DATA_HOST_PATH:-../data}:/app/data:ro
+      - fyz-storage:/app/storage
+    depends_on:
+      fyz-migrate:
+        condition: service_completed_successfully
+      neo4j:
         condition: service_healthy
     networks:
       - backend
@@ -179,7 +200,7 @@ services:
       retries: 12
       start_period: 30s
     depends_on:
-      fyz-migrate:
+      fyz-bootstrap-snapshot:
         condition: service_completed_successfully
       neo4j:
         condition: service_healthy
@@ -207,7 +228,7 @@ services:
       - ${FYZ_DATA_HOST_PATH:-../data}:/app/data
       - fyz-storage:/app/storage
     depends_on:
-      fyz-migrate:
+      fyz-bootstrap-snapshot:
         condition: service_completed_successfully
       neo4j:
         condition: service_healthy
@@ -230,7 +251,7 @@ services:
       - --loglevel=INFO
       - --schedule=/tmp/celerybeat-schedule
     depends_on:
-      fyz-migrate:
+      fyz-bootstrap-snapshot:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -253,7 +274,7 @@ services:
       - --queues=cache_warmup
       - --hostname=fyz-cache-worker@%h
     depends_on:
-      fyz-migrate:
+      fyz-bootstrap-snapshot:
         condition: service_completed_successfully
       neo4j:
         condition: service_healthy

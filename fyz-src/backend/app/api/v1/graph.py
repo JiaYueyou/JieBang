@@ -11,6 +11,7 @@ from app.core.security import get_current_user, require_admin
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
 from app.schemas.graph import (
+    GraphAnalyticsResponse,
     GraphEnrichmentBatchRejectResponse,
     GraphEnrichmentCandidatePage,
     GraphEnrichmentCandidateResponse,
@@ -215,6 +216,16 @@ async def panorama(
         params,
         lambda: service.panorama(**params),
     ))
+
+
+@router.get("/analytics", response_model=ApiResponse[GraphAnalyticsResponse])
+async def graph_analytics(
+    limit: int = Query(default=20, ge=1, le=100),
+    _principal: TokenPrincipal = Depends(get_current_user),
+    service: GraphService = Depends(get_graph_service),
+):
+    """Return deterministic degree ranking and graph health aggregates."""
+    return ApiResponse(data=await service.analytics(limit=limit))
 
 
 @router.get("/overview", response_model=ApiResponse[GraphSubgraph])

@@ -28,6 +28,7 @@ async def _add_raw(db, standard, skill, title, month, sequence, index):
     await db.flush()
     raw = RawJobRecord(
         source_document_id=document.id,
+        standard_job_id=standard.id,
         title=title,
         standardized_title=title,
         company=f"示例企业{index}",
@@ -275,8 +276,8 @@ async def test_known_historical_technology_is_not_reported_as_new_when_local_bas
         assert overview.stats.new_skills == 1
 
 
-async def test_new_job_overview_keeps_low_evidence_first_observations():
-    """The total represents all new observations, not only confirmed ones."""
+async def test_new_job_overview_separates_observations_from_confirmed_candidates():
+    """Single-source noise is counted but not presented as a decision candidate."""
     async with async_session() as db:
         _, _, _ = await seed_analysis_data(db)
         skill = (await db.execute(
@@ -297,8 +298,8 @@ async def test_new_job_overview_keeps_low_evidence_first_observations():
             new_job_page_size=100,
         )
 
-        assert "单来源新岗位" in {job.name for job in overview.new_jobs}
-        assert overview.new_jobs_total == overview.new_job_observation_total
+        assert "单来源新岗位" not in {job.name for job in overview.new_jobs}
+        assert overview.new_job_observation_total > overview.new_jobs_total
 
 
 async def test_new_skill_overview_keeps_single_source_first_observation():
@@ -426,6 +427,42 @@ def test_capability_changes_use_recent_multi_evidence_and_exclude_soft_skills():
     assert "沟通能力" not in changes[0].modified + changes[0].added
     assert changes[0].previous_sample_count == 4
     assert changes[0].current_sample_count == 2
+
+
+def test_capability_changes_do_not_weaken_current_hard_requirements():
+    standard = StandardJob(
+        id=104, name="AI应用开发工程师", canonical_key="ai应用开发工程师",
+        aliases=[], stack="ai", source_count=7, status="active",
+    )
+    python = Skill(id=105, name="Python", canonical_name="Python", canonical_key="python", category="programming_language", aliases=[])
+    rag = Skill(id=106, name="RAG", canonical_name="RAG", canonical_key="rag", category="ai_ml", aliases=[])
+
+    def fact(raw_id: int, skill: Skill) -> tuple[JobSkillFact, Skill]:
+        return JobSkillFact(
+            raw_job_record_id=raw_id, skill_id=skill.id, kind="required",
+            importance=.9, frequency=1, confidence=.95,
+            evidence_text=f"硬性要求：{skill.name}", verification_status="verified",
+            extraction_method="rule", source_count=2,
+        ), skill
+
+    changes = AnalysisService._capability_changes(
+        standard_jobs=[standard], source_ids={104: {1, 2, 3, 4, 5, 6, 7}},
+        facts=[
+            fact(1, python), fact(2, python), fact(3, python), fact(4, python),
+            fact(5, python), fact(6, python),
+            fact(5, rag), fact(6, rag),
+        ],
+        record_month={
+            1: "2026-05", 2: "2026-05", 3: "2026-06", 4: "2026-06",
+            5: "2026-07", 6: "2026-08", 7: "2026-08",
+        },
+        skill_filter="", limit=10,
+    )
+
+    assert len(changes) == 1
+    assert changes[0].added == ["RAG"]
+    assert "Python" not in changes[0].weakened
+    assert "Python" not in changes[0].removed
 
 
 async def test_emerging_job_decision_is_upserted_and_returned_in_insights():

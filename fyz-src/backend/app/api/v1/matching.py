@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.auth import TokenPrincipal
 from app.schemas.common import ApiResponse
-from app.schemas.matching import MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeMatchRequest, TalentDetailResponse, TalentResponse
+from app.schemas.matching import MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeMatchRequest, TalentDetailResponse, TalentResponse, TalentUpdateRequest
 from app.services.matching_service import MatchingService
 
 router = APIRouter(tags=["简历匹配"])
@@ -53,6 +53,16 @@ async def get_talent(resume_id: int, principal: TokenPrincipal = Depends(get_cur
 @router.get("/talents/{resume_id}/details", response_model=ApiResponse[TalentDetailResponse])
 async def get_talent_details(resume_id: int, principal: TokenPrincipal = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return ApiResponse(data=await MatchingService(db).get_talent_detail(resume_id, principal.user_id))
+
+
+@router.put("/talents/{resume_id}/details", response_model=ApiResponse[TalentDetailResponse])
+async def update_talent_details(
+    resume_id: int,
+    payload: TalentUpdateRequest,
+    principal: TokenPrincipal = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return ApiResponse(data=await MatchingService(db).update_talent_detail(resume_id, principal.user_id, payload))
 
 
 @router.post("/resumes/{resume_id}/matches", response_model=ApiResponse[list[MatchResponse]])

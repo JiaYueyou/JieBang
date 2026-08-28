@@ -76,6 +76,51 @@ def test_counts_excludes_retrieval_evidence_nodes(monkeypatch):
     assert all("EvidenceChunk" not in params["allowed_labels"] for _, params in calls)
 
 
+def test_incremental_cleanup_is_limited_to_affected_jobs(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        graph_module, "run_write",
+        lambda query, params=None: calls.append((query, params)) or [],
+    )
+
+    Neo4jGraphRepository().cleanup_affected_jobs(["job:7"])
+
+    assert len(calls) == 2
+    assert all(params == {"namespace": "jiebang", "job_ids": ["job:7"]} for _, params in calls)
+    assert "SourceDocument" in calls[0][0] and "DETACH DELETE source" in calls[0][0]
+    assert "relation.namespace=$namespace" in calls[1][0]
+
+
+def test_analytics_reports_layers_relations_density_and_degree(monkeypatch):
+    calls = []
+    responses = iter([
+        [{"type": "Job", "count": 2}, {"type": "TechStack", "count": 2}],
+        [{"relation": "CONTAINS", "count": 2}, {"relation": "REQUIRES_AREA", "count": 1}],
+        [{"count": 3}],
+        [{"id": "skill:1", "name": "Python", "type": "TechStack", "degree": 3, "frequency": 8}],
+        [{"count": 1}],
+    ])
+
+    def fake_read(query, params=None):
+        calls.append((query, params))
+        return next(responses)
+
+    monkeypatch.setattr(graph_module, "run_read", fake_read)
+    result = Neo4jGraphRepository().analytics(limit=5)
+
+    assert result["node_count"] == 4
+    assert result["edge_count"] == 3
+    assert result["density"] == 0.5
+    assert result["isolated_node_count"] == 1
+    assert result["top_degree_nodes"][0]["degree"] == 3
+    assert len(calls) == 5
+    assert all(call[1]["namespace"] == "jiebang" for call in calls)
+    assert calls[3][1]["limit"] == 5
+    assert "count(DISTINCT CASE" in calls[2][0]
+    assert "neighbor {namespace:$namespace}" in calls[4][0]
+    assert all("EvidenceChunk" not in call[1]["allowed_labels"] for call in calls)
+
+
 def test_query_nodes_excludes_non_graph_labels(monkeypatch):
     calls = []
     monkeypatch.setattr(

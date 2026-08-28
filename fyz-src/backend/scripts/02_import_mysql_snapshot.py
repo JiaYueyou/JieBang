@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import json
+import re
 
 from db_transfer_common import (
     SNAPSHOT_PATH,
@@ -12,6 +15,52 @@ from db_transfer_common import (
     load_manifest,
     table_counts,
 )
+
+
+_REDACTED_EMBEDDING_FRACTION = re.compile(r"(-?0)\.\[已脱敏证件\]")
+
+
+def repair_redacted_embedding_literals(statement: str) -> tuple[str, int]:
+    """Repair transport-only redaction damage without changing the snapshot file.
+
+    Sanitization can replace long decimal digit runs inside JSON embedding
+    arrays with ``[已脱敏证件]``.  MySQL correctly rejects those JSON
+    literals.  The source snapshot and its checksum remain untouched; damaged
+    vector components are imported as zero and the deployment bootstrap builds
+    a fresh active index from authoritative evidence afterwards.
+    """
+    if not statement.startswith("INSERT INTO `retrieval_index_entry`"):
+        return statement, 0
+    return _REDACTED_EMBEDDING_FRACTION.subn(r"\1.0", statement)
+
+
+def embedding_checksum(vector: list[float]) -> str:
+    """Return the canonical checksum used by the retrieval domain."""
+    payload = ",".join(f"{value:.8f}" for value in vector)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+async def synchronize_embedding_checksums(cursor) -> int:
+    """Synchronize checksums after transport-only vector literal repair."""
+    await cursor.execute(
+        "SELECT id, embedding, embedding_checksum FROM retrieval_index_entry"
+    )
+    updates: list[tuple[str, int]] = []
+    for entry_id, raw_embedding, stored_checksum in await cursor.fetchall():
+        vector = (
+            json.loads(raw_embedding)
+            if isinstance(raw_embedding, (str, bytes, bytearray))
+            else raw_embedding
+        )
+        checksum = embedding_checksum([float(value) for value in vector])
+        if checksum != stored_checksum:
+            updates.append((checksum, int(entry_id)))
+    if updates:
+        await cursor.executemany(
+            "UPDATE retrieval_index_entry SET embedding_checksum = %s WHERE id = %s",
+            updates,
+        )
+    return len(updates)
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,17 +100,33 @@ async def import_snapshot(*, replace: bool) -> None:
             if line.strip() and not line.lstrip().startswith("--")
         ]
         print(f"[2/4] Importing {len(statements)} snapshot statements...")
+        repaired_components = 0
+        synchronized_checksums = 0
         async with connection.cursor() as cursor:
             await cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
             try:
                 for statement in statements:
-                    await cursor.execute(statement)
+                    repaired_statement, repaired = repair_redacted_embedding_literals(
+                        statement
+                    )
+                    repaired_components += repaired
+                    await cursor.execute(repaired_statement)
+                if repaired_components:
+                    synchronized_checksums = await synchronize_embedding_checksums(cursor)
                 await connection.commit()
             except Exception:
                 await connection.rollback()
                 raise
             finally:
                 await cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        if repaired_components:
+            print(
+                "[2/4] Repaired "
+                f"{repaired_components} redacted embedding components in memory; "
+                f"synchronized {synchronized_checksums} vector checksums; "
+                "the checked-in snapshot was not modified."
+            )
 
         actual_counts = await table_counts(connection)
         expected_counts = {

@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class MatchEvidenceResponse(BaseModel):
@@ -15,6 +15,8 @@ class MatchResponse(BaseModel):
     resume_id: int
     job_id: int
     job_title: str
+    job_department: str = ""
+    job_level: str = ""
     score: int
     matched: list[str]
     missing: list[str]
@@ -60,6 +62,8 @@ class TalentResponse(BaseModel):
     urgent: bool = False
     company: str = ""
     location: str = ""
+    phone: str = ""
+    email: str = ""
     matches: list[MatchResponse] = Field(default_factory=list)
 
 
@@ -75,6 +79,23 @@ class TalentDetailResponse(TalentResponse):
 
 class ResumeMatchRequest(BaseModel):
     job_ids: list[int] = Field(min_length=1, max_length=30)
+
+
+class TalentUpdateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    phone: str = Field(default="", max_length=40)
+    email: str = Field(default="", max_length=160)
+    current_position: str = Field(default="", max_length=120)
+    experience: str = Field(default="", max_length=100)
+    education: str = Field(default="", max_length=100)
+    department: str = Field(default="", max_length=100)
+    company: str = Field(default="", max_length=150)
+    location: str = Field(default="", max_length=100)
+
+    @field_validator("name", "phone", "email", "current_position", "experience", "education", "department", "company", "location", mode="before")
+    @classmethod
+    def strip_text(cls, value: str | None) -> str:
+        return str(value or "").strip()
 
 
 class MatchExplanationResponse(BaseModel):
@@ -93,3 +114,4 @@ class MatchExplanationResponse(BaseModel):
     generation_mode: str
     warnings: list[str]
     agent_run_id: str
+    evidence: list[MatchEvidenceResponse] = Field(default_factory=list)

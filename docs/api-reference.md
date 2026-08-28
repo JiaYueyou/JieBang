@@ -1,12 +1,19 @@
 # API 参考
 
+> 文档类型：FYZ 后端静态接口摘要
+> 状态：现行，但不覆盖 `jtt-src/backend` 与 `jtt-src/ai-assistant`
+> 核验日期：2026-08-12（`c995a09e`）
+> 完成度与已知缺口见 [当前实现状态](implementation-status.md)。
+
 基础地址：`http://localhost:8000/api/v1`
 
 - Swagger：`http://localhost:8000/docs`
 - ReDoc：`http://localhost:8000/redoc`
 - OpenAPI：`http://localhost:8000/openapi.json`
 
-本文记录当前代码中的真实接口。运行时 OpenAPI 是参数和 Schema 的最终来源。
+本文记录 `fyz-src/backend` 当前代码中的主要真实接口。运行时 OpenAPI 是参数和 Schema 的
+最终来源。JTT 独立后端同样提供 `/docs`，AI 助手使用独立 8001 端口；两套 FastAPI 默认
+都声明 8000，联合运行时必须显式改端口。
 
 ## 1. 统一响应
 
@@ -140,6 +147,10 @@ Invoke-RestMethod -Uri "$base/tasks/$taskId" -Headers $headers
 | GET | `/graph/search` | 搜索节点 |
 | GET | `/graph/path` | 查询两节点路径 |
 | GET | `/graph/jobs/{job_id}/tree` | 标准岗位五级能力树 |
+| POST | `/graph/enrichment/generate` | 创建 L4/L5 候选生成任务 |
+| GET | `/graph/enrichment/candidates` | 查询补全候选 |
+| PATCH | `/graph/enrichment/candidates/{candidate_id}` | 审核候选 |
+| POST | `/graph/enrichment/publish` | 发布已批准候选 |
 
 创建同步任务：
 
@@ -162,7 +173,11 @@ $sync = Invoke-RestMethod `
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | POST | `/agents/jd-generations` | 创建异步 JD 草稿生成任务 |
+| POST | `/agents/jd-input-suggestions` | 生成 JD 输入建议 |
+| POST | `/agents/career-plannings` | 创建职业规划任务 |
+| POST | `/agents/match-explanations` | 创建匹配解释任务 |
 | GET | `/agents/runs/{agent_run_id}` | 查看 Agent 运行审计记录 |
+| GET | `/agents/runs` | 查询 Agent 运行审计列表 |
 
 请求示例：
 
@@ -229,17 +244,37 @@ $task = Invoke-RestMethod `
 决策值为 `confirmed`、`planned` 或 `ignored`，并按当前登录用户隔离。趋势结果包含
 数据覆盖范围和质量提示，前端不应将数据不足视为零需求。
 
-## 11. 当前占位接口
+## 11. 匹配、转岗与用户活动
 
-以下模块已经注册并受认证保护，但目前只返回占位信息：
-
-| 路径前缀 | 规划能力 |
+| 路径前缀 | 当前能力 |
 | --- | --- |
-| `/changes` | 既有岗位能力动态更新 |
-| `/matching` | 人岗匹配度诊断 |
-| `/admin` | 系统管理 |
+| `/resumes`、`/talents` | 简历上传、人才列表、详情、原件访问 |
+| `/resumes/{resume_id}/matches` | 确定性岗位匹配 |
+| `/matches/{match_id}/explanation` | 匹配解释 |
+| `/internal-transfer/*` | 员工目录、人才池、内部岗位、规则、匹配与决策 |
+| `/user-activity/favorites*` | 收藏、批量删除、备注 |
+| `/user-activity/history*` | 浏览足迹、删除、清空与洞察 |
 
-在实现真实逻辑前，不得将这些模块标记为“后端已完成”。新增接口时必须同步：
+`GET /matching/` 仅是兼容状态入口；真实匹配子路由已实现，不应再把整个模块标为占位。
+
+## 12. 管理、Dashboard、检索与自动流水线
+
+| 路径前缀 | 当前能力 |
+| --- | --- |
+| `/dashboard/overview` | FYZ 工作台聚合数据 |
+| `/admin/overview`、`/admin/resources` | 服务、资源和运行概览 |
+| `/admin/data-sources/*` | 爬虫配置、运行、状态与轮询 |
+| `/admin/pipeline/runs*` | 手动/定时自动流水线的创建、列表、详情、恢复与管理 |
+| `/retrieval/*` | 混合检索、索引版本和查询日志 |
+| `/data-quality/*`、技能/图谱审核子路由 | 数据质量与事实审核 |
+
+## 13. 已移除的旧兼容入口
+
+`/changes` 与 `/changes/health` 是 2026-06 初始骨架遗留的无业务占位路由，没有前端或
+服务消费者。其原计划能力已由 `/analysis/overview`、`/analysis/job-insights` 和
+`/jobs/{job_id}/versions` 覆盖，已于 2026-08-12 移除；旧路径现在返回 404。
+
+新增或变更接口时必须同步：
 
 1. Pydantic Schema；
 2. FastAPI OpenAPI；

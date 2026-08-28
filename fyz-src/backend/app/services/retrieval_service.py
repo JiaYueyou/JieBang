@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
+    RETRIEVAL_MAX_READY_DROP_RATIO,
     RETRIEVAL_RELATIVE_SCORE_WINDOW,
     RETRIEVAL_SEMANTIC_SCORE_FLOOR,
 )
@@ -30,6 +31,7 @@ from app.domain.retrieval import (
     lexical_score,
     match_authoritative_labels,
 )
+from app.domain.job_lifecycle import current_external_job_condition
 from app.models import (
     EvidenceChunk,
     JobSkillFact,
@@ -52,6 +54,9 @@ from app.schemas.retrieval import (
 )
 
 
+DETERMINISTIC_MIN_LEXICAL_COVERAGE = 0.35
+
+
 class RetrievalService:
     def __init__(
         self,
@@ -69,13 +74,24 @@ class RetrievalService:
     async def rebuild_index(
         self,
         *,
-        created_by: int,
+        created_by: int | None,
         backend: str,
     ) -> RetrievalIndexResponse:
+        previous_ready = await self.db.scalar(
+            select(RetrievalIndexVersion)
+            .where(RetrievalIndexVersion.status == "ready")
+            .order_by(RetrievalIndexVersion.completed_at.desc())
+        )
         index_id = str(uuid.uuid4())
         now = utc_now_naive()
         version = now.strftime("%Y%m%dT%H%M%S") + "-" + index_id[:8]
-        index = RetrievalIndexVersion(
+        base_metadata = {
+            "authority": "mysql",
+            "allowed_quality_statuses": ["accepted", "warning"],
+            "allowed_fact_statuses": ["verified"],
+            "index_text_version": INDEX_TEXT_VERSION,
+        }
+        index_values = dict(
             id=index_id,
             version=version,
             backend=backend,
@@ -83,18 +99,40 @@ class RetrievalService:
             embedding_model=self.embedding_provider.model,
             embedding_dimension=self.embedding_provider.dimension,
             chunking_version=CHUNKING_VERSION,
-            status="building",
-            chunk_count=0,
-            entry_count=0,
-            metadata_json={
-                "authority": "mysql",
-                "allowed_quality_statuses": ["accepted", "warning"],
-                "allowed_fact_statuses": ["verified"],
-                "index_text_version": INDEX_TEXT_VERSION,
-            },
             created_by=created_by,
             created_at=now,
         )
+        index = RetrievalIndexVersion(
+            **index_values,
+            status="building",
+            chunk_count=0,
+            entry_count=0,
+            metadata_json=base_metadata,
+        )
+
+        async def record_failed_build(
+            *, error_stage: str, error: str, chunk_count: int, metadata: dict | None = None
+        ) -> None:
+            # Candidate EvidenceChunk mutations and index entries share the
+            # build transaction. Roll them all back so the previous ready
+            # index remains fully searchable, then persist only the audit row.
+            await self.db.rollback()
+            failed = RetrievalIndexVersion(
+                **index_values,
+                status="failed",
+                chunk_count=chunk_count,
+                entry_count=0,
+                metadata_json={
+                    **base_metadata,
+                    **(metadata or {}),
+                    "error_stage": error_stage,
+                    "error": error[:500],
+                },
+                completed_at=utc_now_naive(),
+            )
+            self.db.add(failed)
+            await self.db.commit()
+
         self.db.add(index)
         await self.db.flush()
 
@@ -117,6 +155,7 @@ class RetrievalService:
                     RawJobRecord.quality_status.in_(("accepted", "warning")),
                     RawJobRecord.is_excluded.is_(False),
                     Skill.validation_status == "approved",
+                    current_external_job_condition(),
                 )
                 .order_by(JobSkillFact.id)
             )
@@ -134,8 +173,17 @@ class RetrievalService:
                 evidence_text=fact.evidence_text,
                 skill_name=skill.canonical_name,
             )
-            seen_ids.add(window.evidence_id)
             chunk = await self.db.get(EvidenceChunk, window.evidence_id)
+            if chunk is None:
+                # A reviewed fact can receive a corrected evidence span, which
+                # changes the content-derived candidate ID. Keep the existing
+                # chunk identity so the one-fact/one-chunk constraint and
+                # historical citations remain stable across index rebuilds.
+                chunk = await self.db.scalar(
+                    select(EvidenceChunk).where(
+                        EvidenceChunk.job_skill_fact_id == fact.id
+                    )
+                )
             if chunk is None:
                 chunk = EvidenceChunk(
                     id=window.evidence_id,
@@ -161,6 +209,11 @@ class RetrievalService:
                 )
                 self.db.add(chunk)
             else:
+                chunk.job_skill_fact_id = fact.id
+                chunk.source_document_id = source.id
+                chunk.raw_job_record_id = raw.id
+                chunk.standard_job_id = raw.standard_job_id
+                chunk.skill_id = skill.id
                 chunk.chunk_text = window.text
                 chunk.char_start = window.char_start
                 chunk.char_end = window.char_end
@@ -175,6 +228,7 @@ class RetrievalService:
                 )
                 chunk.content_fingerprint = source.content_fingerprint
                 chunk.near_duplicate_group_id = raw.near_duplicate_group_id
+            seen_ids.add(chunk.id)
             active_chunks.append(chunk)
             index_texts.append(
                 build_index_text(
@@ -198,16 +252,11 @@ class RetrievalService:
                 index_texts
             )
         except Exception as exc:
-            index.status = "failed"
-            index.chunk_count = len(active_chunks)
-            index.entry_count = 0
-            index.metadata_json = {
-                **index.metadata_json,
-                "error_stage": "embedding",
-                "error": f"{type(exc).__name__}: {str(exc)[:500]}",
-            }
-            index.completed_at = utc_now_naive()
-            await self.db.commit()
+            await record_failed_build(
+                error_stage="embedding",
+                error=f"{type(exc).__name__}: {exc}",
+                chunk_count=len(active_chunks),
+            )
             raise
         entries: list[RetrievalIndexEntry] = []
         for chunk, index_text, vector in zip(
@@ -234,6 +283,29 @@ class RetrievalService:
                 [chunk for chunk in existing_chunks if chunk.id in seen_ids]
             ),
         }
+        if index.entry_count != index.chunk_count:
+            raise RuntimeError("retrieval index entry/chunk count mismatch")
+        if previous_ready is not None and previous_ready.chunk_count > 0:
+            drop_ratio = 1 - (index.chunk_count / previous_ready.chunk_count)
+            index.metadata_json = {
+                **index.metadata_json,
+                "previous_ready_version": previous_ready.version,
+                "ready_drop_ratio": round(drop_ratio, 6),
+            }
+            if drop_ratio > RETRIEVAL_MAX_READY_DROP_RATIO:
+                await record_failed_build(
+                    error_stage="activation_gate",
+                    error="retrieval evidence count dropped beyond configured threshold",
+                    chunk_count=index.chunk_count,
+                    metadata={
+                        "previous_ready_version": previous_ready.version,
+                        "ready_drop_ratio": round(drop_ratio, 6),
+                    },
+                )
+                raise RuntimeError(
+                    "retrieval activation rejected: evidence count dropped "
+                    f"{drop_ratio:.1%} from previous ready index"
+                )
         try:
             if backend == "neo4j_vector":
                 await self._sync_neo4j(index, active_chunks, vectors)
@@ -258,13 +330,12 @@ class RetrievalService:
             index.completed_at = utc_now_naive()
             await self.db.commit()
         except Exception as exc:
-            index.status = "failed"
-            index.metadata_json = {
-                **index.metadata_json,
-                "error": f"{type(exc).__name__}: {str(exc)[:500]}",
-            }
-            index.completed_at = utc_now_naive()
-            await self.db.commit()
+            await record_failed_build(
+                error_stage="backend_sync",
+                error=f"{type(exc).__name__}: {exc}",
+                chunk_count=len(active_chunks),
+                metadata=index.metadata_json,
+            )
             raise
         return self._index_response(index)
 
@@ -278,13 +349,18 @@ class RetrievalService:
         started = time.perf_counter()
         index = await self._resolve_index(payload.index_version)
         embedding_provider = self._provider_for_index(index)
-        query_vector = (
-            await embedding_provider.embed_texts([payload.query])
-        )[0]
         backend_warnings: list[str] = []
+        query_vector: list[float] | None = None
+        try:
+            query_vector = (await embedding_provider.embed_texts([payload.query]))[0]
+        except Exception as exc:
+            backend_warnings.append(
+                "查询向量服务不可用，已降级为关键词与权威标签检索："
+                f"{type(exc).__name__}"
+            )
         vector_store_scores: dict[str, float] = {}
         chroma_scores_available = False
-        if index.backend == "neo4j_vector":
+        if query_vector is not None and index.backend == "neo4j_vector":
             try:
                 vector_store_scores = await self._neo4j_scores(
                     query_vector,
@@ -296,7 +372,7 @@ class RetrievalService:
                     "Neo4j 向量召回不可用，已降级为 MySQL 可重建镜像："
                     f"{type(exc).__name__}"
                 )
-        elif index.backend == "chroma":
+        elif query_vector is not None and index.backend == "chroma":
             try:
                 vector_store_scores = await self.vector_store.query(
                     index_version=index.version,
@@ -378,7 +454,8 @@ class RetrievalService:
             keyword = lexical_score(payload.query, entry.lexical_text)
             vector = vector_store_scores.get(
                 chunk.id,
-                cosine_similarity(query_vector, entry.embedding),
+                cosine_similarity(query_vector, entry.embedding)
+                if query_vector is not None else 0.0,
             )
             authoritative_match = bool(
                 payload.standard_job_id is not None
@@ -422,18 +499,35 @@ class RetrievalService:
                     + 0.15 * graph
                     + 0.1 * semantic_skill,
                 )
-            deterministic_baseline = embedding_provider.model.startswith(
-                "signed-token-hash"
+            if authoritative_match:
+                score = max(score, payload.minimum_retrieval_score)
+            deterministic_baseline = query_vector is not None and (
+                index.backend == "local_hash"
+                or embedding_provider.model.startswith("signed-token-hash")
             )
             if (
-                (deterministic_baseline and keyword <= 0)
-                or (keyword <= 0 and vector <= 0)
+                (
+                    not authoritative_match
+                    and keyword < DETERMINISTIC_MIN_LEXICAL_COVERAGE
+                    and (
+                        deterministic_baseline
+                        or vector < RETRIEVAL_SEMANTIC_SCORE_FLOOR
+                    )
+                )
+                or (
+                    keyword <= 0
+                    and vector <= 0
+                    and not authoritative_match
+                )
                 or (
                     not authoritative_match
                     and keyword <= 0
                     and vector < RETRIEVAL_SEMANTIC_SCORE_FLOOR
                 )
-                or score < payload.minimum_retrieval_score
+                or (
+                    score < payload.minimum_retrieval_score
+                    and not authoritative_match
+                )
             ):
                 continue
             ranked.append(

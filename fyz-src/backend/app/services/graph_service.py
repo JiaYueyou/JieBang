@@ -11,7 +11,7 @@ import time
 import uuid
 from collections import defaultdict
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
@@ -26,6 +26,7 @@ from app.core.exceptions import InvalidParameterError, ResourceNotFoundError
 from app.core.graph_sync_lock import serialized_graph_sync
 from app.core.time import utc_now, utc_now_naive
 from app.domain.job_standardizer import CATEGORY_STACK, normalize_job_title
+from app.domain.job_lifecycle import current_external_job_condition
 from app.domain.skill_dictionary import canonical_key
 from app.domain.statuses import AgentRunStatus, TaskStatus
 from app.models import (
@@ -34,6 +35,8 @@ from app.models import (
     GraphEnrichmentCandidate,
     GraphSnapshot,
     GraphSyncBatch,
+    EvidenceChunk,
+    JobDuplicateCluster,
     JobPosting,
     JobSkillFact,
     RawJobRecord,
@@ -43,10 +46,11 @@ from app.models import (
     StandardJobAlias,
     StandardJobSource,
 )
-from app.providers import DeepSeekProvider, LLMProvider
+from app.providers import DeepSeekProvider, LLMProvider, LLMProviderError
 from app.repositories import GraphAuditRepository, Neo4jGraphRepository
 from app.schemas.graph import (
     GraphEdge,
+    GraphAnalyticsResponse,
     GraphEnrichmentOutput,
     GraphNode,
     GraphSnapshotResponse,
@@ -70,6 +74,16 @@ logger = logging.getLogger(__name__)
 
 
 class GraphService:
+    # Python language and the frameworks/libraries whose primary developer
+    # surface is Python belong to one ecosystem in the L2 graph.  Keeping
+    # LangChain in a generic "Framework" bucket loses the prerequisite
+    # relationship that matters for job capability interpretation.
+    _PYTHON_ECOSYSTEM_SKILLS = {
+        "Python", "FastAPI", "Django", "Flask", "Tornado",
+        "LangChain", "LangGraph", "PyTorch", "TensorFlow", "Keras",
+        "Scikit-learn", "Pandas", "NumPy",
+    }
+
     # L4 技术点名称可剥离的复合修饰后缀（最长匹配优先，基于快照真实样本校准）
     _L4_COMPOUND_SUFFIXES = (
         "持久层框架", "数据库开发与优化", "开发与多语言协同", "开发基础与工程规范",
@@ -78,6 +92,16 @@ class GraphService:
         "分支与合并机制", "基本语法与结构", "基础语法与常用类库",
         "环境下的应用与嵌入式编程", "中间件使用", "脚本编写",
     )
+
+    @classmethod
+    def _skill_area(cls, skill: Skill) -> tuple[str, str, str]:
+        if skill.name in cls._PYTHON_ECOSYSTEM_SKILLS:
+            return "python_ecosystem", "Python 生态", "backend"
+        return (
+            skill.category,
+            skill.category.replace("_", " ").title(),
+            CATEGORY_STACK.get(skill.category, "backend"),
+        )
     # L4 技术点名称可剥离的单修饰后缀（守卫保证剥离后长度 ≥2）
     _L4_SUFFIXES = (
         "框架", "技术", "原理", "详解", "实战", "开发", "优化", "调优",
@@ -161,7 +185,14 @@ class GraphService:
                 if row.title != standard.name:
                     aliases.add(row.title)
                 standard.aliases = sorted(aliases)
+                standard.name = normalized.name
+                standard.level = normalized.level
+                standard.role_family = normalized.role_family
+                standard.specialization_key = normalized.specialization_key
+                standard.occupation_code = normalized.occupation_code
+                standard.normalization_version = normalized.version
                 standard.last_seen_at = utc_now_naive()
+                standard.status = "active"
                 if source_type == "raw":
                     row.standardized_title = standard.name
                     row.standard_job_id = standard.id
@@ -195,7 +226,12 @@ class GraphService:
                         original_title=row.title,
                         confidence=normalized.confidence,
                     ))
+                elif link.standard_job_id != standard.id:
+                    link.standard_job_id = standard.id
+                    link.original_title = row.title
+                    link.confidence = normalized.confidence
         await self.db.flush()
+        await self.db.execute(update(StandardJob).values(source_count=0))
         counts = (await self.db.execute(
             select(StandardJobSource.standard_job_id, func.count(StandardJobSource.id))
             .group_by(StandardJobSource.standard_job_id)
@@ -203,6 +239,23 @@ class GraphService:
         for standard_job_id, count in counts:
             standard = await self.db.get(StandardJob, standard_job_id)
             standard.source_count = int(count)
+        cluster_rows = (await self.db.execute(
+            select(JobDuplicateCluster, RawJobRecord.standard_job_id)
+            .join(
+                RawJobRecord,
+                RawJobRecord.id == JobDuplicateCluster.representative_raw_job_id,
+            )
+            .where(RawJobRecord.standard_job_id.is_not(None))
+        )).all()
+        for cluster, standard_job_id in cluster_rows:
+            cluster.standard_job_id = int(standard_job_id)
+        chunk_rows = (await self.db.execute(
+            select(EvidenceChunk, RawJobRecord.standard_job_id)
+            .join(RawJobRecord, RawJobRecord.id == EvidenceChunk.raw_job_record_id)
+            .where(RawJobRecord.standard_job_id.is_not(None))
+        )).all()
+        for chunk, standard_job_id in chunk_rows:
+            chunk.standard_job_id = int(standard_job_id)
         await self.db.flush()
         return await self.audit.count_standard_jobs()
 
@@ -214,6 +267,7 @@ class GraphService:
         user_id: int | None,
         task_id: str | None = None,
         auto_publish_enrichment: bool = False,
+        affected_standard_job_ids: list[int] | None = None,
         _lock_acquired: bool = False,
     ) -> dict:
         if not _lock_acquired:
@@ -224,6 +278,7 @@ class GraphService:
                     user_id=user_id,
                     task_id=task_id,
                     auto_publish_enrichment=auto_publish_enrichment,
+                    affected_standard_job_ids=affected_standard_job_ids,
                     _lock_acquired=True,
                 )
         snapshot_id = str(uuid.uuid4())
@@ -293,10 +348,17 @@ class GraphService:
             ) = await self._append_verified_deep_nodes(
                 snapshot_id, nodes, edges
             )
+            affected_ids = sorted({int(value) for value in affected_standard_job_ids or []})
+            if mode == "incremental" and affected_ids:
+                nodes, edges = self._filter_incremental_payload(
+                    nodes, edges, affected_ids
+                )
             enrichment_stats["tech_points_written"] = tech_points
             enrichment_stats["knowledge_points_written"] = knowledge_points
             await self._report_progress(task_id, batch, 88, "publishing", "正在写入 Neo4j 正式图谱")
-            await asyncio.to_thread(self._write_payload, nodes, edges, version, mode)
+            await asyncio.to_thread(
+                self._write_payload, nodes, edges, version, mode, affected_ids
+            )
             counts = await asyncio.to_thread(self.graph.counts)
             for candidate_id in published_candidate_ids:
                 candidate = await self.db.get(GraphEnrichmentCandidate, candidate_id)
@@ -321,6 +383,7 @@ class GraphService:
             snapshot.metadata_json = {
                 "standard_jobs": standard_count,
                 "enrichment": enrichment_stats,
+                "affected_standard_job_ids": affected_ids,
             }
             batch.status = TaskStatus.succeeded.value
             batch.progress = 100
@@ -331,6 +394,7 @@ class GraphService:
             return {
                 "snapshot_id": snapshot.id,
                 "version": snapshot.version,
+                "mode": mode,
                 "standard_jobs": standard_count,
                 "node_count": snapshot.node_count,
                 "edge_count": snapshot.edge_count,
@@ -595,12 +659,14 @@ class GraphService:
             }
             for item in retrieval.items
         ]
+        provider_diagnostics: dict = {}
         try:
             output = await self.enrichment_agent.enrich(
                 skill_name=skill.name,
                 evidence=evidence,
                 skill_area=skill.category.replace("_", " ").title(),
                 job_directions=await self._job_directions_for_skill(skill.id),
+                diagnostics=provider_diagnostics,
             )
             claims = self._grounding_claims(output)
             report = await self.grounding.validate_and_persist(
@@ -652,6 +718,7 @@ class GraphService:
                     "warnings": retrieval.warnings,
                 },
                 "validation": report.to_dict(),
+                "provider_diagnostics": provider_diagnostics,
                 "fallback_reason": (
                     None
                     if filtered.tech_points
@@ -668,17 +735,32 @@ class GraphService:
             )
         except Exception as exc:
             error_message = str(exc)
+            provider_error = exc if isinstance(exc, LLMProviderError) else None
+            error_code = (
+                provider_error.error_code if provider_error else type(exc).__name__
+            )
             failure_reason = (
-                "llm_timeout" if "timed out" in error_message.casefold() else "llm_failed"
+                "llm_timeout"
+                if error_code in {
+                    "provider_connect_timeout", "provider_read_timeout", "provider_timeout"
+                }
+                or "timed out" in error_message.casefold()
+                else "llm_failed"
             )
             candidate.candidate_data = {
                 "reason": failure_reason,
                 "error": error_message[:500],
-                "retryable": failure_reason == "llm_timeout",
+                "error_code": error_code,
+                "retryable": (
+                    provider_error.retryable
+                    if provider_error
+                    else failure_reason == "llm_timeout"
+                ),
+                "provider_diagnostics": provider_diagnostics,
             }
             candidate.machine_validation_status = "failed"
             run.status = AgentRunStatus.failed.value
-            run.error_code = type(exc).__name__
+            run.error_code = error_code
             run.error_message = str(exc)[:2000]
             run.structured_output = {
                 "retrieval": {
@@ -696,10 +778,12 @@ class GraphService:
                     "rejected_claim_count": 0,
                     "claims": [],
                 },
+                "provider_diagnostics": provider_diagnostics,
                 "fallback_reason": failure_reason,
             }
             logger.exception("graph_enrichment: skill=%s run_id=%s failed", skill.name, run_id)
         finally:
+            run.retry_count = int(provider_diagnostics.get("retry_count") or 0)
             run.duration_ms = int((time.perf_counter() - started) * 1000)
             run.finished_at = utc_now()
 
@@ -788,9 +872,12 @@ class GraphService:
         source_map = {(row.source_type, row.source_id): row.standard_job_id for row in sources}
         eligible_raw_rows = (
             await self.db.execute(
-                select(RawJobRecord).where(
+                select(RawJobRecord)
+                .join(SourceDocument, RawJobRecord.source_document_id == SourceDocument.id)
+                .where(
                     RawJobRecord.quality_status.in_(("accepted", "warning")),
                     RawJobRecord.is_excluded.is_(False),
+                    current_external_job_condition(),
                 )
             )
         ).scalars().all()
@@ -848,19 +935,25 @@ class GraphService:
                     stat["source_ids"].add(document_id)
                     support_pairs.add((document_id, standard_job_id, skill.id))
         for skill in skills.values():
-            stack = CATEGORY_STACK.get(skill.category, "backend")
-            areas.setdefault(skill.category, {
-                "name": skill.category.replace("_", " ").title(),
-                "stack": stack,
+            area_key, area_name, area_stack = self._skill_area(skill)
+            stack = CATEGORY_STACK.get(skill.category, area_stack)
+            areas.setdefault(area_key, {
+                "name": area_name,
+                "stack": area_stack,
             })
             nodes["TechStack"].append(self._node(
                 f"skill:{skill.id}", name=skill.name, canonicalKey=skill.canonical_key,
-                stack=stack, level="middle", description=f"{skill.category} 标准技能",
+                stack=stack, level="middle", description=(
+                    f"Python 生态中的 {skill.category} 标准技能"
+                    if area_key == "python_ecosystem"
+                    else f"{skill.category} 标准技能"
+                ),
+                ecosystem="Python" if area_key == "python_ecosystem" else None,
                 frequency=sum(s["frequency"] for (j, sid), s in job_skill_stats.items() if sid == skill.id),
             ))
             edges["CONTAINS"].append(self._edge(
-                f"area:{skill.category}", f"skill:{skill.id}",
-                category=skill.category,
+                f"area:{area_key}", f"skill:{skill.id}",
+                category=area_key,
             ))
         for category, area in areas.items():
             nodes["SkillArea"].append(self._node(
@@ -893,8 +986,9 @@ class GraphService:
         edges["CONTAINS"] = []
         for skill_id, stat in skill_stats.items():
             skill = skills[skill_id]
+            area_key, _, _ = self._skill_area(skill)
             edges["CONTAINS"].append(self._edge(
-                f"area:{skill.category}", f"skill:{skill.id}",
+                f"area:{area_key}", f"skill:{skill.id}",
                 frequency=stat["frequency"], sourceCount=len(stat["source_ids"]),
                 confidence=stat["confidence"], importance=stat["importance"],
                 firstSeenAt=stat["first_seen"].isoformat(),
@@ -904,7 +998,8 @@ class GraphService:
             ))
         for (job_id, skill_id), stat in job_skill_stats.items():
             skill = skills[skill_id]
-            area_stat = job_areas[(job_id, skill.category)]
+            area_key, _, _ = self._skill_area(skill)
+            area_stat = job_areas[(job_id, area_key)]
             area_stat["frequency"] += stat["frequency"]
             area_stat["source_ids"].update(stat["source_ids"])
             area_stat["confidence"] = max(area_stat["confidence"], stat["confidence"])
@@ -1136,7 +1231,16 @@ class GraphService:
             select(GraphEnrichmentCandidate, Skill.name)
             .join(Skill, Skill.id == GraphEnrichmentCandidate.skill_id)
             .where(*filters)
-            .order_by(GraphEnrichmentCandidate.created_at.desc(), GraphEnrichmentCandidate.id.desc())
+            .order_by(
+                case(
+                    (GraphEnrichmentCandidate.review_status == "pending", 0),
+                    (GraphEnrichmentCandidate.review_status == "approved", 1),
+                    (GraphEnrichmentCandidate.review_status == "rejected", 2),
+                    else_=3,
+                ),
+                GraphEnrichmentCandidate.created_at.desc(),
+                GraphEnrichmentCandidate.id.desc(),
+            )
             .offset((page - 1) * page_size)
             .limit(page_size)
         )).all()
@@ -1189,7 +1293,11 @@ class GraphService:
             if not tech_points or knowledge_count == 0:
                 continue
             validation = data.get("machine_validation") or {}
-            if int(validation.get("rejected_count") or 0) > 0:
+            if int(
+                validation.get("rejected_claim_count")
+                or validation.get("rejected_count")
+                or 0
+            ) > 0:
                 continue
             candidate.review_status = "approved"
             candidate.publication_status = "approved"
@@ -1215,23 +1323,110 @@ class GraphService:
             raise InvalidParameterError("候选已被其他审核操作更新，请刷新后重试")
         if action == "approve" and candidate.machine_validation_status != "passed":
             raise InvalidParameterError("只有机器校验通过的候选可以批准")
-        candidate.review_status = "approved" if action == "approve" else "rejected"
-        candidate.publication_status = "approved" if action == "approve" else "rejected"
-        candidate.verification_status = "verified" if action == "approve" else "rejected"
-        candidate.reviewed_by = user_id
-        candidate.reviewed_at = utc_now_naive()
-        candidate.review_note = (note or "").strip() or (
+        review_note = (note or "").strip()
+        quality_issues = self._review_quality_issues(candidate, review_note)
+        if action == "approve" and quality_issues:
+            raise InvalidParameterError(
+                "候选未通过人工审核质量门槛：" + "；".join(quality_issues)
+            )
+        review_status = "approved" if action == "approve" else "rejected"
+        publication_status = "approved" if action == "approve" else "rejected"
+        verification_status = "verified" if action == "approve" else "rejected"
+        reviewed_at = utc_now_naive()
+        resolved_note = review_note or (
             self._machine_rejection_note(candidate) if action == "reject" else None
         )
-        candidate.lock_version += 1
-        await self.db.flush()
+        reviewed_data = {
+            **(candidate.candidate_data or {}),
+            "human_review": {
+                "decision": action,
+                "reviewer_id": user_id,
+                "quality_gate": "passed" if not quality_issues else "not_applicable",
+                "quality_issues": quality_issues,
+                "note_present": bool(review_note),
+            },
+        }
+        result = await self.db.execute(
+            update(GraphEnrichmentCandidate)
+            .where(
+                GraphEnrichmentCandidate.id == candidate_id,
+                GraphEnrichmentCandidate.lock_version == lock_version,
+                GraphEnrichmentCandidate.review_status == "pending",
+            )
+            .values(
+                review_status=review_status,
+                publication_status=publication_status,
+                verification_status=verification_status,
+                reviewed_by=user_id,
+                reviewed_at=reviewed_at,
+                review_note=resolved_note,
+                candidate_data=reviewed_data,
+                lock_version=GraphEnrichmentCandidate.lock_version + 1,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        if result.rowcount != 1:
+            await self.db.rollback()
+            raise InvalidParameterError("候选已被其他审核操作更新，请刷新后重试")
+        await self.db.commit()
         await self.db.refresh(candidate)
         skill = await self.db.get(Skill, candidate.skill_id)
         response = self._candidate_response(
             candidate, skill.name if skill else f"技能 {candidate.skill_id}"
         )
-        await self.db.commit()
         return response
+
+    @staticmethod
+    def _review_quality_issues(
+        candidate: GraphEnrichmentCandidate,
+        review_note: str,
+    ) -> list[str]:
+        """Revalidate the persisted candidate before a human can approve it."""
+        issues: list[str] = []
+        if len(review_note) < 4:
+            issues.append("批准说明至少需要 4 个字符")
+        if float(candidate.confidence or 0) < 0.75:
+            issues.append("候选置信度低于 0.75")
+        candidate_evidence = {
+            str(value) for value in (candidate.evidence_source_ids or []) if str(value)
+        }
+        if len(candidate_evidence) < 2:
+            issues.append("候选未覆盖至少两条证据")
+
+        data = candidate.candidate_data or {}
+        try:
+            output = GraphEnrichmentOutput.model_validate(data)
+        except Exception:
+            issues.append("候选结构不符合 L4/L5 Schema")
+            return issues
+        if not output.tech_points:
+            issues.append("候选不包含 L4 技术点")
+        if not any(point.knowledge_points for point in output.tech_points):
+            issues.append("候选不包含 L5 知识点")
+
+        unknown_citations: set[str] = set()
+        weak_claims = 0
+        for point in output.tech_points:
+            claims = [point, *point.knowledge_points]
+            for claim in claims:
+                cited = {str(value) for value in claim.evidence_ids if str(value)}
+                unknown_citations.update(cited - candidate_evidence)
+                if len(cited) < 2 or float(claim.confidence) < 0.75:
+                    weak_claims += 1
+        if unknown_citations:
+            issues.append("候选引用了不属于本次检索的证据")
+        if weak_claims:
+            issues.append(f"存在 {weak_claims} 条低置信度或证据不足的陈述")
+
+        validation = data.get("machine_validation") or {}
+        rejected = int(
+            validation.get("rejected_claim_count")
+            or validation.get("rejected_count")
+            or 0
+        )
+        if rejected:
+            issues.append(f"机器校验仍有 {rejected} 条拒绝陈述")
+        return issues
 
     async def reject_machine_failed_candidates(self, *, user_id: int) -> list[int]:
         """驳回所有已经得到机器失败终态、但仍等待人工处理的候选。"""
@@ -1334,8 +1529,49 @@ class GraphService:
         status = GraphService._resolved_machine_status(candidate)
         return f"机器审核未通过：{labels.get(status, '未达到机器审核发布门槛')}"[:500]
 
-    def _write_payload(self, nodes, edges, version: str, mode: str) -> None:
+    @staticmethod
+    def _filter_incremental_payload(
+        nodes: dict[str, list[dict]],
+        edges: dict[str, list[dict]],
+        affected_standard_job_ids: list[int],
+    ) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
+        job_ids = {f"job:{value}" for value in affected_standard_job_ids}
+        source_ids = {
+            row["source"]
+            for row in edges.get("SUPPORTS", [])
+            if row["target"] in job_ids
+        }
+        filtered_nodes = {
+            label: (
+                [row for row in rows if row["id"] in job_ids]
+                if label == "Job"
+                else [row for row in rows if row["id"] in source_ids]
+                if label == "SourceDocument"
+                else rows
+            )
+            for label, rows in nodes.items()
+        }
+        filtered_edges = {
+            relation: (
+                [row for row in rows if row["source"] in job_ids]
+                if relation in {"REQUIRES_AREA", "HAS_SNAPSHOT"}
+                else [row for row in rows if row["source"] in source_ids]
+                if relation == "SUPPORTS"
+                else rows
+            )
+            for relation, rows in edges.items()
+        }
+        return filtered_nodes, filtered_edges
+
+    def _write_payload(
+        self, nodes, edges, version: str, mode: str,
+        affected_standard_job_ids: list[int] | None = None,
+    ) -> None:
         self.graph.ensure_schema()
+        if mode == "incremental" and affected_standard_job_ids:
+            self.graph.cleanup_affected_jobs([
+                f"job:{value}" for value in affected_standard_job_ids
+            ])
         for label, rows in nodes.items():
             self.graph.merge_nodes(label, rows, version)
         for relation, rows in edges.items():
@@ -1353,6 +1589,10 @@ class GraphService:
         rows = rows[:limit]
         edges = await asyncio.to_thread(self.graph.query_edges, [row["id"] for row in rows])
         return self._subgraph(rows, edges, truncated=truncated)
+
+    async def analytics(self, *, limit: int = 20) -> GraphAnalyticsResponse:
+        result = await asyncio.to_thread(self.graph.analytics, limit=limit)
+        return GraphAnalyticsResponse.model_validate(result)
 
     async def overview(
         self, *, cursor: str | None, page_size: int, max_layer: int,

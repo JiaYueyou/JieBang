@@ -257,6 +257,12 @@ class SkillService:
                 )
                 for item in enriched.skills
                 if canonical_key(item.name) not in known_keys
+                and self._llm_evidence_is_grounded(
+                    item.evidence,
+                    jd_text=jd_text,
+                    responsibilities=responsibilities,
+                    requirements=requirements,
+                )
             ]
             result.skills.extend(additions)
             result.llm_enrichment = bool(additions)
@@ -271,6 +277,25 @@ class SkillService:
             run.duration_ms = int((time.perf_counter() - started) * 1000)
             run.finished_at = utc_now()
         return result
+
+    @staticmethod
+    def _llm_evidence_is_grounded(
+        evidence: str,
+        *,
+        jd_text: str,
+        responsibilities: str,
+        requirements: str,
+    ) -> bool:
+        """Only retain LLM skills backed by an exact source-text span."""
+
+        normalized_evidence = normalize_text(evidence)
+        normalized_source = normalize_text(
+            " ".join((jd_text, responsibilities, requirements))
+        )
+        return bool(
+            len(normalized_evidence) >= 2
+            and normalized_evidence in normalized_source
+        )
 
     async def persist_raw_facts(
         self, *, raw_job_record_id: int, output: SkillExtractionOutput

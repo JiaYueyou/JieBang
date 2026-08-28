@@ -1,5 +1,10 @@
 # 智联职引 — 前端设计方案
 
+> 文档类型：FYZ 视觉与交互设计基线
+> 状态：大部分已落地，局部技术选型已变化
+> 核验日期：2026-08-12；当前图谱使用 `Graph3DCanvas.vue`，旧 G6/Sigma 组件仅为遗留。
+> 页面完成度与构建结果见 [当前实现状态](../../docs/implementation-status.md)。
+
 > 基于 Element Plus + ECharts + AntV G6 的 HR 管理后台
 > 设计体系: Refined Technica (轻量浅色主题)
 

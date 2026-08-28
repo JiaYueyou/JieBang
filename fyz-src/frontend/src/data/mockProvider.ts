@@ -136,6 +136,7 @@ export const mockDataProvider: Omit<DataProvider, "jobs" | "trends" | "internalT
     async list(){return delay(db().talents);},
     async get(resumeId){return delay(db().talents.find((item)=>item.resume_id===resumeId)||null);},
     async getDetails(){throw new Error("简历详情仅支持后端数据模式");},
+    async updateDetails(){throw new Error("人才资料编辑仅支持后端数据模式");},
     async upload(){throw new Error("简历上传仅支持后端数据模式");},
     async download(){throw new Error("简历下载仅支持后端数据模式");},
     async preview(){throw new Error("简历预览仅支持后端数据模式");},

@@ -17,14 +17,19 @@ from app.core.config import (
     AUTO_PIPELINE_BASELINE_LAG_MONTHS,
     AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS,
     AUTO_PIPELINE_ENRICH_GRAPH,
+    AUTO_PIPELINE_GRAPH_FULL_RECONCILE_HOURS,
     AUTO_PIPELINE_INTERVAL_MINUTES,
+    AUTO_PIPELINE_MAX_REJECTED_RATIO,
+    AUTO_PIPELINE_MAX_QUARANTINE_RATIO,
+    AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO,
     AUTO_PIPELINE_SOURCE_IDS,
     AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS,
+    RETRIEVAL_VECTOR_BACKEND,
 )
 from app.core.database import async_session
 from app.core.pipeline_lock import serialized_pipeline_run
 from app.core.time import utc_isoformat, utc_now_naive
-from app.models import AnalysisBaselineSnapshot, DataSource, PipelineRun
+from app.models import AnalysisBaselineSnapshot, DataSource, GraphSnapshot, PipelineRun
 from app.schemas.analysis import TrendWindow
 from app.services.analysis_service import AnalysisService
 from app.services.crawler_runtime import get_crawler_service
@@ -33,6 +38,7 @@ from app.services.graph_service import GraphService
 from app.services.historical_baseline_service import HistoricalBaselineService
 from app.services.import_service import ImportService
 from app.services.pipeline_status_cache import publish_pipeline_status
+from app.services.retrieval_service import RetrievalService
 from app.services.task_status_cache import bump_cache_generations
 
 logger = logging.getLogger(__name__)
@@ -76,7 +82,7 @@ def _minus_months_first(day: date, months: int) -> date:
 
 class PipelineService:
     STAGES = (
-        "collect", "validate_import", "quality_gate", "graph_publish",
+        "collect", "validate_import", "quality_gate", "retrieval_refresh", "graph_publish",
         "baseline_refresh", "trend_verify",
     )
 
@@ -117,11 +123,16 @@ class PipelineService:
                         "retry_delay_minutes": 10,
                         "timeout_seconds": AUTO_PIPELINE_SOURCE_TIMEOUT_SECONDS,
                     },
+                    freshness_slo_minutes=max(AUTO_PIPELINE_INTERVAL_MINUTES * 2, 30),
                     next_run_at=now + timedelta(seconds=30) if enabled else None,
                 )
                 self.db.add(row)
             else:
                 row.crawl_config = {**config, **(row.crawl_config or {})}
+                if not row.freshness_slo_minutes:
+                    row.freshness_slo_minutes = max(
+                        AUTO_PIPELINE_INTERVAL_MINUTES * 2, 30
+                    )
                 if "automation_enabled" not in row.crawl_config:
                     row.crawl_config = {
                         **row.crawl_config,
@@ -202,6 +213,9 @@ class PipelineService:
                 continue
             automatic = bool(payload["enabled"] and spider_id in selected)
             row.crawl_config = {**config, **payload, "automation_enabled": automatic}
+            row.freshness_slo_minutes = max(
+                30, int(payload.get("interval_minutes", 60)) * 2
+            )
             row.schedule_expression = schedule_expression if automatic else "仅手动"
             row.next_run_at = next_schedule_at(row.crawl_config, after=now) if automatic else None
         await self.db.commit()
@@ -322,20 +336,66 @@ class PipelineService:
             failed_sources = [item for item in source_results if item["status"] == "failed"]
             totals = self._aggregate_imports(importable)
             run.stage_results = {**(run.stage_results or {}), "sources": source_results}
-            run.quality_summary = totals
+            quality_gate = self._evaluate_quality_gate(totals)
+            run.quality_summary = {**totals, "gate": quality_gate}
+            run.stage_results = {
+                **run.stage_results, "quality_gate": quality_gate,
+            }
             await self._update(run, "quality_gate", 58)
             if not importable:
                 raise RuntimeError("所有来源均未产生可验证快照")
+            if quality_gate["status"] == "rejected":
+                raise RuntimeError(
+                    "数据质量门禁拒绝本批次：" + "; ".join(quality_gate["reasons"])
+                )
 
             downstream_failed = False
+            retrieval_result: dict = {"status": "skipped", "reason": "no new evidence"}
             graph_result: dict = {"status": "skipped", "reason": "no new graph facts"}
-            if totals["imported"] > 0 or totals["skill_facts"] > 0:
-                await self._update(run, "graph_publish", 68)
+            if any(totals[key] > 0 for key in (
+                "imported", "skill_facts", "versions_created", "closed_jobs", "reopened_jobs"
+            )):
+                await self._update(run, "retrieval_refresh", 65)
                 try:
+                    retrieval = await RetrievalService(self.db).rebuild_index(
+                        created_by=run.requested_by,
+                        backend=RETRIEVAL_VECTOR_BACKEND,
+                    )
+                    retrieval_result = {
+                        **retrieval.model_dump(mode="json"),
+                        "status": "succeeded",
+                    }
+                    await bump_cache_generations("retrieval")
+                except Exception as exc:
+                    await self.db.rollback()
+                    run = await self.db.get(PipelineRun, run_id)
+                    downstream_failed = True
+                    retrieval_result = {
+                        "status": "failed",
+                        "error": f"{type(exc).__name__}: {exc}"[:1000],
+                    }
+                run.stage_results = {
+                    **(run.stage_results or {}),
+                    "retrieval_refresh": retrieval_result,
+                }
+
+                await self._update(run, "graph_publish", 75)
+                try:
+                    graph_mode = await self._graph_sync_mode()
                     graph_result = await GraphService(self.db).sync(
-                        mode="full",
-                        enrich_top_skills=AUTO_PIPELINE_ENRICH_GRAPH,
-                        auto_publish_enrichment=AUTO_PIPELINE_ENRICH_GRAPH,
+                        mode=graph_mode,
+                        affected_standard_job_ids=(
+                            totals["affected_standard_job_ids"]
+                            if graph_mode == "incremental" else None
+                        ),
+                        enrich_top_skills=(
+                            AUTO_PIPELINE_ENRICH_GRAPH
+                            and retrieval_result.get("status") == "succeeded"
+                        ),
+                        auto_publish_enrichment=(
+                            AUTO_PIPELINE_ENRICH_GRAPH
+                            and retrieval_result.get("status") == "succeeded"
+                        ),
                         user_id=run.requested_by,
                     )
                     graph_result["status"] = "succeeded"
@@ -350,7 +410,13 @@ class PipelineService:
                     }
             run.stage_results = {**run.stage_results, "graph_publish": graph_result}
 
-            await self._update(run, "baseline_refresh", 85)
+            run.stage_results = {
+                **run.stage_results,
+                "retrieval_refresh": retrieval_result,
+                "graph_publish": graph_result,
+            }
+
+            await self._update(run, "baseline_refresh", 87)
             try:
                 baseline_result = await self._refresh_baseline(run.requested_by)
             except Exception as exc:
@@ -450,7 +516,7 @@ class PipelineService:
             item["crawl"] = {
                 key: result.get(key)
                 for key in (
-                    "records_count", "filename", "output_changed", "elapsed",
+                    "records_count", "snapshot_complete", "filename", "output_changed", "elapsed",
                     "returncode", "error_category", "error_reason", "message",
                 )
             }
@@ -459,9 +525,15 @@ class PipelineService:
                 raise RuntimeError(result.get("message") or "crawler produced no snapshot")
             await self._update(run, "validate_import", run.progress)
             import_result = await ImportService(self.db).import_files([filename])
+            # ImportService returns only after its final database commit. The
+            # crawler cursor is acknowledged afterwards so any import failure
+            # leaves the snapshot replayable on the next scheduled run.
+            self.crawler.acknowledge_import(spider_id, filename)
             item["import"] = import_result
             item["status"] = "succeeded"
             data_source.last_run_at = utc_now_naive()
+            data_source.last_success_at = data_source.last_run_at
+            data_source.last_error = None
             data_source.next_run_at = next_schedule_at(
                 data_source.crawl_config or {}, after=data_source.last_run_at
             ) if (data_source.crawl_config or {}).get("automation_enabled") else None
@@ -477,6 +549,7 @@ class PipelineService:
             if data_source is not None:
                 data_source.last_run_at = utc_now_naive()
                 data_source.consecutive_failures += 1
+                data_source.last_error = f"{type(exc).__name__}: {exc}"[:2000]
                 config = data_source.crawl_config or {}
                 if config.get("automation_enabled"):
                     retry_count = int(config.get("retry_count", 2))
@@ -494,10 +567,75 @@ class PipelineService:
         item["finished_at"] = utc_now_naive().isoformat()
         return item
 
+    async def source_health(self, spider_id: int) -> dict:
+        row = await self._source_row(spider_id)
+        if row is None:
+            raise ValueError(f"unknown crawler source: {spider_id}")
+        effective_success_at = row.last_success_at or (
+            row.last_run_at if row.consecutive_failures == 0 else None
+        )
+        automation_enabled = bool(
+            (row.crawl_config or {}).get("automation_enabled", False)
+        )
+        lag_minutes = (
+            max(0.0, (utc_now_naive() - effective_success_at).total_seconds() / 60)
+            if effective_success_at else None
+        )
+        slo_minutes = int(row.freshness_slo_minutes or 2880)
+        overdue = bool(
+            row.enabled
+            and automation_enabled
+            and effective_success_at is None
+            and row.next_run_at is not None
+            and row.next_run_at < utc_now_naive()
+        )
+        if not row.enabled:
+            status = "disabled"
+        elif not automation_enabled:
+            status = "manual"
+        elif row.consecutive_failures >= 2:
+            status = "failing"
+        elif overdue:
+            status = "overdue"
+        elif lag_minutes is None:
+            status = "never_run"
+        elif lag_minutes > slo_minutes:
+            status = "stale"
+        else:
+            status = "healthy"
+        return {
+            "spider_id": spider_id,
+            "source_id": row.id,
+            "status": status,
+            "alert_active": status in {"failing", "stale", "overdue"},
+            "enabled": row.enabled,
+            "automation_enabled": automation_enabled,
+            "last_run_at": row.last_run_at.isoformat() if row.last_run_at else None,
+            "last_success_at": effective_success_at.isoformat() if effective_success_at else None,
+            "next_run_at": row.next_run_at.isoformat() if row.next_run_at else None,
+            "freshness_lag_minutes": round(lag_minutes, 2) if lag_minutes is not None else None,
+            "freshness_slo_minutes": slo_minutes,
+            "consecutive_failures": row.consecutive_failures,
+            "last_error": row.last_error,
+        }
+
     async def _source_row(self, spider_id: int) -> DataSource | None:
         return await self.db.scalar(
             select(DataSource).where(DataSource.source_type == f"crawler:{spider_id}")
         )
+
+    async def _graph_sync_mode(self) -> str:
+        cutoff = utc_now_naive() - timedelta(
+            hours=AUTO_PIPELINE_GRAPH_FULL_RECONCILE_HOURS
+        )
+        recent_full = await self.db.scalar(
+            select(GraphSnapshot.id).where(
+                GraphSnapshot.snapshot_type == "full",
+                GraphSnapshot.status == "succeeded",
+                GraphSnapshot.completed_at >= cutoff,
+            ).limit(1)
+        )
+        return "incremental" if recent_full is not None else "full"
 
     async def _update(self, run: PipelineRun, stage: str, progress: int) -> None:
         run.stage = stage
@@ -511,10 +649,67 @@ class PipelineService:
         keys = (
             "total", "imported", "duplicates", "observations", "skill_facts",
             "near_duplicates", "low_quality", "time_anomalies",
+            "versions_created", "closed_jobs", "reopened_jobs",
+            "quarantined_records",
         )
-        return {
+        totals = {
             key: sum(int(item["import"].get(key, 0)) for item in items)
             for key in keys
+        }
+        for status in ("accepted", "warning", "rejected"):
+            totals[status] = sum(
+                int((item["import"].get("quality_status_counts") or {}).get(status, 0))
+                for item in items
+            )
+        totals["quality_evaluated"] = sum(
+            totals[status] for status in ("accepted", "warning", "rejected")
+        )
+        totals["affected_standard_job_ids"] = sorted({
+            int(job_id)
+            for item in items
+            for job_id in item["import"].get("affected_standard_job_ids", [])
+        })
+        return totals
+
+    @staticmethod
+    def _evaluate_quality_gate(totals: dict) -> dict:
+        evaluated = int(totals.get("quality_evaluated", 0))
+        rejected = int(totals.get("rejected", 0))
+        imported = int(totals.get("imported", 0))
+        time_anomalies = int(totals.get("time_anomalies", 0))
+        quarantined = int(totals.get("quarantined_records", 0))
+        input_records = int(totals.get("total", 0))
+        rejected_ratio = rejected / evaluated if evaluated else 0.0
+        time_anomaly_ratio = time_anomalies / imported if imported else 0.0
+        quarantine_ratio = quarantined / input_records if input_records else 0.0
+        reasons: list[str] = []
+        if evaluated and rejected_ratio > AUTO_PIPELINE_MAX_REJECTED_RATIO:
+            reasons.append(
+                f"rejected_ratio={rejected_ratio:.3f} > "
+                f"{AUTO_PIPELINE_MAX_REJECTED_RATIO:.3f}"
+            )
+        if imported and time_anomaly_ratio > AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO:
+            reasons.append(
+                f"time_anomaly_ratio={time_anomaly_ratio:.3f} > "
+                f"{AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO:.3f}"
+            )
+        if input_records and quarantine_ratio > AUTO_PIPELINE_MAX_QUARANTINE_RATIO:
+            reasons.append(
+                f"quarantine_ratio={quarantine_ratio:.3f} > "
+                f"{AUTO_PIPELINE_MAX_QUARANTINE_RATIO:.3f}"
+            )
+        return {
+            "status": "rejected" if reasons else "passed",
+            "reasons": reasons,
+            "evaluated_records": evaluated,
+            "rejected_ratio": round(rejected_ratio, 6),
+            "time_anomaly_ratio": round(time_anomaly_ratio, 6),
+            "quarantine_ratio": round(quarantine_ratio, 6),
+            "thresholds": {
+                "max_rejected_ratio": AUTO_PIPELINE_MAX_REJECTED_RATIO,
+                "max_time_anomaly_ratio": AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO,
+                "max_quarantine_ratio": AUTO_PIPELINE_MAX_QUARANTINE_RATIO,
+            },
         }
 
     async def _refresh_baseline(self, created_by: int | None) -> dict:

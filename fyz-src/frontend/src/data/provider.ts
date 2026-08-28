@@ -3,9 +3,10 @@ import type {
   DataQualityPage, DataQualityQuery, RawJobQualityItem,
   EmergingJob, FavoriteRecord, FavoriteTargetType, GraphAsyncTask, GraphEnrichmentCandidate, GraphEnrichmentCandidatePage, GraphQuery, GraphSubgraph, HistoryInsights,
   HistoryRecord, JobCreatePayload, JobSummary, GenerateJDRequest, GeneratedJDDraft, JDInputSuggestion, JDInputSuggestionRequest, TalentSummary, TrendOverview, TrendQuery, AnalysisDataQuality, AnalysisBaseline, JobReferenceStandardPage,
-  EnterpriseEmployeeDirectory, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
+  EnterpriseDepartment, EnterpriseDepartmentInput, EnterpriseEmployeeDirectory, EnterpriseEmployeeDirectoryInput, EnterpriseTalent, EnterpriseTalentCreate, InternalMatchResult, InternalPosition, InternalPositionCreate,
   SkillDemandSummary, SkillFactReviewItem, SkillFactReviewPage,
   SkillFactVerificationStatus, TransferDecision, TransferRuleSet, TransferRuleSetCreate,
+  ResumeAdmissionPayload,
   ObservedJobDetail, ObservedJobPage, PageResult,
 } from "@/domain/types";
 
@@ -34,6 +35,7 @@ export interface DataProvider {
     list(): Promise<TalentSummary[]>;
     get(resumeId: number): Promise<TalentSummary | null>;
     getDetails(resumeId: number): Promise<import("@/domain/types").TalentDetail>;
+    updateDetails(resumeId: number, input: import("@/domain/types").TalentUpdatePayload): Promise<import("@/domain/types").TalentDetail>;
     upload(input: import("@/domain/types").ResumeUploadPayload): Promise<void>;
     download(resumeId: number, filename: string): Promise<void>;
     preview(resumeId: number): Promise<{ url: string; contentType: string }>;
@@ -52,8 +54,16 @@ export interface DataProvider {
   recover(): Promise<import("@/domain/types").CareerAnalysisResult | null>;
   };
   internalTransfer: {
-    searchEmployeeDirectory(keyword: string): Promise<EnterpriseEmployeeDirectory[]>;
+    searchEmployeeDirectory(keyword: string, department?: string): Promise<EnterpriseEmployeeDirectory[]>;
+    listDepartments(): Promise<EnterpriseDepartment[]>;
+    createDepartment(input: EnterpriseDepartmentInput): Promise<EnterpriseDepartment>;
+    updateDepartment(id: number, input: EnterpriseDepartmentInput): Promise<EnterpriseDepartment>;
+    removeDepartment(id: number): Promise<void>;
+    createEmployee(input: EnterpriseEmployeeDirectoryInput): Promise<EnterpriseEmployeeDirectory>;
+    updateEmployee(id: number, input: EnterpriseEmployeeDirectoryInput): Promise<EnterpriseEmployeeDirectory>;
+    removeEmployee(id: number): Promise<void>;
     createTalentFromDirectory(employeeId: number): Promise<EnterpriseTalent>;
+    admitResume(resumeId: number, input: ResumeAdmissionPayload): Promise<EnterpriseTalent>;
     listPositions(): Promise<InternalPosition[]>;
     listPositionsPage(query: { page: number; pageSize: number; status?: InternalPosition["status"]; keyword?: string }): Promise<PageResult<InternalPosition>>;
     createPosition(input: InternalPositionCreate): Promise<InternalPosition>;
@@ -63,6 +73,9 @@ export interface DataProvider {
     listSkillDemands(): Promise<SkillDemandSummary[]>;
     listRuleSets(): Promise<TransferRuleSet[]>;
     createRuleSet(input: TransferRuleSetCreate): Promise<TransferRuleSet>;
+    getRuleSet(id: number): Promise<TransferRuleSet>;
+    updateRuleSet(id: number, input: TransferRuleSetCreate): Promise<TransferRuleSet>;
+    removeRuleSet(id: number): Promise<void>;
     matchByTalent(input: { talent_id: number; position_ids?: number[]; rule_set_id?: number }): Promise<InternalMatchResult[]>;
     matchByPosition(input: { position_id: number; talent_ids?: number[]; rule_set_id?: number }): Promise<InternalMatchResult[]>;
     listDecisions(): Promise<TransferDecision[]>;

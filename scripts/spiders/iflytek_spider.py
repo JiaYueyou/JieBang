@@ -107,6 +107,7 @@ class IflytekSpider(BaseSpider):
             post_date = posted_dates[i] if i < len(posted_dates) else ""
 
             record = {
+                "external_id": str(job_id) if job_id else None,
                 "title": title,
                 "company": "科大讯飞",
                 "city": city,

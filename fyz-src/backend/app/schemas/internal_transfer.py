@@ -36,6 +36,22 @@ class EnterpriseTalentSummary(EnterpriseTalentCreate):
     updated_at: datetime
 
 
+class EnterpriseDepartmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, max_length=30)
+    name: str = Field(min_length=1, max_length=100)
+    manager: str | None = Field(default=None, max_length=100)
+    location: str | None = Field(default=None, max_length=100)
+    status: str = Field(default="active", pattern="^(active|inactive)$")
+
+
+class EnterpriseDepartmentSummary(EnterpriseDepartmentCreate):
+    id: int
+    employee_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
 class EmployeeDirectoryCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     employee_no: str = Field(min_length=1, max_length=50)
@@ -121,11 +137,25 @@ class TransferRuleSetCreate(BaseModel):
         return self
 
 
+class TransferRuleSetUpdate(TransferRuleSetCreate):
+    """修改已有规则；版本号保持不变，便于审计规则生命周期。"""
+
+
 class TransferRuleSetSummary(TransferRuleSetCreate):
     id: int
     version: int
     created_at: datetime
     updated_at: datetime
+
+
+class ResumeAdmissionRequest(BaseModel):
+    """将外部候选人正式录用为企业员工并加入人才池。"""
+
+    model_config = ConfigDict(extra="forbid")
+    department: str = Field(min_length=1, max_length=100)
+    current_position: str = Field(min_length=1, max_length=120)
+    level: str = Field(default="junior", min_length=1, max_length=30)
+    location: str | None = Field(default=None, max_length=100)
 
 
 class MatchByTalentRequest(BaseModel):

@@ -22,11 +22,20 @@ import random
 import time
 import hashlib
 import logging
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import requests
 
 from .schema import validate_all
+from .checkpoint import (
+    CrawlerCheckpoint,
+    ExclusiveFileLock,
+    content_version,
+    identity_fingerprint,
+)
 
 # 配置日志
 logging.basicConfig(
@@ -86,8 +95,22 @@ class BaseSpider:
 
         # ---------- 数据收集 ----------
         self.total_data = []
+        # A complete observation set is kept independently from changed rows.
+        # Checkpoints suppress expensive downstream work, not proof that a job
+        # was still visible during this source run.
+        self.observed_data = []
+        # Absence is only meaningful when the source traversal reached its end.
+        # Individual spiders set this after confirming pagination completeness.
+        self.snapshot_complete = False
+        self.snapshot_scope = {"collector": self.name}
         self.max_records = max(0, int(os.getenv("JIEBANG_SPIDER_MAX_RECORDS", "0")))
         self.seen_ids = set()  # 去重用
+        checkpoint_path = os.getenv("JIEBANG_SPIDER_CHECKPOINT")
+        self.checkpoint = (
+            CrawlerCheckpoint(Path(checkpoint_path)) if checkpoint_path else None
+        )
+        self.acknowledged_versions = self.checkpoint.read() if self.checkpoint else {}
+        self.seen_versions: set[tuple[str, str]] = set()
 
         # ---------- 运行时统计 ----------
         self.stats = {
@@ -95,6 +118,7 @@ class BaseSpider:
             "duplicates": 0,    # 去重跳过
             "errors": 0,        # 错误次数
             "pages": 0,         # 已爬页数
+            "checkpoint_duplicates": 0,
         }
 
     # ============================================================
@@ -159,18 +183,26 @@ class BaseSpider:
 
         返回：True=新记录, False=重复跳过
         """
-        if self.max_records and len(self.total_data) >= self.max_records:
+        if self.max_records and len(self.observed_data) >= self.max_records:
             return False
 
         # 生成指纹
-        fp = self._fingerprint(record)
-        if fp in self.seen_ids:
+        record.setdefault("source", self.source_name)
+        fp = identity_fingerprint(record)
+        version = content_version(record)
+        if (fp, version) in self.seen_versions:
             self.stats["duplicates"] += 1
             return False
         self.seen_ids.add(fp)
+        self.seen_versions.add((fp, version))
+        self.observed_data.append(record)
+
+        if self.acknowledged_versions.get(fp) == version:
+            self.stats["duplicates"] += 1
+            self.stats["checkpoint_duplicates"] += 1
+            return False
 
         # 补充默认字段
-        record.setdefault("source", self.source_name)
         self.total_data.append(record)
         self.stats["fetched"] += 1
         return True
@@ -184,10 +216,21 @@ class BaseSpider:
 
         返回：本次可用的文件路径
         """
-        data = self.total_data
-        if not data:
+        data = self.observed_data or self.total_data
+        if not data and not self.snapshot_complete:
             logger.warning("⚠️ 没有数据可保存")
             return ""
+
+        for record in data:
+            source_meta = record.get("source_meta")
+            if not isinstance(source_meta, dict):
+                source_meta = {}
+            record["source_meta"] = {
+                **source_meta,
+                "snapshot_type": "full" if self.snapshot_complete else "delta",
+                "snapshot_complete": self.snapshot_complete,
+                "snapshot_observed_at": record.get("crawled_at"),
+            }
 
         validation = validate_all(data, verbose=False)
         if validation["failed"]:
@@ -198,52 +241,112 @@ class BaseSpider:
             )
 
         output_dir = output_dir or self.save_output_dir or os.getcwd()
-        new_count = len(data)
-        new_digest = self._content_digest(data)
+        return self._publish_snapshot(data, Path(output_dir))
 
-        # 自动编号
-        pattern = re.compile(rf"^{re.escape(self.name)}_(\d+)\.json$")
-        max_num = 0
-        for fname in os.listdir(output_dir):
-            m = pattern.match(fname)
-            if m:
-                num = int(m.group(1))
-                if num > max_num:
-                    max_num = num
+    def _publish_snapshot(self, data: list[dict], output_dir: Path) -> str:
+        """Publish a complete sequential snapshot under a per-source lock."""
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lock_path = output_dir / f".{self.name}.snapshot.lock"
+        with ExclusiveFileLock(lock_path, timeout=30.0):
+            # Re-scan inside the lock; a previous process may have published
+            # while this process was waiting.
+            pattern = re.compile(rf"^{re.escape(self.name)}_(\d+)\.json$")
+            numbered = []
+            for candidate in output_dir.iterdir():
+                match = pattern.match(candidate.name)
+                if match:
+                    numbered.append((int(match.group(1)), candidate))
+            max_num = max((number for number, _ in numbered), default=0)
+            new_digest = self._content_digest(data)
+            if numbered:
+                latest_path = max(numbered, key=lambda item: item[0])[1]
+                try:
+                    existing_data = json.loads(latest_path.read_text(encoding="utf-8"))
+                    if data and (
+                        self._content_digest(existing_data) == new_digest
+                        and self._observation_day(existing_data)
+                        == self._observation_day(data)
+                    ):
+                        logger.info("CRAWLER_OUTPUT_PATH=%s", latest_path.resolve())
+                        return str(latest_path)
+                except (json.JSONDecodeError, OSError):
+                    pass
 
-        # 比较业务内容而不是记录数，避免“数量相同但岗位内容变化”被漏掉。
-        # crawled_at 属于本次运行元数据，不参与业务内容指纹。
-        if max_num > 0:
-            latest_path = os.path.join(output_dir, f"{self.name}_{max_num}.json")
+            filename = f"{self.name}_{max_num + 1}.json"
+            filepath = output_dir / filename
+            temporary = output_dir / (
+                f".{filename}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+            )
+            manifest_path = filepath.with_name(filepath.name + ".manifest")
+            manifest_temporary = output_dir / (
+                f".{manifest_path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+            )
+            data.sort(
+                key=lambda item: item.get("posted_at") or item.get("post_date") or "",
+                reverse=True,
+            )
             try:
-                with open(latest_path, "r", encoding="utf-8") as f:
-                    existing_data = json.load(f)
-                if (
-                    self._content_digest(existing_data) == new_digest
-                    and self._observation_day(existing_data)
-                    == self._observation_day(data)
-                ):
-                    logger.info("业务内容无变化 (%d 条)，复用快照 %s",
-                                new_count, f"{self.name}_{max_num}.json")
-                    return latest_path
-            except (json.JSONDecodeError, OSError):
-                pass  # 文件损坏则正常保存
+                with temporary.open("x", encoding="utf-8") as stream:
+                    json.dump(data, stream, ensure_ascii=False, indent=4)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                manifest = self._snapshot_manifest(
+                    data,
+                    payload_sha256=self._file_sha256(temporary),
+                )
+                with manifest_temporary.open("x", encoding="utf-8") as stream:
+                    json.dump(manifest, stream, ensure_ascii=False, indent=2)
+                    stream.write("\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(manifest_temporary, manifest_path)
+                os.replace(temporary, filepath)
+            finally:
+                temporary.unlink(missing_ok=True)
+                manifest_temporary.unlink(missing_ok=True)
 
-        filename = f"{self.name}_{max_num + 1}.json"
-        filepath = os.path.join(output_dir, filename)
-
-        # 按发布时间从新到旧排序
-        data.sort(
-            key=lambda x: x.get("posted_at") or x.get("post_date") or "",
-            reverse=True,
+        logger.info(
+            "snapshot saved: %s (%d records, %d fields)",
+            filepath,
+            len(data),
+            len(data[0]) if data else 0,
         )
+        logger.info("CRAWLER_OUTPUT_PATH=%s", filepath.resolve())
+        return str(filepath)
 
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+    def _snapshot_manifest(self, data: list[dict], *, payload_sha256: str) -> dict:
+        scope = dict(self.snapshot_scope or {})
+        scope_payload = json.dumps(
+            scope, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        observed_values = sorted(
+            str(record.get("crawled_at") or "") for record in data
+            if record.get("crawled_at")
+        )
+        return {
+            "schema_version": "crawler-snapshot-manifest-v1",
+            "source": self.source_name,
+            "snapshot_type": "full" if self.snapshot_complete else "delta",
+            "snapshot_complete": self.snapshot_complete,
+            "observed_at": (
+                observed_values[-1]
+                if observed_values
+                else datetime.now(timezone.utc).isoformat(timespec="seconds")
+            ),
+            "scope": scope,
+            "scope_hash": hashlib.sha256(scope_payload.encode("utf-8")).hexdigest(),
+            "record_count": len(data),
+            "business_checksum": self._content_digest(data),
+            "payload_sha256": payload_sha256,
+        }
 
-        logger.info("已保存: %s (%d 条, %d 字段)",
-                    filepath, new_count, len(data[0]) if data else 0)
-        return filepath
+    @staticmethod
+    def _file_sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
 
     def print_stats(self):
         """打印运行时统计"""
@@ -253,6 +356,9 @@ class BaseSpider:
         logger.info("  去重跳过: %d 条", self.stats["duplicates"])
         logger.info("  错误次数: %d 次", self.stats["errors"])
         logger.info("  已爬页数: %d 页", self.stats["pages"])
+        logger.info(
+            "  历史检查点去重: %d 条", self.stats["checkpoint_duplicates"]
+        )
         logger.info("=" * 40)
 
     # ============================================================
@@ -283,20 +389,29 @@ class BaseSpider:
             total_pages = min(total_pages, configured_max_pages)
         logger.info("===== %s 爬虫启动 =====", self.name)
 
+        exhausted = False
         for page_num in range(1, total_pages + 1):
             logger.info("正在采集第 %d/%d 页...", page_num, total_pages)
             try:
                 records = self.parse(page_num)
                 self.stats["pages"] += 1
+                if not records:
+                    exhausted = True
+                    break
                 for r in records:
                     self.add_job(r)
                 logger.info("  本页提取 %d 条", len(records))
-                if self.max_records and len(self.total_data) >= self.max_records:
+                if self.max_records and len(self.observed_data) >= self.max_records:
                     break
             except Exception as e:
                 logger.error("  第 %d 页出错: %s", page_num, e)
                 self.stats["errors"] += 1
 
+        self.snapshot_complete = (
+            exhausted
+            and self.stats["errors"] == 0
+            and not (self.max_records and len(self.observed_data) >= self.max_records)
+        )
         self.print_stats()
         return self.save()
 
@@ -307,16 +422,7 @@ class BaseSpider:
     @staticmethod
     def _fingerprint(record: dict) -> str:
         """生成记录的去重指纹（URL + 标题）"""
-        external_id = str(record.get("external_id") or "").strip()
-        source = str(record.get("source") or "").strip()
-        if external_id:
-            # Listing URLs and titles are not unique requisition identities.
-            raw = f"external:{source}|{external_id}"
-            return hashlib.md5(raw.encode("utf-8")).hexdigest()
-        url = (record.get("url") or "").strip()
-        title = (record.get("title") or "").strip()
-        raw = f"fallback:{url}|{title}"
-        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+        return identity_fingerprint(record)
 
     @staticmethod
     def _content_digest(records: list[dict]) -> str:
@@ -324,6 +430,12 @@ class BaseSpider:
         normalized = []
         for record in records:
             item = {key: value for key, value in record.items() if key != "crawled_at"}
+            source_meta = item.get("source_meta")
+            if isinstance(source_meta, dict):
+                item["source_meta"] = {
+                    key: value for key, value in source_meta.items()
+                    if key != "snapshot_observed_at"
+                }
             normalized.append(item)
         normalized.sort(
             key=lambda item: (

@@ -123,6 +123,25 @@ async def test_redis_failure_is_fail_open():
     assert cache.available is False
 
 
+async def test_recovery_invalidates_query_generations_before_serving_cache():
+    redis = FakeRedis()
+    redis.values.update(
+        {
+            "test:generation:analysis": "4",
+            "test:generation:dashboard": "7",
+            "test:generation:graph": "2",
+        }
+    )
+    cache = AsyncJsonCache("redis://unused/3", client=redis, key_prefix="test")
+    cache._mark_unavailable()
+    cache._retry_after = 0
+
+    assert await cache.get_generation("analysis") == 5
+    assert redis.values["test:generation:dashboard"] == "8"
+    assert redis.values["test:generation:graph"] == "3"
+    assert cache.available is True
+
+
 async def test_generation_keys_use_prefix_and_invalidate_without_scan():
     redis = FakeRedis()
     cache = AsyncJsonCache("redis://unused/3", client=redis, key_prefix="test")

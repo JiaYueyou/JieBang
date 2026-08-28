@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import re
 
-NORMALIZATION_VERSION = "job-title-v3"
+NORMALIZATION_VERSION = "job-title-v5"
 
 _NOISE = (
     "急聘", "诚聘", "高薪", "双休", "五险一金", "接受应届", "校招", "社招",
@@ -106,10 +106,14 @@ def normalize_job_title(
         value = re.sub(re.escape(word), "", value, flags=re.IGNORECASE)
     value = re.sub(r"\d+\s*[-~至]\s*\d+\s*年|\d+\s*年以上|经验不限", "", value)
     value = re.sub(r"\s+", "", value).strip("-—_|·/、")
-    value = _strip_business_suffix(value)
+    value = _strip_business_affix(value)
     for raw, normalized in _TECH_CANONICAL.items():
         value = re.sub(raw, normalized, value, flags=re.IGNORECASE)
     value = value.replace("软件研发工程师", "软件开发工程师").replace("研发工程师", "开发工程师")
+    # “Java工程师”只是“Java开发工程师”的常用简称，不应形成第二个标准岗位。
+    # 仅合并完整标题，避免误改“Java工程师主管”等不同职责岗位。
+    if value.casefold() == "java工程师".casefold():
+        value = "Java开发工程师"
     value = re.sub(r"forwarddeployedengineer", "前置部署工程师", value, flags=re.IGNORECASE)
     value = re.sub(r"^后端[/、-]?后端开发工程师", "后端开发工程师", value)
     if not value:
@@ -239,11 +243,23 @@ def infer_job_level(title: str) -> str:
         return "senior"
     if any(word in lowered for word in ("初级", "助理", "实习", "应届", "junior")):
         return "junior"
+    if "intern" in lowered:
+        return "junior"
     return "middle"
 
 
 def infer_role_family(title: str) -> str:
     lowered = (title or "").casefold()
+    # English labels occur frequently on multinational career portals. Keep
+    # them explicit so they do not depend on accidental short-token matches.
+    english_rules = (
+        ("algorithm", ("machine learning", "machinelearning", "computer vision", "computervision")),
+        ("data", ("data engineer", "dataengineer", "data warehouse", "datawarehouse")),
+        ("devops", ("cloud platform", "cloudplatform")),
+    )
+    for family, words in english_rules:
+        if any(word in lowered for word in words):
+            return family
     rules = (
         ("algorithm", ("算法", "大模型", "机器学习", "人工智能", "ai", "nlp", "视觉", "语音")),
         ("data", ("数据", "数仓", "大数据", "flink", "spark", "bi")),
@@ -313,6 +329,26 @@ def _strip_business_suffix(value: str) -> str:
         return value
     lowered = suffix.casefold()
     if any(marker in lowered for marker in _BUSINESS_SUFFIX_MARKERS):
+        return role
+    return value
+
+
+def _strip_business_affix(value: str) -> str:
+    """Remove company/business labels around a recognizable role title.
+
+    Besides suffixes such as ``AI产品经理-TikTok``, recruitment sources also
+    publish titles like ``闪购-Java开发工程师``.  A leading segment is removed
+    only when it is not itself a recognizable role family and the remaining
+    segment is, so specialties such as ``数据-Java开发工程师`` are preserved.
+    """
+    value = _strip_business_suffix(value)
+    parts = re.split(r"[-—|·]", value, maxsplit=1)
+    if len(parts) != 2:
+        return value
+    prefix, role = (part.strip() for part in parts)
+    if not prefix or not role:
+        return value
+    if infer_role_family(prefix) == "general" and infer_role_family(role) != "general":
         return role
     return value
 

@@ -88,6 +88,14 @@ class DeepSeekSpider(BaseSpider):
     default_config = {"request_interval": 1.0, "retry_times": 3, "timeout": 30}
     entry_url = "https://talent.deepseek.com/"
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.snapshot_scope = {
+            "collector": self.name,
+            "portal": "talent.deepseek.com",
+            "filter": "technical_jobs",
+        }
+
     def parse(self, page_num: int) -> list[dict]:
         if page_num != 1:
             return []
@@ -172,6 +180,10 @@ class DeepSeekSpider(BaseSpider):
         for record in self.parse(1):
             self.add_job(record)
         self.stats["pages"] = 1
+        self.snapshot_complete = (
+            self.stats["errors"] == 0
+            and not (self.max_records and len(self.observed_data) >= self.max_records)
+        )
         self.print_stats()
         return self.save()
 

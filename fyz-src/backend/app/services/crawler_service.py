@@ -15,12 +15,19 @@ import time
 from pathlib import Path
 from typing import Optional
 
+# The crawler framework is a repository-level executable package shared by
+# all official spiders; expose it without relying on the caller's cwd.
+_ROOT_SCRIPTS_DIR = Path(__file__).resolve().parents[4] / "scripts"
+if str(_ROOT_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_SCRIPTS_DIR))
+
 import psutil
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import DEEPSEEK_API_KEY, TESTING
 from app.core.neo4j import health_check as neo4j_health_check
+from spider_framework.checkpoint import acknowledge_snapshot
 from app.models import (
     AgentRun,
     AsyncTask,
@@ -40,6 +47,22 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 SPIDERS_DIR = SCRIPTS_DIR / "spiders"
 DATA_DIR = PROJECT_ROOT / "data"
+CRAWLER_STATE_DIR = DATA_DIR / ".crawler_state"
+
+
+def _snapshot_manifest_path(snapshot: Path) -> Path:
+    return snapshot.with_name(snapshot.name + ".manifest")
+
+
+def _read_snapshot_manifest(snapshot: Path) -> dict:
+    path = _snapshot_manifest_path(snapshot)
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 class SpiderMeta:
@@ -95,6 +118,8 @@ class SpiderMeta:
         except (json.JSONDecodeError, OSError):
             return "0", None, "—"
 
+        if not isinstance(records, list):
+            return "0", None, "—"
         total = len(records)
         if total == 0:
             return "0", None, "—"
@@ -246,6 +271,12 @@ class CrawlerService:
         }:
             command.extend(["--max-pages", str(max_pages)])
         environment = os.environ.copy()
+        # Each source advances its own durable identity cursor only after the
+        # spider has written a valid batch. This makes scheduled runs
+        # incremental and allows an interrupted run to be retried safely.
+        environment["JIEBANG_SPIDER_CHECKPOINT"] = str(
+            CRAWLER_STATE_DIR / f"{meta.module_name}.json"
+        )
         if int(config.get("max_records") or 0) > 0:
             environment["JIEBANG_SPIDER_MAX_RECORDS"] = str(int(config["max_records"]))
         if max_pages > 0:
@@ -332,12 +363,17 @@ class CrawlerService:
         stdout_text = "".join(self._stdout.pop(spider_id, []))
 
         # 探测最新输出文件
-        latest = meta._latest_output()
+        latest = self._output_from_logs(stderr_text, stdout_text) or meta._latest_output()
         records_count = 0
+        snapshot_complete = False
         if latest:
             try:
                 with open(latest, "r", encoding="utf-8") as f:
-                    records_count = len(json.load(f))
+                    payload = json.load(f)
+                    records_count = len(payload) if isinstance(payload, list) else 0
+                snapshot_complete = bool(
+                    _read_snapshot_manifest(latest).get("snapshot_complete")
+                )
             except (json.JSONDecodeError, OSError):
                 pass
         output_changed = bool(
@@ -354,7 +390,7 @@ class CrawlerService:
                 f"{meta.name}采集脚本异常退出（退出码 {returncode}），"
                 "请查看下方日志与网络环境后重试"
             )
-        elif output_changed and records_count > 0:
+        elif output_changed and (records_count > 0 or snapshot_complete):
             error_category = CRAWLER_STATUS_OK
             error_reason = ""
             message = f"采集完成，共 {records_count} 条记录"
@@ -365,6 +401,12 @@ class CrawlerService:
                 message = (
                     f"未采集到有效数据：请求错误 {stats['errors']} 次。"
                     "可能是目标站点网络不通、访问超时或被反爬拦截，请检查网络后重试"
+                )
+            elif stats["fetched"] == 0 and stats["duplicates"] > 0:
+                error_reason = "unchanged"
+                message = (
+                    f"本次检查 {stats['duplicates']} 条已见岗位，"
+                    "持久化检查点去重后无新增记录"
                 )
             elif stats["fetched"] == 0:
                 error_reason = "no_response"
@@ -382,6 +424,7 @@ class CrawlerService:
         self._last_runs[spider_id] = {
             "date": datetime.date.today().isoformat(),
             "records_count": records_count,
+            "snapshot_complete": snapshot_complete,
             "elapsed": round(elapsed, 1),
             "returncode": returncode,
             "error_category": error_category,
@@ -404,6 +447,17 @@ class CrawlerService:
             "stats": stats,
         }
 
+    def acknowledge_import(self, spider_id: int, filename: str) -> dict:
+        """Advance the source cursor only after ImportService committed."""
+        meta = self._find_spider(spider_id)
+        if not meta:
+            raise ValueError(f"未知爬虫 ID: {spider_id}")
+        snapshot = (DATA_DIR / filename).resolve()
+        if DATA_DIR.resolve() not in snapshot.parents or not snapshot.is_file():
+            raise ValueError(f"无效爬虫快照: {filename}")
+        checkpoint = CRAWLER_STATE_DIR / f"{meta.module_name}.json"
+        return acknowledge_snapshot(checkpoint, snapshot)
+
     @staticmethod
     def _parse_spider_stats(stderr_text: str) -> dict:
         """从爬虫脚本 print_stats 输出（写入 stderr）解析采集统计。
@@ -411,7 +465,13 @@ class CrawlerService:
         spider 框架的 print_stats 通过 logging 输出：
           抓取成功: N 条 / 去重跳过: N 条 / 错误次数: N 次 / 已爬页数: N 页
         """
-        stats = {"fetched": 0, "duplicates": 0, "errors": 0, "pages": 0}
+        stats = {
+            "fetched": 0,
+            "duplicates": 0,
+            "checkpoint_duplicates": 0,
+            "errors": 0,
+            "pages": 0,
+        }
         if not stderr_text:
             return stats
         patterns = {
@@ -419,12 +479,32 @@ class CrawlerService:
             "duplicates": r"去重跳过[:：]\s*(\d+)\s*条",
             "errors": r"错误次数[:：]\s*(\d+)\s*次",
             "pages": r"已爬页数[:：]\s*(\d+)\s*页",
+            "checkpoint_duplicates": r"历史检查点去重[:：]\s*(\d+)\s*条",
         }
         for key, pattern in patterns.items():
             m = re.search(pattern, stderr_text)
             if m:
                 stats[key] = int(m.group(1))
         return stats
+
+    @staticmethod
+    def _output_from_logs(stderr_text: str, stdout_text: str = "") -> Path | None:
+        """Resolve only a complete snapshot explicitly published by this run."""
+        matches = re.findall(
+            r"CRAWLER_OUTPUT_PATH=([^\r\n]+)",
+            f"{stderr_text}\n{stdout_text}",
+        )
+        if not matches:
+            return None
+        candidate = Path(matches[-1].strip()).resolve()
+        root = DATA_DIR.resolve()
+        if root not in candidate.parents or not candidate.is_file():
+            return None
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return candidate if isinstance(payload, list) else None
 
     def toggle_crawler(self, spider_id: int) -> dict:
         """切换爬虫启停状态"""

@@ -79,6 +79,14 @@ RETRIEVAL_VECTOR_BACKEND = os.getenv(
     "RETRIEVAL_VECTOR_BACKEND",
     "local_hash" if TESTING else "chroma",
 )
+JOB_MISSING_CLOSE_THRESHOLD = max(
+    1, int(os.getenv("JOB_MISSING_CLOSE_THRESHOLD", "2"))
+)
+RETRIEVAL_MAX_READY_DROP_RATIO = float(
+    os.getenv("RETRIEVAL_MAX_READY_DROP_RATIO", "0.80")
+)
+if not 0 <= RETRIEVAL_MAX_READY_DROP_RATIO < 1:
+    raise RuntimeError("RETRIEVAL_MAX_READY_DROP_RATIO must be in [0, 1)")
 RETRIEVAL_RELATIVE_SCORE_WINDOW = float(
     os.getenv("RETRIEVAL_RELATIVE_SCORE_WINDOW", "0.04")
 )
@@ -116,8 +124,8 @@ OPENAI_EMBEDDING_TIMEOUT_SECONDS = float(
 )
 
 # Celery / Redis
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/0")
 CELERY_TASK_ALWAYS_EAGER = (
     os.getenv(
         "CELERY_TASK_ALWAYS_EAGER",
@@ -128,7 +136,7 @@ CELERY_TASK_ALWAYS_EAGER = (
 
 # Optional business cache. Keep this separate from the Celery broker/result
 # databases. MySQL and Neo4j remain the sources of truth when Redis is down.
-REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/3")
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/3")
 CACHE_ENABLED = (
     os.getenv("CACHE_ENABLED", "false" if TESTING else "true").lower() == "true"
 )
@@ -167,6 +175,9 @@ AUTO_PIPELINE_ENABLED = (
     os.getenv("AUTO_PIPELINE_ENABLED", "false" if TESTING else "true").lower()
     == "true"
 )
+RECOVER_PENDING_TASKS_ON_STARTUP = (
+    os.getenv("RECOVER_PENDING_TASKS_ON_STARTUP", "true").lower() == "true"
+)
 AUTO_PIPELINE_INTERVAL_MINUTES = max(
     15, int(os.getenv("AUTO_PIPELINE_INTERVAL_MINUTES", "1440"))
 )
@@ -187,6 +198,24 @@ AUTO_PIPELINE_ENRICH_GRAPH = (
 AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE = min(
     1.0, max(0.0, float(os.getenv("AUTO_PIPELINE_AUTO_PUBLISH_CONFIDENCE", "0.90")))
 )
+AUTO_PIPELINE_GRAPH_FULL_RECONCILE_HOURS = max(
+    1, int(os.getenv("AUTO_PIPELINE_GRAPH_FULL_RECONCILE_HOURS", "24"))
+)
+AUTO_PIPELINE_MAX_REJECTED_RATIO = float(
+    os.getenv("AUTO_PIPELINE_MAX_REJECTED_RATIO", "0.25")
+)
+if not 0 <= AUTO_PIPELINE_MAX_REJECTED_RATIO <= 1:
+    raise RuntimeError("AUTO_PIPELINE_MAX_REJECTED_RATIO must be between 0 and 1")
+AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO = float(
+    os.getenv("AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO", "0.50")
+)
+if not 0 <= AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO <= 1:
+    raise RuntimeError("AUTO_PIPELINE_MAX_TIME_ANOMALY_RATIO must be between 0 and 1")
+AUTO_PIPELINE_MAX_QUARANTINE_RATIO = float(
+    os.getenv("AUTO_PIPELINE_MAX_QUARANTINE_RATIO", "0.05")
+)
+if not 0 <= AUTO_PIPELINE_MAX_QUARANTINE_RATIO <= 1:
+    raise RuntimeError("AUTO_PIPELINE_MAX_QUARANTINE_RATIO must be between 0 and 1")
 AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS = max(
     6, int(os.getenv("AUTO_PIPELINE_BASELINE_LOOKBACK_MONTHS", "24"))
 )

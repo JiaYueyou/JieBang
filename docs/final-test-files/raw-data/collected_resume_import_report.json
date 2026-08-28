@@ -1,0 +1,118 @@
+{
+  "owner_user_id": 1,
+  "requested": 15,
+  "imported": 0,
+  "existing_refreshed": 15,
+  "active": 15,
+  "active_resume_ids": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "records": [],
+  "refreshed_records": [
+    {
+      "source_id": "collected-007",
+      "pseudonym": "candidate-35e60d6fdf",
+      "resume_id": 2,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-008",
+      "pseudonym": "candidate-f3abe57e65",
+      "resume_id": 3,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-035",
+      "pseudonym": "candidate-65664474e1",
+      "resume_id": 4,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-036",
+      "pseudonym": "candidate-249eae44cb",
+      "resume_id": 5,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-047",
+      "pseudonym": "candidate-d698182914",
+      "resume_id": 6,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-052",
+      "pseudonym": "candidate-bf8b5d378f",
+      "resume_id": 7,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-058",
+      "pseudonym": "candidate-6f52cc94db",
+      "resume_id": 8,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-062",
+      "pseudonym": "candidate-9b7e85a029",
+      "resume_id": 9,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-063",
+      "pseudonym": "candidate-426f2ded30",
+      "resume_id": 10,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-070",
+      "pseudonym": "candidate-90b04dd346",
+      "resume_id": 11,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-074",
+      "pseudonym": "candidate-9ee831fcb8",
+      "resume_id": 12,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-075",
+      "pseudonym": "candidate-6151012833",
+      "resume_id": 13,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-076",
+      "pseudonym": "candidate-2e07333c8c",
+      "resume_id": 14,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-093",
+      "pseudonym": "candidate-d7d7388abc",
+      "resume_id": 15,
+      "reason": "existing_record_refreshed"
+    },
+    {
+      "source_id": "collected-094",
+      "pseudonym": "candidate-a7c41810ab",
+      "resume_id": 16,
+      "reason": "existing_record_refreshed"
+    }
+  ],
+  "privacy": "Only pseudonyms and database IDs are included; personal fields remain in the protected database."
+}

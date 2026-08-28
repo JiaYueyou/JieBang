@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import io
 import re
 import time
 import uuid
 from difflib import SequenceMatcher
-from pathlib import Path
 
 from fastapi import UploadFile
 from sqlalchemy import select
@@ -21,6 +19,7 @@ from app.models import AgentRun, InternalPosition
 from app.providers import DeepSeekProvider, LLMProvider
 from app.schemas.career import CareerAnalysisRequest, CareerAnalysisResponse, ResumeExtractionResponse
 from app.services.skill_extractor import RuleSkillExtractor
+from app.services.resume_parser import ResumeParser
 
 
 class CareerService:
@@ -29,36 +28,13 @@ class CareerService:
         self.llm = llm_provider or DeepSeekProvider()
         self.agent = CareerPlanningAgent(self.llm, timeout_seconds=DEEPSEEK_TIMEOUT_SECONDS)
         self.extractor = RuleSkillExtractor()
+        self.resume_parser = ResumeParser()
 
     async def extract_resume(self, file: UploadFile) -> ResumeExtractionResponse:
         content = await file.read()
-        if not content:
-            raise InvalidParameterError("简历文件为空")
-        if len(content) > 20 * 1024 * 1024:
-            raise InvalidParameterError("简历文件不能超过 20MB")
-        suffix = Path(file.filename or "resume.txt").suffix.lower()
-        warnings: list[str] = []
-        if suffix in {".txt", ".md"}:
-            text = self._decode_text(content)
-        elif suffix == ".pdf":
-            try:
-                from pypdf import PdfReader
-            except ImportError as exc:
-                raise InvalidParameterError("服务端未安装 PDF 解析依赖 pypdf") from exc
-            text = "\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(content)).pages)
-        elif suffix == ".docx":
-            try:
-                from docx import Document
-            except ImportError as exc:
-                raise InvalidParameterError("服务端未安装 Word 解析依赖 python-docx") from exc
-            text = "\n".join(paragraph.text for paragraph in Document(io.BytesIO(content)).paragraphs)
-        else:
-            raise InvalidParameterError("仅支持 TXT、Markdown、PDF 和 DOCX 简历")
-        text = "\n".join(line.strip() for line in text.splitlines() if line.strip())[:20000]
-        if not text:
-            raise InvalidParameterError("未能从简历中解析出文本")
-        if suffix == ".pdf" and len(text) < 30:
-            warnings.append("PDF 可能是扫描件，建议补充文本技能描述。")
+        text, warnings = self.resume_parser.parse(
+            content, file.filename or "resume.txt"
+        )
         return ResumeExtractionResponse(
             filename=file.filename or "resume",
             text=text,
@@ -245,12 +221,3 @@ class CareerService:
         ):
             normalized = normalized.replace(marker, "")
         return normalized
-
-    @staticmethod
-    def _decode_text(content: bytes) -> str:
-        for encoding in ("utf-8-sig", "utf-8", "gb18030"):
-            try:
-                return content.decode(encoding)
-            except UnicodeDecodeError:
-                continue
-        raise InvalidParameterError("无法识别文本文件编码")

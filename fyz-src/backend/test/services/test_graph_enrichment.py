@@ -1,5 +1,6 @@
 """L4/L5 图补全集成测试（使用 MockLLMProvider，不调用真实 DeepSeek）。"""
 
+import asyncio
 import uuid
 from datetime import datetime
 from unittest.mock import patch
@@ -8,6 +9,7 @@ import pytest
 from sqlalchemy import select
 
 from app.core.database import async_session
+from app.core.exceptions import InvalidParameterError
 from app.models import (
     AgentClaimCitation,
     AgentRun,
@@ -38,10 +40,25 @@ class _MockProvider:
     provider_name = "mock"
     model_name = "mock-structured"
 
-    def __init__(self, output: GraphEnrichmentOutput | None = None, error: Exception | None = None):
+    def __init__(
+        self,
+        output: GraphEnrichmentOutput | None = None,
+        error: Exception | None = None,
+        retry_count: int | None = None,
+    ):
         self._llm = MockLLMProvider(output=output, error=error)
+        self.retry_count = retry_count
 
-    async def generate_structured(self, *, response_schema, **_kwargs):
+    async def generate_structured(self, *, response_schema, metadata, **_kwargs):
+        if self.retry_count is not None:
+            metadata["provider_diagnostics"] = {
+                "attempts": self.retry_count + 1,
+                "retry_count": self.retry_count,
+                "duration_ms": 12,
+                "outcome": "succeeded",
+                "error_code": None,
+                "attempt_history": [],
+            }
         return await self._llm.generate_structured(response_schema=response_schema)
 
 
@@ -230,7 +247,7 @@ async def test_enrich_candidate_success_with_mock_llm():
         ])
         service = GraphService(
             db,
-            llm_provider=_MockProvider(output=output),
+            llm_provider=_MockProvider(output=output, retry_count=1),
             retrieval_service=_MockRetriever(evidence),
         )
         stats = await service._prepare_top_candidates(snapshot.id, user_id=1)
@@ -251,6 +268,8 @@ async def test_enrich_candidate_success_with_mock_llm():
         agent_run = (await db.execute(select(AgentRun).where(AgentRun.id == candidate.agent_run_id))).scalar_one()
         assert agent_run.status == "succeeded"
         assert agent_run.agent_type == "graph_enrichment"
+        assert agent_run.retry_count == 1
+        assert agent_run.structured_output["provider_diagnostics"]["attempts"] == 2
         assert (
             agent_run.structured_output["retrieval"]["index_version"]
             == "phase3-test-index"
@@ -738,9 +757,20 @@ async def test_machine_validated_candidate_requires_review_before_publication():
         )
         db.add_all([user, skill, snapshot])
         await db.flush()
+        review_output = _make_output([
+            TechPointOutput(
+                name="Flask", category="framework", detail="Web 框架",
+                confidence=.88, evidence_ids=["1", "2"],
+                knowledge_points=[KnowledgePointOutput(
+                    name="请求上下文", description="隔离请求状态",
+                    difficulty="medium", confidence=.86,
+                    evidence_ids=["1", "2"],
+                )],
+            )
+        ])
         candidate = GraphEnrichmentCandidate(
             snapshot_id=snapshot.id, skill_id=skill.id,
-            candidate_data=_make_output([]).model_dump(mode="json"),
+            candidate_data=review_output.model_dump(mode="json"),
             evidence_source_ids=[1, 2], confidence=.88,
             verification_status="machine_validated", machine_validation_status="passed",
             review_status="pending", publication_status="draft",
@@ -756,7 +786,107 @@ async def test_machine_validated_candidate_requires_review_before_publication():
         assert reviewed["publication_status"] == "approved"
         assert reviewed["lock_version"] == 1
         assert reviewed["evidence_source_ids"] == ["1", "2"]
+        assert reviewed["candidate_data"]["human_review"]["quality_gate"] == "passed"
         assert await service.prepare_enrichment_publication([candidate.id]) == 1
+
+
+async def test_human_review_gate_rejects_weak_or_unexplained_candidate():
+    async with async_session() as db:
+        user = User(username="graph-quality-admin", password_hash="x", role="admin")
+        skill = Skill(
+            name="Python", canonical_name="Python", canonical_key="python-quality",
+            category="programming_language", aliases=[],
+        )
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="review-quality-v1",
+            snapshot_type="incremental", status="succeeded",
+        )
+        db.add_all([user, skill, snapshot])
+        await db.flush()
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skill.id,
+            candidate_data=_make_output([]).model_dump(mode="json"),
+            evidence_source_ids=["e1"], confidence=.7,
+            verification_status="machine_validated", machine_validation_status="passed",
+            review_status="pending", publication_status="draft",
+        )
+        db.add(candidate)
+        await db.commit()
+
+        with pytest.raises(InvalidParameterError, match="人工审核质量门槛"):
+            await GraphService(db, llm_provider=_MockProvider()).review_enrichment_candidate(
+                candidate.id, action="approve", note="ok", lock_version=0,
+                user_id=user.id,
+            )
+
+        await db.refresh(candidate)
+        assert candidate.review_status == "pending"
+
+
+async def test_human_review_uses_atomic_optimistic_lock_for_competing_decisions():
+    async with async_session() as seed_db:
+        user = User(username="graph-race-admin", password_hash="x", role="admin")
+        skill = Skill(
+            name="Python", canonical_name="Python", canonical_key="python-review-race",
+            category="programming_language", aliases=[],
+        )
+        snapshot = GraphSnapshot(
+            id=str(uuid.uuid4()), version="review-race-v1",
+            snapshot_type="incremental", status="succeeded",
+        )
+        seed_db.add_all([user, skill, snapshot])
+        await seed_db.flush()
+        output = _make_output([TechPointOutput(
+            name="Flask", category="framework", detail="Web 框架",
+            confidence=.9, evidence_ids=["e1", "e2"],
+            knowledge_points=[KnowledgePointOutput(
+                name="请求上下文", description="隔离请求状态",
+                difficulty="medium", confidence=.85, evidence_ids=["e1", "e2"],
+            )],
+        )])
+        candidate = GraphEnrichmentCandidate(
+            snapshot_id=snapshot.id, skill_id=skill.id,
+            candidate_data=output.model_dump(mode="json"),
+            evidence_source_ids=["e1", "e2"], confidence=.9,
+            verification_status="machine_validated", machine_validation_status="passed",
+            review_status="pending", publication_status="draft",
+        )
+        seed_db.add(candidate)
+        await seed_db.commit()
+        candidate_id = candidate.id
+        user_id = user.id
+
+    async with async_session() as approve_db, async_session() as reject_db:
+        # Prime both identity maps with version 0 so both reviewers make their
+        # decision from the same snapshot before the conditional UPDATE.
+        await approve_db.get(GraphEnrichmentCandidate, candidate_id)
+        await reject_db.get(GraphEnrichmentCandidate, candidate_id)
+
+        results = await asyncio.gather(
+            GraphService(approve_db, llm_provider=_MockProvider()).review_enrichment_candidate(
+                candidate_id, action="approve", note="证据充分，同意发布",
+                lock_version=0, user_id=user_id,
+            ),
+            GraphService(reject_db, llm_provider=_MockProvider()).review_enrichment_candidate(
+                candidate_id, action="reject", note="需要进一步复核",
+                lock_version=0, user_id=user_id,
+            ),
+            return_exceptions=True,
+        )
+
+    successes = [item for item in results if isinstance(item, dict)]
+    conflicts = [item for item in results if isinstance(item, InvalidParameterError)]
+    assert len(successes) == 1
+    assert len(conflicts) == 1
+    assert "其他审核操作更新" in str(conflicts[0])
+
+    async with async_session() as verify_db:
+        persisted = await verify_db.get(GraphEnrichmentCandidate, candidate_id)
+        assert persisted.lock_version == 1
+        assert persisted.review_status in {"approved", "rejected"}
+        assert persisted.candidate_data["human_review"]["decision"] in {
+            "approve", "reject"
+        }
 
 
 async def test_machine_failed_candidates_are_rejected_with_automatic_reasons():
@@ -812,6 +942,15 @@ async def test_machine_failed_candidates_are_rejected_with_automatic_reasons():
         assert failed.reviewed_by == user.id
         assert passed.review_status == "pending"
         assert still_running.review_status == "pending"
+
+        listing = await service.list_enrichment_candidates(
+            page=1, page_size=10, review_status=None
+        )
+        assert listing["items"][-1]["id"] == failed.id
+        assert all(
+            item["review_status"] == "pending"
+            for item in listing["items"][:-1]
+        )
 
 
 async def test_single_machine_failed_rejection_does_not_require_manual_note():

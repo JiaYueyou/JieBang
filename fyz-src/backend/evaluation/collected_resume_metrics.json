@@ -1,0 +1,2019 @@
+{
+  "dataset": "locally collected resumes from docs/resumes",
+  "privacy": "Public report contains hashes and aggregate diagnostics only; OCR text and personal fields stay under ignored tmp/.",
+  "records": 94,
+  "selected_records": 15,
+  "source_distribution": {
+    "resumes_docx": 40,
+    "test1": 22,
+    "test2": 32
+  },
+  "selected_source_distribution": {
+    "test1": 4,
+    "resumes_docx": 4,
+    "test2": 7
+  },
+  "metric_warning": "OCR confidence and key-field recognition are quality proxies, not character accuracy against human transcription.",
+  "baseline_mean_ocr_confidence": 0.987086,
+  "optimized_mean_ocr_confidence": 0.987109,
+  "confidence_delta": 2.3e-05,
+  "key_field_recognition_rate": 0.960106,
+  "selected_variant_distribution": {
+    "original": 91,
+    "enhanced": 3
+  },
+  "mean_skill_count": 11.266,
+  "selected_ids": [
+    "collected-047",
+    "collected-007",
+    "collected-094",
+    "collected-062",
+    "collected-075",
+    "collected-035",
+    "collected-036",
+    "collected-076",
+    "collected-063",
+    "collected-008",
+    "collected-070",
+    "collected-058",
+    "collected-052",
+    "collected-093",
+    "collected-074"
+  ],
+  "records_summary": [
+    {
+      "id": "collected-001",
+      "pseudonym": "candidate-1360565eab",
+      "content_hash": "9e98a47ba8e889097bff50f9b30b8f8e92435b2f0ad4ec43d8bd9e6933afe888",
+      "dimensions": [
+        1002,
+        1075
+      ],
+      "baseline_confidence": 0.981669,
+      "optimized_confidence": 0.981669,
+      "selected_variant": "original",
+      "character_count": 2156,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.990835
+    },
+    {
+      "id": "collected-002",
+      "pseudonym": "candidate-245ee6dd9b",
+      "content_hash": "6c9a68cc94098388786240ecdd1181a1a36b3d0138a46761d6c062fb2414340c",
+      "dimensions": [
+        962,
+        1057
+      ],
+      "baseline_confidence": 0.98771,
+      "optimized_confidence": 0.98771,
+      "selected_variant": "original",
+      "character_count": 1728,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.993855
+    },
+    {
+      "id": "collected-003",
+      "pseudonym": "candidate-cbf0fd2919",
+      "content_hash": "acbeb906d34bb988d86d46e6e1bcf720cd9661e74fc2fc9028bcf56135b17234",
+      "dimensions": [
+        1045,
+        1038
+      ],
+      "baseline_confidence": 0.974106,
+      "optimized_confidence": 0.974106,
+      "selected_variant": "original",
+      "character_count": 1814,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.987053
+    },
+    {
+      "id": "collected-004",
+      "pseudonym": "candidate-728d95ba28",
+      "content_hash": "fceecc97cc7a6a5e9f5fbb8f2dafa8849408ad52b3b1e77a5a3460def1d51385",
+      "dimensions": [
+        874,
+        1068
+      ],
+      "baseline_confidence": 0.981199,
+      "optimized_confidence": 0.981199,
+      "selected_variant": "original",
+      "character_count": 1640,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.9906
+    },
+    {
+      "id": "collected-005",
+      "pseudonym": "candidate-e05ac109f8",
+      "content_hash": "9d1e7c8200783467c53d6658d52adf668563badea538aa095b013930658cfca8",
+      "dimensions": [
+        753,
+        1041
+      ],
+      "baseline_confidence": 0.979626,
+      "optimized_confidence": 0.979626,
+      "selected_variant": "original",
+      "character_count": 1412,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 17,
+      "quality_score": 0.989813
+    },
+    {
+      "id": "collected-006",
+      "pseudonym": "candidate-85d1dccc34",
+      "content_hash": "a4fb8c6d68dd03a173559c4143fb55a188e32b58d5e27bb26180cbd41252c1c3",
+      "dimensions": [
+        690,
+        980
+      ],
+      "baseline_confidence": 0.978741,
+      "optimized_confidence": 0.978741,
+      "selected_variant": "original",
+      "character_count": 1730,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 16,
+      "quality_score": 0.98937
+    },
+    {
+      "id": "collected-007",
+      "pseudonym": "candidate-35e60d6fdf",
+      "content_hash": "4a871cf882492819f26eba79e8c45e8e2bac1e628744ca107d44292c0adbb22c",
+      "dimensions": [
+        866,
+        1043
+      ],
+      "baseline_confidence": 0.994002,
+      "optimized_confidence": 0.994002,
+      "selected_variant": "original",
+      "character_count": 1702,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 15,
+      "quality_score": 0.997001
+    },
+    {
+      "id": "collected-008",
+      "pseudonym": "candidate-f3abe57e65",
+      "content_hash": "8ee613a7203a29ae0c04fb5b6d2beb6d7238884b79a73fcbb2ec11c862e88921",
+      "dimensions": [
+        834,
+        1034
+      ],
+      "baseline_confidence": 0.991539,
+      "optimized_confidence": 0.991539,
+      "selected_variant": "original",
+      "character_count": 1739,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.995769
+    },
+    {
+      "id": "collected-009",
+      "pseudonym": "candidate-9c497d6a11",
+      "content_hash": "1f52b3b413021d190cdb1b080ec9bad850081838c64535ed5bbfc62098830530",
+      "dimensions": [
+        874,
+        1056
+      ],
+      "baseline_confidence": 0.988774,
+      "optimized_confidence": 0.988766,
+      "selected_variant": "enhanced",
+      "character_count": 1472,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 15,
+      "quality_score": 0.994383
+    },
+    {
+      "id": "collected-010",
+      "pseudonym": "candidate-115a4c1152",
+      "content_hash": "f921cea09fbd74f6e6d7f99da5734f67dc8002afdb0a2a889cc5ac3d580aabe7",
+      "dimensions": [
+        522,
+        1052
+      ],
+      "baseline_confidence": 0.962533,
+      "optimized_confidence": 0.962533,
+      "selected_variant": "original",
+      "character_count": 1987,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.981267
+    },
+    {
+      "id": "collected-011",
+      "pseudonym": "candidate-d7ba2d72a1",
+      "content_hash": "5685c0ecb7a5cb5e94f81bab067dc4fff8b101c8a8e35d80262c303a5bc5333c",
+      "dimensions": [
+        709,
+        1026
+      ],
+      "baseline_confidence": 0.983686,
+      "optimized_confidence": 0.983686,
+      "selected_variant": "original",
+      "character_count": 1746,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 15,
+      "quality_score": 0.991843
+    },
+    {
+      "id": "collected-012",
+      "pseudonym": "candidate-dc6e2aafeb",
+      "content_hash": "4b844f5a2127d8990d469746ed9510b4817c5bd671ccf81532ab332482fe966f",
+      "dimensions": [
+        652,
+        964
+      ],
+      "baseline_confidence": 0.98991,
+      "optimized_confidence": 0.98991,
+      "selected_variant": "original",
+      "character_count": 1521,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.994955
+    },
+    {
+      "id": "collected-013",
+      "pseudonym": "candidate-790e08c773",
+      "content_hash": "730397ef4cffa23ab740a230007b89068c48e820fb1237139c6e219fac410af9",
+      "dimensions": [
+        703,
+        962
+      ],
+      "baseline_confidence": 0.984917,
+      "optimized_confidence": 0.984917,
+      "selected_variant": "original",
+      "character_count": 2052,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.992459
+    },
+    {
+      "id": "collected-014",
+      "pseudonym": "candidate-179e2bbf59",
+      "content_hash": "25f0036789d84e76f7e7f67bb15fd1fe64c19fd4fa1cee296f118f0ccd0c61f4",
+      "dimensions": [
+        874,
+        951
+      ],
+      "baseline_confidence": 0.98769,
+      "optimized_confidence": 0.98769,
+      "selected_variant": "original",
+      "character_count": 1407,
+      "field_flags": {
+        "identity": true,
+        "education": false,
+        "career": false,
+        "skills": true
+      },
+      "skill_count": 14,
+      "quality_score": 0.868845
+    },
+    {
+      "id": "collected-015",
+      "pseudonym": "candidate-1d841bc0ee",
+      "content_hash": "70bb8897ebf8465a23131307b9eeea6f5916a8b3e261c684847e59cc733066a5",
+      "dimensions": [
+        738,
+        1052
+      ],
+      "baseline_confidence": 0.984791,
+      "optimized_confidence": 0.985696,
+      "selected_variant": "enhanced",
+      "character_count": 1278,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.992848
+    },
+    {
+      "id": "collected-016",
+      "pseudonym": "candidate-63564f436b",
+      "content_hash": "bc9f2617e92d520a5f81afd311075856c5bbfe37118a8cce53f0b19c2ed33d58",
+      "dimensions": [
+        763,
+        1056
+      ],
+      "baseline_confidence": 0.988465,
+      "optimized_confidence": 0.988465,
+      "selected_variant": "original",
+      "character_count": 1695,
+      "field_flags": {
+        "identity": true,
+        "education": false,
+        "career": false,
+        "skills": true
+      },
+      "skill_count": 18,
+      "quality_score": 0.869233
+    },
+    {
+      "id": "collected-017",
+      "pseudonym": "candidate-fe985eafa4",
+      "content_hash": "f3b245c023fce760a01b40153d001813be21410e2b45723610f4f3deeb1b867d",
+      "dimensions": [
+        1106,
+        1046
+      ],
+      "baseline_confidence": 0.984817,
+      "optimized_confidence": 0.984817,
+      "selected_variant": "original",
+      "character_count": 1026,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.992409
+    },
+    {
+      "id": "collected-018",
+      "pseudonym": "candidate-5de68f579a",
+      "content_hash": "f7ea75d14d90242834ab1b7790c7f8190825018acb996593a446b6fbca93c866",
+      "dimensions": [
+        758,
+        1054
+      ],
+      "baseline_confidence": 0.983333,
+      "optimized_confidence": 0.983333,
+      "selected_variant": "original",
+      "character_count": 2289,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.991667
+    },
+    {
+      "id": "collected-019",
+      "pseudonym": "candidate-2704381ca2",
+      "content_hash": "726553cf82d8b576775a9a5f50739b02f4eb4e764fdeb8da7479f2b311ca26c0",
+      "dimensions": [
+        885,
+        974
+      ],
+      "baseline_confidence": 0.971857,
+      "optimized_confidence": 0.971857,
+      "selected_variant": "original",
+      "character_count": 1431,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.985928
+    },
+    {
+      "id": "collected-020",
+      "pseudonym": "candidate-8085e32039",
+      "content_hash": "006bbbbed20d9956e1c313adebe2c9eb4a387c80c32a6c9ba1e73a996bc5df85",
+      "dimensions": [
+        752,
+        1016
+      ],
+      "baseline_confidence": 0.968987,
+      "optimized_confidence": 0.968987,
+      "selected_variant": "original",
+      "character_count": 1570,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.984494
+    },
+    {
+      "id": "collected-021",
+      "pseudonym": "candidate-7c8e746a8f",
+      "content_hash": "c87a84e8be5baf1e1799c0384d4be7cef9df7eb28b7d1ed5eb9b2c757e81dd49",
+      "dimensions": [
+        741,
+        1032
+      ],
+      "baseline_confidence": 0.990459,
+      "optimized_confidence": 0.990459,
+      "selected_variant": "original",
+      "character_count": 1841,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 5,
+      "quality_score": 0.970229
+    },
+    {
+      "id": "collected-022",
+      "pseudonym": "candidate-6258e3d71b",
+      "content_hash": "054d457ae3421241e825d5e0c0230894afc9cbd567ebdac591ec2832b623c9cf",
+      "dimensions": [
+        745,
+        1014
+      ],
+      "baseline_confidence": 0.985953,
+      "optimized_confidence": 0.985953,
+      "selected_variant": "original",
+      "character_count": 1484,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.992976
+    },
+    {
+      "id": "collected-023",
+      "pseudonym": "candidate-29b7bfb43b",
+      "content_hash": "a02d9d635bed3712355abb6dcf927f093fd065d0e88e98532f952fa886a19c54",
+      "dimensions": [
+        730,
+        1049
+      ],
+      "baseline_confidence": 0.986051,
+      "optimized_confidence": 0.986051,
+      "selected_variant": "original",
+      "character_count": 1136,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 7,
+      "quality_score": 0.993026
+    },
+    {
+      "id": "collected-024",
+      "pseudonym": "candidate-0632b1db96",
+      "content_hash": "3a239d0cc5d788d8089b112040e05f005067735454357c22ebb9d92314afb159",
+      "dimensions": [
+        746,
+        1117
+      ],
+      "baseline_confidence": 0.991239,
+      "optimized_confidence": 0.991239,
+      "selected_variant": "original",
+      "character_count": 1437,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 4,
+      "quality_score": 0.945619
+    },
+    {
+      "id": "collected-025",
+      "pseudonym": "candidate-76171af2b5",
+      "content_hash": "9d41c3c0b841b23089d65443c9077e550ef89ba8cbb8d9d078020568d9bb605d",
+      "dimensions": [
+        734,
+        681
+      ],
+      "baseline_confidence": 0.977566,
+      "optimized_confidence": 0.977566,
+      "selected_variant": "original",
+      "character_count": 822,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": false,
+        "skills": false
+      },
+      "skill_count": 5,
+      "quality_score": 0.838783
+    },
+    {
+      "id": "collected-026",
+      "pseudonym": "candidate-37e7feedce",
+      "content_hash": "8f6451216a6d0d5da3d9089f3c3201aecc2ed0178741eb84bbcbb82cf476fd71",
+      "dimensions": [
+        759,
+        980
+      ],
+      "baseline_confidence": 0.986263,
+      "optimized_confidence": 0.986263,
+      "selected_variant": "original",
+      "character_count": 766,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": false
+      },
+      "skill_count": 3,
+      "quality_score": 0.855631
+    },
+    {
+      "id": "collected-027",
+      "pseudonym": "candidate-9ee831fcb8",
+      "content_hash": "ed404d87d0db7528bd65d9f4f348588fd2c37a9827f9997dd175b44fb0b89f6a",
+      "dimensions": [
+        755,
+        1037
+      ],
+      "baseline_confidence": 0.991772,
+      "optimized_confidence": 0.991772,
+      "selected_variant": "original",
+      "character_count": 976,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 2,
+      "quality_score": 0.895886
+    },
+    {
+      "id": "collected-028",
+      "pseudonym": "candidate-e05ac109f8",
+      "content_hash": "b1533315f9028fcb0b8bf49efded2339e5aeb6f3ccd130251a9c3470898e1532",
+      "dimensions": [
+        747,
+        1064
+      ],
+      "baseline_confidence": 0.987356,
+      "optimized_confidence": 0.987356,
+      "selected_variant": "original",
+      "character_count": 1366,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 7,
+      "quality_score": 0.993678
+    },
+    {
+      "id": "collected-029",
+      "pseudonym": "candidate-a27c26de69",
+      "content_hash": "a4dbf0bf6bb3a176a7785161f56179966a7e10501ba8a3a785cfa260cf0c7288",
+      "dimensions": [
+        703,
+        1038
+      ],
+      "baseline_confidence": 0.983999,
+      "optimized_confidence": 0.983999,
+      "selected_variant": "original",
+      "character_count": 1006,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 5,
+      "quality_score": 0.966999
+    },
+    {
+      "id": "collected-030",
+      "pseudonym": "candidate-3d9187be20",
+      "content_hash": "e6a3f77030d3ca2b909706f10c5600006e1e2ffbf0e2e0d027d0be6c559e5e27",
+      "dimensions": [
+        711,
+        1056
+      ],
+      "baseline_confidence": 0.98913,
+      "optimized_confidence": 0.98913,
+      "selected_variant": "original",
+      "character_count": 1254,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 4,
+      "quality_score": 0.944565
+    },
+    {
+      "id": "collected-031",
+      "pseudonym": "candidate-e17160b109",
+      "content_hash": "701315133ca855964304fe4681387219459fa332503e44fbad1069502c3897d2",
+      "dimensions": [
+        840,
+        1050
+      ],
+      "baseline_confidence": 0.989949,
+      "optimized_confidence": 0.989949,
+      "selected_variant": "original",
+      "character_count": 1515,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": false,
+        "skills": true
+      },
+      "skill_count": 3,
+      "quality_score": 0.857474
+    },
+    {
+      "id": "collected-032",
+      "pseudonym": "candidate-826fd08d58",
+      "content_hash": "166a9d23b790ce18ebb09e035a527d405ba4928597fff89aed862a9fbd8d126c",
+      "dimensions": [
+        877,
+        1017
+      ],
+      "baseline_confidence": 0.991772,
+      "optimized_confidence": 0.991772,
+      "selected_variant": "original",
+      "character_count": 985,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 2,
+      "quality_score": 0.895886
+    },
+    {
+      "id": "collected-033",
+      "pseudonym": "candidate-640803d897",
+      "content_hash": "b3acfd7a7a83cffe996a9f0771af2dc99b43a4f0ab06528f786f4d6e3d61805e",
+      "dimensions": [
+        690,
+        993
+      ],
+      "baseline_confidence": 0.987269,
+      "optimized_confidence": 0.987269,
+      "selected_variant": "original",
+      "character_count": 1167,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 6,
+      "quality_score": 0.993634
+    },
+    {
+      "id": "collected-034",
+      "pseudonym": "candidate-29b7bfb43b",
+      "content_hash": "5f7555a7ec2cea11555f7204cbb588a0ce625d086433d25b18546a09d686dff3",
+      "dimensions": [
+        722,
+        935
+      ],
+      "baseline_confidence": 0.985572,
+      "optimized_confidence": 0.985572,
+      "selected_variant": "original",
+      "character_count": 1006,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": false
+      },
+      "skill_count": 9,
+      "quality_score": 0.930286
+    },
+    {
+      "id": "collected-035",
+      "pseudonym": "candidate-65664474e1",
+      "content_hash": "87ab68d60163ecb18a1000a08303d550f5c45b31fc56cce27a0da23904f7db27",
+      "dimensions": [
+        1034,
+        1052
+      ],
+      "baseline_confidence": 0.990776,
+      "optimized_confidence": 0.992064,
+      "selected_variant": "enhanced",
+      "character_count": 881,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.996032
+    },
+    {
+      "id": "collected-036",
+      "pseudonym": "candidate-249eae44cb",
+      "content_hash": "e64f6f3b13f34af3383da5d732297776bf0b194c7ee2f5446bd869b9fc5e8bb9",
+      "dimensions": [
+        855,
+        1177
+      ],
+      "baseline_confidence": 0.991999,
+      "optimized_confidence": 0.991999,
+      "selected_variant": "original",
+      "character_count": 768,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 7,
+      "quality_score": 0.995999
+    },
+    {
+      "id": "collected-037",
+      "pseudonym": "candidate-f3f4af8d53",
+      "content_hash": "7d7df49ffe76d2d643431c1362022c51417b176b55abffa2e6641ae68fbbbaf6",
+      "dimensions": [
+        852,
+        633
+      ],
+      "baseline_confidence": 0.991041,
+      "optimized_confidence": 0.991041,
+      "selected_variant": "original",
+      "character_count": 436,
+      "field_flags": {
+        "identity": true,
+        "education": false,
+        "career": true,
+        "skills": false
+      },
+      "skill_count": 0,
+      "quality_score": 0.70772
+    },
+    {
+      "id": "collected-038",
+      "pseudonym": "candidate-177ea20dd5",
+      "content_hash": "664298151a24eb382327a4772dbbe2e8ce18376a5c94edb8a9869514e9b9b3b0",
+      "dimensions": [
+        840,
+        1091
+      ],
+      "baseline_confidence": 0.981805,
+      "optimized_confidence": 0.981805,
+      "selected_variant": "original",
+      "character_count": 1079,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 4,
+      "quality_score": 0.940902
+    },
+    {
+      "id": "collected-039",
+      "pseudonym": "candidate-412d2dd032",
+      "content_hash": "6b5ee7c130d41206b08d1a319a9c1b5de5d26800fd8fdbfbce62c5d3fe58e1ff",
+      "dimensions": [
+        773,
+        1032
+      ],
+      "baseline_confidence": 0.982571,
+      "optimized_confidence": 0.982571,
+      "selected_variant": "original",
+      "character_count": 2083,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.991286
+    },
+    {
+      "id": "collected-040",
+      "pseudonym": "candidate-213f4eaf56",
+      "content_hash": "ca5b71e35622a979b37d5eb3a3d067e986fe87bbf8d166d8da58e8ff5829d88f",
+      "dimensions": [
+        777,
+        1060
+      ],
+      "baseline_confidence": 0.981749,
+      "optimized_confidence": 0.981749,
+      "selected_variant": "original",
+      "character_count": 1899,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.990874
+    },
+    {
+      "id": "collected-041",
+      "pseudonym": "candidate-29b7bfb43b",
+      "content_hash": "7785b9b40012e14b695ffe79340fc536c1d6bec7fec508f1b168b8a90484d2b5",
+      "dimensions": [
+        1440,
+        2015
+      ],
+      "baseline_confidence": 0.990176,
+      "optimized_confidence": 0.990176,
+      "selected_variant": "original",
+      "character_count": 1191,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 12,
+      "quality_score": 0.995088
+    },
+    {
+      "id": "collected-042",
+      "pseudonym": "candidate-d5be5675b4",
+      "content_hash": "5ca87676ef8db314b8f51df9a64a1d3a8b4cb78e92dfa2f286b70db1a624c691",
+      "dimensions": [
+        1440,
+        2044
+      ],
+      "baseline_confidence": 0.986325,
+      "optimized_confidence": 0.986325,
+      "selected_variant": "original",
+      "character_count": 2619,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.993162
+    },
+    {
+      "id": "collected-043",
+      "pseudonym": "candidate-3fd68f8327",
+      "content_hash": "7c0b214a83b5d1955be0c90ccae0cd6b5a84758da236b4d865fee1a9243b9e42",
+      "dimensions": [
+        1440,
+        1910
+      ],
+      "baseline_confidence": 0.984907,
+      "optimized_confidence": 0.984907,
+      "selected_variant": "original",
+      "character_count": 1322,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 16,
+      "quality_score": 0.992453
+    },
+    {
+      "id": "collected-044",
+      "pseudonym": "candidate-323a881ebd",
+      "content_hash": "3c8938ee49d07c20e4944dd5a1612428dcad153ede1650e05476e26c108e8ee3",
+      "dimensions": [
+        1440,
+        2053
+      ],
+      "baseline_confidence": 0.98945,
+      "optimized_confidence": 0.98945,
+      "selected_variant": "original",
+      "character_count": 1998,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.994725
+    },
+    {
+      "id": "collected-045",
+      "pseudonym": "candidate-b0788e753b",
+      "content_hash": "9118783f3f951b750b45aa4402537ea16a567dade167f04d9d8797b20c16b4f6",
+      "dimensions": [
+        1440,
+        2028
+      ],
+      "baseline_confidence": 0.988643,
+      "optimized_confidence": 0.988643,
+      "selected_variant": "original",
+      "character_count": 2314,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.994322
+    },
+    {
+      "id": "collected-046",
+      "pseudonym": "candidate-e05ac109f8",
+      "content_hash": "2813300f8ce5f064f90021f14c0e2e71d74367e46f276149adea682ba9fc4e70",
+      "dimensions": [
+        1437,
+        1991
+      ],
+      "baseline_confidence": 0.983346,
+      "optimized_confidence": 0.983346,
+      "selected_variant": "original",
+      "character_count": 2016,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 20,
+      "quality_score": 0.991673
+    },
+    {
+      "id": "collected-047",
+      "pseudonym": "candidate-d698182914",
+      "content_hash": "decc1c8dde8ecf8f037ddb3f1deac0b9172dc41a780ce644974c39b4f8794c35",
+      "dimensions": [
+        1440,
+        2036
+      ],
+      "baseline_confidence": 0.996277,
+      "optimized_confidence": 0.996277,
+      "selected_variant": "original",
+      "character_count": 1671,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 12,
+      "quality_score": 0.998139
+    },
+    {
+      "id": "collected-048",
+      "pseudonym": "candidate-db006bd376",
+      "content_hash": "a52e688bc241f42a90b2bc0fccebfd37a00b9c39f6efcdd0cb9550ff777a3967",
+      "dimensions": [
+        1440,
+        1823
+      ],
+      "baseline_confidence": 0.986936,
+      "optimized_confidence": 0.986936,
+      "selected_variant": "original",
+      "character_count": 1456,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.993468
+    },
+    {
+      "id": "collected-049",
+      "pseudonym": "candidate-895306d7d1",
+      "content_hash": "d35a944b6985ad56e6cac50d4e5c2bbdc18ffcdbdccedbe115555cf1468c0950",
+      "dimensions": [
+        1440,
+        2001
+      ],
+      "baseline_confidence": 0.986578,
+      "optimized_confidence": 0.986578,
+      "selected_variant": "original",
+      "character_count": 2135,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 20,
+      "quality_score": 0.993289
+    },
+    {
+      "id": "collected-050",
+      "pseudonym": "candidate-bfe58c72ad",
+      "content_hash": "5d099fe98964b0f8cac9e88aaedb2db7c589ef16ab7dda52742074208c85d30f",
+      "dimensions": [
+        1429,
+        1823
+      ],
+      "baseline_confidence": 0.985085,
+      "optimized_confidence": 0.985085,
+      "selected_variant": "original",
+      "character_count": 1449,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.992542
+    },
+    {
+      "id": "collected-051",
+      "pseudonym": "candidate-323a881ebd",
+      "content_hash": "4ef945a8a572c3da43c9a8033b84ba007a9b1647df8362190736f26c5e0934fe",
+      "dimensions": [
+        1430,
+        2018
+      ],
+      "baseline_confidence": 0.987141,
+      "optimized_confidence": 0.987141,
+      "selected_variant": "original",
+      "character_count": 2120,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 6,
+      "quality_score": 0.993571
+    },
+    {
+      "id": "collected-052",
+      "pseudonym": "candidate-bf8b5d378f",
+      "content_hash": "247b4bc563bf51e395ef9fa92dfb2c7d833e1563ab8e470f4aa5d4208b435e69",
+      "dimensions": [
+        1438,
+        2021
+      ],
+      "baseline_confidence": 0.991073,
+      "optimized_confidence": 0.991073,
+      "selected_variant": "original",
+      "character_count": 1360,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.995537
+    },
+    {
+      "id": "collected-053",
+      "pseudonym": "candidate-84cff50f63",
+      "content_hash": "77838e8626e7d7c2eec1f0a846b31d359230f0e37cd7d6b2a2a5e49d7731b5da",
+      "dimensions": [
+        1433,
+        1706
+      ],
+      "baseline_confidence": 0.988569,
+      "optimized_confidence": 0.988569,
+      "selected_variant": "original",
+      "character_count": 1148,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.994285
+    },
+    {
+      "id": "collected-054",
+      "pseudonym": "candidate-e05ac109f8",
+      "content_hash": "b75c85787eab967d6ba094c556649550ae8803f13a257244e093e908455e1f87",
+      "dimensions": [
+        1440,
+        2070
+      ],
+      "baseline_confidence": 0.988623,
+      "optimized_confidence": 0.988623,
+      "selected_variant": "original",
+      "character_count": 1347,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 5,
+      "quality_score": 0.969311
+    },
+    {
+      "id": "collected-055",
+      "pseudonym": "candidate-50b5b1d2ab",
+      "content_hash": "bf3101801ae2915d550c84fd098382dbe268913d784ce77978ecdcce7f85c1e7",
+      "dimensions": [
+        1408,
+        1979
+      ],
+      "baseline_confidence": 0.982812,
+      "optimized_confidence": 0.982812,
+      "selected_variant": "original",
+      "character_count": 2169,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.991406
+    },
+    {
+      "id": "collected-056",
+      "pseudonym": "candidate-c0394e9a1f",
+      "content_hash": "cbb8a122988db35ed5a43b3b4e4468f2fe7cdb06b2f0060fcd45163b42c1d9a9",
+      "dimensions": [
+        1440,
+        2216
+      ],
+      "baseline_confidence": 0.990522,
+      "optimized_confidence": 0.990522,
+      "selected_variant": "original",
+      "character_count": 1865,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 20,
+      "quality_score": 0.995261
+    },
+    {
+      "id": "collected-057",
+      "pseudonym": "candidate-640803d897",
+      "content_hash": "a5e9677bb0337bd330d1cc1da6883e8aa4815dfdde054e4f4f21d875bad9e77b",
+      "dimensions": [
+        1440,
+        2042
+      ],
+      "baseline_confidence": 0.989959,
+      "optimized_confidence": 0.989959,
+      "selected_variant": "original",
+      "character_count": 1989,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.99498
+    },
+    {
+      "id": "collected-058",
+      "pseudonym": "candidate-6f52cc94db",
+      "content_hash": "788dc804f2064052916007c2f436343a7834ef670e89999465930ab470d1f01d",
+      "dimensions": [
+        1431,
+        2020
+      ],
+      "baseline_confidence": 0.991318,
+      "optimized_confidence": 0.991318,
+      "selected_variant": "original",
+      "character_count": 1460,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.995659
+    },
+    {
+      "id": "collected-059",
+      "pseudonym": "candidate-a752a7d8c1",
+      "content_hash": "36687cea7bbc901f900bdbb116126a303cd07cabf8b58fb11b10404596136da1",
+      "dimensions": [
+        1440,
+        2037
+      ],
+      "baseline_confidence": 0.984297,
+      "optimized_confidence": 0.984297,
+      "selected_variant": "original",
+      "character_count": 1664,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.992148
+    },
+    {
+      "id": "collected-060",
+      "pseudonym": "candidate-dd0b0d54a0",
+      "content_hash": "60fcb1dd9149d75acd739d2ec293c7a893ddc08e018bb464acd7d13fb48a4475",
+      "dimensions": [
+        1433,
+        2021
+      ],
+      "baseline_confidence": 0.984813,
+      "optimized_confidence": 0.984813,
+      "selected_variant": "original",
+      "character_count": 1896,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.992406
+    },
+    {
+      "id": "collected-061",
+      "pseudonym": "candidate-daf3d338ec",
+      "content_hash": "e6edb772b72d82a5cfc32e94207478c2e5d1e8b0cd4f2700c5f78573387aac40",
+      "dimensions": [
+        1411,
+        1701
+      ],
+      "baseline_confidence": 0.98927,
+      "optimized_confidence": 0.98927,
+      "selected_variant": "original",
+      "character_count": 1524,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 17,
+      "quality_score": 0.994635
+    },
+    {
+      "id": "collected-062",
+      "pseudonym": "candidate-9b7e85a029",
+      "content_hash": "a9ddb625bd18fad78578a364a5ac6c2ab2db1649dacc574196c8849b610690bb",
+      "dimensions": [
+        1415,
+        1939
+      ],
+      "baseline_confidence": 0.992818,
+      "optimized_confidence": 0.992818,
+      "selected_variant": "original",
+      "character_count": 1512,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.996409
+    },
+    {
+      "id": "collected-063",
+      "pseudonym": "candidate-426f2ded30",
+      "content_hash": "296ecfdfaf843cd259ac9e1d9d90cadc59b13d9f2ebd787e52783d2eacb027b0",
+      "dimensions": [
+        1440,
+        2031
+      ],
+      "baseline_confidence": 0.991607,
+      "optimized_confidence": 0.991607,
+      "selected_variant": "original",
+      "character_count": 1782,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 14,
+      "quality_score": 0.995804
+    },
+    {
+      "id": "collected-064",
+      "pseudonym": "candidate-29b7bfb43b",
+      "content_hash": "e55ecb3c29d429f847e804b929a8bc4445601b588fa92a20a9465bf9ad6655e9",
+      "dimensions": [
+        1440,
+        2034
+      ],
+      "baseline_confidence": 0.987475,
+      "optimized_confidence": 0.987475,
+      "selected_variant": "original",
+      "character_count": 1735,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": false,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.931237
+    },
+    {
+      "id": "collected-065",
+      "pseudonym": "candidate-fe985eafa4",
+      "content_hash": "5100b8d5827e3089d0ea9bd20c5789a7724ae18204f29aa7933af72abd0e44d6",
+      "dimensions": [
+        1437,
+        1832
+      ],
+      "baseline_confidence": 0.986267,
+      "optimized_confidence": 0.986267,
+      "selected_variant": "original",
+      "character_count": 1377,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.993134
+    },
+    {
+      "id": "collected-066",
+      "pseudonym": "candidate-323a881ebd",
+      "content_hash": "181008c3878527d8145fe7cbf6d321f161b2cf241abd1e7315f0f2461b2fd16e",
+      "dimensions": [
+        1440,
+        2240
+      ],
+      "baseline_confidence": 0.986385,
+      "optimized_confidence": 0.986385,
+      "selected_variant": "original",
+      "character_count": 2118,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 16,
+      "quality_score": 0.993192
+    },
+    {
+      "id": "collected-067",
+      "pseudonym": "candidate-0b085cfda4",
+      "content_hash": "05c36f0df89df773c149e497fbc86ae266aebab2b546418d6ffe25b2db189179",
+      "dimensions": [
+        1411,
+        2048
+      ],
+      "baseline_confidence": 0.987799,
+      "optimized_confidence": 0.987799,
+      "selected_variant": "original",
+      "character_count": 2013,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 22,
+      "quality_score": 0.993899
+    },
+    {
+      "id": "collected-068",
+      "pseudonym": "candidate-3d9187be20",
+      "content_hash": "fd0f64bf8054e26a1fe1c085b8052cac25669dfb6a9ed1a1b360bea112806f2d",
+      "dimensions": [
+        1437,
+        1880
+      ],
+      "baseline_confidence": 0.989184,
+      "optimized_confidence": 0.989184,
+      "selected_variant": "original",
+      "character_count": 1269,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.994592
+    },
+    {
+      "id": "collected-069",
+      "pseudonym": "candidate-e05ac109f8",
+      "content_hash": "f541653937f8769a9fae1f8258c86f13f9c696b36db91c872069be79303947d3",
+      "dimensions": [
+        1438,
+        2199
+      ],
+      "baseline_confidence": 0.989486,
+      "optimized_confidence": 0.989486,
+      "selected_variant": "original",
+      "character_count": 1524,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 4,
+      "quality_score": 0.944743
+    },
+    {
+      "id": "collected-070",
+      "pseudonym": "candidate-90b04dd346",
+      "content_hash": "71ae1aae9f1e8a62600507e42d2c6373c7b7a055218c4e5957b599847ef5151c",
+      "dimensions": [
+        1437,
+        1951
+      ],
+      "baseline_confidence": 0.991505,
+      "optimized_confidence": 0.991505,
+      "selected_variant": "original",
+      "character_count": 1926,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 10,
+      "quality_score": 0.995753
+    },
+    {
+      "id": "collected-071",
+      "pseudonym": "candidate-ad3a66bbd5",
+      "content_hash": "9577193b16f65b616a8b16130785cfc431a33c26b074b3538f7e7666b6454b22",
+      "dimensions": [
+        1407,
+        1985
+      ],
+      "baseline_confidence": 0.988883,
+      "optimized_confidence": 0.988883,
+      "selected_variant": "original",
+      "character_count": 1133,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 7,
+      "quality_score": 0.994441
+    },
+    {
+      "id": "collected-072",
+      "pseudonym": "candidate-fefdafee87",
+      "content_hash": "b39b256053afd0cfaa5b2302d20b458a33e9861172ab17a4c740b770af42e364",
+      "dimensions": [
+        1438,
+        2051
+      ],
+      "baseline_confidence": 0.990167,
+      "optimized_confidence": 0.990167,
+      "selected_variant": "original",
+      "character_count": 1208,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 5,
+      "quality_score": 0.970083
+    },
+    {
+      "id": "collected-073",
+      "pseudonym": "candidate-6f5278e3d4",
+      "content_hash": "7ec93272dd0f7d637d501d5be6ff1892531a84871a33673c9808d243f9447c3e",
+      "dimensions": [
+        1434,
+        2026
+      ],
+      "baseline_confidence": 0.9864,
+      "optimized_confidence": 0.9864,
+      "selected_variant": "original",
+      "character_count": 1514,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 11,
+      "quality_score": 0.9932
+    },
+    {
+      "id": "collected-074",
+      "pseudonym": "candidate-9ee831fcb8",
+      "content_hash": "98e4414231153824d2982c44c10b9b76a4bf31263c3140af3ed36ded86f1d7da",
+      "dimensions": [
+        1409,
+        1985
+      ],
+      "baseline_confidence": 0.990649,
+      "optimized_confidence": 0.990649,
+      "selected_variant": "original",
+      "character_count": 1881,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 6,
+      "quality_score": 0.995324
+    },
+    {
+      "id": "collected-075",
+      "pseudonym": "candidate-6151012833",
+      "content_hash": "c99ebdb25eb7dc72521ac378e55b8e055c714e18c051d09b844edac7026bfa10",
+      "dimensions": [
+        1429,
+        2701
+      ],
+      "baseline_confidence": 0.99248,
+      "optimized_confidence": 0.99248,
+      "selected_variant": "original",
+      "character_count": 1842,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.99624
+    },
+    {
+      "id": "collected-076",
+      "pseudonym": "candidate-2e07333c8c",
+      "content_hash": "664ddd6e83be2cb85649b05eb8ed9a72954e12b51bd4e4c5c502cd835e180bc7",
+      "dimensions": [
+        1440,
+        2048
+      ],
+      "baseline_confidence": 0.99178,
+      "optimized_confidence": 0.99178,
+      "selected_variant": "original",
+      "character_count": 1359,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 13,
+      "quality_score": 0.99589
+    },
+    {
+      "id": "collected-077",
+      "pseudonym": "candidate-54e47add0d",
+      "content_hash": "e45a5a3382a8e67410ef2e20a0575416f793b600f475e0d769f0e9b2eeae9757",
+      "dimensions": [
+        1438,
+        2048
+      ],
+      "baseline_confidence": 0.988063,
+      "optimized_confidence": 0.988063,
+      "selected_variant": "original",
+      "character_count": 1677,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 22,
+      "quality_score": 0.994031
+    },
+    {
+      "id": "collected-078",
+      "pseudonym": "candidate-7f11baf94b",
+      "content_hash": "ae3135ca7f7969b9db2d6ded55009da33a819dca68c15a8813521633c5558da7",
+      "dimensions": [
+        1440,
+        2069
+      ],
+      "baseline_confidence": 0.98965,
+      "optimized_confidence": 0.98965,
+      "selected_variant": "original",
+      "character_count": 1919,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 16,
+      "quality_score": 0.994825
+    },
+    {
+      "id": "collected-079",
+      "pseudonym": "candidate-2a6823dc7f",
+      "content_hash": "096d8700ac95a18ce3e185713253e97de3316a758afc694088ec38ab82324155",
+      "dimensions": [
+        1440,
+        2054
+      ],
+      "baseline_confidence": 0.982278,
+      "optimized_confidence": 0.982278,
+      "selected_variant": "original",
+      "character_count": 1900,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 8,
+      "quality_score": 0.991139
+    },
+    {
+      "id": "collected-080",
+      "pseudonym": "candidate-3d9187be20",
+      "content_hash": "cb984bcf1c00f74fd0eab621f413d7ec9dc85c43c7afa04fa7dd07bc9ac300ed",
+      "dimensions": [
+        1433,
+        2025
+      ],
+      "baseline_confidence": 0.991902,
+      "optimized_confidence": 0.991902,
+      "selected_variant": "original",
+      "character_count": 1814,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": false
+      },
+      "skill_count": 13,
+      "quality_score": 0.933451
+    },
+    {
+      "id": "collected-081",
+      "pseudonym": "candidate-177ea20dd5",
+      "content_hash": "c956ba20e7684a83981bdc94295c29cdc965978e5988a28763c5d87bfde49c94",
+      "dimensions": [
+        1412,
+        2076
+      ],
+      "baseline_confidence": 0.99054,
+      "optimized_confidence": 0.99054,
+      "selected_variant": "original",
+      "character_count": 1132,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.99527
+    },
+    {
+      "id": "collected-082",
+      "pseudonym": "candidate-d29483c5c9",
+      "content_hash": "9df1269dcd71cd38fb15da7772de0f9d40d32de24529d81f4fb729094fcf118e",
+      "dimensions": [
+        1428,
+        2017
+      ],
+      "baseline_confidence": 0.98663,
+      "optimized_confidence": 0.98663,
+      "selected_variant": "original",
+      "character_count": 1855,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.993315
+    },
+    {
+      "id": "collected-083",
+      "pseudonym": "candidate-a5d756538d",
+      "content_hash": "ff95296b54fb842838642922919a51891cc410b006a81e418239ca8a7d6eb759",
+      "dimensions": [
+        1426,
+        1870
+      ],
+      "baseline_confidence": 0.983216,
+      "optimized_confidence": 0.983216,
+      "selected_variant": "original",
+      "character_count": 1684,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 12,
+      "quality_score": 0.991608
+    },
+    {
+      "id": "collected-084",
+      "pseudonym": "candidate-0534b16cc8",
+      "content_hash": "0e47e363071693f4949dc0459db92c8deb0f69cfe2efd767db5963fb1afb733b",
+      "dimensions": [
+        1413,
+        2026
+      ],
+      "baseline_confidence": 0.987317,
+      "optimized_confidence": 0.987317,
+      "selected_variant": "original",
+      "character_count": 1641,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.993659
+    },
+    {
+      "id": "collected-085",
+      "pseudonym": "candidate-9ee831fcb8",
+      "content_hash": "183f7d0c3100579bb1577c5f84c9ebac29b59ba45e50cbfdfd4086cb7c1a8dbf",
+      "dimensions": [
+        1427,
+        1996
+      ],
+      "baseline_confidence": 0.992739,
+      "optimized_confidence": 0.992739,
+      "selected_variant": "original",
+      "character_count": 1520,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 3,
+      "quality_score": 0.921369
+    },
+    {
+      "id": "collected-086",
+      "pseudonym": "candidate-bf8b5d378f",
+      "content_hash": "2059d9b1d24469bb0ec45c6a2fa51fbebf3303ab2d310e8110aff1406cf4c4c5",
+      "dimensions": [
+        1440,
+        2037
+      ],
+      "baseline_confidence": 0.993811,
+      "optimized_confidence": 0.993811,
+      "selected_variant": "original",
+      "character_count": 1347,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": false
+      },
+      "skill_count": 13,
+      "quality_score": 0.934405
+    },
+    {
+      "id": "collected-087",
+      "pseudonym": "candidate-73075237fd",
+      "content_hash": "0866071a800b73e58689377691a2801d0ac7dce9b14e936fd17cb9621f7b2a90",
+      "dimensions": [
+        1438,
+        2145
+      ],
+      "baseline_confidence": 0.988687,
+      "optimized_confidence": 0.988687,
+      "selected_variant": "original",
+      "character_count": 1558,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 16,
+      "quality_score": 0.994344
+    },
+    {
+      "id": "collected-088",
+      "pseudonym": "candidate-41354eb7ed",
+      "content_hash": "2870efbe1d2e98d3e067c6b0839144bbbc588d876dc1162cb470794eb39f0f66",
+      "dimensions": [
+        1413,
+        2030
+      ],
+      "baseline_confidence": 0.989094,
+      "optimized_confidence": 0.989094,
+      "selected_variant": "original",
+      "character_count": 2153,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 9,
+      "quality_score": 0.994547
+    },
+    {
+      "id": "collected-089",
+      "pseudonym": "candidate-fd274e5930",
+      "content_hash": "8f2048bf2a74a7895969262e3d2574c34fac03b8825ac9646ab64a6c05f06b15",
+      "dimensions": [
+        1437,
+        2015
+      ],
+      "baseline_confidence": 0.990076,
+      "optimized_confidence": 0.990076,
+      "selected_variant": "original",
+      "character_count": 2219,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 24,
+      "quality_score": 0.995038
+    },
+    {
+      "id": "collected-090",
+      "pseudonym": "candidate-7800ed3eb6",
+      "content_hash": "7f5019e7b88a6e9ca65ff3e8e68ba2ebc63a0f996da84e62ad6b01efa791bf3e",
+      "dimensions": [
+        1437,
+        1938
+      ],
+      "baseline_confidence": 0.988183,
+      "optimized_confidence": 0.988183,
+      "selected_variant": "original",
+      "character_count": 2267,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 25,
+      "quality_score": 0.994092
+    },
+    {
+      "id": "collected-091",
+      "pseudonym": "candidate-1b640e4bb6",
+      "content_hash": "ef3be5bad86505492982eea83c59a1cf7f52277fe11ffa3570ecf3600af0e6af",
+      "dimensions": [
+        1438,
+        2057
+      ],
+      "baseline_confidence": 0.986915,
+      "optimized_confidence": 0.986915,
+      "selected_variant": "original",
+      "character_count": 1273,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 19,
+      "quality_score": 0.993457
+    },
+    {
+      "id": "collected-092",
+      "pseudonym": "candidate-46f22b50a8",
+      "content_hash": "e5a0e3a06934b3ac28e77ae1c1472a7fd726003cdf75996eddea70975e67e0de",
+      "dimensions": [
+        1437,
+        1944
+      ],
+      "baseline_confidence": 0.991583,
+      "optimized_confidence": 0.991583,
+      "selected_variant": "original",
+      "character_count": 1405,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": false,
+        "skills": true
+      },
+      "skill_count": 7,
+      "quality_score": 0.933291
+    },
+    {
+      "id": "collected-093",
+      "pseudonym": "candidate-d7d7388abc",
+      "content_hash": "31d85cba52af0f80f82e66ed285f7d5c8d51c52fb85d92ee31865d6e189ca1a0",
+      "dimensions": [
+        1439,
+        2775
+      ],
+      "baseline_confidence": 0.990723,
+      "optimized_confidence": 0.990723,
+      "selected_variant": "original",
+      "character_count": 2055,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 12,
+      "quality_score": 0.995362
+    },
+    {
+      "id": "collected-094",
+      "pseudonym": "candidate-a7c41810ab",
+      "content_hash": "c5d497f6c789905583432ba05940ca4fcc9aeedfd32f86a9faf3823cda992029",
+      "dimensions": [
+        1420,
+        2020
+      ],
+      "baseline_confidence": 0.993035,
+      "optimized_confidence": 0.993035,
+      "selected_variant": "original",
+      "character_count": 1687,
+      "field_flags": {
+        "identity": true,
+        "education": true,
+        "career": true,
+        "skills": true
+      },
+      "skill_count": 6,
+      "quality_score": 0.996517
+    }
+  ]
+}

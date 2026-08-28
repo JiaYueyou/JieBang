@@ -58,6 +58,10 @@ def validate_job_record(record: dict[str, Any]) -> list[str]:
         if value is None or not str(value).strip():
             errors.append(f"字段不能为空: {field}")
 
+    source = str(record.get("source") or "").strip()
+    if source and set(source) == {"?"}:
+        errors.append("source 不能仅包含问号")
+
     jd_text = record.get("jd_text")
     if isinstance(jd_text, str) and len(jd_text.strip()) < 10:
         errors.append("jd_text 不能少于 10 个字符")
@@ -116,7 +120,7 @@ def normalize_and_validate_records(
         "total": total,
         "passed": total - len(errors),
         "failed": len(errors),
-        "errors": errors[:20],
+        "errors": errors,
         "warning_count": len(warnings),
         "warnings": warnings[:20],
     }

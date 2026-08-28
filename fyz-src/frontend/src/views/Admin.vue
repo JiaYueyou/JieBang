@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page">
-    <DataState :loading="loading" :error="error" @retry="store.refresh()" />
+    <DataState :loading="loading && !loaded" :error="error" @retry="store.refresh()" />
     <nav class="admin-nav anim-fade-up">
       <div class="admin-nav-items">
         <button
@@ -17,7 +17,7 @@
       <div class="admin-status" :class="overallStatus">
         <span class="status-pulse"></span>
         <div><strong>{{ overallStatusLabel }}</strong><small>最后巡检：{{ generatedAtLabel }}</small></div>
-        <button type="button" @click="refreshSystem"><el-icon><Refresh /></el-icon>刷新</button>
+        <button type="button" :disabled="manualRefreshing" @click="refreshSystem"><el-icon :class="{ 'is-loading': manualRefreshing }"><Refresh /></el-icon>刷新</button>
       </div>
     </nav>
 
@@ -143,6 +143,40 @@
         <el-empty v-else description="尚无自动更新运行记录" :image-size="48" />
       </article>
 
+      <article class="admin-card competition-test-card" aria-labelledby="competition-test-title">
+        <div class="card-heading">
+          <div>
+            <span>COMPETITION ACCEPTANCE</span>
+            <h2 id="competition-test-title">赛方测试数据复现</h2>
+          </div>
+          <span class="test-data-chip">2 个时间窗口 + 1 个新岗位</span>
+        </div>
+        <p class="competition-test-intro">
+          请按编号依次导入两个时间窗口。第二个文件同时包含新岗位数据，导入完成后系统将提交技能图谱同步任务。
+        </p>
+        <div class="competition-test-steps">
+          <section>
+            <span class="step-number">1</span>
+            <div><strong>导入第一时间窗口</strong><small>AI应用开发工程师 · 2 条记录 · 2 个来源</small></div>
+            <el-button type="primary" plain :loading="competitionImporting === 'baseline'" :disabled="Boolean(competitionImporting)" @click="importCompetitionData('baseline')">导入第一时间窗口</el-button>
+          </section>
+          <section>
+            <span class="step-number">2</span>
+            <div><strong>导入第二时间窗口并同步图谱</strong><small>AI应用开发工程师 2 条记录 + 大模型安全工程师 2 条记录</small></div>
+            <el-button type="primary" :loading="competitionImporting === 'scenario'" :disabled="Boolean(competitionImporting)" @click="importCompetitionData('scenario')">导入第二时间窗口</el-button>
+          </section>
+          <section>
+            <span class="step-number">3</span>
+            <div><strong>查看处理结果</strong><small>岗位洞察展示时间窗口和技能字段，技能图谱展示节点与关系</small></div>
+            <div class="competition-result-actions">
+              <el-button @click="openCompetitionInsights">查看岗位洞察</el-button>
+              <el-button @click="openCompetitionGraph">查看技能图谱</el-button>
+            </div>
+          </section>
+        </div>
+        <el-alert v-if="competitionStatus" :title="competitionStatus" type="success" :closable="false" show-icon />
+      </article>
+
       <div v-if="lastImportResult" class="import-result" role="status">
         <div class="import-result-head">
           <div><span>最近一次数据闭环</span><strong>{{ lastImportResult.files.join("、") }}</strong></div>
@@ -159,6 +193,8 @@
           <div><span>技能事实</span><strong>{{ lastImportResult.skill_facts }}</strong></div>
           <div><span>已验证事实</span><strong>{{ lastImportResult.verified_skill_facts }}</strong></div>
           <div><span>待验证事实</span><strong>{{ lastImportResult.unverified_skill_facts }}</strong></div>
+          <div><span>岗位版本</span><strong>{{ lastImportResult.versions_created ?? 0 }}</strong></div>
+          <div><span>影响岗位</span><strong>{{ lastImportResult.affected_standard_job_ids?.length ?? 0 }}</strong></div>
         </div>
       </div>
 
@@ -509,8 +545,16 @@
       <div class="section-heading">
         <div><span>GRAPH AGENT</span><h2>L4/L5 图谱补充审核</h2><p>机器校验、人工审核和图谱发布相互独立；只有已批准候选会进入正式图谱。</p></div>
         <div class="section-actions">
-          <el-button type="primary" :plain="graphGenerating" :loading="graphGenerating" :disabled="graphTasks.anyRunning.value && !graphGenerating" @click="generateGraphCandidates">一键生成候选</el-button>
-          <el-button type="primary" :loading="graphPublishing" :disabled="graphTasks.anyRunning.value && !graphPublishing" @click="publishGraphCandidates">发布已批准项</el-button>
+          <el-button
+            class="graph-heading-action"
+            type="danger"
+            plain
+            :disabled="graphMachineFailedPendingCount === 0"
+            :loading="graphAutoRejecting"
+            @click="rejectAllMachineFailedCandidates"
+          >一键驳回机器未通过（{{ graphMachineFailedPendingCount }}）</el-button>
+          <el-button class="graph-heading-action" type="primary" :plain="graphGenerating" :loading="graphGenerating" :disabled="graphTasks.anyRunning.value && !graphGenerating" @click="generateGraphCandidates">一键生成候选</el-button>
+          <el-button class="graph-heading-action" type="primary" :loading="graphPublishing" :disabled="graphTasks.anyRunning.value && !graphPublishing" @click="publishGraphCandidates">发布已批准项</el-button>
         </div>
       </div>
       <div v-if="graphBackgroundTask" class="graph-agent-progress" role="status" aria-live="polite">
@@ -524,13 +568,6 @@
           <el-option label="已批准" value="approved" />
           <el-option label="已驳回" value="rejected" />
         </el-select>
-        <el-button
-          type="danger"
-          plain
-          :disabled="graphMachineFailedPendingCount === 0"
-          :loading="graphAutoRejecting"
-          @click="rejectAllMachineFailedCandidates"
-        >一键驳回机器未通过（{{ graphMachineFailedPendingCount }}）</el-button>
         <span>共 {{ graphCandidateTotal }} 条候选</span>
       </div>
       <div v-loading="graphCandidatesLoading" class="graph-candidate-grid">
@@ -717,6 +754,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useAdminStore } from "@/stores/admin";
 import { useSkillReviewsStore } from "@/stores/skillReviews";
@@ -740,10 +778,13 @@ import { classifyImportFailure, errorMessage } from "@/utils/crawlerFlowError";
 type Section = "overview" | "crawler" | "review" | "graphReview" | "monitor";
 
 const activeSection = ref<Section>("overview");
+const router = useRouter();
 const logLevel = ref("");
 const logKeyword = ref("");
 const autoScroll = ref(true);
 const lastImportResult = ref<JobImportResult | null>(null);
+const competitionImporting = ref<"" | "baseline" | "scenario">("");
+const competitionStatus = ref("");
 const automationDialogVisible = ref(false);
 const automationLoading = ref(false);
 const automationSaving = ref(false);
@@ -770,6 +811,7 @@ const store = useAdminStore();
 const {
   data: admin,
   loading,
+  loaded,
   error,
   agentRuns,
   agentRunsLoading,
@@ -816,6 +858,7 @@ const allPageFactsSelected = computed(() => currentPageFactIds.value.length > 0
 const somePageFactsSelected = computed(() => !allPageFactsSelected.value
   && currentPageFactIds.value.some(id => selectedFactIds.value.includes(id)));
 const graphCandidates = ref<GraphEnrichmentCandidate[]>([]);
+const manualRefreshing = ref(false);
 const graphCandidatesLoading = ref(false);
 const graphCandidateTotal = ref(0);
 const graphMachineFailedPendingCount = ref(0);
@@ -845,7 +888,7 @@ async function pollResources() {
 async function pollPipeline() {
   if (document.hidden || pipelineRequestRunning || activeSection.value !== "crawler") return;
   pipelineRequestRunning = true;
-  try { await store.load(true); } finally { pipelineRequestRunning = false; }
+  try { await store.refreshSilently(); } finally { pipelineRequestRunning = false; }
 }
 onMounted(async () => {
   graphTasks.resume();
@@ -957,7 +1000,15 @@ const validationPassed = computed(() => lastImportResult.value?.validation.reduc
 const validationWarnings = computed(() => lastImportResult.value?.validation.reduce((sum, item) => sum + item.warning_count, 0) ?? 0);
 const filteredLogs = computed(() => logs.value.filter((log) => (!logLevel.value || log.level === logLevel.value) && (!logKeyword.value || `${log.service} ${log.message}`.toLowerCase().includes(logKeyword.value.toLowerCase()))));
 
-async function refreshSystem() { await store.refresh(); ElMessage.success("系统状态已刷新"); }
+async function refreshSystem() {
+  manualRefreshing.value = true;
+  try {
+    await store.refreshSilently();
+    ElMessage.success("系统状态已刷新");
+  } finally {
+    manualRefreshing.value = false;
+  }
+}
 async function selectSection(section: Section) {
   activeSection.value = section;
   if (section === "crawler") await refreshQuality(1);
@@ -1169,16 +1220,45 @@ async function runCrawler(crawler: any) {
             }
           }
         }
-        await store.load(true);
+        await store.refreshSilently();
       } else {
         // 仍在运行，刷新进度
-        await store.load(true);
+        await store.refreshSilently();
       }
     } catch (error) {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       ElMessage.error(`${crawler.name}状态轮询失败：${errorMessage(error)}`);
     }
   }, 2000);
+}
+async function importCompetitionData(kind: "baseline" | "scenario") {
+  const filename = kind === "baseline"
+    ? "competition-test/01_existing_job_baseline.json"
+    : "competition-test/02_new_job_and_existing_update_v2.json";
+  competitionImporting.value = kind;
+  competitionStatus.value = "";
+  try {
+    lastImportResult.value = await store.importCrawlerOutput(filename);
+    if (kind === "baseline") {
+      competitionStatus.value = `第一时间窗口处理完成：入库 ${lastImportResult.value.imported} 条，技能事实 ${lastImportResult.value.skill_facts} 条。`;
+      ElMessage.success("第一时间窗口处理完成，请继续执行步骤 2");
+    } else {
+      if (!graphTasks.anyRunning.value) await graphTasks.startSync();
+      competitionStatus.value = `第二时间窗口处理完成：入库 ${lastImportResult.value.imported} 条，涉及 ${lastImportResult.value.affected_standard_job_ids?.length ?? 0} 个标准岗位；图谱同步任务已提交。`;
+      ElMessage.success("步骤 2 完成，可查看岗位洞察与技能图谱");
+    }
+    await store.refreshSilently();
+  } catch (error) {
+    ElMessage.error(`测试数据导入失败：${errorMessage(error)}`);
+  } finally {
+    competitionImporting.value = "";
+  }
+}
+function openCompetitionInsights() {
+  void router.push({ path: "/jobs", query: { tab: "insight", skill: "RAG" } });
+}
+function openCompetitionGraph() {
+  void router.push("/graph");
 }
 function viewCrawlerLog(crawler: any) { activeSection.value = "monitor"; logKeyword.value = crawler.name; }
 function createSource() { ElMessage.info("添加数据源表单待后端数据源协议确定后接入"); }
@@ -1429,11 +1509,12 @@ function formatReviewDate(value: string | null) {
 .graph-agent-progress span { display: block; }
 .graph-agent-progress span { margin-top: 4px; color: var(--text-muted); font-size: 13px; }
 @scope (.admin-page) {
-:scope{max-width:1480px;margin:0 auto;--admin-dark:#202437}.admin-status{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:9px 10px 9px 17px;border-left:1px solid var(--color-border);border-radius:0 9px 9px 0;background:var(--color-success-light)}.status-pulse{width:9px;height:9px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 5px rgba(52,179,126,.12)}.admin-status div{display:flex;flex-direction:column;margin-right:4px}.admin-status strong{font-size:14px;color:var(--text-primary)}.admin-status small{font-size:14px;color:var(--text-muted)}.admin-status button,.card-heading button{display:flex;align-items:center;gap:5px;border:0;background:#fff;border-radius:8px;padding:7px 9px;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}
+:scope{max-width:1480px;margin:0 auto;--admin-dark:#202437}.admin-status{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:9px 10px 9px 17px;border-left:1px solid var(--color-border);border-radius:0 9px 9px 0;background:var(--color-success-light)}.status-pulse{width:9px;height:9px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 5px rgba(52,179,126,.12)}.admin-status div{display:flex;flex-direction:column;margin-right:4px}.admin-status strong{font-size:14px;color:var(--text-primary)}.admin-status small{font-size:14px;color:var(--text-muted)}.admin-status button,.card-heading button{display:flex;align-items:center;gap:5px;border:0;background:#fff;border-radius:8px;padding:7px 9px;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.admin-status button:disabled{cursor:wait;opacity:.72}
 .admin-nav{display:flex;align-items:stretch;gap:6px;padding:6px;margin-bottom:17px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.admin-nav-items{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;min-width:0;flex:1}.admin-nav-items button{position:relative;display:flex;align-items:center;gap:7px;min-width:0;padding:8px 7px;border:0;border-radius:9px;background:transparent;text-align:left;cursor:pointer;color:var(--text-secondary);transition:.2s}.admin-nav-items button:hover{background:var(--color-bg-muted)}.admin-nav-items button.active{background:var(--color-brand-light);color:var(--color-brand)}.nav-icon{display:grid;width:30px;height:30px;flex:0 0 30px;place-items:center;border-radius:8px;background:var(--color-bg-muted);font-size:15px}.admin-nav-items button.active .nav-icon{background:#fff}.admin-nav-items button>span:nth-child(2){display:flex;min-width:0;flex-direction:column}.admin-nav strong{overflow:hidden;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.admin-nav small{overflow:hidden;margin-top:1px;color:var(--text-muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.admin-nav-items button>i{position:absolute;right:5px;top:5px;min-width:17px;padding:1px 5px;border-radius:999px;background:var(--color-danger);color:#fff;font:700 11px var(--font-mono);text-align:center}
 .admin-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:13px}.metric-card{display:flex;align-items:center;gap:11px;min-width:0;padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.metric-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:11px;font-size:17px}.brand{background:var(--color-brand-light);color:var(--color-brand)}.green{background:var(--color-success-light);color:var(--color-success)}.amber{background:var(--color-warning-light);color:var(--color-warning)}.rose{background:var(--color-danger-light);color:var(--color-danger)}.violet{background:#f0edff;color:#7c6ff7}.blue{background:var(--color-info-light);color:var(--color-info)}.metric-copy{display:flex;min-width:0;flex:1;flex-direction:column}.metric-copy span{font-size:14px;color:var(--text-muted)}.metric-copy strong{font:700 22px var(--font-mono);letter-spacing:-.04em}.metric-copy small{font-size:14px}.positive,.green{color:var(--color-success)}.warning,.amber{color:var(--color-warning)}.metric-bars,.spark-bars{display:flex;align-items:flex-end;gap:2px;height:38px}.metric-bars i,.spark-bars i{width:3px;min-height:4px;border-radius:2px;background:var(--color-brand);opacity:.55}.overview-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:13px}.admin-card{border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.card-heading{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 11px}.card-heading>div{display:flex;flex-direction:column}.card-heading span,.section-heading>div>span{font:700 14px var(--font-mono);letter-spacing:.09em;color:var(--text-muted);text-transform:uppercase}.card-heading h2{font-size:14px;margin-top:2px}.healthy-chip,.event-count{padding:4px 8px;border-radius:999px;background:var(--color-success-light);color:var(--color-success)!important;font:700 14px var(--font-sans)!important;letter-spacing:0!important}.service-list,.task-list,.event-list{padding:0 18px 12px}.service-row,.task-row{display:flex;align-items:center;gap:10px;padding:10px 0}.service-row+.service-row,.task-row+.task-row{border-top:1px solid var(--color-border-light)}.service-logo,.task-state{display:grid;width:31px;height:31px;flex:0 0 31px;place-items:center;border-radius:9px}.service-name,.task-row>div{display:flex;min-width:0;flex:1;flex-direction:column}.service-name strong,.task-row strong{font-size:14px}.service-name small,.task-row small{font-size:14px;color:var(--text-muted)}.latency{display:flex;flex-direction:column;align-items:flex-end}.latency strong{font:600 14px var(--font-mono)}.latency small{font-size:14px;color:var(--text-muted)}.service-state{display:flex;align-items:center;gap:4px;color:var(--color-success);font-size:14px;font-weight:600}.service-state i,.live-label i{width:6px;height:6px;border-radius:50%;background:currentColor}.resource-card{padding-bottom:14px}.live-label{display:flex;align-items:center;gap:5px;color:var(--color-success)!important;font:700 14px var(--font-mono)!important}.resource-rings{display:flex;justify-content:space-around;padding:12px 15px 16px}.resource-item{display:flex;align-items:center;flex-direction:column}.resource-ring{display:grid;width:76px;height:76px;place-items:center;border-radius:50%;background:conic-gradient(var(--ring-color) calc(var(--value)*1%),var(--color-bg-muted) 0);position:relative}.resource-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}.resource-ring span{z-index:1;font:700 17px var(--font-mono)}.resource-ring small{font-size:14px}.resource-item>strong{font-size:14px;margin-top:7px}.resource-item>small{font-size:14px;color:var(--text-muted)}.traffic-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 15px}.traffic-strip div{display:flex;align-items:center;gap:6px;padding:9px;border-radius:8px;background:var(--color-bg-muted);font-size:14px}.traffic-strip strong{margin-left:auto;font:600 14px var(--font-mono)}.task-state.success{background:var(--color-success-light);color:var(--color-success)}.task-state.running{background:var(--color-brand-light);color:var(--color-brand)}.task-state.warning{background:var(--color-warning-light);color:var(--color-warning)}.task-count{font:600 14px var(--font-mono);color:var(--text-secondary)}.task-status{min-width:48px;text-align:right;font-size:14px;font-weight:700}.task-status.success{color:var(--color-success)}.task-status.running{color:var(--color-brand)}.task-status.warning{color:var(--color-warning)}.event-card .event-count{background:var(--color-danger-light);color:var(--color-danger)!important}.event-list button{display:flex;align-items:center;gap:9px;width:100%;padding:10px 0;border:0;border-top:1px solid var(--color-border-light);background:transparent;text-align:left;cursor:pointer}.event-level{display:grid;width:29px;height:29px;place-items:center;border-radius:8px}.event-level.warning{background:var(--color-warning-light)}.event-level.danger{background:var(--color-danger-light);color:var(--color-danger)}.event-level.info{background:var(--color-info-light);color:var(--color-info)}.event-list button>span:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column}.event-list strong{font-size:14px}.event-list small{font-size:14px;color:var(--text-muted)}.event-list time{font:500 14px var(--font-mono);color:var(--text-muted)}
 .section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:8px 2px 16px}.section-heading h2{font-size:20px;letter-spacing:-.03em}.section-heading p{font-size:14px;color:var(--text-muted);margin-top:3px}.section-actions{display:flex;gap:8px}.crawler-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:13px}.crawler-summary>div{display:flex;flex-direction:column;padding:14px 16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff}.crawler-summary span{font-size:14px;color:var(--text-muted)}.crawler-summary strong{font:700 20px var(--font-mono)}.crawler-summary small{font-size:14px;color:var(--text-muted)}.crawler-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:13px}.crawler-card{padding:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:#fff;transition:.2s}.crawler-card.paused{opacity:.72;background:var(--color-bg-muted)}.crawler-head{display:flex;align-items:center;gap:10px}.source-logo{display:grid;width:39px;height:39px;place-items:center;border-radius:11px;background:var(--color-brand-light);color:var(--color-brand);font-weight:700}.crawler-head>div{min-width:0;flex:1}.crawler-head h3{font-size:14px}.crawler-head p{font-size:14px;color:var(--text-muted)}.crawler-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.crawler-stats div{display:flex;flex-direction:column;padding:8px;border-radius:8px;background:var(--color-bg-muted)}.crawler-stats span,.crawler-progress span,.crawler-meta{font-size:14px;color:var(--text-muted)}.crawler-stats strong{font:600 14px var(--font-mono)}.crawler-progress>div{display:flex;justify-content:space-between;margin-bottom:5px}.crawler-progress strong{font:600 14px var(--font-mono)}.crawler-meta{display:flex;justify-content:space-between;margin-top:9px}.crawler-meta span{display:flex;align-items:center;gap:4px}.crawler-card footer{display:flex;gap:5px;padding-top:11px;margin-top:11px;border-top:1px solid var(--color-border-light)}.crawler-card footer button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;height:29px;border:1px solid var(--color-border);border-radius:7px;background:#fff;color:var(--text-secondary);font:600 14px var(--font-sans);cursor:pointer}.crawler-card footer button:first-child{border-color:var(--color-brand);color:var(--color-brand)}.crawler-card footer button:disabled{opacity:.5;cursor:not-allowed}.quality-panel{padding-bottom:16px}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 18px}.quality-grid>div{padding:12px;border-radius:9px;background:var(--color-bg-muted)}.quality-grid span{font-size:14px;color:var(--text-muted)}.quality-grid strong{display:block;font:700 17px var(--font-mono);margin:2px 0 7px}.quality-grid small{font-size:14px;color:var(--text-muted)}
 .import-result{padding:16px;margin-bottom:13px;border:1px solid color-mix(in srgb,var(--color-success) 35%,var(--color-border));border-radius:var(--radius-lg);background:color-mix(in srgb,var(--color-success) 5%,#fff)}.import-result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.import-result-head>div{display:flex;flex-direction:column}.import-result-head span{font-size:13px;color:var(--text-muted)}.import-result-head strong{font-size:14px}.import-result-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.import-result-grid>div{padding:9px 10px;border-radius:8px;background:#fff}.import-result-grid span{display:block;font-size:12px;color:var(--text-muted)}.import-result-grid strong{font:700 16px var(--font-mono)}
+.competition-test-card{margin-bottom:13px;padding-bottom:16px;border-color:rgba(79,110,246,.3);background:linear-gradient(120deg,#f7f9ff 0,#fff 55%)}.test-data-chip{padding:5px 9px;border-radius:999px;background:var(--color-brand-light);color:var(--color-brand)!important;font:700 12px var(--font-sans)!important;letter-spacing:0!important;text-transform:none!important}.competition-test-intro{padding:0 18px 12px;color:var(--text-muted);font-size:13px}.competition-test-steps{display:grid;gap:8px;padding:0 18px 14px}.competition-test-steps section{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--color-border-light);border-radius:10px;background:rgba(255,255,255,.9)}.step-number{display:grid;width:28px;height:28px;flex:0 0 28px;place-items:center;border-radius:50%;background:var(--color-brand);color:#fff;font:700 13px var(--font-mono)}.competition-test-steps section>div:nth-child(2){display:flex;min-width:0;flex:1;flex-direction:column}.competition-test-steps strong{font-size:14px}.competition-test-steps small{margin-top:2px;color:var(--text-muted);font-size:12px}.competition-result-actions{display:flex;gap:7px}.competition-test-card>.el-alert{margin:0 18px;width:auto}
 .automation-config-button{height:38px;padding:0 16px!important;border-radius:9px!important}.automation-form{min-height:260px}.automation-intro{display:flex;align-items:center;gap:12px;margin:-4px 0 20px;padding:14px 15px;border:1px solid #dfe5ff;border-radius:12px;background:linear-gradient(110deg,#f3f6ff,#fff)}.automation-intro>div{min-width:0;flex:1}.automation-intro strong{font-size:14px}.automation-intro p{margin-top:2px;color:var(--text-muted);font-size:12px;line-height:1.5}.automation-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:10px;background:var(--color-brand);color:#fff;font-size:18px}.source-checks{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.source-checks .el-checkbox{height:auto;margin:0;padding:9px 11px;border:1px solid var(--color-border);border-radius:9px}.source-option{display:flex;align-items:center;gap:8px}.source-option i{display:grid;width:27px;height:27px;place-items:center;border-radius:7px;background:var(--color-brand-light);color:var(--color-brand);font-size:10px;font-style:normal;font-weight:700}.automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.automation-grid.three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.automation-grid .el-input-number,.automation-grid .el-select{width:100%}.automation-grid .el-form-item small{display:block;margin-top:4px;color:var(--text-muted);font-size:11px}.automation-section-title{display:flex;align-items:baseline;gap:8px;margin:3px 0 12px;padding-top:15px;border-top:1px solid var(--color-border-light)}.automation-section-title span{font-size:13px;font-weight:700}.automation-section-title small{color:var(--text-muted);font-size:11px}.weekday-checks{display:flex;flex-wrap:wrap}.automation-dialog .el-dialog__footer{padding-top:4px}
 .quality-review-panel{margin-top:13px;overflow:hidden}.quality-review-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 18px 12px}.quality-review-summary>div{padding:10px 12px;border-radius:8px;background:var(--color-bg-muted)}.quality-review-summary span{display:block;font-size:12px;color:var(--text-muted)}.quality-review-summary strong{font:700 17px var(--font-mono)}.quality-review-toolbar{display:flex;gap:8px;padding:0 18px 14px}.quality-review-toolbar .el-select{width:150px}.quality-review-toolbar .el-input{max-width:260px}.quality-job{display:flex;min-width:0;flex-direction:column}.quality-job strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quality-job span,.quality-flags>span{font-size:12px;color:var(--text-muted)}.quality-flags{display:flex;flex-wrap:wrap;gap:4px}.mono{font-family:var(--font-mono)}.quality-pagination{justify-content:center;padding:15px 18px}
 .review-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:11px;padding:6px;border:1px solid var(--color-border);border-radius:12px;background:#fff}.review-summary button{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);font:600 13px var(--font-sans);cursor:pointer}.review-summary button.active{background:var(--color-brand-light);color:var(--color-brand)}.review-summary strong{padding:2px 7px;border-radius:999px;background:#fff;font:700 12px var(--font-mono)}.review-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}.review-toolbar .el-input{max-width:480px}.review-toolbar>span{margin-left:auto;font:600 12px var(--font-mono);color:var(--text-muted)}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.review-card{position:relative;overflow:hidden;padding:17px 17px 14px 21px;border:1px solid var(--color-border);border-radius:13px;background:#fff;box-shadow:0 4px 14px rgba(32,36,55,.04)}.review-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--color-warning)}.review-card.review-verified:before{background:var(--color-success)}.review-card.review-rejected:before{background:var(--color-danger)}.review-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.review-card header small{font:600 11px var(--font-mono);letter-spacing:.08em;color:var(--text-muted)}.review-card h3{margin-top:2px;font-size:20px}.review-card header>span{padding:4px 8px;border-radius:999px;background:var(--color-warning-light);color:var(--color-warning);font-size:12px;font-weight:700}.review-card header>span.verified{background:var(--color-success-light);color:var(--color-success)}.review-card header>span.rejected{background:var(--color-danger-light);color:var(--color-danger)}.review-job{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 10px;padding:9px 11px;border-radius:8px;background:var(--color-bg-muted)}.review-job>div{display:flex;min-width:0;flex-direction:column}.review-job small,.review-job>div>span{font-size:12px;color:var(--text-muted)}.review-job strong{overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.review-job>a,.review-job>span{flex:0 0 auto;color:var(--color-brand);font-size:12px;font-weight:700;text-decoration:none}.review-card blockquote{margin:0;padding:11px 12px;border:1px solid #e7eaf4;border-radius:9px;background:#fbfbfd}.review-card blockquote small{font:700 11px var(--font-mono);letter-spacing:.07em;color:var(--text-muted)}.review-card blockquote p{margin-top:5px;color:#34394a;font-size:13px;line-height:1.65}.review-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}.review-signals span{padding:7px;border-radius:7px;background:var(--color-bg-muted);font-size:11px;color:var(--text-muted)}.review-signals strong{display:block;margin-top:2px;font:700 12px var(--font-mono);color:var(--text-secondary)}.review-audit{margin-top:10px;padding:9px 11px;border-left:3px solid var(--color-border);background:var(--color-bg-muted)}.review-audit small{font:600 11px var(--font-mono);color:var(--text-muted)}.review-audit p{margin-top:3px;font-size:13px;color:var(--text-secondary)}.review-card footer{display:flex;justify-content:flex-end;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border-light)}.review-pagination{justify-content:center;margin-top:16px}.reject-fact-context{margin-bottom:12px;padding:11px;border-radius:9px;background:var(--color-bg-muted)}.reject-fact-context span{display:block;font:700 12px var(--font-mono);color:var(--color-danger)}.reject-fact-context strong{display:block;margin:3px 0;font-size:14px}.reject-fact-context p{font-size:13px;color:var(--text-muted)}
@@ -1445,6 +1526,7 @@ function formatReviewDate(value: string | null) {
 @media(max-width:540px){.quality-review-summary{grid-template-columns:1fr}}
 }
 .graph-review-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; color:var(--text-muted); }
+.graph-heading-action { height:40px; padding-inline:18px; border-radius:10px; }
 .review-toolbar{flex-wrap:wrap}.review-toolbar .el-input{max-width:360px}.approve-all-button{margin-left:2px}.review-card{position:relative}.review-select{position:absolute;z-index:2;right:17px;top:46px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .graph-candidate-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; min-height:120px; }
 .graph-candidate-card { display:flex; flex-direction:column; gap:14px; padding:20px; border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-bg-elevated); box-shadow:var(--shadow-sm); }

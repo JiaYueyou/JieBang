@@ -6,7 +6,7 @@
 
 - 登录、岗位管理、岗位版本和技能抽取操作；
 - 图谱、趋势、能力变化和系统管理页面；
-- `changes`、`analysis`、`admin` 真实 API 与对应 Service；
+- `analysis`、岗位版本、`admin` 真实 API 与对应 Service；
 - 管理端 API 类型、状态管理、错误提示和操作审计。
 
 不负责 JTT 求职流程、爬虫核心、Agent 推理框架和图谱底层同步算法。
@@ -15,7 +15,7 @@
 
 - 已有认证、岗位 CRUD、版本、技能和图谱后端接口。
 - 已有 Dashboard、JobManagement、GraphView、Trends、Admin 等页面。
-- `changes`、`admin` 后端仍是占位路由；`analysis` 已提供趋势概览、岗位洞察和决策保存接口。
+- 能力动态更新需求已由 `analysis` 趋势接口和岗位版本接口覆盖；无消费者的旧 `/changes` 占位路由已移除。`admin` 已是真实管理接口。
 - JD 生成 Agent 已提供任务创建、运行审计与可编辑草稿流程。
 - FYZ 转岗指南已接入真实职业规划接口，支持文件文本提取、企业技术栈和内部岗位补充。
 - FYZ 前端已有 Vitest 测试和 HTTP 数据 Provider。

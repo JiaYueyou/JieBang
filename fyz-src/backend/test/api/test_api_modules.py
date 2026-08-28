@@ -1,18 +1,17 @@
-"""占位模块路由测试 — 验证所有模块基础可用"""
+"""模块兼容入口与已移除路由测试。"""
 
 import pytest
 
 
-MODULES = [
-    ("/api/v1/changes/", "能力更新"),
+COMPATIBILITY_ENTRYPOINTS = [
     ("/api/v1/graph/", "技能图谱"),
     ("/api/v1/matching/", "匹配诊断"),
     ("/api/v1/analysis/", "趋势分析"),
 ]
 
 
-class TestPlaceholderModules:
-    @pytest.mark.parametrize("path,name", MODULES)
+class TestModuleEntrypoints:
+    @pytest.mark.parametrize("path,name", COMPATIBILITY_ENTRYPOINTS)
     async def test_module_returns_200(self, client, auth_headers, path, name):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code == 200
@@ -21,10 +20,20 @@ class TestPlaceholderModules:
         assert "message" in body["data"]
         assert len(body["data"]["message"]) > 0
 
-    @pytest.mark.parametrize("path,name", MODULES)
+    @pytest.mark.parametrize("path,name", COMPATIBILITY_ENTRYPOINTS)
     async def test_module_blocked_without_auth(self, client, path, name):
         resp = await client.get(path)
         assert resp.status_code == 401
+
+    @pytest.mark.parametrize(
+        "path", ["/api/v1/changes/", "/api/v1/changes/health"]
+    )
+    async def test_removed_changes_routes_return_404(
+        self, client, auth_headers, path
+    ):
+        resp = await client.get(path, headers=auth_headers)
+        assert resp.status_code == 404
+        assert resp.json()["code"] == 40400
 
     async def test_nonexistent_route(self, client):
         resp = await client.get("/api/v1/doesnotexist/")

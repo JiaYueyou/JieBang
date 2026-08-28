@@ -21,13 +21,14 @@ from app.domain.agent_status import AgentRunStatus
 from app.domain.skill_dictionary import canonical_key, normalize_skill
 from app.models import AgentRun, JobPosting, MatchEvidence, MatchRecord, Resume, ResumeParseResult, ResumeSkill
 from app.providers import DeepSeekProvider, LLMProvider
-from app.schemas.matching import MatchEvidenceResponse, MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeSkillDetailResponse, TalentDetailResponse, TalentResponse
+from app.schemas.matching import MatchEvidenceResponse, MatchExplanationResponse, MatchResponse, ResumeCreatedResponse, ResumeSkillDetailResponse, TalentDetailResponse, TalentResponse, TalentUpdateRequest
 from app.services.agent_grounding_service import (
     AgentGroundingReport,
     AgentGroundingService,
     GroundedClaim,
 )
 from app.services.resume_parser import ResumeParser
+from app.services.resume_profile_extractor import ResumeProfileExtractor
 from app.services.resume_storage import ResumeStorage
 from app.services.skill_extractor import RuleSkillExtractor
 from app.services.task_status_cache import bump_cache_generations
@@ -73,12 +74,18 @@ class MatchingService:
         self.db = db
         self.llm = llm_provider or DeepSeekProvider()
         self.parser = ResumeParser()
+        self.profile_extractor = ResumeProfileExtractor()
         self.storage = ResumeStorage()
         self.extractor = RuleSkillExtractor()
         self.grounding = grounding_service or AgentGroundingService(db)
 
-    async def create_resume(self, *, content: bytes, filename: str, content_type: str | None, user_id: int, name: str | None = None, current_position: str | None = None, experience: str | None = None, education: str | None = None, department: str | None = None, company: str | None = None, location: str | None = None) -> ResumeCreatedResponse:
-        parsed_text, warnings = self.parser.parse(content, filename)
+    async def create_resume(self, *, content: bytes, filename: str, content_type: str | None, user_id: int, name: str | None = None, current_position: str | None = None, experience: str | None = None, education: str | None = None, department: str | None = None, company: str | None = None, location: str | None = None, preparsed_text: str | None = None, parse_warnings: list[str] | None = None) -> ResumeCreatedResponse:
+        if preparsed_text is None:
+            parsed_text, warnings = self.parser.parse(content, filename)
+        else:
+            parsed_text = preparsed_text
+            warnings = list(parse_warnings or [])
+        profile = self.profile_extractor.extract(parsed_text)
         digest = sha256(content).hexdigest()
         duplicate = await self.db.scalar(select(Resume.id).where(Resume.created_by == user_id, Resume.content_hash == digest, Resume.deleted_at.is_(None)))
         if duplicate:
@@ -86,12 +93,15 @@ class MatchingService:
         storage_key, _ = self.storage.save(content, filename)
         skills = self.extractor.extract(jd_text=parsed_text).skills
         resume = Resume(
-            name=(name or filename.rsplit(".", 1)[0])[:100], current_position=current_position,
-            experience=experience, education=education, department=department, company=company, location=location,
+            name=(name or profile["name"] or "姓名待补充")[:100],
+            current_position=current_position or profile["current_position"],
+            experience=experience or profile["experience"],
+            education=education or profile["education"], department=department,
+            company=company, location=location,
             original_filename=filename[:255], storage_key=storage_key, content_type=content_type,
             file_size=len(content), content_hash=digest, created_by=user_id,
         )
-        resume.parse_result = ResumeParseResult(parsed_text=parsed_text, profile={}, warnings=warnings, parser_version=self.parser.version)
+        resume.parse_result = ResumeParseResult(parsed_text=parsed_text, profile=profile, warnings=warnings, parser_version=self.parser.version)
         resume.skills = [ResumeSkill(name=s.name, canonical_key=canonical_key(s.name), category=s.category, confidence=s.confidence, evidence_text=s.evidence, extraction_method="rule") for s in skills]
         self.db.add(resume)
         try:
@@ -132,9 +142,11 @@ class MatchingService:
             record.score = score
             record.matched_skills, record.missing_skills = matched, missing
             evidence: list[MatchEvidence] = []
+            parsed_text = resume.parse_result.parsed_text if resume.parse_result else ""
             for name in matched:
                 skill = resume_keys[canonical_key(name)]
                 excerpt = (skill.evidence_text or "").strip()
+                locator = self._text_locator(parsed_text, excerpt or name)
                 evidence.append(MatchEvidence(
                     match_id=record.id,
                     evidence_type="resume_skill",
@@ -146,13 +158,19 @@ class MatchingService:
                     ),
                     source_ref={
                         "resume_skill_id": skill.id,
+                        "resume_id": resume.id,
+                        "filename": resume.original_filename,
+                        "source_kind": "resume",
                         "canonical_key": skill.canonical_key,
+                        **locator,
                     },
                 ))
             # Keep JD evidence for every required skill. A matched skill then has both
             # resume and job anchors, which allows a richer but still auditable explanation.
             for name in job_skills:
-                evidence.append(MatchEvidence(match_id=record.id, evidence_type="job_requirement", skill_name=name, evidence_text=f"岗位 {job.title} 要求 {name}", source_ref={"job_id": job.id}))
+                requirement = next((item for item in job.requirements if name.casefold() in item.casefold()), "")
+                jd_excerpt = requirement or f"岗位 {job.title} 要求 {name}"
+                evidence.append(MatchEvidence(match_id=record.id, evidence_type="job_requirement", skill_name=name, evidence_text=jd_excerpt, source_ref={"job_id": job.id, "job_title": job.title, "department": job.department, "level": job.level, "source_kind": "job", "section": "岗位要求", **self._text_locator(job.jd_text or "\n".join(job.requirements), requirement or name)}))
             self.db.add_all(evidence)
             record.job = job
             records.append(record)
@@ -220,6 +238,30 @@ class MatchingService:
                 for skill in resume.skills
             ],
         )
+
+    async def update_talent_detail(self, resume_id: int, user_id: int, payload: TalentUpdateRequest) -> TalentDetailResponse:
+        resume = await self._resume(resume_id, user_id)
+        resume.name = payload.name
+        resume.current_position = payload.current_position or None
+        resume.experience = payload.experience or None
+        resume.education = payload.education or None
+        resume.department = payload.department or None
+        resume.company = payload.company or None
+        resume.location = payload.location or None
+        if resume.parse_result:
+            profile = dict(resume.parse_result.profile or {})
+            profile.update({
+                "name": payload.name,
+                "phone": payload.phone or None,
+                "email": payload.email or None,
+                "current_position": payload.current_position or None,
+                "experience": payload.experience or None,
+                "education": payload.education or None,
+            })
+            resume.parse_result.profile = profile
+        await self.db.commit()
+        await bump_cache_generations("dashboard")
+        return await self.get_talent_detail(resume_id, user_id)
 
     async def match_resume_jobs(self, resume_id: int, job_ids: list[int], user_id: int) -> list[MatchResponse]:
         resume = await self._resume(resume_id, user_id)
@@ -408,7 +450,11 @@ class MatchingService:
         run.finished_at = utc_now()
         match.explanation_agent_run_id = run.id
         await self.db.commit()
-        return MatchExplanationResponse(**output.model_dump(), agent_run_id=run.id)
+        return MatchExplanationResponse(
+            **output.model_dump(),
+            agent_run_id=run.id,
+            evidence=[self._evidence_response(item) for item in saved_evidence],
+        )
 
     @staticmethod
     def _match_grounding_claims(
@@ -494,8 +540,30 @@ class MatchingService:
     def _talent(self, resume: Resume) -> TalentResponse:
         matches = sorted(resume.matches, key=lambda item: (-item.score, item.job_id))
         best = matches[0]
-        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=resume.name, position=resume.current_position or "待确认", score=best.score, isNew=True, experience=resume.experience or "待确认", education=resume.education or "待确认", department=resume.department or "待确认", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "", matches=[self._match_response(match) for match in matches])
+        profile = resume.parse_result.profile if resume.parse_result else {}
+        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=resume.name or "姓名待补充", position=resume.current_position or "岗位待补充", score=best.score, isNew=True, experience=resume.experience or "经历待补充", education=resume.education or "学历待补充", department=resume.department or "部门待补充", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "", phone=str(profile.get("phone") or ""), email=str(profile.get("email") or ""), matches=[self._match_response(match) for match in matches])
 
     @staticmethod
     def _match_response(match: MatchRecord) -> MatchResponse:
-        return MatchResponse(id=match.id, resume_id=match.resume_id, job_id=match.job_id, job_title=match.job.title, score=match.score, matched=match.matched_skills, missing=match.missing_skills, algorithm_version=match.algorithm_version, urgent=match.job.urgent, evidence=[MatchEvidenceResponse(id=e.id, evidence_type=e.evidence_type, skill_name=e.skill_name, evidence_text=e.evidence_text, source_ref=e.source_ref) for e in match.evidence])
+        return MatchResponse(id=match.id, resume_id=match.resume_id, job_id=match.job_id, job_title=match.job.title, job_department=match.job.department, job_level=match.job.level, score=match.score, matched=match.matched_skills, missing=match.missing_skills, algorithm_version=match.algorithm_version, urgent=match.job.urgent, evidence=[MatchingService._evidence_response(e) for e in match.evidence])
+
+    @staticmethod
+    def _evidence_response(evidence: MatchEvidence) -> MatchEvidenceResponse:
+        return MatchEvidenceResponse(id=evidence.id, evidence_type=evidence.evidence_type, skill_name=evidence.skill_name, evidence_text=evidence.evidence_text, source_ref=evidence.source_ref)
+
+    @staticmethod
+    def _text_locator(text: str, needle: str) -> dict:
+        if not text or not needle:
+            return {}
+        index = text.casefold().find(needle.casefold())
+        if index < 0:
+            return {"excerpt": needle[:240]}
+        line_start = text.count("\n", 0, index) + 1
+        line_end = line_start + needle.count("\n")
+        return {
+            "line_start": line_start,
+            "line_end": line_end,
+            "char_start": index,
+            "char_end": index + len(needle),
+            "excerpt": needle[:240],
+        }

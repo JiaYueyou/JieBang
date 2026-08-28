@@ -1,5 +1,11 @@
 # AI 助手独立服务
 
+> 文档类型：模块运行草案
+> 状态：服务代码存在，前端代理未完成对接
+> 核验日期：2026-08-12（`c995a09e`）
+> 当前 Vite 配置没有本文示例中的 rewrite/正确分流，`VITE_AI_BASE_URL` 也未被前端请求层
+> 消费。启动本服务并不等于 JTT 前端已连接成功，现状见 [前端 README](../frontend/README.md)。
+
 JTT 求职端 AI 助手的 LLM 代理服务。不依赖 MySQL/Neo4j/Redis，仅需 DeepSeek API Key。
 
 ## 快速启动

@@ -46,6 +46,9 @@ class SourceDocument(Base):
     __tablename__ = "source_document"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    external_job_identity_id: Mapped[str | None] = mapped_column(
+        ForeignKey("external_job_identity.id", ondelete="SET NULL"), index=True
+    )
     source: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     external_id: Mapped[str | None] = mapped_column(String(255))
     url: Mapped[str | None] = mapped_column(String(1000))
@@ -55,6 +58,118 @@ class SourceDocument(Base):
     content_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
     source_meta: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+
+class ExternalJobIdentity(Base):
+    """Stable source-scoped identity across mutable JD versions."""
+
+    __tablename__ = "external_job_identity"
+    __table_args__ = (
+        UniqueConstraint("source", "identity_key", name="uq_external_job_identity_source_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    source: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    identity_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    canonical_url: Mapped[str | None] = mapped_column(String(1000))
+    lifecycle_status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="active", index=True
+    )
+    missing_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_version_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now,
+        server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ExternalJobVersion(Base):
+    """Immutable content version for an external job identity."""
+
+    __tablename__ = "external_job_version"
+    __table_args__ = (
+        UniqueConstraint("identity_id", "version_no", name="uq_external_job_version_number"),
+        UniqueConstraint("identity_id", "content_fingerprint", name="uq_external_job_version_content"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    identity_id: Mapped[str] = mapped_column(
+        ForeignKey("external_job_identity.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_document_id: Mapped[int] = mapped_column(
+        ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    version_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    change_type: Mapped[str] = mapped_column(String(24), nullable=False, default="created")
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+
+
+class SourceSnapshot(Base):
+    """Manifest for a source collection run used for absence reconciliation."""
+
+    __tablename__ = "source_snapshot"
+    __table_args__ = (
+        UniqueConstraint("source", "snapshot_key", name="uq_source_snapshot_source_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    source: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    snapshot_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    snapshot_type: Mapped[str] = mapped_column(String(20), nullable=False, default="delta")
+    scope_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    scope_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    record_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="processing", index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+
+
+class JobImportQuarantine(Base):
+    """Invalid source records retained for audit without blocking valid rows."""
+
+    __tablename__ = "job_import_quarantine"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_file", "record_index", "payload_hash",
+            name="uq_job_import_quarantine_record",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    source_file: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    record_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source: Mapped[str | None] = mapped_column(String(100), index=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    raw_payload: Mapped[dict | list | str | int | float | bool | None] = mapped_column(
+        JSON, nullable=True
+    )
+    error_codes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    error_message: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
 
 
 class JobSourceObservation(Base):
@@ -70,6 +185,12 @@ class JobSourceObservation(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    external_job_identity_id: Mapped[str | None] = mapped_column(
+        ForeignKey("external_job_identity.id", ondelete="CASCADE"), index=True
+    )
+    source_snapshot_id: Mapped[str | None] = mapped_column(
+        ForeignKey("source_snapshot.id", ondelete="SET NULL"), index=True
+    )
     source_document_id: Mapped[int] = mapped_column(
         ForeignKey("source_document.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -84,6 +205,9 @@ class JobSourceObservation(Base):
     content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     snapshot_key: Mapped[str | None] = mapped_column(String(255), index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
+    event_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="seen", index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
     )

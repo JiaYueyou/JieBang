@@ -1,0 +1,193 @@
+{
+  "dataset_version": "resume-format-public-demo-v1",
+  "privacy": "Only fictional, template, or deliberately de-identified profiles are used. No private resume or contact detail is included.",
+  "sources": [
+    {
+      "name": "VibeResume mock demo",
+      "url": "https://github.com/LiuMengxuan04/vibe-resume",
+      "license": "MIT",
+      "note": "Repository explicitly identifies its resume as mock data."
+    },
+    {
+      "name": "Resume Builder Skill fictional example",
+      "url": "https://github.com/dabydat/resume-builder-skill",
+      "license": "MIT",
+      "note": "Repository documents a fictional senior software engineer example."
+    },
+    {
+      "name": "ATS Resume Agent example",
+      "url": "https://github.com/NullSpace-BitCradle/ats-resume-agent",
+      "license": "MIT / CC-BY-4.0 template",
+      "note": "Repository provides fake example career data and sample output."
+    },
+    {
+      "name": "JSON Resume fake profiles",
+      "url": "https://github.com/jsonresume/jsonresume-fake",
+      "license": "Unlicense",
+      "note": "Project publishes generated fake resume records."
+    },
+    {
+      "name": "Software engineer resume template",
+      "url": "https://github.com/dphang/resume",
+      "license": "MIT",
+      "note": "Public template used only as a structural reference."
+    }
+  ],
+  "formats": [
+    "pdf",
+    "docx",
+    "png",
+    "jpg",
+    "jpeg"
+  ],
+  "profile_count": 10,
+  "file_count": 50,
+  "metric_definition": {
+    "text_accuracy": "1 - normalized character error rate",
+    "token_recall": "expected normalized token recall",
+    "skill_micro_f1": "micro F1 against manually labelled skill sets using production extractor"
+  },
+  "limitation": "Controlled clean fixtures validate format support and labelled extraction, but do not estimate accuracy on the full population of real-world resumes.",
+  "by_format": {
+    "pdf": {
+      "records": 10,
+      "mean_text_accuracy": 1.0,
+      "mean_token_recall": 1.0,
+      "skill_precision": 1.0,
+      "skill_recall": 1.0,
+      "skill_micro_f1": 1.0
+    },
+    "docx": {
+      "records": 10,
+      "mean_text_accuracy": 1.0,
+      "mean_token_recall": 1.0,
+      "skill_precision": 1.0,
+      "skill_recall": 1.0,
+      "skill_micro_f1": 1.0
+    },
+    "png": {
+      "records": 10,
+      "mean_text_accuracy": 0.998592,
+      "mean_token_recall": 0.994444,
+      "skill_precision": 1.0,
+      "skill_recall": 0.984615,
+      "skill_micro_f1": 0.992248
+    },
+    "jpg": {
+      "records": 10,
+      "mean_text_accuracy": 0.998592,
+      "mean_token_recall": 0.994444,
+      "skill_precision": 1.0,
+      "skill_recall": 0.984615,
+      "skill_micro_f1": 0.992248
+    },
+    "jpeg": {
+      "records": 10,
+      "mean_text_accuracy": 0.998592,
+      "mean_token_recall": 0.994444,
+      "skill_precision": 1.0,
+      "skill_recall": 0.984615,
+      "skill_micro_f1": 0.992248
+    }
+  },
+  "overall": {
+    "records": 50,
+    "mean_text_accuracy": 0.999155,
+    "mean_token_recall": 0.996667,
+    "skill_precision": 1.0,
+    "skill_recall": 0.990769,
+    "skill_micro_f1": 0.995363
+  },
+  "gates": {
+    "text_accuracy_at_least_90_percent": true,
+    "skill_micro_f1_at_least_90_percent": true,
+    "every_format_skill_f1_at_least_90_percent": true
+  },
+  "all_gates_passed": true,
+  "failures": [
+    {
+      "id": "edge-009",
+      "role": "Edge AI Embedded Engineer",
+      "format": "png",
+      "text_accuracy": 0.985915,
+      "token_recall": 0.944444,
+      "skill_tp": 5,
+      "skill_fp": 0,
+      "skill_fn": 1,
+      "predicted_skills": [
+        "c",
+        "cpp",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "expected_skills": [
+        "c",
+        "cpp",
+        "iot",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "warnings": [
+        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
+      ]
+    },
+    {
+      "id": "edge-009",
+      "role": "Edge AI Embedded Engineer",
+      "format": "jpg",
+      "text_accuracy": 0.985915,
+      "token_recall": 0.944444,
+      "skill_tp": 5,
+      "skill_fp": 0,
+      "skill_fn": 1,
+      "predicted_skills": [
+        "c",
+        "cpp",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "expected_skills": [
+        "c",
+        "cpp",
+        "iot",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "warnings": [
+        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
+      ]
+    },
+    {
+      "id": "edge-009",
+      "role": "Edge AI Embedded Engineer",
+      "format": "jpeg",
+      "text_accuracy": 0.985915,
+      "token_recall": 0.944444,
+      "skill_tp": 5,
+      "skill_fp": 0,
+      "skill_fn": 1,
+      "predicted_skills": [
+        "c",
+        "cpp",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "expected_skills": [
+        "c",
+        "cpp",
+        "iot",
+        "linux",
+        "python",
+        "嵌入式"
+      ],
+      "warnings": [
+        "图片简历已使用 OCR 识别，请重点复核姓名、日期和数字。"
+      ]
+    }
+  ]
+}

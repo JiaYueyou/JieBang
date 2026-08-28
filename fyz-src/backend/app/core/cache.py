@@ -28,6 +28,7 @@ from app.core.config import (
 
 logger = logging.getLogger(__name__)
 _SAFE_KEY_PART = re.compile(r"[^a-zA-Z0-9:_-]+")
+_RECOVERY_INVALIDATION_NAMESPACES = ("analysis", "dashboard", "graph")
 _MONOTONIC_JSON_SCRIPT = """
 local incoming = cjson.decode(ARGV[1])
 local current_raw = redis.call('GET', KEYS[1])
@@ -103,6 +104,7 @@ class AsyncJsonCache:
         self._available: bool | None = False if not enabled else None
         self._last_warning_at = float("-inf")
         self._retry_after = 0.0
+        self._needs_recovery_invalidation = False
 
     @property
     def available(self) -> bool | None:
@@ -137,6 +139,32 @@ class AsyncJsonCache:
     def _mark_unavailable(self) -> None:
         self._available = False
         self._retry_after = time.monotonic() + 5.0
+        # A MySQL commit may happen while Redis is unavailable.  Before any
+        # recovered cache read, advance every query-cache generation so data
+        # cached before the outage can never reappear as the current view.
+        self._needs_recovery_invalidation = True
+
+    async def _get_ready_client(self) -> Any | None:
+        client = self._get_client()
+        if client is None:
+            return None
+        if self._available is not False:
+            return client
+        try:
+            await client.ping()
+            if self._needs_recovery_invalidation:
+                for namespace in _RECOVERY_INVALIDATION_NAMESPACES:
+                    await client.incr(self._generation_key(namespace))
+                self._needs_recovery_invalidation = False
+                logger.info(
+                    "Redis cache recovered; query cache generations invalidated"
+                )
+            self._mark_available()
+            return client
+        except Exception as exc:
+            self._mark_unavailable()
+            self._warn("recovery", exc)
+            return None
 
     def _warn(self, operation: str, exc: Exception) -> None:
         # Prevent one Redis outage from flooding application logs.
@@ -152,7 +180,7 @@ class AsyncJsonCache:
 
     async def start(self) -> bool:
         """Initialize and probe Redis without making startup depend on it."""
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return False
         try:
@@ -169,6 +197,7 @@ class AsyncJsonCache:
         client, self._client = self._client, None
         self._available = False if not self.enabled else None
         self._retry_after = 0.0
+        self._needs_recovery_invalidation = False
         if client is None:
             return
         try:
@@ -177,7 +206,7 @@ class AsyncJsonCache:
             self._warn("shutdown", exc)
 
     async def get_json(self, key: str) -> Any | None:
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return None
         physical_key = self.key(key)
@@ -208,7 +237,7 @@ class AsyncJsonCache:
         *,
         ttl_seconds: int | None = None,
     ) -> bool:
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return False
         try:
@@ -236,7 +265,7 @@ class AsyncJsonCache:
         ttl_seconds: int | None = None,
     ) -> bool:
         """Atomically reject terminal/progress rollback for state projections."""
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return False
         ttl = max(1, int(ttl_seconds or self.default_ttl_seconds))
@@ -285,7 +314,7 @@ class AsyncJsonCache:
     async def delete(self, *keys: str) -> bool:
         if not keys:
             return True
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return False
         try:
@@ -302,7 +331,7 @@ class AsyncJsonCache:
 
     async def get_generation(self, namespace: str) -> int:
         """Read a generation; missing/unavailable Redis means generation zero."""
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return 0
         try:
@@ -316,7 +345,7 @@ class AsyncJsonCache:
 
     async def bump_generation(self, namespace: str) -> int | None:
         """Invalidate a namespace in O(1), without a Redis key scan."""
-        client = self._get_client()
+        client = await self._get_ready_client()
         if client is None:
             return None
         try:

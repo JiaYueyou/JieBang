@@ -29,6 +29,8 @@ doc
 jtt-src
 幻觉问题
 *.sql
+!fyz-src/backend/scripts/mysql_snapshot.sql
 fyz-src/backend/storage
 fyz-src/backend/uploads
 fyz-src/backend/scripts/mysql_snapshot_manifest.json
+!fyz-src/backend/scripts/mysql_snapshot_manifest.json

@@ -136,6 +136,9 @@ async def test_aggregate_dual_sources_and_only_verified_facts_enter_graph():
         nodes, edges, fact_count = await service._build_payload(snapshot)
         assert fact_count == 1
         assert {row["properties"]["name"] for row in nodes["TechStack"]} == {"Python"}
+        assert {row["properties"]["name"] for row in nodes["SkillArea"]} == {"Python 生态"}
+        assert edges["CONTAINS"][0]["source"] == "area:python_ecosystem"
+        assert nodes["TechStack"][0]["properties"]["ecosystem"] == "Python"
         assert len(edges["REQUIRES_AREA"]) == 1
         assert len(edges["CONTAINS"][0]["properties"]["sourceIds"]) == 2
         assert await db.scalar(select(func.count(StandardJob.id))) == 1

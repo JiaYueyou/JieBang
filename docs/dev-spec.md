@@ -1,5 +1,11 @@
 # 开发规范文档
 
+> 文档类型：早期规范草案
+> 状态：部分过时
+> 核验日期：2026-08-12；仍可参考响应、命名与安全原则，但其中 pnpm、Elasticsearch、
+> 计划端点和单服务拓扑不代表当前实现。当前接口见 [API 参考](api-reference.md)，完成度见
+> [当前实现状态](implementation-status.md)。
+
 ## 多源异构数据驱动岗位和能力图谱构建项目
 
 ---
@@ -27,10 +33,10 @@ PUT    /api/v1/jobs/discover/{id}      # 人工优化岗位定义
 POST   /api/v1/jobs/discover/trigger   # 触发新岗位检测
 
 # === 能力动态更新（模块二）===
-GET    /api/v1/jobs/{id}/changes       # 岗位能力变更列表
+GET    /api/v1/analysis/overview       # 能力变化与趋势聚合
 GET    /api/v1/jobs/{id}/versions      # 版本历史
 GET    /api/v1/jobs/{id}/versions/{v}  # 特定版本快照
-GET    /api/v1/changes/{id}            # 单条变更详情（含新增/删除/修改标注）
+GET    /api/v1/jobs/{id}/versions      # 岗位版本历史；旧 /changes 模块已移除
 
 # === 全景图谱（模块三）===
 GET    /api/v1/graph/panorama          # 全景图谱数据（支持 ?stack=ai&level=senior 过滤）
@@ -650,7 +656,7 @@ class ApiResponse(BaseModel):
 | Neo4j | 5.x (Community) |
 | ChromaDB | latest |
 | Redis | 7.x |
-| Scrapy | latest | 
+| Scrapy | latest |
 | Playwright | latest |
 | Docker | 24+ |
 | Poetry (Python 依赖管理) | 1.5+ |
