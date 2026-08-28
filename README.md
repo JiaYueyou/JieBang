@@ -9,7 +9,7 @@
 
 > 文档类型：项目现行入口
 > 当前阶段：核心系统基本完成，进入联调收尾、质量验收与竞赛材料编制阶段
-> 核验日期：2026-08-12；核验基线：`c995a09e` + 当前工作区审计结果
+> 核验日期：2026-08-28；核验基线：`28a4cc5b` + 当前工作区只读验证
 > 模块完成度、测试结果和已知风险见 [当前实现状态](docs/implementation-status.md)。
 
 ## 1. 当前状态
@@ -27,28 +27,33 @@
 - DeepSeek 可选增强；模型不可用时 JD 与职业规划仍返回可编辑/可执行模板结果；
 - 后端测试、两套前端构建和仓库安全 CI。
 
-当前可验证的软件基线：
+当前可验证的软件基线（FYZ/Agent 沿用最近已提交结果，2026-08-28 重新验证 JTT）：
 
 - FYZ 后端 OpenAPI：91 个路径、104 个 HTTP 操作；早期无消费者的 `/changes` 占位路由
   已移除，其能力变化需求由 Analysis 趋势与岗位版本接口覆盖；
 - FYZ 后端：343 项 pytest 通过；独立 Agent 包：16 项 pytest 通过；
 - FYZ 前端：44 项 Vitest 通过，TypeScript 与生产构建通过；
-- JTT 后端：9 项 pytest 通过；JTT 前端 TypeScript 与生产构建通过；
+- JTT 前端 TypeScript 与生产构建通过，但未配置前端自动化测试；只读 ESLint 当前为
+  217 errors、1 warning；
+- JTT 后端收集到 38 项 pytest：绕过缺失的覆盖率插件后为 37 passed、1 failed；默认命令
+  因 `pytest-cov` 未纳入依赖而无法启动，不能继续引用旧报告的“38 项全部通过”；
 - 上述结果不等同于真实 MySQL、Redis、外部模型、爬虫外站和完整浏览器 E2E 均已验收。
 
-截至 2026-08-12，代码与仓库内共享快照状态为：
+截至 2026-08-28，代码与仓库内共享快照状态为：
 
 - FYZ Alembic 当前 head 与比赛 SQL 快照均为 `20260820_0025`；快照含 47 张表、54474 行，
   SQL、manifest、逐表计数/摘要和独立校验摘要已通过离线严格校验；
 - ChromaDB 4 个有效 collection、646 条 3072 维预计算向量；
-- Neo4j 最近已成功图谱快照 474 个节点、817 条关系；
+- Neo4j 最近快照摘要为 5077 个节点、5680 条关系；
 - 快照包含岗位标准化、事实审核、L4/L5 候选/发布、检索索引和 Agent 审计数据。
 
 交付前仍需收尾和验收：
 
-- JTT 后端路由已实现首版，但前端默认 `/api/v1`、MSW `/api`、Vite 代理及 8000/8001
-  端口仍不一致，真实联调尚未完成；
-- FYZ 0020 团队数据库迁移包已完成重导和离线严格校验，仍需在隔离接收环境执行覆盖式导入验收；
+- JTT 后端路由已实现首版，当前 Vite 开发代理可将主数据请求发往 8000、AI 请求发往
+  8001；但 MSW 仍使用 `/api` 而 Axios 默认使用 `/api/v1`，生产环境也没有 JTT Nginx/容器
+  分流，因此不能表述为已完成真实部署联调；
+- FYZ `20260820_0025` 团队数据库迁移包已完成重导和离线严格校验，仍需在隔离接收环境
+  执行覆盖式导入验收；
 - L4/L5 Agent 已补齐分类重试、调用诊断、人工审核质量门槛和离线故障注入压测，真实外部模型仍需持续压测；
 - 爬虫增量检查点、岗位/技能标准化金标评测、图谱结构分析和比赛级统一门禁已实现首版，仍需真实外站与基础设施长期验收；
 - 当前共享快照含内部开发记录，对外发布前必须完成数据授权和脱敏复核。
@@ -80,6 +85,7 @@ JieBang/
 │   ├── frontend/            # FYZ 管理与决策端 Vue 3
 │   └── docs-plans/          # 历史/专项设计与实施计划
 ├── jtt-src/
+│   ├── README.md            # JTT 当前代码、数据、测试与部署入口
 │   ├── frontend/            # JTT 求职者端 Vue 3
 │   ├── backend/             # JTT 独立 FastAPI、MySQL、Neo4j
 │   ├── ai-assistant/        # JTT 独立 AI 助手 FastAPI（默认 8001）
@@ -210,6 +216,17 @@ Copy-Item fyz-src\backend\.env.example fyz-src\backend\.env
 编辑后端本地 `.env`，至少配置 MySQL、JWT 和 Neo4j。DeepSeek 是可选增强项，
 未配置时规则抽取和 L1-L3 图谱仍可工作。真实密钥只能写入 `.env`。
 
+JTT 主后端和 AI 助手使用各自配置文件：
+
+```powershell
+Copy-Item jtt-src\backend\.env.example jtt-src\backend\.env
+Copy-Item jtt-src\ai-assistant\.env.example jtt-src\ai-assistant\.env
+```
+
+JTT 主后端的岗位接口会只读访问共享 `jie_bang.raw_job_record`、`source_document`、
+`standard_job_source` 和 `standard_job`，数据库账号必须具备这些表的读取权限。JTT 当前
+`requirements.txt` 尚缺测试插件及 PDF/DOCX 解析依赖，不能把单次开发机可运行等同于空环境可复现安装。
+
 ## 6. 推荐启动顺序
 
 ### 6.1 MySQL 与 Alembic
@@ -263,7 +280,27 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - Swagger：<http://localhost:8000/docs>
 - ReDoc：<http://localhost:8000/redoc>
 
-### 6.3 两套前端
+### 6.3 JTT 主后端与 AI 助手
+
+JTT 主后端与 FYZ 后端源码均默认使用 8000，不能同时绑定同一端口。只运行求职者端时：
+
+```powershell
+conda activate jiebang
+cd jtt-src\backend
+alembic upgrade head
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 另开终端
+conda activate jiebang
+cd jtt-src\ai-assistant
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+JTT Alembic 当前 head 为 `34d9b68a59ff`，应用启动时仍会同时执行 `create_all()`；这是待收敛的
+迁移边界，不应在生产部署说明中省略。AI 助手需要 DeepSeek Key；未配置时只可验证服务健康状态
+和部分降级逻辑，不能宣称真实模型联调完成。
+
+### 6.4 两套前端
 
 ```powershell
 # FYZ 管理与决策端
@@ -278,9 +315,10 @@ npm.cmd run dev
 Vite 默认使用 5173；同时启动两套前端时，后启动的实例会自动选择其他端口。
 后端当前 CORS 默认允许 `http://localhost:5173`，联调时应明确哪套前端占用该端口。
 
-JTT 另有 `jtt-src/backend` 主后端和 `jtt-src/ai-assistant`（默认 8001）。JTT 主后端源码
-也默认 8000，不能与 FYZ 后端同时占用该端口；而 JTT 前端当前代理分流仍有已知错误。
-在修复前请不要把“两套前端都启动”理解为“两套业务都已完成真实联调”。
+JTT 开发代理当前会把 `/api/v1/assistant/*`、学习助手和短语优化请求改写到 8001，其余
+`/api/*` 请求转发到 8000。MSW handlers 仍停留在 `/api`，不会拦截默认 `/api/v1` 请求；
+因此无真实服务时不能依赖默认 mock 启动。Vite proxy 只用于开发，生产部署必须在反向代理中
+重新实现同样的主后端/AI 分流。
 
 ## 7. 导入岗位数据与构建图谱
 
@@ -327,10 +365,14 @@ npm.cmd run build
 # JTT 前端
 cd ..\..\jtt-src\frontend
 npm.cmd run build
+# 当前无 test 脚本；质量审计使用只读命令，避免 npm run lint 的 --fix
+npx.cmd eslint . --no-cache
 
 # JTT 后端
 cd ..\backend
-python -m pytest test -q
+# 当前 requirements 未包含 pytest-cov，默认命令会被 pytest.ini 的覆盖率参数阻断。
+# 临时检查业务测试可使用下式；正式交付前应先补齐依赖并恢复覆盖率门禁。
+python -m pytest test -q -o addopts=
 ```
 
 根据改动范围至少运行对应检查；涉及共享接口、数据库或配置时运行全部检查。
@@ -356,12 +398,13 @@ python -m pytest test -q
 | 文档 | 用途 |
 | --- | --- |
 | [文档中心](docs/README.md) | 所有项目文档的分类入口 |
+| [JTT 求职者端现状](jtt-src/README.md) | 用户端代码、数据、测试、运行与部署边界 |
 | [当前实现状态](docs/implementation-status.md) | 代码、测试、完成度和已知缺口 |
 | [技术文档状态登记表](docs/document-status-register.md) | 各技术文档是否仍为当前依据 |
 | [需求文档](docs/requirements.md) | 功能范围、优先级与验收指标 |
 | [开发规范](docs/dev-spec.md) | API、数据库、代码和协作规范 |
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
-| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 0020 迁移包、离线校验与隔离接收环境覆盖式导入流程 |
+| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 0025 迁移包、离线校验与隔离接收环境覆盖式导入流程 |
 | [后端脚本清单](fyz-src/backend/scripts/README.md) | 当前脚本状态、维护入口和工程评测工具 |
 | [API 参考](docs/api-reference.md) | FYZ 当前接口、请求示例和已移除兼容入口 |
 | [Agent 开发工作区](agent-development/README.md) | 独立 Agent 包、契约、Prompt 与测试入口 |

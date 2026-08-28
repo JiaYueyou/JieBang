@@ -2,8 +2,8 @@
 
 > 文档类型：现状基线
 > 状态：现行
-> 核验日期：2026-08-12
-> 核验提交：`c995a09e`（`main`）
+> 核验日期：2026-08-28
+> 核验提交：`28a4cc5b`（`main`）
 > 权威来源：仓库代码、Alembic 迁移、已提交评测产物与本页“验证结果”中的实际命令
 
 本文用于回答“代码现在实际具备什么”。需求目标仍以 [requirements.md](requirements.md) 为准；
@@ -33,9 +33,14 @@ JTT 求职端 Vue 3 ──HTTP──> jtt-src/backend FastAPI
         └──────────AI─────> jtt-src/ai-assistant FastAPI
 ```
 
-FYZ 和 JTT 当前是两套独立 FastAPI 应用、独立模型/迁移链。两者源码都默认使用 8000，不能在
-同一主机上同时占用该端口；JTT AI 助手默认使用 8001。JTT 前端当前的默认代理配置并未正确
-分流这两个服务，详见“已知缺口”。
+FYZ 和 JTT 当前是两套 FastAPI 应用和两条 Alembic 迁移链。两者源码都默认使用 8000，不能在
+同一主机上同时占用该端口；JTT AI 助手默认使用 8001。JTT 的业务表独立，但岗位接口通过
+硬编码 schema 只读访问 FYZ 共享库中的 `jie_bang.raw_job_record`、`source_document`、
+`standard_job_source` 和 `standard_job`，因此不是完全独立的数据部署单元。
+
+当前 Vite 开发代理已能把主数据请求转发到 8000，并将 `/api/v1/assistant/*`、学习助手和
+短语优化请求改写到 8001；但 Axios 默认前缀为 `/api/v1`，MSW handlers 仍使用 `/api`，
+所以默认 mock 不会命中。生产构建不携带 Vite proxy，仓库也没有 JTT 专用 Nginx/Compose。
 
 ## 3. 分系统状态
 
@@ -47,38 +52,44 @@ FYZ 和 JTT 当前是两套独立 FastAPI 应用、独立模型/迁移链。两�
 | 自动数据闭环 | 已实现首版 | 手动/定时流水线、持久化运行记录、恢复、采集、导入、图谱同步、历史基线、质量摘要、状态缓存 | 生产调度、失败恢复和多源长期运行仍需真实基础设施验收；`pipeline_service.py` 覆盖率偏低 |
 | 爬虫与数据 | 基本实现 | 通用蜘蛛框架、多来源脚本、持久化增量检查点、标准化金标评测与比赛质量门禁 | 真实外站长期增量、数据授权、反爬变化和对外发布脱敏仍需人工复核 |
 | FYZ Docker 部署 | 已实现首版 | MySQL、Neo4j、两套 Redis、迁移、API、Celery worker/beat、缓存 worker、Nginx 编排 | 本次只审查配置，未执行完整容器启动验收 |
-| JTT 后端 | 基本实现 | auth、positions、resume、match、tailor、learning、favorites、graph 共 8 组路由；独立迁移与种子数据 | 与 FYZ 事实库/契约未统一；启动时 `create_all` 与独立 Alembic 并存；缺少更完整接口与集成测试 |
-| JTT 求职端 | 部分实现 | 13 个命名路由，岗位、简历、诊断、学习、图谱、收藏、个人中心等页面；生产构建通过 | 默认 `/api/v1`、MSW `/api`、Vite 代理和 8000/8001 端口不一致；4 个视图未路由；无测试；lint 未通过；部分失败会静默回退 mock |
-| JTT AI 助手 | 部分实现 | 独立 FastAPI 服务与聊天/推荐类接口 | 前端未按当前端点和端口正确分流；文档中的 rewrite 与实际 Vite 配置不一致 |
+| JTT 后端 | 基本实现 | auth、positions、resume、match、tailor、learning、favorites、graph 共 8 组路由；JTT Alembic head `34d9b68a59ff`；岗位读取共享事实库 | `create_all` 与 Alembic 并存；空库种子依赖 `user_id=1`；依赖清单缺测试和简历解析包；当前 1 项测试失败 |
+| JTT 求职端 | 部分实现 | 13 个命名路由，岗位、简历、诊断、学习、图谱、收藏、个人中心等页面；生产构建/类型检查通过 | 4 个视图未路由；无前端测试、鉴权守卫和 404；MSW 前缀不匹配；lint 未通过；`career` 无 JTT 后端路由 |
+| JTT AI 助手 | 部分实现 | 独立 FastAPI 服务；开发代理已覆盖聊天、推荐、学习路径和优化类端点 | 无自动化测试和生产部署；共享 Axios Base URL 不能独立配置 AI 地址；真实模型/搜索联调未在本次核验中执行 |
+| JTT 部署 | 未实现 | 有本地启动命令和 `.env.example` | 无 JTT Dockerfile、Compose、Nginx、CI 部署和生产健康验收；根 `deploy/` 仅覆盖 FYZ |
 
 ## 4. FYZ 数据与迁移状态
 
-- FYZ Alembic 当前 head：`20260809_0020`，在 0017 后新增分析基线快照、岗位来源观测和
-  自动流水线运行记录。
-- 团队共享 SQL 快照已于 2026-08-12 按 `20260809_0020` 重导：42 张表、41667 行；
+- FYZ Alembic 当前 head及团队共享 SQL 快照：`20260820_0025`。
+- 共享 SQL 快照生成于 2026-08-20：47 张表、54474 行；
   SQL SHA-256、逐表行数/内容摘要、迁移新增表与 manifest 配对均通过独立离线校验。
 - 迁移包的覆盖式接收端导入尚未在隔离环境执行；该步骤会替换目标 MySQL、Chroma 和
   `namespace=jiebang` 的 Neo4j 数据，不能在当前源库直接自导入验收。
 - 快照 manifest 仍记录 ChromaDB 与 Neo4j 的可重建摘要；
-  Neo4j 最近快照 474 个节点、817 条关系。
+  Neo4j 最近快照摘要为 5077 个节点、5680 条关系。
+- JTT 没有独立 SQL 快照。它提交了 120 条 JD、10 条简历、100 条匹配和 20 条防幻觉
+  `pseudo_gold` 数据，以及前端 mock 和后端种子；这些数据不能等同于人工独立金标或生产快照。
 - 2026-08-10 的已提交质量评测产物报告：JD 正向锚点召回率 0.9903、简历技能 micro-F1
   0.991736、确定性匹配精确结果准确率 1.0。JD 数据是正向关键词代理集，不能据此推出完整
   标注集上的 precision 或总体 F1。
 - 同日覆盖率产物报告 FYZ `app/services` 可执行行覆盖率 83.6765%；其中
   `pipeline_service.py` 39.219%、`resume_parser.py` 53.4884%，低于整体水平。
 
-## 5. 2026-08-12 验证结果
+## 5. 2026-08-28 JTT 增量验证结果
+
+本次重新执行了 JTT 前端构建、只读 ESLint 和 JTT 后端 pytest。下表中的 FYZ/Agent 数字
+沿用已提交的最近一次基线，本次未重新运行，不应解读为 2026-08-28 的复测结果。
 
 | 检查 | 结果 |
 | --- | --- |
 | FYZ 后端 pytest | 343 passed、0 failed、0 skipped；完整运行约 307 秒 |
 | Agent 包 pytest | 16 passed；有 pytest cache 目录权限警告，不影响用例结果 |
-| JTT 后端 pytest | 9 passed；有 1 个 Pydantic v2 class-based config 弃用警告 |
+| JTT 后端 pytest | 默认命令因缺少 `pytest-cov` 失败；覆盖 `addopts` 后 37 passed、1 failed，失败为学习路径 `position_id` 测试/Schema 契约漂移 |
 | FYZ 前端 Vitest | 5 个文件、44 项测试全部通过 |
 | FYZ 前端生产构建 | 通过；主 chunk 约 1.19 MB、图谱 chunk 约 633 kB，存在分块警告 |
 | JTT 前端生产构建/类型检查 | 通过；两个 chunk 约 1.12 MB 与 1.20 MB，存在分块警告 |
 | JTT 前端测试 | 未配置测试框架或 test 脚本 |
-| JTT 前端只读 ESLint | 158 errors、1 warning；主要为 `no-explicit-any`、组件命名、未使用变量和 slot 问题 |
+| JTT 前端只读 ESLint | 217 errors、1 warning；主要为 `no-explicit-any`、组件命名、未使用变量和 slot 问题 |
+| JTT AI 助手测试 | 未配置；本次未调用真实 DeepSeek 或外部搜索 |
 
 本轮完整 FYZ 后端单命令在约 307 秒完成，共 343 项通过。Neo4j integration 用例本次没有 skip，并在
 当前环境通过；MySQL 业务测试仍主要使用 SQLite 内存库。Redis、DeepSeek、OpenAI-compatible
@@ -89,11 +100,11 @@ Embedding 和爬虫外站均不能仅凭 343 passed 宣称已真实联网联调�
 
 ### P0：联调与安全
 
-1. 统一 JTT 前端、JTT 后端、AI 助手和 MSW 的 Base URL、端口与路径；当前默认开发模式
-   会把大量 `/api/v1/*` 请求发向错误服务或得到 404。
-2. 在隔离接收环境对 FYZ `0020` 团队数据库迁移包执行覆盖式导入验收，并复核授权与脱敏边界。
-3. 修复 JTT 真实契约漂移：profile/改密字段、`raw-{id}` 岗位标识、resume、auto-match、
-   favorites 和 graph 等接口。
+1. 统一 JTT Axios 与 MSW 前缀，并为生产 Nginx/Compose实现主后端 8000、AI 8001 的路由分流；
+   不要把开发期 Vite proxy 当作生产部署能力。
+2. 在隔离接收环境对 FYZ `0025` 团队数据库迁移包执行覆盖式导入验收，并复核授权与脱敏边界。
+3. 补齐 JTT `requirements.txt`/开发测试依赖，移除 `alembic.ini` 中的硬编码凭据，修复学习路径
+   `position_id` 契约和空库种子对 `user_id=1` 的隐式依赖。
 4. 对 FYZ 图谱 tooltip 及 JTT AI 消息的 HTML 输出做可信转义/消毒，并限制外链协议。
 5. 清理 `jtt-src/agent.md` 中未解决的冲突标记；该文档在清理前只能作为草稿。
 
@@ -101,7 +112,7 @@ Embedding 和爬虫外站均不能仅凭 343 passed 宣称已真实联网联调�
 
 1. 为 JTT 增加鉴权守卫、404、正确退出流程，并路由或移除 4 个孤立视图。
 2. 为 FYZ 前端补齐角色可见性，避免普通用户看到必然返回 403 的 Agent/图谱操作。
-3. 增加 JTT 测试、两套前端浏览器 E2E、真实服务集成测试和恶意内容回归测试。
+3. 增加 JTT 前端与 AI 助手测试、两套前端浏览器 E2E、共享数据快照集成测试和恶意内容回归测试。
 4. 优化两套前端的超大 chunk；FYZ 可同时清理未使用的旧 G6/Sigma 组件与 Store。
 5. 对自动流水线、爬虫、Neo4j、Redis、Celery 和外部模型执行长时间生产化验收。
 

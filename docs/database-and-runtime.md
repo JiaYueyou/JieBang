@@ -2,8 +2,9 @@
 
 > 文档类型：FYZ 运行说明
 > 状态：现行
-> 核验日期：2026-08-12（`c995a09e`）
-> JTT 使用独立后端、模型和迁移链，见 [当前实现状态](implementation-status.md)。
+> 核验日期：2026-08-28（`28a4cc5b`）
+> JTT 使用独立业务后端和迁移链，但岗位接口只读依赖 FYZ 共享事实库，见
+> [当前实现状态](implementation-status.md)。
 
 ## 1. 数据边界
 
@@ -15,6 +16,18 @@
 - Redis 不保存最终业务事实：一套实例用于 Celery Broker/结果，另一套可选实例用于查询、
   任务状态与预热缓存；缓存连接失败时 FYZ 后端降级为直接查询。
 - DeepSeek 是可选增强项；未配置时系统必须保留规则抽取和基础图谱能力。
+
+### JTT 数据边界
+
+- JTT 自有 ORM/Alembic 管理 `user`、`job_position`、`position_skill`、`skill_change`、
+  `user_resume`、`match_result`、`learning_path` 和 `favorite` 等用户端业务表；JTT Alembic
+  当前 head 为 `34d9b68a59ff`，版本表为 `alembic_version_jtt`。
+- JTT 岗位列表、详情与自动匹配会只读查询 `jie_bang.raw_job_record`、`source_document`、
+  `standard_job_source` 和 `standard_job`，因此必须先导入 FYZ 共享快照并授予读取权限。
+- JTT 没有独立 SQL 快照；前端 mock、后端种子和 evaluation 下的 `pseudo_gold` 均不是
+  生产事实库备份。
+- JTT 应用启动时仍执行 `Base.metadata.create_all()`，与 Alembic 并存；生产运行应以 Alembic
+  为结构权威，并在后续实现中移除启动时隐式建表。
 
 ## 2. 环境配置
 
@@ -92,12 +105,14 @@ base
 → 20260801_0017  L4/L5 图谱补全工作流
 → 20260808_0018  分析参考基线快照
 → 20260809_0019  岗位来源观测
-→ 20260809_0020  自动流水线持久化（当前 head）
+→ 20260809_0020  自动流水线持久化
+→ 20260820_0021～0025  企业部门、外部岗位生命周期、快照范围、导入隔离与 Java 标准岗位合并（当前 head）
 ```
 
-### ⚠ 当前 `20260809_0020` 数据库版本
+### ⚠ 当前 `20260820_0025` 数据库版本
 
-当前 head 已包含私有简历与匹配、L4/L5 审核、分析基线、岗位来源观测和持久化自动流水线。
+当前 head 已包含私有简历与匹配、L4/L5 审核、分析基线、岗位来源观测、持久化自动流水线、
+企业部门、外部岗位生命周期、快照范围、导入隔离和 Java 标准岗位合并。
 拉取代码后先执行：
 
 ```powershell
@@ -106,7 +121,7 @@ alembic upgrade head
 alembic current
 ```
 
-确认当前版本为 `20260809_0020 (head)` 后再重启 FastAPI。不要使用
+确认当前版本为 `20260820_0025 (head)` 后再重启 FastAPI。不要使用
 `alembic stamp head` 跳过 DDL；否则会造成路由已存在、但查询因岗位标准化或
 图谱审核表缺失而失败。
 
@@ -155,7 +170,7 @@ alembic upgrade head
 ### 导入团队完整数据库快照
 
 `fyz-src/backend/scripts/` 提供完整迁移包的导出、离线校验和接收端导入流程。当前共享快照
-已于 2026-08-12 按 `20260809_0020` 重导，包含 42 张表、41667 行，并配套 manifest、
+已于 2026-08-20 按 `20260820_0025` 重导，包含 47 张表、54474 行，并配套 manifest、
 逐表内容摘要和 `mysql_snapshot_verification.json`；离线严格校验状态为 `passed`。
 
 导入前必须先执行 `python scripts/verify_mysql_snapshot_package.py`。覆盖式接收流程会替换

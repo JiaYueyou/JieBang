@@ -5,7 +5,7 @@
 
 > 文档类型：现行索引
 > 状态：现行
-> 核验日期：2026-08-12
+> 核验日期：2026-08-28
 > 当前实现、测试结果与已知缺口统一见 [当前实现状态](implementation-status.md)。
 
 ## 必读
@@ -23,13 +23,16 @@
 ## 环境与运行
 
 - [数据库、数据导入与运行指南](database-and-runtime.md)
-- [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)：当前 0017 快照与
-  0020 head 不兼容，处于阻塞状态，仅供修复迁移包时参考。
+- [完整数据迁移脚本](../fyz-src/backend/scripts/DATABASE_TRANSFER.md)：当前共享包对应
+  `20260820_0025`，离线严格校验已通过；覆盖式接收仍需在隔离环境验收。
 - [后端脚本清单](../fyz-src/backend/scripts/README.md)：当前受支持的迁移、维护和
   工程评测入口，以及已移除旧脚本的替代路径。
 - [后端专项说明](../fyz-src/backend/README.md)
 - [JTT 独立后端早期说明](../jtt-src/backend/backend.md)：当前代码已有 8 组路由，但本文部分技术选型与接口已漂移。
+- [JTT 求职者端现状与运行说明](../jtt-src/README.md)：JTT 当前代码、数据、测试和部署的统一入口。
 - [JTT 求职者端前端](../jtt-src/frontend/README.md)
+- [JTT 后端评测方案](../jtt-src/backend/evaluation/README.md)：当前为自动规则伪金标，
+  测试依赖和 1 项失败尚待修复。
 - [离线数据分析配置](../data_analysis/README.md)
 - [AI 助手独立服务（JTT 求职端）](../jtt-src/ai-assistant/README.md)
 
@@ -46,7 +49,8 @@
 - FYZ OpenAPI JSON：`http://localhost:8000/openapi.json`
 
 JTT 是另一套 FastAPI 应用，启动后也在其所选端口提供 `/docs`；不要把 FYZ 静态接口摘要
-当作 JTT 契约。静态文档用于协作阅读，各 FastAPI 实例的 OpenAPI 是其运行时接口最终来源。
+当作 JTT 契约。JTT 岗位接口会读取 FYZ 共享 `jie_bang` 事实表，但两端业务 Schema 和
+Alembic 版本表仍不同。静态文档用于协作阅读，各 FastAPI 实例的 OpenAPI 是其运行时接口最终来源。
 任何接口变更必须同时更新 Schema、测试、前端类型和静态参考。
 
 ## 历史分工计划
