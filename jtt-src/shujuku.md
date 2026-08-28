@@ -2,9 +2,11 @@
 
 > 文档类型：JTT 数据库时间点设计
 > 状态：历史快照（2026-07-20），非当前迁移清单
-> 核验日期：2026-08-12（`c995a09e`）
+> 核验日期：2026-08-28（`28a4cc5b`）
 > JTT 后端现已包含独立 Alembic 迁移链，本文“无 Alembic”已过时；当前表结构以
 > `jtt-src/backend/app/models`、`alembic/versions` 和实际数据库为准。
+> JTT Alembic head 为 `34d9b68a59ff`，版本表为 `alembic_version_jtt`；岗位接口另外只读
+> 依赖共享 `jie_bang.raw_job_record` 等 FYZ 表。JTT 本身未提交独立 SQL 快照。
 
 > 智联职引 —— 人才分析与决策系统
 > 数据库: **jiebang** | MySQL 8.0 | 引擎: InnoDB

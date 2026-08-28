@@ -1,10 +1,10 @@
 # AI 助手独立服务 — 配置说明
 
 > 文档类型：配置草案
-> 状态：部分过时
-> 核验日期：2026-08-12（`c995a09e`）
-> API Key 与服务启动步骤仍可参考；“前端自动透传”目前不成立，必须先修正 Axios/Vite
-> 的主后端与 AI 服务分流。参见 [前端 README](../frontend/README.md)。
+> 状态：本地开发步骤现行，生产部署缺失
+> 核验日期：2026-08-28（`28a4cc5b`）
+> API Key 与服务启动步骤可用；当前 Vite 开发代理已分流到 8001，但 MSW 前缀仍不匹配，
+> 生产环境也必须另配反向代理。参见 [前端 README](../frontend/README.md)。
 
 ## 1. 获取 DeepSeek API Key
 
@@ -17,7 +17,7 @@
 ## 2. 配置
 
 ```bash
-cd D:\contest\little challenge\JieBang\jtt-src\ai-assistant
+cd jtt-src\ai-assistant
 
 # 复制配置文件
 copy .env.example .env
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 ## 4. 启动
 
 ```bash
-cd D:\contest\little challenge\JieBang\jtt-src\ai-assistant
+cd jtt-src\ai-assistant
 uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
@@ -70,12 +70,14 @@ cd D:\contest\little challenge\JieBang\jtt-src\frontend
 npm run dev
 ```
 
-前端的 AI 助手会自动通过 Vite 代理请求本服务。打开 http://localhost:5173 即可体验真实大模型回复。
+前端的 AI 请求会在 Vite 开发模式下代理到本服务。必须同时确认 8001 `/health` 的
+`api_key_configured` 为 `true`；页面能打开不等于真实模型请求已经成功。
 
 ## 常见问题
 
 **Q: 启动后 AI 回复还是 Mock 内容？**
-A: 确认 http://localhost:8001/health 返回 `api_key_configured: true`。MSW mock 已禁用 `/api/assistant/chat` 路径，请求会透传到本服务。
+A: 确认 http://localhost:8001/health 返回 `api_key_configured: true`，并检查浏览器请求是否为
+`/api/v1/assistant/*`。当前 MSW handlers 使用 `/api`，默认 `/api/v1` 请求会透传到 Vite proxy。
 
 **Q: DeepSeek API 调用报错 401？**
 A: 检查 `.env` 中的 `DEEPSEEK_API_KEY` 是否正确，确保没有多余空格。

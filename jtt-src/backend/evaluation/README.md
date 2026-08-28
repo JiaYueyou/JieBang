@@ -28,7 +28,16 @@ python evaluation/scripts/evaluate_resume.py --gold evaluation/datasets/resume_g
 python evaluation/scripts/evaluate_resume_api.py --token "$JTT_TOKEN"
 python evaluation/scripts/evaluate_matching.py --gold evaluation/datasets/match_gold.json
 python evaluation/scripts/evaluate_hallucination.py --gold evaluation/datasets/hallucination_cases.json
-python evaluation/scripts/generate_report.py
 ```
 
 评测脚本不会调用模型，也不会修改业务数据库；没有标注数据时会明确报告 `status=pending`，不会伪造准确率。
+
+## 当前数据与复现状态
+
+截至 2026-08-28，仓库提交了 120 条 JD、10 条简历、100 条匹配和 20 条防幻觉样本；四组数据
+均属于自动规则生成的 `pseudo_gold`，不是人工独立金标。`evaluation/reports/` 和私有简历文件
+被 `.gitignore` 排除，旧报告引用的覆盖率、JUnit 和接口结果无法仅凭仓库复现。
+
+当前 `pytest.ini` 要求 `pytest-cov`，但 `requirements.txt` 尚未包含 pytest、pytest-asyncio、
+pytest-cov、aiosqlite；简历解析运行时使用的 python-docx、pdfplumber 也未列入依赖。补齐依赖并
+修复学习路径 `position_id` 契约前，测试门禁状态为未通过。
