@@ -2,7 +2,16 @@
  * AI 助手 API —— 全局浮窗 AI 聊天 + 短语润色。
  */
 import api from './index'
+<<<<<<< HEAD
 import type { AssistantChatRequest, AssistantChatResponse, ResumeData } from '@/types'
+=======
+import type {
+  AssistantChatRequest,
+  AssistantChatResponse,
+  ImprovementSuggestion,
+  ResumeData,
+} from '@/types'
+>>>>>>> b568d5178201726754523d39b83e833d55cbaa23
 
 export interface OptimizePhraseRequest {
   text: string
@@ -40,6 +49,10 @@ export interface GenerateLinksResponse {
   resources: GeneratedResource[]
 }
 
+export interface OptimizeResumeResponse {
+  suggestions: Array<Omit<ImprovementSuggestion, 'accepted' | 'verified' | 'warning'>>
+}
+
 export interface AgentChatResponse {
   reply: string
   thinkingSteps: { icon: string; text: string }[]
@@ -59,8 +72,11 @@ export const assistantApi = {
     api.post('/assistant/optimize-phrase', data, { timeout: 90000 }),
 
   // 简历优化：AI 服务 /api/assistant/optimize-resume 生成向岗位靠齐的修改建议
-  optimizeResume: (resume: any, position: any): Promise<{ code: number; message: string; data: { suggestions: any[] } }> =>
-    api.post('/assistant/optimize-resume', { resume, position }, { timeout: 120000 }),
+  optimizeResume: (
+    resume: ResumeData,
+    position: Record<string, unknown>,
+  ): Promise<{ code: number; message: string; data: OptimizeResumeResponse }> =>
+    api.post('/assistant/optimize-resume', { resume, position }, { timeout: 90000 }),
 
   generateLearningPath: (positionName: string): Promise<{ code: number; message: string; data: GeneratePathResponse }> =>
     api.post('/assistant/generate-learning-path', { positionName }, { timeout: 90000 }),

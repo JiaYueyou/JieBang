@@ -1,0 +1,2136 @@
+{
+  "version": "match-gold-v2-rule-independent",
+  "status": "pseudo_gold",
+  "items": [
+    {
+      "id": "match-0001",
+      "resume": {
+        "skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI",
+          "Python",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0002",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Docker"
+        ]
+      }
+    },
+    {
+      "id": "match-0003",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0004",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0005",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0006",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0007",
+      "resume": {
+        "skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0008",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI"
+        ]
+      }
+    },
+    {
+      "id": "match-0009",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0010",
+      "resume": {
+        "skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j",
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0011",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Python"
+        ]
+      }
+    },
+    {
+      "id": "match-0012",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0013",
+      "resume": {
+        "skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "RAG",
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0014",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0015",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0016",
+      "resume": {
+        "skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "RAG",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0017",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "medium",
+      "evidence": {
+        "matched_skills": [
+          "Git"
+        ]
+      }
+    },
+    {
+      "id": "match-0018",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0019",
+      "resume": {
+        "skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Linux",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0020",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0021",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0022",
+      "resume": {
+        "skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0023",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0024",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0025",
+      "resume": {
+        "skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0026",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0027",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0028",
+      "resume": {
+        "skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "FastAPI",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0029",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Linux"
+        ]
+      }
+    },
+    {
+      "id": "match-0030",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0031",
+      "resume": {
+        "skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI",
+          "Python",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0032",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Docker"
+        ]
+      }
+    },
+    {
+      "id": "match-0033",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0034",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0035",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0036",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0037",
+      "resume": {
+        "skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0038",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI"
+        ]
+      }
+    },
+    {
+      "id": "match-0039",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0040",
+      "resume": {
+        "skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j",
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0041",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Python"
+        ]
+      }
+    },
+    {
+      "id": "match-0042",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0043",
+      "resume": {
+        "skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "RAG",
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0044",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0045",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0046",
+      "resume": {
+        "skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "RAG",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0047",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "medium",
+      "evidence": {
+        "matched_skills": [
+          "Git"
+        ]
+      }
+    },
+    {
+      "id": "match-0048",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0049",
+      "resume": {
+        "skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Linux",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0050",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0051",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0052",
+      "resume": {
+        "skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0053",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0054",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0055",
+      "resume": {
+        "skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0056",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0057",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0058",
+      "resume": {
+        "skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "FastAPI",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0059",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Linux"
+        ]
+      }
+    },
+    {
+      "id": "match-0060",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0061",
+      "resume": {
+        "skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI",
+          "Python",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0062",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Docker"
+        ]
+      }
+    },
+    {
+      "id": "match-0063",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0064",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0065",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0066",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0067",
+      "resume": {
+        "skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0068",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI"
+        ]
+      }
+    },
+    {
+      "id": "match-0069",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0070",
+      "resume": {
+        "skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j",
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0071",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Python"
+        ]
+      }
+    },
+    {
+      "id": "match-0072",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0073",
+      "resume": {
+        "skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "RAG",
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0074",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0075",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0076",
+      "resume": {
+        "skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "RAG",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0077",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "medium",
+      "evidence": {
+        "matched_skills": [
+          "Git"
+        ]
+      }
+    },
+    {
+      "id": "match-0078",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0079",
+      "resume": {
+        "skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Linux",
+          "React",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0080",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0081",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0082",
+      "resume": {
+        "skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0083",
+      "resume": {
+        "skills": [
+          "React"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "React"
+        ]
+      }
+    },
+    {
+      "id": "match-0084",
+      "resume": {
+        "skills": [
+          "Git"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0085",
+      "resume": {
+        "skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "Linux",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0086",
+      "resume": {
+        "skills": [
+          "Vue"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Vue"
+        ]
+      }
+    },
+    {
+      "id": "match-0087",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0088",
+      "resume": {
+        "skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Docker",
+          "FastAPI",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0089",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Linux"
+        ]
+      }
+    },
+    {
+      "id": "match-0090",
+      "resume": {
+        "skills": [
+          "Linux"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0091",
+      "resume": {
+        "skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Python",
+          "FastAPI",
+          "SQL"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI",
+          "Python",
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0092",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Docker",
+          "Linux",
+          "Vue"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "Docker"
+        ]
+      }
+    },
+    {
+      "id": "match-0093",
+      "resume": {
+        "skills": [
+          "RAG"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "React",
+          "RAG",
+          "Git"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "RAG"
+        ]
+      }
+    },
+    {
+      "id": "match-0094",
+      "resume": {
+        "skills": [
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0095",
+      "resume": {
+        "skills": [
+          "SQL"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "SQL",
+          "Docker",
+          "Linux"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "SQL"
+        ]
+      }
+    },
+    {
+      "id": "match-0096",
+      "resume": {
+        "skills": [
+          "Python"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Vue",
+          "React",
+          "RAG"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0097",
+      "resume": {
+        "skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j"
+        ]
+      }
+    },
+    {
+      "id": "match-0098",
+      "resume": {
+        "skills": [
+          "FastAPI"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "FastAPI",
+          "SQL",
+          "Docker"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": [
+          "FastAPI"
+        ]
+      }
+    },
+    {
+      "id": "match-0099",
+      "resume": {
+        "skills": [
+          "Docker"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "Linux",
+          "Vue",
+          "React"
+        ]
+      },
+      "expected_label": "low",
+      "evidence": {
+        "matched_skills": []
+      }
+    },
+    {
+      "id": "match-0100",
+      "resume": {
+        "skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "job": {
+        "required_skills": [
+          "RAG",
+          "Git",
+          "Neo4j"
+        ]
+      },
+      "expected_label": "high",
+      "evidence": {
+        "matched_skills": [
+          "Git",
+          "Neo4j",
+          "RAG"
+        ]
+      }
+    }
+  ]
+}

@@ -298,6 +298,35 @@ class MatchService:
         except Exception:
             return set()
 
+    def _graph_skills_map(self, position_names: set[str]) -> dict[str, set[str]]:
+        """
+        一次性批量查询多个岗位的技能树，返回 {岗位名: 技能集合}。
+        批量匹配时用一条查询替代逐岗位查询，避免 N 次全表扫描放大的耗时。Neo4j 不可用返回空 dict。
+        """
+        names = [n for n in position_names if n]
+        if not names:
+            return {}
+        try:
+            rows = run_read(
+                "MATCH (j:Job)-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
+                "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
+                "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE]->(kp:KnowledgePoint) "
+                "WHERE j.name IN $names "
+                "RETURN j.name AS job, collect(DISTINCT ts.name)+collect(DISTINCT tp.name)+collect(DISTINCT kp.name) AS skills",
+                {"names": names},
+            )
+            result: dict[str, set[str]] = {}
+            for row in rows:
+                job = row.get("job")
+                if not job:
+                    continue
+                result[str(job)] = {
+                    str(n).strip().lower() for n in (row.get("skills") or []) if n
+                }
+            return result
+        except Exception:
+            return {}
+
     # ── [Agent 3] 技能语义匹配（LLM）──
     async def _semantic_skill_match(self, resume_skills: list[str], position_skills: list[str]) -> set[str]:
         """
@@ -375,10 +404,12 @@ class MatchService:
             return min(100, 40 + work_count * 20) if work_count > 0 else 30
 
     async def do_match(self, user_id: int, resume_id: int, job: dict, persist: bool = True,
-                       _fast_match: bool = False, _resume_ctx: dict | None = None) -> dict | None:
+                       _fast_match: bool = False, _resume_ctx: dict | None = None,
+                       _graph_ctx: dict[str, set[str]] | None = None) -> dict | None:
         """执行单次人岗匹配。job 为标准化格式的岗位字典。返回 None 表示被学历过滤。
         persist=False 时只计算不持久化（用于批量实时匹配）。
-        _fast_match=True：批量模式，跳过逐岗位 LLM 调用（规则+图谱匹配），快百倍。"""
+        _fast_match=True：批量模式，跳过逐岗位 LLM 调用（规则+图谱匹配），快百倍。
+        _graph_ctx：批量模式预加载的图谱技能映射 {岗位名: 技能集合}，避免逐岗位查 Neo4j。"""
         if _fast_match and _resume_ctx is not None:
             resume = None  # 批量模式：简历数据来自 _resume_ctx，不重复查库
         else:
@@ -391,6 +422,14 @@ class MatchService:
             resume_edu = self._get_resume_highest_education(resume)
             if not _education_meets(job.get("education_requirement", ""), resume_edu):
                 return None
+
+        # 岗位名 + 图谱技能树：批量匹配用预加载映射，单次匹配按需查询（仅查一次，复用）
+        position_name = job["name"]
+        graph_skills = (
+            _graph_ctx.get(position_name, set())
+            if _graph_ctx is not None
+            else self._graph_verified_skills(position_name)
+        )
 
         resume_skill_names = (
             _resume_ctx["skills"] if (_fast_match and _resume_ctx)
@@ -407,7 +446,7 @@ class MatchService:
                 ps for ps in all_position_skills
                 if any(_skill_names_match(rs, ps) for rs in resume_skill_names)
             }
-            graph_ok = self._graph_verified_skills(job.get("name", ""))
+            graph_ok = graph_skills
             matched |= {ps for ps in all_position_skills
                         if ps.strip().lower() in graph_ok and any(
                             rs.lower() in ps.lower() or ps.lower() in rs.lower()
