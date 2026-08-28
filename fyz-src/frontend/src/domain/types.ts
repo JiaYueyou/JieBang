@@ -869,6 +869,9 @@ export interface JobImportResult {
   skill_facts: number;
   verified_skill_facts: number;
   unverified_skill_facts: number;
+  observations?: number;
+  versions_created?: number;
+  affected_standard_job_ids?: number[];
   validation: JobImportValidation[];
 }
 

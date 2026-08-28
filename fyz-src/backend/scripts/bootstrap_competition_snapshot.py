@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +23,9 @@ from db_transfer_common import (  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 
 MARKER_PATH = Path(os.getenv("LOCAL_STORAGE_PATH", "/app/storage")) / "competition-snapshot-ready.json"
+DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
+RESUME_ASSET_DIR = DATA_DIR / "competition-resumes"
+RESUME_ASSET_MANIFEST_PATH = RESUME_ASSET_DIR / "manifest.json"
 LOCK_NAME = "jiebang_competition_snapshot_bootstrap"
 
 
@@ -88,6 +93,87 @@ def _write_marker(manifest: dict, status: str) -> None:
     )
 
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_resume_asset_manifest(path: Path = RESUME_ASSET_MANIFEST_PATH) -> dict:
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+        raise RuntimeError(f"Packaged resume asset manifest is unavailable: {path}") from exc
+    if manifest.get("format_version") != 1 or not manifest.get("files"):
+        raise RuntimeError("Packaged resume asset manifest is invalid")
+    return manifest
+
+
+def materialize_resume_assets(
+    manifest: dict,
+    *,
+    asset_dir: Path = RESUME_ASSET_DIR,
+    storage_root: Path | None = None,
+) -> dict[str, int]:
+    root = storage_root or MARKER_PATH.parent
+    restored = 0
+    preserved = 0
+    for entry in manifest["files"]:
+        source = asset_dir / str(entry["asset_filename"])
+        if not source.is_file():
+            raise RuntimeError(f"Packaged resume asset is missing: {source.name}")
+        expected_size = int(entry["size_bytes"])
+        expected_sha256 = str(entry["sha256"])
+        if source.stat().st_size != expected_size or _sha256_file(source) != expected_sha256:
+            raise RuntimeError(f"Packaged resume asset failed integrity validation: {source.name}")
+        storage_key = str(entry["storage_key"]).replace("\\", "/")
+        destination = (root / storage_key).resolve()
+        resolved_root = root.resolve()
+        if resolved_root not in destination.parents:
+            raise RuntimeError(f"Packaged resume storage key is invalid: {storage_key}")
+        if (
+            destination.is_file()
+            and destination.stat().st_size == expected_size
+            and _sha256_file(destination) == expected_sha256
+        ):
+            preserved += 1
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_name(destination.name + ".tmp")
+        shutil.copyfile(source, temporary)
+        os.replace(temporary, destination)
+        restored += 1
+    return {"restored": restored, "preserved": preserved, "total": len(manifest["files"])}
+
+
+async def validate_resume_asset_rows(connection, manifest: dict) -> None:
+    expected = {
+        str(entry["storage_key"]): (int(entry["resume_id"]), int(entry["size_bytes"]))
+        for entry in manifest["files"]
+    }
+    async with connection.cursor() as cursor:
+        await cursor.execute(
+            "SELECT id, storage_key, file_size FROM resume "
+            "WHERE deleted_at IS NULL ORDER BY id"
+        )
+        actual = {
+            str(storage_key): (int(resume_id), int(file_size))
+            for resume_id, storage_key, file_size in await cursor.fetchall()
+        }
+    if actual != expected:
+        raise RuntimeError(
+            "Packaged resume assets do not match the active resume rows in the snapshot"
+        )
+
+
+async def restore_resume_assets(connection) -> dict[str, int]:
+    manifest = load_resume_asset_manifest()
+    await validate_resume_asset_rows(connection, manifest)
+    return materialize_resume_assets(manifest)
+
+
 async def _configure_competition_admin(connection) -> None:
     username = os.getenv("INITIAL_ADMIN_USERNAME", "admin").strip() or "admin"
     password = os.getenv("INITIAL_ADMIN_PASSWORD", "")
@@ -133,9 +219,11 @@ async def bootstrap() -> None:
             marker_status=_marker_status(manifest),
         )
         if action == "skip":
+            resume_summary = await restore_resume_assets(connection)
             print(
                 "Competition snapshot bootstrap skipped: existing verified data is preserved "
-                f"(rows={business_rows}, revision={revision})."
+                f"(rows={business_rows}, revision={revision}, "
+                f"resume_assets={resume_summary['total']})."
             )
             return
 
@@ -146,8 +234,12 @@ async def bootstrap() -> None:
             check=True,
         )
         await _configure_competition_admin(connection)
+        resume_summary = await restore_resume_assets(connection)
         _write_marker(manifest, "verified")
-        print(f"Competition snapshot is ready: {MARKER_PATH}")
+        print(
+            f"Competition snapshot is ready: {MARKER_PATH} "
+            f"(resume_assets={resume_summary['total']})."
+        )
     finally:
         if lock_acquired:
             async with connection.cursor() as cursor:

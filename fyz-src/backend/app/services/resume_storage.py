@@ -8,7 +8,8 @@ from app.core.exceptions import ResourceNotFoundError
 
 class ResumeStorage:
     def __init__(self, root: str | Path = LOCAL_STORAGE_PATH) -> None:
-        self.root = Path(root).resolve() / "resumes"
+        self.storage_root = Path(root).resolve()
+        self.root = self.storage_root / "resumes"
 
     def save(self, content: bytes, filename: str) -> tuple[str, str]:
         suffix = Path(filename).suffix.lower()
@@ -31,9 +32,9 @@ class ResumeStorage:
 
     def _resolve(self, key: str) -> Path:
         relative = key.replace("\\", "/")
-        if not relative.startswith("resumes/"):
+        if not relative.startswith(("resumes/", "competition/")):
             raise ResourceNotFoundError("简历存储键无效")
-        path = (self.root.parent / relative).resolve()
-        if self.root not in path.parents:
+        path = (self.storage_root / relative).resolve()
+        if self.storage_root not in path.parents:
             raise ResourceNotFoundError("简历存储键无效")
         return path

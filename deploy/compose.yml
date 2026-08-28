@@ -161,6 +161,7 @@ services:
     environment: *fyz-environment
     command: ["python", "scripts/bootstrap_competition_snapshot.py"]
     volumes:
+      - ${FYZ_DATA_HOST_PATH:-../data}:/app/data:ro
       - fyz-storage:/app/storage
     depends_on:
       fyz-migrate:

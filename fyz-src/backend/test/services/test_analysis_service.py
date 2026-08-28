@@ -429,6 +429,42 @@ def test_capability_changes_use_recent_multi_evidence_and_exclude_soft_skills():
     assert changes[0].current_sample_count == 2
 
 
+def test_capability_changes_do_not_weaken_current_hard_requirements():
+    standard = StandardJob(
+        id=104, name="AI应用开发工程师", canonical_key="ai应用开发工程师",
+        aliases=[], stack="ai", source_count=7, status="active",
+    )
+    python = Skill(id=105, name="Python", canonical_name="Python", canonical_key="python", category="programming_language", aliases=[])
+    rag = Skill(id=106, name="RAG", canonical_name="RAG", canonical_key="rag", category="ai_ml", aliases=[])
+
+    def fact(raw_id: int, skill: Skill) -> tuple[JobSkillFact, Skill]:
+        return JobSkillFact(
+            raw_job_record_id=raw_id, skill_id=skill.id, kind="required",
+            importance=.9, frequency=1, confidence=.95,
+            evidence_text=f"硬性要求：{skill.name}", verification_status="verified",
+            extraction_method="rule", source_count=2,
+        ), skill
+
+    changes = AnalysisService._capability_changes(
+        standard_jobs=[standard], source_ids={104: {1, 2, 3, 4, 5, 6, 7}},
+        facts=[
+            fact(1, python), fact(2, python), fact(3, python), fact(4, python),
+            fact(5, python), fact(6, python),
+            fact(5, rag), fact(6, rag),
+        ],
+        record_month={
+            1: "2026-05", 2: "2026-05", 3: "2026-06", 4: "2026-06",
+            5: "2026-07", 6: "2026-08", 7: "2026-08",
+        },
+        skill_filter="", limit=10,
+    )
+
+    assert len(changes) == 1
+    assert changes[0].added == ["RAG"]
+    assert "Python" not in changes[0].weakened
+    assert "Python" not in changes[0].removed
+
+
 async def test_emerging_job_decision_is_upserted_and_returned_in_insights():
     async with async_session() as db:
         _, rust_standard, _ = await seed_analysis_data(db)

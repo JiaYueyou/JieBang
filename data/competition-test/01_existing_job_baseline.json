@@ -1,0 +1,44 @@
+[
+  {
+    "title": "AI应用开发工程师",
+    "company": "星河智能科技有限公司",
+    "city": "合肥",
+    "salary": "20K-30K",
+    "experience": "3-5年",
+    "education": "本科",
+    "jd_text": "【岗位职责】负责企业AI应用后端服务的设计、开发与交付，使用Python和FastAPI建设稳定接口，使用MySQL完成业务数据建模。\n【任职要求】熟练掌握Python、FastAPI和MySQL，具备接口测试、代码评审和生产环境问题排查经验。",
+    "responsibilities": "负责企业AI应用后端服务的设计、开发与交付，使用Python和FastAPI建设稳定接口，使用MySQL完成业务数据建模。",
+    "requirements": "熟练掌握Python、FastAPI和MySQL，具备接口测试、代码评审和生产环境问题排查经验。",
+    "keywords": ["Python", "FastAPI", "MySQL"],
+    "posted_at": "2026-05-12 09:00:00",
+    "url": "https://competition.example.com/baseline/ai-app-engineer-a",
+    "source": "赛方测试招聘源A",
+    "crawled_at": "2026-05-15T10:00:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "existing_job_baseline",
+      "snapshot_observed_at": "2026-05-15T10:00:00+08:00"
+    }
+  },
+  {
+    "title": "AI应用开发工程师",
+    "company": "云帆数据技术有限公司",
+    "city": "上海",
+    "salary": "22K-32K",
+    "experience": "3-5年",
+    "education": "本科",
+    "jd_text": "【岗位职责】建设企业AI应用平台，使用Python和FastAPI开发服务接口，负责MySQL数据模型与服务性能优化。\n【任职要求】熟练使用Python、FastAPI、MySQL，理解RESTful接口设计，能够独立完成服务部署与故障处理。",
+    "responsibilities": "建设企业AI应用平台，使用Python和FastAPI开发服务接口，负责MySQL数据模型与服务性能优化。",
+    "requirements": "熟练使用Python、FastAPI、MySQL，理解RESTful接口设计，能够独立完成服务部署与故障处理。",
+    "keywords": ["Python", "FastAPI", "MySQL"],
+    "posted_at": "2026-06-10 09:30:00",
+    "url": "https://competition.example.com/baseline/ai-app-engineer-b",
+    "source": "赛方测试招聘源B",
+    "crawled_at": "2026-06-15T10:00:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "existing_job_baseline",
+      "snapshot_observed_at": "2026-06-15T10:00:00+08:00"
+    }
+  }
+]

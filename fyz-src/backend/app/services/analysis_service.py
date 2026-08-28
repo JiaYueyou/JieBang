@@ -1580,9 +1580,12 @@ class AnalysisService:
         previous_months = set(months[-window_size * 2:-window_size])
         current_months = set(months[-window_size:])
         skill_rows: dict[int, list[Skill]] = defaultdict(list)
+        required_skill_rows: dict[int, list[Skill]] = defaultdict(list)
         for fact, skill in facts:
             if fact.raw_job_record_id and AnalysisService._is_capability_skill(skill):
                 skill_rows[fact.raw_job_record_id].append(skill)
+                if (fact.kind or "").strip().casefold() == "required":
+                    required_skill_rows[fact.raw_job_record_id].append(skill)
 
         result: list[CapabilityChangeInsight] = []
         for standard in standard_jobs:
@@ -1613,6 +1616,18 @@ class AnalysisService:
             )
             previous_total = len(previous_source_ids)
             current_total = len(current_source_ids)
+            current_required = Counter(
+                skill.name for raw_id in current_source_ids
+                for skill in required_skill_rows.get(raw_id, [])
+            )
+            # A capability explicitly required by at least two current job
+            # observations is still a hard requirement. A larger denominator
+            # must not turn that evidence into a misleading "weakened" or
+            # "removed" signal (for example Python/FastAPI in AI application
+            # development merely because new framework requirements appeared).
+            protected_requirements = {
+                name for name, count in current_required.items() if count >= 2
+            }
             added = sorted(
                 name
                 for name, count in current.items()
@@ -1623,6 +1638,7 @@ class AnalysisService:
             removed = sorted(
                 name for name, count in previous.items()
                 if current_total >= 2
+                and name not in protected_requirements
                 and count >= 2
                 and previous[name] / previous_total >= 0.4
                 and current[name] / current_total <= 0.15
@@ -1642,6 +1658,7 @@ class AnalysisService:
                 for name in set(previous) & set(current)
                 if previous_total >= 2
                 and current_total >= 2
+                and name not in protected_requirements
                 and previous[name] >= 2
                 and current[name] >= 2
                 and previous[name] / previous_total

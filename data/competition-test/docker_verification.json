@@ -1,0 +1,29 @@
+{
+  "schema_version": "competition-docker-page-reference-v1",
+  "verified_at": "2026-08-27T17:02:00+08:00",
+  "environment": {
+    "deployment": "Docker Compose",
+    "management_url": "http://localhost:18080",
+    "api_health": "healthy",
+    "neo4j_health": "healthy"
+  },
+  "page_assertions": {
+    "existing_job": {
+      "name": "AI应用开发工程师",
+      "visible_skills": ["Python", "FastAPI", "MySQL", "大模型", "LangChain", "RAG"],
+      "change_fields": ["LangChain", "RAG", "大模型"]
+    },
+    "new_job": {
+      "name": "大模型安全工程师",
+      "candidate_count": 1,
+      "confidence_percent": 78,
+      "visible_skills": ["Python", "大模型", "机器学习"]
+    },
+    "graph": {
+      "query": "AI应用开发工程师",
+      "visible_node_count": 16,
+      "visible_edge_count": 9,
+      "visible_related_skills": ["Python", "FastAPI", "LangChain", "RAG", "MySQL"]
+    }
+  }
+}

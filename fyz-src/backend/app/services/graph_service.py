@@ -74,6 +74,16 @@ logger = logging.getLogger(__name__)
 
 
 class GraphService:
+    # Python language and the frameworks/libraries whose primary developer
+    # surface is Python belong to one ecosystem in the L2 graph.  Keeping
+    # LangChain in a generic "Framework" bucket loses the prerequisite
+    # relationship that matters for job capability interpretation.
+    _PYTHON_ECOSYSTEM_SKILLS = {
+        "Python", "FastAPI", "Django", "Flask", "Tornado",
+        "LangChain", "LangGraph", "PyTorch", "TensorFlow", "Keras",
+        "Scikit-learn", "Pandas", "NumPy",
+    }
+
     # L4 技术点名称可剥离的复合修饰后缀（最长匹配优先，基于快照真实样本校准）
     _L4_COMPOUND_SUFFIXES = (
         "持久层框架", "数据库开发与优化", "开发与多语言协同", "开发基础与工程规范",
@@ -82,6 +92,16 @@ class GraphService:
         "分支与合并机制", "基本语法与结构", "基础语法与常用类库",
         "环境下的应用与嵌入式编程", "中间件使用", "脚本编写",
     )
+
+    @classmethod
+    def _skill_area(cls, skill: Skill) -> tuple[str, str, str]:
+        if skill.name in cls._PYTHON_ECOSYSTEM_SKILLS:
+            return "python_ecosystem", "Python 生态", "backend"
+        return (
+            skill.category,
+            skill.category.replace("_", " ").title(),
+            CATEGORY_STACK.get(skill.category, "backend"),
+        )
     # L4 技术点名称可剥离的单修饰后缀（守卫保证剥离后长度 ≥2）
     _L4_SUFFIXES = (
         "框架", "技术", "原理", "详解", "实战", "开发", "优化", "调优",
@@ -915,19 +935,25 @@ class GraphService:
                     stat["source_ids"].add(document_id)
                     support_pairs.add((document_id, standard_job_id, skill.id))
         for skill in skills.values():
-            stack = CATEGORY_STACK.get(skill.category, "backend")
-            areas.setdefault(skill.category, {
-                "name": skill.category.replace("_", " ").title(),
-                "stack": stack,
+            area_key, area_name, area_stack = self._skill_area(skill)
+            stack = CATEGORY_STACK.get(skill.category, area_stack)
+            areas.setdefault(area_key, {
+                "name": area_name,
+                "stack": area_stack,
             })
             nodes["TechStack"].append(self._node(
                 f"skill:{skill.id}", name=skill.name, canonicalKey=skill.canonical_key,
-                stack=stack, level="middle", description=f"{skill.category} 标准技能",
+                stack=stack, level="middle", description=(
+                    f"Python 生态中的 {skill.category} 标准技能"
+                    if area_key == "python_ecosystem"
+                    else f"{skill.category} 标准技能"
+                ),
+                ecosystem="Python" if area_key == "python_ecosystem" else None,
                 frequency=sum(s["frequency"] for (j, sid), s in job_skill_stats.items() if sid == skill.id),
             ))
             edges["CONTAINS"].append(self._edge(
-                f"area:{skill.category}", f"skill:{skill.id}",
-                category=skill.category,
+                f"area:{area_key}", f"skill:{skill.id}",
+                category=area_key,
             ))
         for category, area in areas.items():
             nodes["SkillArea"].append(self._node(
@@ -960,8 +986,9 @@ class GraphService:
         edges["CONTAINS"] = []
         for skill_id, stat in skill_stats.items():
             skill = skills[skill_id]
+            area_key, _, _ = self._skill_area(skill)
             edges["CONTAINS"].append(self._edge(
-                f"area:{skill.category}", f"skill:{skill.id}",
+                f"area:{area_key}", f"skill:{skill.id}",
                 frequency=stat["frequency"], sourceCount=len(stat["source_ids"]),
                 confidence=stat["confidence"], importance=stat["importance"],
                 firstSeenAt=stat["first_seen"].isoformat(),
@@ -971,7 +998,8 @@ class GraphService:
             ))
         for (job_id, skill_id), stat in job_skill_stats.items():
             skill = skills[skill_id]
-            area_stat = job_areas[(job_id, skill.category)]
+            area_key, _, _ = self._skill_area(skill)
+            area_stat = job_areas[(job_id, area_key)]
             area_stat["frequency"] += stat["frequency"]
             area_stat["source_ids"].update(stat["source_ids"])
             area_stat["confidence"] = max(area_stat["confidence"], stat["confidence"])

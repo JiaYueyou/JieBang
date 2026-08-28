@@ -26,3 +26,9 @@ def test_repairs_only_redacted_embedding_fraction_literals():
 def test_does_not_rewrite_non_embedding_statements():
     statement = "INSERT INTO `resume` (`text`) VALUES ('0.[已脱敏证件]');"
     assert MODULE.repair_redacted_embedding_literals(statement) == (statement, 0)
+
+
+def test_embedding_checksum_matches_retrieval_domain_format():
+    assert MODULE.embedding_checksum([0.0, -0.125, 1.0]) == (
+        "502ad3a41a4eda71489572f355fae271653d8da8de25908cd67607ca1d21445b"
+    )

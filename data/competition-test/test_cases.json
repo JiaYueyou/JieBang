@@ -1,0 +1,33 @@
+{
+  "schema_version": "competition-test-cases-v1",
+  "cases": [
+    {
+      "id": "TC-JOB-001",
+      "name": "导入既有岗位第一时间窗口",
+      "input_file": "01_existing_job_baseline.json",
+      "operation": "在管理端系统管理/采集中心点击“导入第一时间窗口”",
+      "expected": "导入任务成功；total为2；岗位洞察可读取AI应用开发工程师及Python、FastAPI、MySQL技能字段"
+    },
+    {
+      "id": "TC-JOB-002",
+      "name": "导入既有岗位第二时间窗口",
+      "input_file": "02_new_job_and_existing_update_v2.json",
+      "operation": "点击“导入第二时间窗口”，再点击“查看岗位洞察”",
+      "expected": "导入任务成功；AI应用开发工程师显示两个时间窗口及对应岗位证据数；技能变化字段包含LangChain和RAG"
+    },
+    {
+      "id": "TC-JOB-003",
+      "name": "发现新岗位并构建能力图谱",
+      "input_file": "02_new_job_and_existing_update_v2.json",
+      "operation": "点击“导入第二时间窗口”，等待图谱同步完成后查看岗位洞察和技能图谱",
+      "expected": "发现大模型安全工程师，来源数为2，图谱关联Python、机器学习、大模型等能力"
+    },
+    {
+      "id": "TC-JOB-004",
+      "name": "重复执行幂等性",
+      "input_file": "01_existing_job_baseline.json, 02_new_job_and_existing_update_v2.json",
+      "operation": "再次按顺序点击两个导入按钮",
+      "expected": "重复数据被跳过，不生成重复岗位；既有洞察和图谱结果保持可见"
+    }
+  ]
+}
