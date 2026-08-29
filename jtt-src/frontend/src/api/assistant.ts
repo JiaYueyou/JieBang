@@ -2,16 +2,12 @@
  * AI 助手 API —— 全局浮窗 AI 聊天 + 短语润色。
  */
 import api from './index'
-<<<<<<< HEAD
-import type { AssistantChatRequest, AssistantChatResponse, ResumeData } from '@/types'
-=======
 import type {
   AssistantChatRequest,
   AssistantChatResponse,
   ImprovementSuggestion,
   ResumeData,
 } from '@/types'
->>>>>>> b568d5178201726754523d39b83e833d55cbaa23
 
 export interface OptimizePhraseRequest {
   text: string
