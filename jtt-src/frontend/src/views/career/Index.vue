@@ -87,9 +87,10 @@ const analyzeGap = async () => {
       ElMessage.success(`找到 ${filteredResults.value.length} 个相关岗位`)
     }
   } catch {
+    // 服务不可用时降级到演示数据，但必须明确告知，避免用户误以为是真实匹配结果
     const { mockHistoryMatches } = await import('@/mock/data/match')
     matchResults.value = mockHistoryMatches.slice(0, 5)
-    ElMessage.warning('使用离线数据')
+    ElMessage.warning('匹配服务不可用，当前展示演示数据')
   } finally {
     matching.value = false
   }
@@ -125,9 +126,10 @@ const recommendPositions = async () => {
       router.push('/diagnosis')
     }).catch(() => {})
   } catch {
+    // 服务不可用时降级到演示数据，但必须明确告知，避免用户误以为是真实匹配结果
     const { mockHistoryMatches } = await import('@/mock/data/match')
     matchResults.value = mockHistoryMatches.slice(0, 5)
-    ElMessage.warning('使用离线数据')
+    ElMessage.warning('匹配服务不可用，当前展示演示数据')
   } finally {
     matching.value = false
   }

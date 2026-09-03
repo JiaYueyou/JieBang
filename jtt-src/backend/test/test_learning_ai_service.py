@@ -66,7 +66,12 @@ async def test_quiz_success_empty_and_missing_path(db_session):
 async def test_chat_success_and_fallback(db_session, monkeypatch):
     service = LearningService(db_session)
     service.llm.chat = AsyncMock(return_value={"content": "Answer"})
-    monkeypatch.setattr(service, "_extract_related_concepts", lambda message: [{"name": "Python"}])
+
+    # _extract_related_concepts 已改为 async，测试桩需要用协程函数
+    async def fake_extract(message):
+        return [{"name": "Python"}]
+
+    monkeypatch.setattr(service, "_extract_related_concepts", fake_extract)
     result = await service.chat("question", None, [{"role": "user", "content": "before"}])
     assert result["reply"] == "Answer"
     assert result["related_concepts"] == [{"name": "Python"}]

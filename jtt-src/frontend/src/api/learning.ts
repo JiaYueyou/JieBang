@@ -28,10 +28,13 @@ export const learningApi = {
     }, { timeout: 90000 }),
   recommendResources: (skillNames: string[]) =>
     api.post('/learning/assistant/recommend-resources', { skill_names: skillNames }, { timeout: 90000 }),
-  quiz: (data: { pathId: string; stepIds?: string[]; questionCount?: number }) =>
+  quiz: (data: { pathId: string; stepIds?: string[]; questionCount?: number; positionName?: string; topics?: string }) =>
     api.post('/learning/assistant/quiz', {
       path_id: Number(data.pathId),
       step_ids: data.stepIds ?? [],
       question_count: data.questionCount ?? 5,
+      // 附带岗位名与步骤标题，AI 服务据此出题（否则只能用默认主题）
+      position_name: data.positionName ?? '',
+      message: data.topics ?? '',
     }, { timeout: 90000 }),
 }

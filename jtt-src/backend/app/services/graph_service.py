@@ -80,12 +80,13 @@ class GraphService:
 
     async def enrich_skill(self, node_id: str) -> GraphSubgraph:
         """对指定 TechStack 节点调用 LLM 生成 L4(技术点)+L5(知识点) 并写入 Neo4j"""
-        # 查询技能节点
-        skill_nodes = self.graph.query_nodes(
-            node_type="TechStack", limit=1, include_auxiliary=True
+        # 查询技能节点（同步驱动放线程池，避免阻塞事件循环）
+        skill_nodes = await asyncio.to_thread(
+            self.graph.query_nodes,
+            node_type="TechStack", limit=1, include_auxiliary=True,
         )
         # query_nodes 不支持按 id 精确查，换用 expand
-        nodes, _ = self.graph.expand(node_id, 0, 1)
+        nodes, _ = await asyncio.to_thread(self.graph.expand, node_id, 0, 1)
         if not nodes or "TechStack" not in nodes[0].get("type", ""):
             raise ResourceNotFoundError(f"技能节点不存在或类型错误: {node_id}")
 
@@ -94,14 +95,14 @@ class GraphService:
         skill_props = skill["properties"]
 
         # 检查是否已有子节点（避免重复生成）
-        _, existing_edges = self.graph.expand(node_id, 2, 200)
+        _, existing_edges = await asyncio.to_thread(self.graph.expand, node_id, 2, 200)
         has_children = any(
             e["relation"] in ("REFINES_TO",) and e["source"] == node_id
             for e in existing_edges
         )
         if has_children:
             # 已有数据，直接返回现有子图
-            nodes2, edges2 = self.graph.expand(node_id, 2, 200)
+            nodes2, edges2 = await asyncio.to_thread(self.graph.expand, node_id, 2, 200)
             return self._subgraph(nodes2, edges2)
 
         logger.info(f"enrich_skill: generating L4/L5 for {skill_name} ({node_id})")
@@ -198,15 +199,15 @@ class GraphService:
                     "properties": {"confidence": 0.85, "sourceCount": 1},
                 })
 
-        # 写入 Neo4j
-        self.graph.ensure_schema()
-        self.graph.merge_nodes("TechPoint", new_nodes, version)
-        self.graph.merge_nodes("KnowledgePoint", new_nodes, version)
-        self.graph.merge_edges("REFINES_TO", new_edges, version)
-        self.graph.merge_edges("HAS_KNOWLEDGE", new_edges, version)
+        # 写入 Neo4j（写操作同样放线程池，避免写入期间阻塞事件循环）
+        await asyncio.to_thread(self.graph.ensure_schema)
+        await asyncio.to_thread(self.graph.merge_nodes, "TechPoint", new_nodes, version)
+        await asyncio.to_thread(self.graph.merge_nodes, "KnowledgePoint", new_nodes, version)
+        await asyncio.to_thread(self.graph.merge_edges, "REFINES_TO", new_edges, version)
+        await asyncio.to_thread(self.graph.merge_edges, "HAS_KNOWLEDGE", new_edges, version)
 
         # 返回完整子图
-        all_nodes, all_edges = self.graph.expand(node_id, 2, 300)
+        all_nodes, all_edges = await asyncio.to_thread(self.graph.expand, node_id, 2, 300)
         return self._subgraph(all_nodes, all_edges)
 
     def _subgraph(self, rows, edge_rows, *, truncated=False) -> GraphSubgraph:

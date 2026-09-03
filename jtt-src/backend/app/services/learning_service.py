@@ -14,7 +14,7 @@ from app.core.exceptions import ResourceNotFoundError
 from app.repositories.learning_repository import LearningRepository
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
-from app.core.neo4j import run_read
+from app.core.neo4j import run_read_async
 from app.providers.llm import get_llm_provider
 from app.services.match_service import _skill_names_match
 
@@ -114,7 +114,7 @@ class LearningService:
         # 构建图谱上下文
         graph_context = ""
         if context and context.get("target_position_id"):
-            graph_context = self._build_graph_context(context["target_position_id"])
+            graph_context = await self._build_graph_context(context["target_position_id"])
 
         # 构建用户上下文
         user_context = ""
@@ -145,7 +145,7 @@ class LearningService:
             reply = "AI 助手暂时不可用，请稍后重试。"
 
         # 从图谱中提取关联概念
-        related = self._extract_related_concepts(message)
+        related = await self._extract_related_concepts(message)
 
         # 从图谱中推荐相关资源
         resources = self._recommend_resources_from_graph(message)
@@ -334,10 +334,10 @@ class LearningService:
 
     # ===== 辅助方法 =====
 
-    def _build_graph_context(self, position_id: int) -> str:
-        """从 Neo4j 构建岗位所属的知识图谱上下文"""
+    async def _build_graph_context(self, position_id: int) -> str:
+        """从 Neo4j 构建岗位所属的知识图谱上下文（异步执行，避免阻塞事件循环）"""
         try:
-            nodes = run_read(
+            nodes = await run_read_async(
                 "MATCH (p:Position {id: $pid})-[:COMPOSES*1..3]->(related) "
                 "RETURN related.label AS label, related.type AS type",
                 {"pid": str(position_id)},
@@ -350,10 +350,10 @@ class LearningService:
             pass
         return ""
 
-    def _extract_related_concepts(self, message: str) -> list[dict]:
-        """从图谱中提取与用户问题相关的概念节点"""
+    async def _extract_related_concepts(self, message: str) -> list[dict]:
+        """从图谱中提取与用户问题相关的概念节点（异步执行，避免阻塞事件循环）"""
         try:
-            results = run_read(
+            results = await run_read_async(
                 "MATCH (n) WHERE n.label CONTAINS $keyword "
                 "RETURN n.id AS id, n.label AS label, n.type AS type LIMIT 5",
                 {"keyword": message[:10]},

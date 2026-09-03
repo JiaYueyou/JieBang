@@ -12,7 +12,7 @@ from app.core.exceptions import ResourceNotFoundError
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.position_repository import PositionRepository
 from app.repositories.raw_job_repository import RawJobRepository
-from app.core.neo4j import run_read
+from app.core.neo4j import run_read_async
 from app.providers.llm import get_llm_provider
 from app.services.match_service import _skill_names_match, _extract_skills_from_text, _parse_education_requirement
 
@@ -97,9 +97,11 @@ class TailorService:
 
     async def _load_from_neo4j(self, position_id: str) -> PositionContext:
         """从 Neo4j 知识图谱加载岗位上下文（兜底）"""
+        import asyncio
         from app.repositories.graph_repository import Neo4jGraphRepository
         graph_repo = Neo4jGraphRepository()
-        job_skills = graph_repo.query_job_skills(position_id)
+        # 同步驱动放线程池执行，避免阻塞事件循环
+        job_skills = await asyncio.to_thread(graph_repo.query_job_skills, position_id)
         if not job_skills:
             # Neo4j 查不到时回退到空上下文
             return PositionContext(
@@ -216,7 +218,7 @@ class TailorService:
 
         try:
             # 按岗位名查图谱技能树（Job 节点的 name 属性）
-            rows = run_read(
+            rows = await run_read_async(
                 "MATCH (j:Job {name: $job_name}) "
                 "-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
                 "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "

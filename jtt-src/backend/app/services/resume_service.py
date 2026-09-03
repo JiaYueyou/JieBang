@@ -4,6 +4,7 @@
 import json
 import re
 import os
+import asyncio
 import subprocess
 import tempfile
 import logging
@@ -409,11 +410,13 @@ class ResumeService:
         user_dir = UPLOAD_DIR / str(user_id)
         user_dir.mkdir(parents=True, exist_ok=True)
         file_path = user_dir / safe_filename
-        file_path.write_bytes(file_content)
+        # 磁盘写入与文本提取（含 soffice 子进程、pdfplumber 解析）都是同步重操作，
+        # 放线程池执行，避免阻塞事件循环导致全站请求卡住
+        await asyncio.to_thread(file_path.write_bytes, file_content)
 
         # Step 2: 提取文本
         try:
-            raw_text = extract_text(file_content, filename)
+            raw_text = await asyncio.to_thread(extract_text, file_content, filename)
         except InvalidParameterError:
             raise
         except Exception as e:

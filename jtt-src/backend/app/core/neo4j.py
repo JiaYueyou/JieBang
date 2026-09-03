@@ -1,6 +1,7 @@
 """
 Neo4j 知识图谱连接 —— 单例驱动 + 会话管理，提供读写查询辅助。
 """
+import asyncio
 import logging
 from contextlib import contextmanager
 
@@ -73,6 +74,16 @@ def run_write(query: str, params: dict = None, database: str = "neo4j") -> list[
     with driver.session(database=database) as session:
         result = session.execute_write(_run, query, params or {})
         return [record.data() for record in result]
+
+
+async def run_read_async(query: str, params: dict = None, database: str = "neo4j") -> list[dict]:
+    """异步执行只读查询：同步驱动在线程池中跑，避免阻塞事件循环拖垮整个服务"""
+    return await asyncio.to_thread(run_read, query, params, database)
+
+
+async def run_write_async(query: str, params: dict = None, database: str = "neo4j") -> list[dict]:
+    """异步执行写入查询：同 run_read_async，在线程池中执行同步驱动"""
+    return await asyncio.to_thread(run_write, query, params, database)
 
 
 def health_check() -> bool:

@@ -13,6 +13,12 @@ import zixunIcon from '@/assets/icon/zixun.svg'
 import chajufenxiIcon from '@/assets/icon/chajufenxi.svg'
 import xuexiceshiIcon from '@/assets/icon/xuexiceshi.svg'
 import chongmingmingIcon from '@/assets/icon/chongmingming.svg'
+// 灯泡提示图标
+import dengpaoIcon from '@/assets/icon/dengpao.svg'
+// AI 助手图标
+import aitIcon from '@/assets/icon/ait.svg'
+// 用户角色图标
+import renIcon from '@/assets/icon/ren.svg'
 
 const learningStore = useLearningStore()
 const favoritesStore = useFavoritesStore()
@@ -206,7 +212,13 @@ const openQuiz = async (path: LearningPath, stepIds: string[], isFinal = false) 
   quizAnswers.value = {}
   quizLoading.value = true
   try {
-    const res: any = await learningApi.quiz({ pathId: path.id, stepIds, questionCount: isFinal ? 5 : 3 })
+    const res: any = await learningApi.quiz({
+      pathId: path.id,
+      stepIds,
+      questionCount: isFinal ? 5 : 3,
+      positionName: path.positionName,
+      topics: titles,
+    })
     quizQuestions.value = res.data?.questions || []
   } catch {
     ElMessage.error('题目加载失败')
@@ -565,7 +577,7 @@ const renderMarkdown = (text: string): string => {
     <aside class="ai-panel" :style="{ width: panelWidth + 'px', minWidth: 'unset' }">
       <div class="ai-panel-header">
         <div class="ai-title-row">
-          <span class="ai-icon">🤖</span>
+          <span class="ai-icon"><img :src="aitIcon" class="ait-icon" alt="AI" /></span>
           <span class="ai-title">AI 学习助手</span>
         </div>
         <span class="ai-subtitle">基于知识图谱的智能学习导师</span>
@@ -603,7 +615,10 @@ const renderMarkdown = (text: string): string => {
           class="chat-bubble"
           :class="m.role"
         >
-          <div class="chat-role-label">{{ m.role === 'user' ? '👤 你' : '🤖 AI 助手' }}</div>
+          <div class="chat-role-label">
+            <span v-if="m.role === 'user'"><img :src="renIcon" class="ren-icon" alt="我" /> 我</span>
+            <span v-else><img :src="aitIcon" class="ait-icon" alt="AI" /> AI 助手</span>
+          </div>
           <div class="chat-content" v-html="renderMarkdown(m.content)"></div>
           <!-- 关联概念 -->
           <div v-if="m.concepts?.length" class="chat-concepts">
@@ -630,7 +645,7 @@ const renderMarkdown = (text: string): string => {
         </div>
         <!-- 加载状态 -->
         <div v-if="chatLoading" class="chat-bubble assistant">
-          <div class="chat-role-label">🤖 AI 助手</div>
+          <div class="chat-role-label"><img :src="aitIcon" class="ait-icon" alt="AI" /> AI 助手</div>
           <div class="chat-typing">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
           </div>
@@ -880,7 +895,7 @@ const renderMarkdown = (text: string): string => {
             </label>
           </div>
           <div v-if="quizSubmitted" class="quiz-explanation">
-            💡 {{ q.explanation }}
+            <img :src="dengpaoIcon" class="dengpao-icon" alt="提示" /> {{ q.explanation }}
             <el-button
               text size="small" type="danger"
               :disabled="favoritesStore.isFavorited('quiz_error', 'quiz-' + q.id)"
@@ -960,6 +975,9 @@ const renderMarkdown = (text: string): string => {
 }
 
 .ai-icon { font-size: 22px; }
+/* AI 助手图标（ait.svg）：面板标题与聊天气泡两种尺寸 */
+.ai-icon .ait-icon { width: 22px; height: 22px; vertical-align: middle; }
+.chat-role-label .ait-icon, .chat-role-label .ren-icon { width: 12px; height: 12px; vertical-align: -2px; margin-right: 2px; }
 
 .ai-title {
   font-size: 15px;
@@ -1784,6 +1802,8 @@ const renderMarkdown = (text: string): string => {
   color: #a16207;
   line-height: 1.5;
 }
+/* 灯泡提示图标：与文字基线对齐 */
+.dengpao-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
 
 /* ========== 响应式 ========== */
 @media (max-width: 900px) {

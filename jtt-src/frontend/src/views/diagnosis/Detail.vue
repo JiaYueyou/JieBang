@@ -33,12 +33,21 @@ const addSkill = () => {
 onMounted(async () => {
   const id = route.params.id as string
   if (id) {
-    await resumeStore.fetchDetail(id)
-    if (resumeStore.currentResume) {
-      Object.assign(resume, JSON.parse(JSON.stringify(resumeStore.currentResume)))
+    try {
+      await resumeStore.fetchDetail(id)
+      if (resumeStore.currentResume) {
+        Object.assign(resume, JSON.parse(JSON.stringify(resumeStore.currentResume)))
+      }
+    } catch {
+      // 加载失败时页面原本会半空白且无任何提示
+      ElMessage.error('简历详情加载失败，请刷新重试')
     }
   }
-  await positionsStore.fetchPositions()
+  try {
+    await positionsStore.fetchPositions()
+  } catch {
+    ElMessage.error('岗位列表加载失败')
+  }
 })
 
 const handleSave = async () => {
@@ -73,6 +82,9 @@ const triggerAutoMatch = async () => {
       const target = matchStore.batchResults.find(r => r.positionId === focusPosId)
       if (target) matchStore.selectBatchResult(target)
     }
+  } catch {
+    // 失败时原先无提示，匹配区只显示空态，用户不知发生了什么
+    ElMessage.error('自动匹配失败，请稍后重试')
   } finally {
     matching.value = false
   }

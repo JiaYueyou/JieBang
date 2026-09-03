@@ -64,6 +64,16 @@ class ChatRequest(BaseModel):
     images: list[str] = Field(default_factory=list)
     pageContext: PageContext | None = None
     history: list[dict[str, str]] = Field(default_factory=list)
+    # 兼容前端 learning.ts 的 snake_case 字段——此前这些字段被 pydantic 丢弃，
+    # 导致岗位名/技能名丢失、端点回退到 "Java开发工程师" 等默认值
+    position_name: str = ""
+    missing_skills: list[str] = Field(default_factory=list)
+    matched_skills: list[str] = Field(default_factory=list)
+    resume_id: int | None = None
+    skill_names: list[str] = Field(default_factory=list)
+    path_id: int | None = None
+    step_ids: list[str] = Field(default_factory=list)
+    question_count: int = 5
 
 class OptimizeRequest(BaseModel):
     text: str
@@ -325,11 +335,12 @@ async def agent_chat(req: ChatRequest):
         thinking.append({"icon": "🔧", "text": f"调用工具 {name}({args})…"})
         try:
             if name == "query_skill_graph":
-                r = tool_query_graph(str(args.get("position", "")))
+                # Neo4j 同步查询放线程池，避免阻塞事件循环
+                r = await asyncio.to_thread(tool_query_graph, str(args.get("position", "")))
             elif name == "search_web":
                 r = await tool_search_web(str(args.get("query", req.message)))
             elif name == "analyze_skill_gap":
-                r = tool_gap(str(args.get("position", "")), rd)
+                r = await asyncio.to_thread(tool_gap, str(args.get("position", "")), rd)
             else:
                 r = "未知工具"
             tool_results.append(f"[工具 {name} 结果]\n{r}")
@@ -436,7 +447,13 @@ RESOURCE_PROMPT = """你是学习资源推荐专家。根据用户提供的技�
 @app.post("/api/learning/assistant/generate-path")
 async def learning_generate_path(req: ChatRequest):
     """Alias: uses the same generate-learning-path endpoint."""
-    pos = req.pageContext.positionName if req.pageContext and req.pageContext.positionName else (req.message or "Java开发工程师")
+    # 优先取前端 learning.ts 传的 position_name，其次 pageContext / message
+    pos = (
+        req.position_name
+        or (req.pageContext.positionName if req.pageContext and req.pageContext.positionName else "")
+        or req.message
+        or "Java开发工程师"
+    )
     return await generate_learning_path(LearningPathRequest(positionName=pos))
 
 
@@ -444,7 +461,8 @@ async def learning_generate_path(req: ChatRequest):
 async def recommend_resources(req: ChatRequest):
     if not DEEPSEEK_API_KEY:
         raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
-    skill_names = [req.message] if req.message else ["Java"]
+    # 优先取前端传的 skill_names 列表
+    skill_names = req.skill_names or ([req.message] if req.message else ["Java"])
     try:
         raw = await call_deepseek([
             {"role": "system", "content": RESOURCE_PROMPT},
@@ -576,7 +594,8 @@ async def generate_links(req: ChatRequest):
 async def generate_quiz(req: ChatRequest):
     if not DEEPSEEK_API_KEY:
         raise HTTPException(status_code=503, detail={"code": 503, "message": "DEEPSEEK_API_KEY not configured", "data": None})
-    path_context = req.message or "Java开发"
+    # 话题优先级：前端 quiz 传的 step 标题(message) → position_name → 默认
+    path_context = req.message or req.position_name or "Java开发"
     try:
         raw = await call_deepseek([
             {"role": "system", "content": QUIZ_PROMPT},
@@ -604,17 +623,23 @@ async def search_web(query: str, max_results: int = 10) -> list[dict[str, str]]:
     """搜索网络，返回标题+摘要列表。如不可用返回空列表。"""
     # Proxy settings (for users behind firewall)
     proxy_url = os.getenv("SEARCH_PROXY", "")
-    ddgs_kwargs = {"proxies": proxy_url} if proxy_url else {}
+    # 注意：duckduckgo_search >=6 参数名由 proxies 改为 proxy，旧写法会 TypeError
+    ddgs_kwargs = {"proxy": proxy_url} if proxy_url else {}
 
-    try:
+    def _ddg_search() -> list[dict[str, str]]:
+        """同步 SDK 调用，交给线程池执行，避免被限流/慢响应时阻塞整个事件循环"""
         from duckduckgo_search import DDGS
+        results = []
         with DDGS(**ddgs_kwargs) as ddgs:
-            results = []
             for r in ddgs.text(query, max_results=max_results):
                 results.append({"title": r.get("title", ""), "snippet": r.get("body", ""), "url": r.get("href", "")})
-            if results:
-                return results
-            log.warning("DuckDuckGo returned 0 results, trying fallback...")
+        return results
+
+    try:
+        results = await asyncio.to_thread(_ddg_search)
+        if results:
+            return results
+        log.warning("DuckDuckGo returned 0 results, trying fallback...")
     except Exception as e:
         log.warning(f"DuckDuckGo unavailable: {e}")
     # Fallback: try Bing API if configured
@@ -741,7 +766,7 @@ async def generate_learning_path(req: LearningPathRequest):
 
     user_prompt = "目标岗位：" + position + "\n\n"
     # [Agent 2] 注入知识图谱技能树 —— 路径排序以图谱依赖结构为准（防幻觉）
-    graph_tree = query_graph_skill_tree(position)
+    graph_tree = await asyncio.to_thread(query_graph_skill_tree, position)
     if graph_tree:
         user_prompt += graph_tree + "\n\n"
     if search_context:

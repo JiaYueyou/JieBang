@@ -2,8 +2,8 @@
 大模型 Provider —— 封装 LLM API 调用，支持结构化和非结构化输出。
 包含真实 Provider (DeepSeek/讯飞星火) 和 Mock Provider (测试用)。
 """
+import asyncio
 import json
-import time
 import httpx
 from app.core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS, TESTING
 
@@ -57,8 +57,9 @@ class DeepSeekProvider(LLMProvider):
             "Content-Type": "application/json",
         }
 
-        # 最多重试 2 次（指数退避）
-        for attempt in range(3):
+        # 最多重试 1 次（指数退避）；async 环境必须用 asyncio.sleep，
+        # time.sleep 会阻塞事件循环导致整个服务无响应
+        for attempt in range(2):
             try:
                 async with httpx.AsyncClient(timeout=self.timeout) as client:
                     resp = await client.post(
@@ -76,9 +77,9 @@ class DeepSeekProvider(LLMProvider):
                         "usage": data.get("usage", {}),
                     }
             except Exception as e:
-                if attempt == 2:
-                    raise RuntimeError(f"LLM API 调用失败（已重试3次）: {str(e)}")
-                time.sleep(2 ** attempt)  # 指数退避: 1s, 2s
+                if attempt == 1:
+                    raise RuntimeError(f"LLM API 调用失败（已重试2次）: {str(e)}")
+                await asyncio.sleep(2 ** attempt)  # 指数退避: 1s
 
 
 def get_llm_provider() -> LLMProvider:

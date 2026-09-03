@@ -2,13 +2,14 @@
 匹配服务 —— 人岗匹配评分算法、差距分析。
 数据源：raw_job_record 优先，Neo4j 知识图谱次之，MySQL job_position 兜底。
 """
+import asyncio
 import json
 import logging
 import re
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
-from app.core.neo4j import run_read
+from app.core.neo4j import run_read_async
 from app.providers.llm import get_llm_provider
 from app.repositories.match_repository import MatchRepository
 from app.repositories.resume_repository import ResumeRepository
@@ -177,18 +178,13 @@ class MatchService:
     # ===== 数据源加载 =====
 
     async def _load_jobs_from_raw_record(self) -> list[dict]:
-        """从 MySQL raw_job_record 加载所有岗位为匹配用的标准化格式"""
-        all_ids = await self.raw_job_repo.get_all_ids()
-        jobs = []
-        for jid in all_ids:
-            row = await self.raw_job_repo.get_by_id(jid)
-            if row:
-                jobs.append(self._normalize_raw_job(row))
-        return jobs
+        """从 MySQL raw_job_record 加载所有岗位为匹配用的标准化格式（单次批量查询，避免 N+1）"""
+        rows = await self.raw_job_repo.get_all()
+        return [self._normalize_raw_job(row) for row in rows]
 
-    def _load_jobs_from_neo4j(self) -> list[dict]:
-        """从 Neo4j 加载所有 Job 节点为匹配用的标准化格式"""
-        neo4j_jobs = self.graph_repo.query_jobs_for_matching()
+    async def _load_jobs_from_neo4j(self) -> list[dict]:
+        """从 Neo4j 加载所有 Job 节点为匹配用的标准化格式（同步驱动放线程池执行，避免阻塞事件循环）"""
+        neo4j_jobs = await asyncio.to_thread(self.graph_repo.query_jobs_for_matching)
         return [self._normalize_neo4j_job(j) for j in neo4j_jobs]
 
     async def _load_jobs_from_mysql(self) -> list[dict]:
@@ -279,13 +275,14 @@ class MatchService:
     # ===== 核心匹配 =====
 
         # ── [Agent 3] 技能图谱背书（防幻觉）──
-    def _graph_verified_skills(self, position_name: str) -> set[str]:
+    async def _graph_verified_skills(self, position_name: str) -> set[str]:
         """
         查知识图谱获取该岗位技能树（TechStack/TechPoint/KnowledgePoint 三层），
         返回图谱中真实存在的技能名集合（小写）。Neo4j 不可用返回空集。
+        异步执行：Neo4j 同步驱动放线程池，避免阻塞事件循环。
         """
         try:
-            rows = run_read(
+            rows = await run_read_async(
                 "MATCH (j:Job {name: $job})-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
                 "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
                 "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE]->(kp:KnowledgePoint) "
@@ -298,16 +295,17 @@ class MatchService:
         except Exception:
             return set()
 
-    def _graph_skills_map(self, position_names: set[str]) -> dict[str, set[str]]:
+    async def _graph_skills_map(self, position_names: set[str]) -> dict[str, set[str]]:
         """
         一次性批量查询多个岗位的技能树，返回 {岗位名: 技能集合}。
         批量匹配时用一条查询替代逐岗位查询，避免 N 次全表扫描放大的耗时。Neo4j 不可用返回空 dict。
+        异步执行：Neo4j 同步驱动放线程池，避免阻塞事件循环。
         """
         names = [n for n in position_names if n]
         if not names:
             return {}
         try:
-            rows = run_read(
+            rows = await run_read_async(
                 "MATCH (j:Job)-[:REQUIRES_AREA]->(:SkillArea)-[:CONTAINS]->(ts:TechStack) "
                 "OPTIONAL MATCH (ts)-[:SUPPORTS]->(tp:TechPoint) "
                 "OPTIONAL MATCH (tp)-[:HAS_KNOWLEDGE]->(kp:KnowledgePoint) "
@@ -428,7 +426,7 @@ class MatchService:
         graph_skills = (
             _graph_ctx.get(position_name, set())
             if _graph_ctx is not None
-            else self._graph_verified_skills(position_name)
+            else await self._graph_verified_skills(position_name)
         )
 
         resume_skill_names = (
@@ -547,8 +545,7 @@ class MatchService:
             ],
         }
 
-        # 生成规则优化建议（经图谱验证标记）
-        graph_skills = self._graph_verified_skills(position_name)
+        # 生成规则优化建议（经图谱验证标记；graph_skills 复用上方已查询结果，避免重复查 Neo4j）
         def _graph_flag(skill_name: str) -> dict:
             if not graph_skills or skill_name.strip().lower() in graph_skills:
                 return {"verified": True, "warning": None}
@@ -689,7 +686,7 @@ class MatchService:
             logger.warning(f"auto_match: raw_job_record 加载失败 ({e})，尝试 Neo4j")
             # 2) 降级 Neo4j
             try:
-                jobs = self._load_jobs_from_neo4j()
+                jobs = await self._load_jobs_from_neo4j()
                 data_source = "neo4j"
                 logger.info(f"auto_match: 从 Neo4j 加载 {len(jobs)} 个岗位")
             except Exception as e2:
@@ -713,10 +710,15 @@ class MatchService:
         resume_skills = [s.get("name", "") for s in (resume.skill_list or []) if s.get("name")]
         resume_skill_lower = {s.lower() for s in resume_skills}
 
+        # 一次性预加载全部岗位的图谱技能树（单条批量查询），逐岗复用，
+        # 避免批量循环里每岗位同步查 Neo4j 阻塞事件循环
+        graph_ctx = await self._graph_skills_map({job["name"] for job in jobs if job.get("name")})
+
         for job in jobs:
             result = await self.do_match(
                 user_id, resume_id, job, persist=False,
                 _fast_match=True, _resume_ctx={"skills": resume_skills, "lower": resume_skill_lower, "exp": resume.work_experience_list or []},
+                _graph_ctx=graph_ctx,
             )
             if result is None:
                 education_filtered += 1

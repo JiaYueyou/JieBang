@@ -3,9 +3,10 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_learning_path_crud(client, auth_headers):
+    # position_id 在数据库中是 INT 列，schema 校验为整数，不能传字符串
     payload = {
         "name": "Python Path",
-        "position_id": "python-backend",
+        "position_id": 0,
         "position_name": "Python Engineer",
         "steps": [{
             "id": "step-1", "order": 1, "title": "Python Basics",
@@ -21,7 +22,7 @@ async def test_learning_path_crud(client, auth_headers):
     assert any(item["id"] == path_id for item in listed.json()["data"])
 
     detail = await client.get(f"/api/v1/learning/paths/{path_id}", headers=auth_headers)
-    assert detail.json()["data"]["position_id"] == "python-backend"
+    assert detail.json()["data"]["position_id"] == 0
 
     update = await client.put(
         f"/api/v1/learning/paths/{path_id}",

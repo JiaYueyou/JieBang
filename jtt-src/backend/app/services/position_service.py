@@ -4,7 +4,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ResourceNotFoundError
 from app.repositories.position_repository import PositionRepository
-from app.core.neo4j import run_read
+from app.core.neo4j import run_read_async
 
 
 class PositionService:
@@ -48,12 +48,13 @@ class PositionService:
     async def get_graph_data(self, root_tech: str | None = None) -> dict:
         """知识图谱数据，优先从 Neo4j 查询，否则返回示例数据"""
         try:
-            nodes = run_read(
+            # Neo4j 同步驱动放线程池执行，避免阻塞事件循环拖垮其他请求
+            nodes = await run_read_async(
                 "MATCH (n) WHERE ($root IS NULL OR n.rootId = $root) "
                 "RETURN n.id AS id, n.label AS label, n.type AS type, n.layer AS layer, n.rootId AS root_id",
                 {"root": root_tech},
             )
-            edges = run_read(
+            edges = await run_read_async(
                 "MATCH (a)-[r]->(b) WHERE ($root IS NULL OR a.rootId = $root) "
                 "RETURN a.id AS source, b.id AS target, type(r) AS relation, r.weight AS weight",
                 {"root": root_tech},

@@ -39,8 +39,11 @@ async def create_initial_admin():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理：启动时建表+初始化 Neo4j + 创建管理员，关闭时断开连接"""
-    # 启动时
-    await init_db()
+    # 启动时（init_db 失败不阻止服务启动，健康检查会反映数据库状态）
+    try:
+        await init_db()
+    except Exception as e:
+        logger.error(f"数据库初始化失败，服务降级启动: {e}")
     if INITIAL_ADMIN_ENABLED:
         try:
             await create_initial_admin()
@@ -96,11 +99,13 @@ app.include_router(favorites.router, prefix="/api/v1")
 @app.get("/api/v1/health")
 async def health_check():
     """健康检查端点"""
+    import asyncio
     neo4j_ok = True
     try:
         driver = get_driver()
         if driver is not None:
-            driver.verify_connectivity()
+            # 同步连通性检查放线程池执行，Neo4j 卡顿时也不阻塞事件循环
+            await asyncio.to_thread(driver.verify_connectivity)
     except Exception:
         neo4j_ok = False
     return {

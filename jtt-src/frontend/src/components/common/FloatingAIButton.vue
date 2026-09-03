@@ -11,6 +11,8 @@ import { resumeApi } from '@/api/resume'
 import { matchApi } from '@/api/match'
 import type { ChatMessage, PageContext, ChatAction } from '@/types'
 import { mockResumes } from '@/mock/data/resume'
+// 灯泡提示图标
+import dengpaoIcon from '@/assets/icon/dengpao.svg'
 
 const route = useRoute()
 const router = useRouter()
@@ -689,7 +691,7 @@ const closePreview = () => { previewImageUrl.value = '' }
             <p class="welcome-sub">我会自主调用工具（知识图谱 / 联网搜索 / 简历分析）来回答你的问题，不只是聊天</p>
 
             <div class="welcome-section">
-              <span class="welcome-label">💡 你可以这样问我（点击直接发）</span>
+              <span class="welcome-label"><img :src="dengpaoIcon" class="dengpao-icon" alt="提示" /> 你可以这样问我（点击直接发）</span>
               <div class="example-list">
                 <button
                   v-for="ex in exampleQuestions" :key="ex"
@@ -959,6 +961,8 @@ const closePreview = () => { previewImageUrl.value = '' }
   margin-bottom: 8px;
   padding-left: 2px;
 }
+/* 灯泡提示图标：与文字基线对齐 */
+.dengpao-icon { width: 12px; height: 12px; vertical-align: -1.5px; margin-right: 2px; }
 .welcome-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .nav-card {
   display: flex; align-items: center; gap: 6px;

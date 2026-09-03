@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { MatchResult, ImprovementSuggestion } from '@/types'
 import { matchApi } from '@/api/match'
 import { tailorApi } from '@/api/tailor'
@@ -56,14 +57,20 @@ export const useMatchStore = defineStore('match', () => {
   })
 
   const fetchAiSuggestions = async (resumeId: string, positionCtx: any) => {
+    const jobName = positionCtx?.name
     suggestionsLoading.value = true
     try {
       await resumeStore.fetchDetail(resumeId)
       const resume = resumeStore.currentResume
       if (!resume) throw new Error('未找到待优化的简历')
       const res: any = await assistantApi.optimizeResume(resume, positionCtx)
+      // 陈旧结果守卫：请求期间用户切换了岗位则丢弃，避免旧结果覆盖到新选中岗位
+      if (selectedBatchResult.value && toPositionCtx(selectedBatchResult.value).name !== jobName) return
       aiSuggestions.value = (res.data?.suggestions || []).map(suggestionFromApi)
       return aiSuggestions.value
+    } catch (e: any) {
+      // 之前是静默失败，AI 建议卡片永远空白且无任何提示
+      ElMessage.error(e?.message || 'AI 建议获取失败，请稍后重试')
     } finally {
       suggestionsLoading.value = false
     }

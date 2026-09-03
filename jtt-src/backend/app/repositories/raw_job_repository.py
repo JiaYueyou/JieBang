@@ -85,3 +85,18 @@ class RawJobRepository:
         result = await self.db.execute(query_sql, {"job_id": job_id})
         row = result.mappings().first()
         return dict(row) if row else None
+
+    async def get_all(self) -> list[dict]:
+        """一次性获取全部爬虫岗位（字段与 get_by_id 一致），供批量匹配用，避免逐条查询的 N+1"""
+        query_sql = text(f"""
+            SELECT r.id, r.standardized_title, r.title, r.company, r.city,
+                   r.salary_text, r.experience_text, r.education_text,
+                   r.jd_text, r.responsibilities, r.requirements,
+                   r.keywords, r.posted_at_text, r.crawled_at_text,
+                   r.source_document_id,
+                   sj.stack, sj.name AS std_job_name
+            {self.BASE_JOIN}
+            ORDER BY r.id
+        """)
+        result = await self.db.execute(query_sql)
+        return [dict(r) for r in result.mappings().all()]

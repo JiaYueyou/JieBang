@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useFavoritesStore } from '@/stores/favorites'
+// 灯泡提示图标
+import dengpaoIcon from '@/assets/icon/dengpao.svg'
 
 const router = useRouter()
 const favoritesStore = useFavoritesStore()
@@ -141,7 +143,7 @@ const resourceTypeLabels: Record<string, string> = {
                 <span>{{ fav.metadata?.correct_answer || '无' }}</span>
               </div>
               <p v-if="fav.metadata?.explanation" class="error-explain">
-                💡 {{ fav.metadata.explanation }}
+                <img :src="dengpaoIcon" class="dengpao-icon" alt="提示" /> {{ fav.metadata.explanation }}
               </p>
             </div>
           </div>
@@ -288,6 +290,8 @@ const resourceTypeLabels: Record<string, string> = {
 .error-answer.wrong span:last-child { color: var(--danger); }
 .error-answer.correct span:last-child { color: var(--success); }
 .error-explain { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+/* 灯泡提示图标：与文字基线对齐 */
+.dengpao-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
 
 
 .empty-tab { padding: 40px 0; text-align: center; }

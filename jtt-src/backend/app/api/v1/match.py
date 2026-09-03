@@ -1,7 +1,9 @@
 """
 人岗匹配 API —— 单人匹配、批量匹配、历史查询。
 """
-from fastapi import APIRouter, Depends
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -12,6 +14,9 @@ from app.schemas.match import (
 from app.schemas.common import ApiResponse
 
 router = APIRouter(prefix="/match", tags=["匹配"])
+
+# 每份简历一把锁：防止同一简历被并发触发多次全量匹配，重复计算并挤占数据库连接池
+_auto_match_locks: dict[int, asyncio.Lock] = {}
 
 
 def get_match_service(db: AsyncSession = Depends(get_db)) -> MatchService:
@@ -48,7 +53,11 @@ async def auto_match(
     service: MatchService = Depends(get_match_service),
 ):
     """[Agent 3 智能匹配] 自动将简历与系统中所有岗位逐一匹配，按综合分数降序返回诊断报告列表"""
-    result = await service.auto_match(user["user_id"], resume_id)
+    lock = _auto_match_locks.setdefault(resume_id, asyncio.Lock())
+    if lock.locked():
+        raise HTTPException(status_code=409, detail="该简历正在匹配中，请稍候")
+    async with lock:
+        result = await service.auto_match(user["user_id"], resume_id)
     return ApiResponse(data=result)
 
 

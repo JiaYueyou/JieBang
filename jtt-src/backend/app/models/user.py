@@ -14,6 +14,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, comment="用户名")
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, comment="邮箱")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False, comment="密码哈希")
+    # 数据库 user 表有 NOT NULL 无默认值的 role 列，ORM 必须带上，否则注册 INSERT 报错 1364
+    role: Mapped[str] = mapped_column(String(20), default="user", comment="角色：user/admin")
     # 个人信息字段
     nickname: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="昵称")
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="手机号")
