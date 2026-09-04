@@ -61,6 +61,17 @@ def calculate_skill_coverage(
     return round(len(matched) / len(unique_job_skills) * 100), matched, missing
 
 
+_MISSING_CANDIDATE_NAMES = {"", "姓名待补充", "候选人"}
+
+
+def candidate_display_name(resume_id: int, name: str | None) -> str:
+    """Return a stable anonymous nickname when a resume has no parsed name."""
+    normalized_name = (name or "").strip()
+    if normalized_name in _MISSING_CANDIDATE_NAMES:
+        return f"候选人{resume_id}"
+    return normalized_name
+
+
 class MatchingService:
     algorithm_version = "skill-coverage-v1"
 
@@ -92,8 +103,11 @@ class MatchingService:
             raise InvalidParameterError(f"该简历已上传，resume_id={duplicate}")
         storage_key, _ = self.storage.save(content, filename)
         skills = self.extractor.extract(jd_text=parsed_text).skills
+        parsed_name = (name or profile["name"] or "").strip()
         resume = Resume(
-            name=(name or profile["name"] or "姓名待补充")[:100],
+            # The generated nickname needs the database id, so use a temporary
+            # non-empty value until the first flush assigns that id.
+            name=parsed_name[:100] or "候选人",
             current_position=current_position or profile["current_position"],
             experience=experience or profile["experience"],
             education=education or profile["education"], department=department,
@@ -106,6 +120,12 @@ class MatchingService:
         self.db.add(resume)
         try:
             await self.db.flush()
+            resume.name = candidate_display_name(resume.id, resume.name)
+            if not parsed_name and resume.parse_result:
+                resume.parse_result.profile = {
+                    **(resume.parse_result.profile or {}),
+                    "name": resume.name,
+                }
             matches = await self._calculate_matches(resume, user_id=user_id)
             await self.db.commit()
             await bump_cache_generations("dashboard")
@@ -113,7 +133,7 @@ class MatchingService:
             await self.db.rollback()
             self.storage.remove(storage_key)
             raise
-        return ResumeCreatedResponse(id=resume.id, name=resume.name, filename=resume.original_filename, skills=[s.name for s in resume.skills], warnings=warnings, matches=[self._match_response(m) for m in matches])
+        return ResumeCreatedResponse(id=resume.id, name=candidate_display_name(resume.id, resume.name), filename=resume.original_filename, skills=[s.name for s in resume.skills], warnings=warnings, matches=[self._match_response(m) for m in matches])
 
     async def _calculate_matches(self, resume: Resume, *, user_id: int, job_ids: list[int] | None = None) -> list[MatchRecord]:
         query = select(JobPosting).where(JobPosting.deleted_at.is_(None), JobPosting.status == "open").order_by(JobPosting.id)
@@ -541,7 +561,7 @@ class MatchingService:
         matches = sorted(resume.matches, key=lambda item: (-item.score, item.job_id))
         best = matches[0]
         profile = resume.parse_result.profile if resume.parse_result else {}
-        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=resume.name or "姓名待补充", position=resume.current_position or "岗位待补充", score=best.score, isNew=True, experience=resume.experience or "经历待补充", education=resume.education or "学历待补充", department=resume.department or "部门待补充", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "", phone=str(profile.get("phone") or ""), email=str(profile.get("email") or ""), matches=[self._match_response(match) for match in matches])
+        return TalentResponse(id=resume.id, resume_id=resume.id, match_id=best.id, name=candidate_display_name(resume.id, resume.name), position=resume.current_position or "岗位待补充", score=best.score, isNew=True, experience=resume.experience or "经历待补充", education=resume.education or "学历待补充", department=resume.department or "部门待补充", matched=best.matched_skills, missing=best.missing_skills, targetJobs=[m.job.title for m in matches], targetJobIds=[m.job_id for m in matches], resumeFile=resume.original_filename, uploadDate=resume.created_at.date().isoformat(), urgent=best.job.urgent, company=resume.company or "", location=resume.location or "", phone=str(profile.get("phone") or ""), email=str(profile.get("email") or ""), matches=[self._match_response(match) for match in matches])
 
     @staticmethod
     def _match_response(match: MatchRecord) -> MatchResponse:

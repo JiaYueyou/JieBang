@@ -1,10 +1,10 @@
 # AI 助手独立服务
 
 > 文档类型：模块运行草案
-> 状态：服务代码存在，前端代理未完成对接
-> 核验日期：2026-08-12（`c995a09e`）
-> 当前 Vite 配置没有本文示例中的 rewrite/正确分流，`VITE_AI_BASE_URL` 也未被前端请求层
-> 消费。启动本服务并不等于 JTT 前端已连接成功，现状见 [前端 README](../frontend/README.md)。
+> 状态：部分现行；开发代理已对接，生产部署与自动化测试缺失
+> 核验日期：2026-08-28（`28a4cc5b`）
+> 当前 Vite 开发代理已经覆盖本服务的主要端点；`VITE_AI_BASE_URL` 仍未被前端请求层消费，
+> 生产构建也不携带 Vite proxy。现状见 [前端 README](../frontend/README.md)。
 
 JTT 求职端 AI 助手的 LLM 代理服务。不依赖 MySQL/Neo4j/Redis，仅需 DeepSeek API Key。
 
@@ -52,34 +52,37 @@ uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 
 ## 与前端对接
 
-### 方式 A：Vite 代理（推荐）
+### 方式 A：Vite 开发代理
 
-`jtt-src/frontend/vite.config.ts` 已预配好代理规则：
+`jtt-src/frontend/vite.config.ts` 当前按 `/api/v1` 请求前缀分流：
 
 ```ts
 proxy: {
-  '/api/assistant': {                     // AI 助手 → 本服务
+  '/api/v1/assistant': {                  // AI 助手 → 本服务
     target: 'http://localhost:8001',
     changeOrigin: true,
-    rewrite: (path) => path.replace(/^\/api/, ''),
+    rewrite: (path) => path.replace(/^\/api\/v1/, '/api'),
   },
-  '/api': {                                // 其他 API → 主后端
+  '/api': {                               // 其他 API → 主后端
     target: 'http://localhost:8000',
     changeOrigin: true,
-    rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
   },
 }
 ```
 
 启动前端后，前端 `/api/assistant/chat` 请求自动代理到本服务的 `8001` 端口。
 
-### 方式 B：直接连接
+### 生产连接
 
-设置环境变量启动前端：
+前端目前使用共享 Axios 实例，没有消费 `VITE_AI_BASE_URL`。生产环境应由 Nginx/网关将
+AI 路径转发到 8001、其余 `/api/v1/*` 转发到 JTT 主后端。仓库尚未提供 JTT 专用的
+Dockerfile、Compose 或 Nginx 配置，不能直接沿用 FYZ `deploy/`。
 
-```bash
-VITE_AI_BASE_URL=http://localhost:8001 npm run dev
-```
+## 验证边界
+
+- 当前未配置本服务的 pytest 或接口测试。
+- `/health` 只能说明进程和配置加载正常，不证明 DeepSeek 或外部搜索真实可用。
+- CORS 当前只允许 5173 的 localhost/127.0.0.1，生产域名需要显式配置。
 
 ## API 文档
 

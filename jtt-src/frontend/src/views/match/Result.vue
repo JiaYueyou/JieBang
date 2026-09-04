@@ -40,7 +40,7 @@ const fetchTailorSuggestions = async () => {
     }
     const fetched = await matchStore.fetchAiSuggestions(
       String(result.value.resumeId), positionCtx
-    )
+    ) ?? []
     const aiSuggestions = fetched.map((s: any) => ({ ...s, id: `ai-${s.id}` }))
     result.value.suggestions = [...aiSuggestions, ...result.value.suggestions.filter(
       (s: any) => !s.id.startsWith('ai-')

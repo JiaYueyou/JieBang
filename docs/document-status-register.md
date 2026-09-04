@@ -2,8 +2,8 @@
 
 > 文档类型：治理登记表
 > 状态：现行
-> 核验日期：2026-08-12
-> 核验提交：`c995a09e`
+> 核验日期：2026-08-28
+> 核验提交：`28a4cc5b`
 > 状态事实来源：[当前实现状态](implementation-status.md)
 
 本表覆盖仓库中的技术说明、架构、运行、接口、计划、Agent 和专项报告。状态含义：
@@ -54,7 +54,7 @@
 | `fyz-src/backend/README.md` | 现行 | FYZ 后端运行、迁移和模块边界 |
 | `fyz-src/backend/test/README.md` | 现行 | 测试分层；2026-08-12 为 311 passed |
 | `fyz-src/backend/scripts/README.md` | 部分现行 | 维护/评测脚本可用；完整迁移入口阻塞 |
-| `fyz-src/backend/scripts/DATABASE_TRANSFER.md` | 阻塞 | 0017 快照与 0020 head 不兼容，待重新导出 |
+| `fyz-src/backend/scripts/DATABASE_TRANSFER.md` | 部分现行 | 0025 快照已重导并通过离线严格校验；隔离接收环境覆盖式验收待完成 |
 | `fyz-src/backend/scripts/CRAWLER_STATUS.md` | 时间点记录 | 爬虫状态快照，当前代码与流水线优先 |
 | `fyz-src/backend/evaluation/fyz_interface_test_calculation_logic.md` | 现行评测说明 | 指标算法与适用边界 |
 | `fyz-src/backend/evaluation/phase1_data_quality_report.md` | 时间点报告 | Phase 1 冻结结果 |
@@ -94,18 +94,21 @@
 
 | 文档 | 状态 | 说明 |
 | --- | --- | --- |
-| `jtt-src/frontend/README.md` | 现行 | 明确真实联调阻塞、构建与质量状态 |
+| `jtt-src/README.md` | 现行 | JTT 代码、数据、测试、运行与部署的统一入口 |
+| `jtt-src/frontend/README.md` | 现行 | 记录开发代理、MSW/生产分流缺口、构建与质量状态 |
 | `jtt-src/frontend/CLAUDE.md` | 部分过时治理 | 目录/API/Store/路由计数已漂移，不作状态依据 |
-| `jtt-src/backend/backend.md` | 历史设计 | 八组路由已实现，但推荐技术栈多项未落地 |
-| `jtt-src/ai-assistant/README.md` | 部分现行 | 服务可启动，前端代理未对接 |
-| `jtt-src/ai-assistant/SETUP.zh-CN.md` | 部分过时 | Key/启动可参考，自动透传不成立 |
-| `jtt-src/shuomingwendang.md` | 历史说明/待重写 | 端口、清单和联调描述已漂移 |
+| `jtt-src/backend/backend.md` | 历史设计 | 八组路由已实现；岗位读取共享 FYZ 表；推荐技术栈多项未落地 |
+| `jtt-src/backend/evaluation/README.md` | 现行评测边界 | 说明伪金标数量、复现依赖和当前测试阻塞 |
+| `jtt-src/backend/evaluation/JTT_TEST_REPORT.md` | 时间点报告/已复核 | 旧结果保留；当前为 37 passed、1 failed，覆盖率不可复现 |
+| `jtt-src/ai-assistant/README.md` | 部分现行 | 开发代理已对接；无生产部署和自动化测试 |
+| `jtt-src/ai-assistant/SETUP.zh-CN.md` | 部分现行 | 本地 Key/启动可用；生产反向代理待实现 |
+| `jtt-src/shuomingwendang.md` | 历史说明/待重写 | 已加 2026-08-28 纠偏摘要；正文仍为历史参考 |
 | `jtt-src/shujuku.md` | 历史数据库快照 | “无 Alembic”已过时 |
 | `jtt-src/agent.md` | 阻塞草稿 | 含未解决冲突标记，不能作契约 |
-| `jtt-src/zyq-agent.md` | 部分过时 | 代理、页面路径与 mock 描述已漂移 |
+| `jtt-src/zyq-agent.md` | 部分过时 | 已加当前开发代理边界；页面路径与部分流程仍可能漂移 |
 | `jtt-src/CHANGELOG.md` | 历史时间线 | 历史修复不保证当前仍有效 |
 | `jtt-src/docs/**` | 原始材料 | 需求图片/文本提取，不是工程契约 |
-| `jtt-src/jie_bang.raw_job_record.md` | 空白占位 | 无有效说明内容 |
+| `jtt-src/jie_bang.raw_job_record.md` | 现行数据说明 | 共享岗位事实表、快照、映射和权限边界 |
 
 ## 6. 其他专项记录
 

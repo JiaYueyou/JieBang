@@ -2,8 +2,8 @@
 
 > 文档类型：历史分工指南
 > 状态：部分过时
-> 核验日期：2026-08-12；JTT 独立后端 8 组路由已存在，但前端/MSW/Vite/AI 的默认
-> 联调仍不通。请以 [JTT 前端 README](../../jtt-src/frontend/README.md) 和
+> 核验日期：2026-08-28；JTT 后端 8 组路由已存在，Vite 开发代理已分流主后端与 AI，
+> 但 MSW、测试、共享数据依赖和生产部署仍未闭环。请以 [JTT 前端 README](../../jtt-src/frontend/README.md) 和
 > [当前实现状态](../implementation-status.md) 为准。
 
 ## 1. 职责

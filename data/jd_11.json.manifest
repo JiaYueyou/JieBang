@@ -1,0 +1,17 @@
+{
+  "schema_version": "crawler-snapshot-manifest-v1",
+  "source": "京东官方社会招聘门户（zhaopin.jd.com）",
+  "snapshot_type": "delta",
+  "snapshot_complete": false,
+  "observed_at": "2026-09-02T19:51:23+08:00",
+  "scope": {
+    "collector": "jd",
+    "start_date": "2024-01-01",
+    "end_date": "2026-09-02",
+    "job_type": "YANFA"
+  },
+  "scope_hash": "40a673176a4268e226baf531686c446bf1e59a6f52c8552a8ca80f9d56bd52c9",
+  "record_count": 100,
+  "business_checksum": "55287e7dd29fb47a44eef8be3b8d9ac306463a4b073ee1aef6a66597dd9b7782",
+  "payload_sha256": "6047dd9874ddd5e3b669960b61bced7e1e4463ab84985bbb6d13db2d3b8ae492"
+}

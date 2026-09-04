@@ -1,0 +1,57 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/home/home",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "工作台" }
+    },
+    {
+      "path": "pages/positions/positions",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "职位管理" }
+    },
+    {
+      "path": "pages/graph/graph",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "技能图谱" }
+    },
+    {
+      "path": "pages/match/match",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "趋势洞察" }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "管理中心" }
+    },
+    {
+      "path": "pages-sub/login/login",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "管理员登录" }
+    },
+    {
+      "path": "pages-sub/position/detail",
+      "style": { "navigationBarTitleText": "职位详情", "navigationBarBackgroundColor": "#F6F8FC" }
+    }
+  ],
+  "tabBar": {
+    "color": "#989eae",
+    "selectedColor": "#4f6ef6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "工作台" },
+      { "pagePath": "pages/positions/positions", "text": "职位" },
+      { "pagePath": "pages/graph/graph", "text": "图谱" },
+      { "pagePath": "pages/match/match", "text": "洞察" },
+      { "pagePath": "pages/profile/profile", "text": "管理" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "智联职引 · 管理决策端",
+    "navigationBarBackgroundColor": "#F6F8FC",
+    "backgroundColor": "#F6F8FC"
+  }
+}

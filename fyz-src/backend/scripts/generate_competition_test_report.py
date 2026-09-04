@@ -103,6 +103,7 @@ def package_raw_materials() -> None:
         "competition_rag_report.json", "competition_rag_report.md",
         "hallucination_control_report.json", "fyz_quality_metrics.json",
         "resume_format_cases.json", "resume_format_metrics.json",
+        "resume_skill_100_cases.json", "matching_100_cases.json",
         "collected_resume_metrics.json", "collected_resume_import_report.json",
         "fyz_coverage.json", "fyz_pytest_results.xml",
         "fyz_interface_test_calculation_logic.md",

@@ -68,7 +68,7 @@ const fetchTailorSuggestions = async () => {
       weakSkills: r.gapAnalysis.weakSkills.map((s: any) => s.name),
       matchSkills: r.gapAnalysis.matchSkills.map((s: any) => s.name),
     }
-    const fetched = await matchStore.fetchAiSuggestions(props.resumeId, positionCtx)
+    const fetched = await matchStore.fetchAiSuggestions(props.resumeId, positionCtx) ?? []
     const aiSuggestions = fetched.map((s: any) => ({ ...s, id: `ai-${s.id}` }))
     // 替换为 LLM 精修建议，保留原有的作为备选
     r.suggestions = [...aiSuggestions, ...r.suggestions.filter(

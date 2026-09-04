@@ -278,10 +278,10 @@
           <el-button type="primary" @click="reloadObserved">查询</el-button>
         </div>
         <el-table :data="observedJobs" style="width:100%" size="default" max-height="520">
-          <el-table-column prop="title" label="岗位名称" min-width="190" />
-          <el-table-column prop="company" label="企业" min-width="140" />
+          <el-table-column prop="title" label="岗位名称" width="240" />
+          <el-table-column prop="company" label="企业" width="180" />
           <el-table-column prop="city" label="城市" width="100" />
-          <el-table-column prop="source" label="来源" width="100" />
+          <el-table-column prop="source" label="来源" min-width="280" />
           <el-table-column label="技能事实" width="150" align="center">
             <template #default="{ row }">
               <el-tag size="small" type="success">{{ row.verified_skill_count }} 已确认</el-tag>
@@ -1083,8 +1083,7 @@ function viewChangeTrend(change: CapabilityChange) {
 .insight-pagination :deep(.el-pagination) { margin-left:auto; }
 .insight-pagination :deep(.btn-prev),.insight-pagination :deep(.btn-next),.insight-pagination :deep(.number) { border-radius:8px!important; }
 .insight-focus-grid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start; }
-.insight-focus-card { display:flex;min-width:0;height:680px;overflow:hidden;flex-direction:column;border-top:3px solid var(--color-brand); }
-.insight-focus-card:nth-child(2) { border-top-color:var(--color-success); }
+.insight-focus-card { display:flex;min-width:0;height:680px;overflow:hidden;flex-direction:column; }
 .insight-focus-card>.dash-card-body { display:flex;min-height:0;flex:1;flex-direction:column;overflow:hidden; }
 .insight-focus-card .insight-list { min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:5px; }
 .insight-focus-card .insight-pagination { flex:0 0 auto;margin-top:auto;background:var(--color-bg-elevated); }
@@ -1143,9 +1142,7 @@ function viewChangeTrend(change: CapabilityChange) {
 .ledger-count { display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:10px;background:var(--color-brand-light);color:var(--color-brand);font-family:"JetBrains Mono",monospace;font-weight:700; }
 .internal-ledger .ledger-count { background:#fff1d8;color:#a35e0c; }
 .ledger-filters { display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:8px;padding:12px 14px; }
-.public-ledger { border-top:3px solid var(--color-brand); }
-.internal-ledger { border-top:3px solid #c98228; }
-.observed-ledger { border-top:3px solid var(--color-success);overflow:hidden; }
+.observed-ledger { overflow:hidden; }
 .observed-ledger .ledger-filters { grid-template-columns:minmax(220px,1fr) 120px 130px auto; }
 .observed-pagination { display:flex;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--border-color); }
 .ledger-pagination { display:flex;justify-content:flex-end;margin-top:auto;padding:12px 14px;border-top:1px solid var(--border-color); }
@@ -1155,7 +1152,10 @@ function viewChangeTrend(change: CapabilityChange) {
 .observed-detail-head p { margin:0;color:var(--text-muted); }
 .observed-detail-head a { color:var(--color-brand);font-size:13px;white-space:nowrap; }
 .observed-detail h4 { margin:4px 0 -6px;font-size:14px; }
+.position-ledger :deep(.el-table .cell),.observed-ledger :deep(.el-table .cell) { text-align:center!important; }
+.position-ledger :deep(.el-table th.el-table__cell),.position-ledger :deep(.el-table td.el-table__cell),.observed-ledger :deep(.el-table th.el-table__cell),.observed-ledger :deep(.el-table td.el-table__cell) { text-align:center!important; }
 .table-actions { display:flex;align-items:center;justify-content:flex-end; }
+.position-ledger .table-actions { justify-content:center; }
 @keyframes suggestion-breathe { 50% { opacity:.45;transform:scale(.8); } }
 @media(max-width:1180px){.position-ledger{grid-template-columns:1fr}}
 @media(max-width:960px){.insight-focus-grid{grid-template-columns:1fr}.insight-focus-card{height:680px}}

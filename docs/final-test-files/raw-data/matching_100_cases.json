@@ -1,0 +1,1737 @@
+{
+  "dataset_version": "job-resume-matching-100-v1",
+  "description": "100 deterministic labelled end-to-end job-resume matching inputs",
+  "case_count": 100,
+  "cases": [
+    {
+      "id": "match-001",
+      "job_text": "Required stack: Python, Java, TypeScript, Golang, Rust",
+      "resume_text": "Candidate stack: Jenkins",
+      "expected_job_skills": [
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust"
+      ],
+      "expected_resume_skills": [
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "match-002",
+      "job_text": "Required stack: Java, TypeScript, Golang, Rust, FastAPI",
+      "resume_text": "Candidate stack: Java, MySQL",
+      "expected_job_skills": [
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI"
+      ],
+      "expected_resume_skills": [
+        "Java",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "match-003",
+      "job_text": "Required stack: TypeScript, Golang, Rust, FastAPI, Django",
+      "resume_text": "Candidate stack: TS, Go, PostgreSQL",
+      "expected_job_skills": [
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django"
+      ],
+      "expected_resume_skills": [
+        "TypeScript",
+        "Go",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "match-004",
+      "job_text": "Required stack: Golang, Rust, FastAPI, Django, React",
+      "resume_text": "Candidate stack: Go, Rust, FastAPI, MongoDB",
+      "expected_job_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React"
+      ],
+      "expected_resume_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-005",
+      "job_text": "Required stack: Rust, FastAPI, Django, React, Angular",
+      "resume_text": "Candidate stack: Rust, FastAPI, Django, React, Redis",
+      "expected_job_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular"
+      ],
+      "expected_resume_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Redis"
+      ]
+    },
+    {
+      "id": "match-006",
+      "job_text": "Required stack: FastAPI, Django, React, Angular, Docker",
+      "resume_text": "Candidate stack: FastAPI, Django, React, Angular, Docker",
+      "expected_job_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ],
+      "expected_resume_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-007",
+      "job_text": "Required stack: Django, React, Angular, Docker, Kubernetes",
+      "resume_text": "Candidate stack: Kafka",
+      "expected_job_skills": [
+        "Django",
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes"
+      ],
+      "expected_resume_skills": [
+        "Kafka"
+      ]
+    },
+    {
+      "id": "match-008",
+      "job_text": "Required stack: React, Angular, Docker, Kubernetes, Git",
+      "resume_text": "Candidate stack: React, GraphQL",
+      "expected_job_skills": [
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git"
+      ],
+      "expected_resume_skills": [
+        "React",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "match-009",
+      "job_text": "Required stack: Angular, Docker, Kubernetes, Git, Jenkins",
+      "resume_text": "Candidate stack: Angular, Docker, Elasticsearch",
+      "expected_job_skills": [
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins"
+      ],
+      "expected_resume_skills": [
+        "Angular",
+        "Docker",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "match-010",
+      "job_text": "Required stack: Docker, Kubernetes, Git, Jenkins, MySQL",
+      "resume_text": "Candidate stack: Docker, Kubernetes, Git, TensorFlow",
+      "expected_job_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL"
+      ],
+      "expected_resume_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-011",
+      "job_text": "Required stack: Kubernetes, Git, Jenkins, MySQL, PostgreSQL",
+      "resume_text": "Candidate stack: Kubernetes, Git, Jenkins, MySQL, PyTorch",
+      "expected_job_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL"
+      ],
+      "expected_resume_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "match-012",
+      "job_text": "Required stack: Git, Jenkins, MySQL, PostgreSQL, Mongo",
+      "resume_text": "Candidate stack: Git, Jenkins, MySQL, Postgres, MongoDB",
+      "expected_job_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ],
+      "expected_resume_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-013",
+      "job_text": "Required stack: Jenkins, MySQL, PostgreSQL, Mongo, Redis",
+      "resume_text": "Candidate stack: Python",
+      "expected_job_skills": [
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "expected_resume_skills": [
+        "Python"
+      ]
+    },
+    {
+      "id": "match-014",
+      "job_text": "Required stack: MySQL, PostgreSQL, Mongo, Redis, Neo4j",
+      "resume_text": "Candidate stack: MySQL, Java",
+      "expected_job_skills": [
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j"
+      ],
+      "expected_resume_skills": [
+        "MySQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "match-015",
+      "job_text": "Required stack: PostgreSQL, Mongo, Redis, Neo4j, Kafka",
+      "resume_text": "Candidate stack: Postgres, MongoDB, TypeScript",
+      "expected_job_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka"
+      ],
+      "expected_resume_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "match-016",
+      "job_text": "Required stack: Mongo, Redis, Neo4j, Kafka, GraphQL",
+      "resume_text": "Candidate stack: MongoDB, Redis, Neo4j, Go",
+      "expected_job_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL"
+      ],
+      "expected_resume_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-017",
+      "job_text": "Required stack: Redis, Neo4j, Kafka, GraphQL, Elasticsearch",
+      "resume_text": "Candidate stack: Redis, Neo4j, Kafka, GraphQL, Rust",
+      "expected_job_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch"
+      ],
+      "expected_resume_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Rust"
+      ]
+    },
+    {
+      "id": "match-018",
+      "job_text": "Required stack: Neo4j, Kafka, GraphQL, Elasticsearch, TF",
+      "resume_text": "Candidate stack: Neo4j, Kafka, GraphQL, ES, TensorFlow",
+      "expected_job_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ],
+      "expected_resume_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-019",
+      "job_text": "Required stack: Kafka, GraphQL, Elasticsearch, TF, PyTorch",
+      "resume_text": "Candidate stack: Django",
+      "expected_job_skills": [
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch"
+      ],
+      "expected_resume_skills": [
+        "Django"
+      ]
+    },
+    {
+      "id": "match-020",
+      "job_text": "Required stack: GraphQL, Elasticsearch, TF, PyTorch, RabbitMQ",
+      "resume_text": "Candidate stack: GraphQL, React.js",
+      "expected_job_skills": [
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ"
+      ],
+      "expected_resume_skills": [
+        "GraphQL",
+        "React"
+      ]
+    },
+    {
+      "id": "match-021",
+      "job_text": "Required stack: Elasticsearch, TF, PyTorch, RabbitMQ, Python",
+      "resume_text": "Candidate stack: ES, TensorFlow, Angular",
+      "expected_job_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python"
+      ],
+      "expected_resume_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "Angular"
+      ]
+    },
+    {
+      "id": "match-022",
+      "job_text": "Required stack: TF, PyTorch, RabbitMQ, Python, Java",
+      "resume_text": "Candidate stack: TensorFlow, PyTorch, RabbitMQ, Docker",
+      "expected_job_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java"
+      ],
+      "expected_resume_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-023",
+      "job_text": "Required stack: PyTorch, RabbitMQ, Python, Java, TypeScript",
+      "resume_text": "Candidate stack: PyTorch, RabbitMQ, Python, Java, K8s",
+      "expected_job_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript"
+      ],
+      "expected_resume_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "match-024",
+      "job_text": "Required stack: RabbitMQ, Python, Java, TypeScript, Golang",
+      "resume_text": "Candidate stack: RabbitMQ, Python, Java, TS, Go",
+      "expected_job_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ],
+      "expected_resume_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-025",
+      "job_text": "Required stack: Python, Java, TypeScript, Golang, Rust",
+      "resume_text": "Candidate stack: Jenkins",
+      "expected_job_skills": [
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust"
+      ],
+      "expected_resume_skills": [
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "match-026",
+      "job_text": "Required stack: Java, TypeScript, Golang, Rust, FastAPI",
+      "resume_text": "Candidate stack: Java, MySQL",
+      "expected_job_skills": [
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI"
+      ],
+      "expected_resume_skills": [
+        "Java",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "match-027",
+      "job_text": "Required stack: TypeScript, Golang, Rust, FastAPI, Django",
+      "resume_text": "Candidate stack: TS, Go, PostgreSQL",
+      "expected_job_skills": [
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django"
+      ],
+      "expected_resume_skills": [
+        "TypeScript",
+        "Go",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "match-028",
+      "job_text": "Required stack: Golang, Rust, FastAPI, Django, React",
+      "resume_text": "Candidate stack: Go, Rust, FastAPI, MongoDB",
+      "expected_job_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React"
+      ],
+      "expected_resume_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-029",
+      "job_text": "Required stack: Rust, FastAPI, Django, React, Angular",
+      "resume_text": "Candidate stack: Rust, FastAPI, Django, React, Redis",
+      "expected_job_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular"
+      ],
+      "expected_resume_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Redis"
+      ]
+    },
+    {
+      "id": "match-030",
+      "job_text": "Required stack: FastAPI, Django, React, Angular, Docker",
+      "resume_text": "Candidate stack: FastAPI, Django, React, Angular, Docker",
+      "expected_job_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ],
+      "expected_resume_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-031",
+      "job_text": "Required stack: Django, React, Angular, Docker, Kubernetes",
+      "resume_text": "Candidate stack: Kafka",
+      "expected_job_skills": [
+        "Django",
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes"
+      ],
+      "expected_resume_skills": [
+        "Kafka"
+      ]
+    },
+    {
+      "id": "match-032",
+      "job_text": "Required stack: React, Angular, Docker, Kubernetes, Git",
+      "resume_text": "Candidate stack: React, GraphQL",
+      "expected_job_skills": [
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git"
+      ],
+      "expected_resume_skills": [
+        "React",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "match-033",
+      "job_text": "Required stack: Angular, Docker, Kubernetes, Git, Jenkins",
+      "resume_text": "Candidate stack: Angular, Docker, Elasticsearch",
+      "expected_job_skills": [
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins"
+      ],
+      "expected_resume_skills": [
+        "Angular",
+        "Docker",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "match-034",
+      "job_text": "Required stack: Docker, Kubernetes, Git, Jenkins, MySQL",
+      "resume_text": "Candidate stack: Docker, Kubernetes, Git, TensorFlow",
+      "expected_job_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL"
+      ],
+      "expected_resume_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-035",
+      "job_text": "Required stack: Kubernetes, Git, Jenkins, MySQL, PostgreSQL",
+      "resume_text": "Candidate stack: Kubernetes, Git, Jenkins, MySQL, PyTorch",
+      "expected_job_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL"
+      ],
+      "expected_resume_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "match-036",
+      "job_text": "Required stack: Git, Jenkins, MySQL, PostgreSQL, Mongo",
+      "resume_text": "Candidate stack: Git, Jenkins, MySQL, Postgres, MongoDB",
+      "expected_job_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ],
+      "expected_resume_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-037",
+      "job_text": "Required stack: Jenkins, MySQL, PostgreSQL, Mongo, Redis",
+      "resume_text": "Candidate stack: Python",
+      "expected_job_skills": [
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "expected_resume_skills": [
+        "Python"
+      ]
+    },
+    {
+      "id": "match-038",
+      "job_text": "Required stack: MySQL, PostgreSQL, Mongo, Redis, Neo4j",
+      "resume_text": "Candidate stack: MySQL, Java",
+      "expected_job_skills": [
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j"
+      ],
+      "expected_resume_skills": [
+        "MySQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "match-039",
+      "job_text": "Required stack: PostgreSQL, Mongo, Redis, Neo4j, Kafka",
+      "resume_text": "Candidate stack: Postgres, MongoDB, TypeScript",
+      "expected_job_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka"
+      ],
+      "expected_resume_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "match-040",
+      "job_text": "Required stack: Mongo, Redis, Neo4j, Kafka, GraphQL",
+      "resume_text": "Candidate stack: MongoDB, Redis, Neo4j, Go",
+      "expected_job_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL"
+      ],
+      "expected_resume_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-041",
+      "job_text": "Required stack: Redis, Neo4j, Kafka, GraphQL, Elasticsearch",
+      "resume_text": "Candidate stack: Redis, Neo4j, Kafka, GraphQL, Rust",
+      "expected_job_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch"
+      ],
+      "expected_resume_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Rust"
+      ]
+    },
+    {
+      "id": "match-042",
+      "job_text": "Required stack: Neo4j, Kafka, GraphQL, Elasticsearch, TF",
+      "resume_text": "Candidate stack: Neo4j, Kafka, GraphQL, ES, TensorFlow",
+      "expected_job_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ],
+      "expected_resume_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-043",
+      "job_text": "Required stack: Kafka, GraphQL, Elasticsearch, TF, PyTorch",
+      "resume_text": "Candidate stack: Django",
+      "expected_job_skills": [
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch"
+      ],
+      "expected_resume_skills": [
+        "Django"
+      ]
+    },
+    {
+      "id": "match-044",
+      "job_text": "Required stack: GraphQL, Elasticsearch, TF, PyTorch, RabbitMQ",
+      "resume_text": "Candidate stack: GraphQL, React.js",
+      "expected_job_skills": [
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ"
+      ],
+      "expected_resume_skills": [
+        "GraphQL",
+        "React"
+      ]
+    },
+    {
+      "id": "match-045",
+      "job_text": "Required stack: Elasticsearch, TF, PyTorch, RabbitMQ, Python",
+      "resume_text": "Candidate stack: ES, TensorFlow, Angular",
+      "expected_job_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python"
+      ],
+      "expected_resume_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "Angular"
+      ]
+    },
+    {
+      "id": "match-046",
+      "job_text": "Required stack: TF, PyTorch, RabbitMQ, Python, Java",
+      "resume_text": "Candidate stack: TensorFlow, PyTorch, RabbitMQ, Docker",
+      "expected_job_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java"
+      ],
+      "expected_resume_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-047",
+      "job_text": "Required stack: PyTorch, RabbitMQ, Python, Java, TypeScript",
+      "resume_text": "Candidate stack: PyTorch, RabbitMQ, Python, Java, K8s",
+      "expected_job_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript"
+      ],
+      "expected_resume_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "match-048",
+      "job_text": "Required stack: RabbitMQ, Python, Java, TypeScript, Golang",
+      "resume_text": "Candidate stack: RabbitMQ, Python, Java, TS, Go",
+      "expected_job_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ],
+      "expected_resume_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-049",
+      "job_text": "Required stack: Python, Java, TypeScript, Golang, Rust",
+      "resume_text": "Candidate stack: Jenkins",
+      "expected_job_skills": [
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust"
+      ],
+      "expected_resume_skills": [
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "match-050",
+      "job_text": "Required stack: Java, TypeScript, Golang, Rust, FastAPI",
+      "resume_text": "Candidate stack: Java, MySQL",
+      "expected_job_skills": [
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI"
+      ],
+      "expected_resume_skills": [
+        "Java",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "match-051",
+      "job_text": "Required stack: TypeScript, Golang, Rust, FastAPI, Django",
+      "resume_text": "Candidate stack: TS, Go, PostgreSQL",
+      "expected_job_skills": [
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django"
+      ],
+      "expected_resume_skills": [
+        "TypeScript",
+        "Go",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "match-052",
+      "job_text": "Required stack: Golang, Rust, FastAPI, Django, React",
+      "resume_text": "Candidate stack: Go, Rust, FastAPI, MongoDB",
+      "expected_job_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React"
+      ],
+      "expected_resume_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-053",
+      "job_text": "Required stack: Rust, FastAPI, Django, React, Angular",
+      "resume_text": "Candidate stack: Rust, FastAPI, Django, React, Redis",
+      "expected_job_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular"
+      ],
+      "expected_resume_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Redis"
+      ]
+    },
+    {
+      "id": "match-054",
+      "job_text": "Required stack: FastAPI, Django, React, Angular, Docker",
+      "resume_text": "Candidate stack: FastAPI, Django, React, Angular, Docker",
+      "expected_job_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ],
+      "expected_resume_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-055",
+      "job_text": "Required stack: Django, React, Angular, Docker, Kubernetes",
+      "resume_text": "Candidate stack: Kafka",
+      "expected_job_skills": [
+        "Django",
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes"
+      ],
+      "expected_resume_skills": [
+        "Kafka"
+      ]
+    },
+    {
+      "id": "match-056",
+      "job_text": "Required stack: React, Angular, Docker, Kubernetes, Git",
+      "resume_text": "Candidate stack: React, GraphQL",
+      "expected_job_skills": [
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git"
+      ],
+      "expected_resume_skills": [
+        "React",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "match-057",
+      "job_text": "Required stack: Angular, Docker, Kubernetes, Git, Jenkins",
+      "resume_text": "Candidate stack: Angular, Docker, Elasticsearch",
+      "expected_job_skills": [
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins"
+      ],
+      "expected_resume_skills": [
+        "Angular",
+        "Docker",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "match-058",
+      "job_text": "Required stack: Docker, Kubernetes, Git, Jenkins, MySQL",
+      "resume_text": "Candidate stack: Docker, Kubernetes, Git, TensorFlow",
+      "expected_job_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL"
+      ],
+      "expected_resume_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-059",
+      "job_text": "Required stack: Kubernetes, Git, Jenkins, MySQL, PostgreSQL",
+      "resume_text": "Candidate stack: Kubernetes, Git, Jenkins, MySQL, PyTorch",
+      "expected_job_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL"
+      ],
+      "expected_resume_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "match-060",
+      "job_text": "Required stack: Git, Jenkins, MySQL, PostgreSQL, Mongo",
+      "resume_text": "Candidate stack: Git, Jenkins, MySQL, Postgres, MongoDB",
+      "expected_job_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ],
+      "expected_resume_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-061",
+      "job_text": "Required stack: Jenkins, MySQL, PostgreSQL, Mongo, Redis",
+      "resume_text": "Candidate stack: Python",
+      "expected_job_skills": [
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "expected_resume_skills": [
+        "Python"
+      ]
+    },
+    {
+      "id": "match-062",
+      "job_text": "Required stack: MySQL, PostgreSQL, Mongo, Redis, Neo4j",
+      "resume_text": "Candidate stack: MySQL, Java",
+      "expected_job_skills": [
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j"
+      ],
+      "expected_resume_skills": [
+        "MySQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "match-063",
+      "job_text": "Required stack: PostgreSQL, Mongo, Redis, Neo4j, Kafka",
+      "resume_text": "Candidate stack: Postgres, MongoDB, TypeScript",
+      "expected_job_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka"
+      ],
+      "expected_resume_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "match-064",
+      "job_text": "Required stack: Mongo, Redis, Neo4j, Kafka, GraphQL",
+      "resume_text": "Candidate stack: MongoDB, Redis, Neo4j, Go",
+      "expected_job_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL"
+      ],
+      "expected_resume_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-065",
+      "job_text": "Required stack: Redis, Neo4j, Kafka, GraphQL, Elasticsearch",
+      "resume_text": "Candidate stack: Redis, Neo4j, Kafka, GraphQL, Rust",
+      "expected_job_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch"
+      ],
+      "expected_resume_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Rust"
+      ]
+    },
+    {
+      "id": "match-066",
+      "job_text": "Required stack: Neo4j, Kafka, GraphQL, Elasticsearch, TF",
+      "resume_text": "Candidate stack: Neo4j, Kafka, GraphQL, ES, TensorFlow",
+      "expected_job_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ],
+      "expected_resume_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-067",
+      "job_text": "Required stack: Kafka, GraphQL, Elasticsearch, TF, PyTorch",
+      "resume_text": "Candidate stack: Django",
+      "expected_job_skills": [
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch"
+      ],
+      "expected_resume_skills": [
+        "Django"
+      ]
+    },
+    {
+      "id": "match-068",
+      "job_text": "Required stack: GraphQL, Elasticsearch, TF, PyTorch, RabbitMQ",
+      "resume_text": "Candidate stack: GraphQL, React.js",
+      "expected_job_skills": [
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ"
+      ],
+      "expected_resume_skills": [
+        "GraphQL",
+        "React"
+      ]
+    },
+    {
+      "id": "match-069",
+      "job_text": "Required stack: Elasticsearch, TF, PyTorch, RabbitMQ, Python",
+      "resume_text": "Candidate stack: ES, TensorFlow, Angular",
+      "expected_job_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python"
+      ],
+      "expected_resume_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "Angular"
+      ]
+    },
+    {
+      "id": "match-070",
+      "job_text": "Required stack: TF, PyTorch, RabbitMQ, Python, Java",
+      "resume_text": "Candidate stack: TensorFlow, PyTorch, RabbitMQ, Docker",
+      "expected_job_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java"
+      ],
+      "expected_resume_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-071",
+      "job_text": "Required stack: PyTorch, RabbitMQ, Python, Java, TypeScript",
+      "resume_text": "Candidate stack: PyTorch, RabbitMQ, Python, Java, K8s",
+      "expected_job_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript"
+      ],
+      "expected_resume_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "match-072",
+      "job_text": "Required stack: RabbitMQ, Python, Java, TypeScript, Golang",
+      "resume_text": "Candidate stack: RabbitMQ, Python, Java, TS, Go",
+      "expected_job_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ],
+      "expected_resume_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-073",
+      "job_text": "Required stack: Python, Java, TypeScript, Golang, Rust",
+      "resume_text": "Candidate stack: Jenkins",
+      "expected_job_skills": [
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust"
+      ],
+      "expected_resume_skills": [
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "match-074",
+      "job_text": "Required stack: Java, TypeScript, Golang, Rust, FastAPI",
+      "resume_text": "Candidate stack: Java, MySQL",
+      "expected_job_skills": [
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI"
+      ],
+      "expected_resume_skills": [
+        "Java",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "match-075",
+      "job_text": "Required stack: TypeScript, Golang, Rust, FastAPI, Django",
+      "resume_text": "Candidate stack: TS, Go, PostgreSQL",
+      "expected_job_skills": [
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django"
+      ],
+      "expected_resume_skills": [
+        "TypeScript",
+        "Go",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "match-076",
+      "job_text": "Required stack: Golang, Rust, FastAPI, Django, React",
+      "resume_text": "Candidate stack: Go, Rust, FastAPI, MongoDB",
+      "expected_job_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React"
+      ],
+      "expected_resume_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-077",
+      "job_text": "Required stack: Rust, FastAPI, Django, React, Angular",
+      "resume_text": "Candidate stack: Rust, FastAPI, Django, React, Redis",
+      "expected_job_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular"
+      ],
+      "expected_resume_skills": [
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React",
+        "Redis"
+      ]
+    },
+    {
+      "id": "match-078",
+      "job_text": "Required stack: FastAPI, Django, React, Angular, Docker",
+      "resume_text": "Candidate stack: FastAPI, Django, React, Angular, Docker",
+      "expected_job_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ],
+      "expected_resume_skills": [
+        "FastAPI",
+        "Django",
+        "React",
+        "Angular",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-079",
+      "job_text": "Required stack: Django, React, Angular, Docker, Kubernetes",
+      "resume_text": "Candidate stack: Kafka",
+      "expected_job_skills": [
+        "Django",
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes"
+      ],
+      "expected_resume_skills": [
+        "Kafka"
+      ]
+    },
+    {
+      "id": "match-080",
+      "job_text": "Required stack: React, Angular, Docker, Kubernetes, Git",
+      "resume_text": "Candidate stack: React, GraphQL",
+      "expected_job_skills": [
+        "React",
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git"
+      ],
+      "expected_resume_skills": [
+        "React",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "match-081",
+      "job_text": "Required stack: Angular, Docker, Kubernetes, Git, Jenkins",
+      "resume_text": "Candidate stack: Angular, Docker, Elasticsearch",
+      "expected_job_skills": [
+        "Angular",
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins"
+      ],
+      "expected_resume_skills": [
+        "Angular",
+        "Docker",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "match-082",
+      "job_text": "Required stack: Docker, Kubernetes, Git, Jenkins, MySQL",
+      "resume_text": "Candidate stack: Docker, Kubernetes, Git, TensorFlow",
+      "expected_job_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL"
+      ],
+      "expected_resume_skills": [
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-083",
+      "job_text": "Required stack: Kubernetes, Git, Jenkins, MySQL, PostgreSQL",
+      "resume_text": "Candidate stack: Kubernetes, Git, Jenkins, MySQL, PyTorch",
+      "expected_job_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL"
+      ],
+      "expected_resume_skills": [
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "match-084",
+      "job_text": "Required stack: Git, Jenkins, MySQL, PostgreSQL, Mongo",
+      "resume_text": "Candidate stack: Git, Jenkins, MySQL, Postgres, MongoDB",
+      "expected_job_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ],
+      "expected_resume_skills": [
+        "Git",
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "match-085",
+      "job_text": "Required stack: Jenkins, MySQL, PostgreSQL, Mongo, Redis",
+      "resume_text": "Candidate stack: Python",
+      "expected_job_skills": [
+        "Jenkins",
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "expected_resume_skills": [
+        "Python"
+      ]
+    },
+    {
+      "id": "match-086",
+      "job_text": "Required stack: MySQL, PostgreSQL, Mongo, Redis, Neo4j",
+      "resume_text": "Candidate stack: MySQL, Java",
+      "expected_job_skills": [
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j"
+      ],
+      "expected_resume_skills": [
+        "MySQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "match-087",
+      "job_text": "Required stack: PostgreSQL, Mongo, Redis, Neo4j, Kafka",
+      "resume_text": "Candidate stack: Postgres, MongoDB, TypeScript",
+      "expected_job_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka"
+      ],
+      "expected_resume_skills": [
+        "PostgreSQL",
+        "MongoDB",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "match-088",
+      "job_text": "Required stack: Mongo, Redis, Neo4j, Kafka, GraphQL",
+      "resume_text": "Candidate stack: MongoDB, Redis, Neo4j, Go",
+      "expected_job_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL"
+      ],
+      "expected_resume_skills": [
+        "MongoDB",
+        "Redis",
+        "Neo4j",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-089",
+      "job_text": "Required stack: Redis, Neo4j, Kafka, GraphQL, Elasticsearch",
+      "resume_text": "Candidate stack: Redis, Neo4j, Kafka, GraphQL, Rust",
+      "expected_job_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch"
+      ],
+      "expected_resume_skills": [
+        "Redis",
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Rust"
+      ]
+    },
+    {
+      "id": "match-090",
+      "job_text": "Required stack: Neo4j, Kafka, GraphQL, Elasticsearch, TF",
+      "resume_text": "Candidate stack: Neo4j, Kafka, GraphQL, ES, TensorFlow",
+      "expected_job_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ],
+      "expected_resume_skills": [
+        "Neo4j",
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "match-091",
+      "job_text": "Required stack: Kafka, GraphQL, Elasticsearch, TF, PyTorch",
+      "resume_text": "Candidate stack: Django",
+      "expected_job_skills": [
+        "Kafka",
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch"
+      ],
+      "expected_resume_skills": [
+        "Django"
+      ]
+    },
+    {
+      "id": "match-092",
+      "job_text": "Required stack: GraphQL, Elasticsearch, TF, PyTorch, RabbitMQ",
+      "resume_text": "Candidate stack: GraphQL, React.js",
+      "expected_job_skills": [
+        "GraphQL",
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ"
+      ],
+      "expected_resume_skills": [
+        "GraphQL",
+        "React"
+      ]
+    },
+    {
+      "id": "match-093",
+      "job_text": "Required stack: Elasticsearch, TF, PyTorch, RabbitMQ, Python",
+      "resume_text": "Candidate stack: ES, TensorFlow, Angular",
+      "expected_job_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python"
+      ],
+      "expected_resume_skills": [
+        "Elasticsearch",
+        "TensorFlow",
+        "Angular"
+      ]
+    },
+    {
+      "id": "match-094",
+      "job_text": "Required stack: TF, PyTorch, RabbitMQ, Python, Java",
+      "resume_text": "Candidate stack: TensorFlow, PyTorch, RabbitMQ, Docker",
+      "expected_job_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java"
+      ],
+      "expected_resume_skills": [
+        "TensorFlow",
+        "PyTorch",
+        "RabbitMQ",
+        "Docker"
+      ]
+    },
+    {
+      "id": "match-095",
+      "job_text": "Required stack: PyTorch, RabbitMQ, Python, Java, TypeScript",
+      "resume_text": "Candidate stack: PyTorch, RabbitMQ, Python, Java, K8s",
+      "expected_job_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript"
+      ],
+      "expected_resume_skills": [
+        "PyTorch",
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "match-096",
+      "job_text": "Required stack: RabbitMQ, Python, Java, TypeScript, Golang",
+      "resume_text": "Candidate stack: RabbitMQ, Python, Java, TS, Go",
+      "expected_job_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ],
+      "expected_resume_skills": [
+        "RabbitMQ",
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go"
+      ]
+    },
+    {
+      "id": "match-097",
+      "job_text": "Required stack: Python, Java, TypeScript, Golang, Rust",
+      "resume_text": "Candidate stack: Jenkins",
+      "expected_job_skills": [
+        "Python",
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust"
+      ],
+      "expected_resume_skills": [
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "match-098",
+      "job_text": "Required stack: Java, TypeScript, Golang, Rust, FastAPI",
+      "resume_text": "Candidate stack: Java, MySQL",
+      "expected_job_skills": [
+        "Java",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI"
+      ],
+      "expected_resume_skills": [
+        "Java",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "match-099",
+      "job_text": "Required stack: TypeScript, Golang, Rust, FastAPI, Django",
+      "resume_text": "Candidate stack: TS, Go, PostgreSQL",
+      "expected_job_skills": [
+        "TypeScript",
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django"
+      ],
+      "expected_resume_skills": [
+        "TypeScript",
+        "Go",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "match-100",
+      "job_text": "Required stack: Golang, Rust, FastAPI, Django, React",
+      "resume_text": "Candidate stack: Go, Rust, FastAPI, MongoDB",
+      "expected_job_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "Django",
+        "React"
+      ],
+      "expected_resume_skills": [
+        "Go",
+        "Rust",
+        "FastAPI",
+        "MongoDB"
+      ]
+    }
+  ]
+}

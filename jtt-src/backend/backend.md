@@ -2,10 +2,12 @@
 
 > 文档类型：早期设计与接口草案
 > 状态：历史参考，部分内容已与代码漂移
-> 核验日期：2026-08-12（`c995a09e`）
+> 核验日期：2026-08-28（`28a4cc5b`）
 > 当前代码已注册 auth、positions、resume、match、tailor、learning、favorites、graph 八组
 > 路由；实际 Schema、端点和依赖以 `app/` 与运行时 OpenAPI 为准。本文所列 Elasticsearch、
 > 讯飞、BERT、完整 RAG、Docker 拓扑等多项仍是目标设计，不应表述为已实现。
+> 当前岗位 API 只读依赖 FYZ 共享 `jie_bang` 事实表；JTT 没有独立 SQL 快照或生产 Compose。
+> 当前测试为 37 passed、1 failed，覆盖率因缺少 `pytest-cov` 不可复现。
 
 > **项目名称**：多源异构数据驱动岗位和能力图谱构建与动态演化分析研究项目
 > **项目定位**：人才分析与决策系统 —— 利用知识图谱与大模型技术，实现从简历解析到人岗匹配的精准决策。

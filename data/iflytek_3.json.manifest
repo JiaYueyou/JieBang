@@ -1,0 +1,14 @@
+{
+  "schema_version": "crawler-snapshot-manifest-v1",
+  "source": "科大讯飞招聘",
+  "snapshot_type": "delta",
+  "snapshot_complete": false,
+  "observed_at": "2026-09-04 17:21:13",
+  "scope": {
+    "collector": "iflytek"
+  },
+  "scope_hash": "7dd3ffbcf52c1d9189768389ced465d87828a2314e503eed62b1ee30339a1b48",
+  "record_count": 100,
+  "business_checksum": "f74ff3a312df452afb2447c94fcdfe8301b444d8848338490a3d92e48a8a2e00",
+  "payload_sha256": "952b0eb9119cbfcd818133c0d1503e2c92580c3de35fe7114374fc4e2d548b53"
+}

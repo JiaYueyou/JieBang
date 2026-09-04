@@ -1,0 +1,16 @@
+{
+  "schema_version": "crawler-snapshot-manifest-v1",
+  "source": "DeepSeek官方招聘门户（talent.deepseek.com）",
+  "snapshot_type": "full",
+  "snapshot_complete": true,
+  "observed_at": "2026-09-03T13:34:18+08:00",
+  "scope": {
+    "collector": "deepseek",
+    "portal": "talent.deepseek.com",
+    "filter": "technical_jobs"
+  },
+  "scope_hash": "5b39edb20af151fc55b673acc944e838ded6a54a8d4f747693ae53221ee326e9",
+  "record_count": 28,
+  "business_checksum": "86fa1bd1e5f227b87d5e8d59cc999b5b0c9cb79fc1edd6f70bb44e604d96717d",
+  "payload_sha256": "01bc572bfce045216681588b3c0675e93393193d67cb31c97b8fe098dec9cfea"
+}

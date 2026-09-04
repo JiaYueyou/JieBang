@@ -1,0 +1,907 @@
+{
+  "dataset_version": "resume-skill-boundary-100-v1",
+  "description": "100 deterministic labelled resume skill extraction inputs",
+  "case_count": 100,
+  "cases": [
+    {
+      "id": "resume-001",
+      "text": "Candidate delivered two production projects using Python, FastAPI, Git. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Python",
+        "FastAPI",
+        "Git"
+      ]
+    },
+    {
+      "id": "resume-002",
+      "text": "Candidate delivered two production projects using Java, Django, Jenkins. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Java",
+        "Django",
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "resume-003",
+      "text": "Candidate delivered two production projects using TypeScript, React.js, MySQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TypeScript",
+        "React",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "resume-004",
+      "text": "Candidate delivered two production projects using Golang, Angular, PostgreSQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Go",
+        "Angular",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "resume-005",
+      "text": "Candidate delivered two production projects using Rust, Docker, Mongo. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Rust",
+        "Docker",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "resume-006",
+      "text": "Candidate delivered two production projects using FastAPI, K8s, Redis. Results and responsibilities are documented.",
+      "expected_skills": [
+        "FastAPI",
+        "Kubernetes",
+        "Redis"
+      ]
+    },
+    {
+      "id": "resume-007",
+      "text": "Candidate delivered two production projects using Django, Git, Neo4j. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Django",
+        "Git",
+        "Neo4j"
+      ]
+    },
+    {
+      "id": "resume-008",
+      "text": "Candidate delivered two production projects using React, Jenkins, Kafka. Results and responsibilities are documented.",
+      "expected_skills": [
+        "React",
+        "Jenkins",
+        "Kafka"
+      ]
+    },
+    {
+      "id": "resume-009",
+      "text": "Candidate delivered two production projects using Angular, MySQL, GraphQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Angular",
+        "MySQL",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "resume-010",
+      "text": "Candidate delivered two production projects using Docker, PostgreSQL, Elasticsearch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Docker",
+        "PostgreSQL",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "resume-011",
+      "text": "Candidate delivered two production projects using Kubernetes, MongoDB, TF. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kubernetes",
+        "MongoDB",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "resume-012",
+      "text": "Candidate delivered two production projects using Git, Redis, PyTorch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Git",
+        "Redis",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "resume-013",
+      "text": "Candidate delivered two production projects using Jenkins, Neo4j, RabbitMQ. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Jenkins",
+        "Neo4j",
+        "RabbitMQ"
+      ]
+    },
+    {
+      "id": "resume-014",
+      "text": "Candidate delivered two production projects using MySQL, Kafka, Python. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MySQL",
+        "Kafka",
+        "Python"
+      ]
+    },
+    {
+      "id": "resume-015",
+      "text": "Candidate delivered two production projects using PostgreSQL, GraphQL, Java. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PostgreSQL",
+        "GraphQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "resume-016",
+      "text": "Candidate delivered two production projects using Mongo, Elasticsearch, TypeScript. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MongoDB",
+        "Elasticsearch",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "resume-017",
+      "text": "Candidate delivered two production projects using Redis, TensorFlow, Golang. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Redis",
+        "TensorFlow",
+        "Go"
+      ]
+    },
+    {
+      "id": "resume-018",
+      "text": "Candidate delivered two production projects using Neo4j, PyTorch, Rust. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Neo4j",
+        "PyTorch",
+        "Rust"
+      ]
+    },
+    {
+      "id": "resume-019",
+      "text": "Candidate delivered two production projects using Kafka, RabbitMQ, FastAPI. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kafka",
+        "RabbitMQ",
+        "FastAPI"
+      ]
+    },
+    {
+      "id": "resume-020",
+      "text": "Candidate delivered two production projects using GraphQL, Python, Django. Results and responsibilities are documented.",
+      "expected_skills": [
+        "GraphQL",
+        "Python",
+        "Django"
+      ]
+    },
+    {
+      "id": "resume-021",
+      "text": "Candidate delivered two production projects using Elasticsearch, Java, React. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Elasticsearch",
+        "Java",
+        "React"
+      ]
+    },
+    {
+      "id": "resume-022",
+      "text": "Candidate delivered two production projects using TF, TypeScript, Angular. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TensorFlow",
+        "TypeScript",
+        "Angular"
+      ]
+    },
+    {
+      "id": "resume-023",
+      "text": "Candidate delivered two production projects using PyTorch, Go, Docker. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PyTorch",
+        "Go",
+        "Docker"
+      ]
+    },
+    {
+      "id": "resume-024",
+      "text": "Candidate delivered two production projects using RabbitMQ, Rust, Kubernetes. Results and responsibilities are documented.",
+      "expected_skills": [
+        "RabbitMQ",
+        "Rust",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "resume-025",
+      "text": "Candidate delivered two production projects using Python, FastAPI, Git. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Python",
+        "FastAPI",
+        "Git"
+      ]
+    },
+    {
+      "id": "resume-026",
+      "text": "Candidate delivered two production projects using Java, Django, Jenkins. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Java",
+        "Django",
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "resume-027",
+      "text": "Candidate delivered two production projects using TypeScript, React.js, MySQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TypeScript",
+        "React",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "resume-028",
+      "text": "Candidate delivered two production projects using Golang, Angular, PostgreSQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Go",
+        "Angular",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "resume-029",
+      "text": "Candidate delivered two production projects using Rust, Docker, Mongo. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Rust",
+        "Docker",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "resume-030",
+      "text": "Candidate delivered two production projects using FastAPI, K8s, Redis. Results and responsibilities are documented.",
+      "expected_skills": [
+        "FastAPI",
+        "Kubernetes",
+        "Redis"
+      ]
+    },
+    {
+      "id": "resume-031",
+      "text": "Candidate delivered two production projects using Django, Git, Neo4j. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Django",
+        "Git",
+        "Neo4j"
+      ]
+    },
+    {
+      "id": "resume-032",
+      "text": "Candidate delivered two production projects using React, Jenkins, Kafka. Results and responsibilities are documented.",
+      "expected_skills": [
+        "React",
+        "Jenkins",
+        "Kafka"
+      ]
+    },
+    {
+      "id": "resume-033",
+      "text": "Candidate delivered two production projects using Angular, MySQL, GraphQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Angular",
+        "MySQL",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "resume-034",
+      "text": "Candidate delivered two production projects using Docker, PostgreSQL, Elasticsearch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Docker",
+        "PostgreSQL",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "resume-035",
+      "text": "Candidate delivered two production projects using Kubernetes, MongoDB, TF. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kubernetes",
+        "MongoDB",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "resume-036",
+      "text": "Candidate delivered two production projects using Git, Redis, PyTorch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Git",
+        "Redis",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "resume-037",
+      "text": "Candidate delivered two production projects using Jenkins, Neo4j, RabbitMQ. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Jenkins",
+        "Neo4j",
+        "RabbitMQ"
+      ]
+    },
+    {
+      "id": "resume-038",
+      "text": "Candidate delivered two production projects using MySQL, Kafka, Python. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MySQL",
+        "Kafka",
+        "Python"
+      ]
+    },
+    {
+      "id": "resume-039",
+      "text": "Candidate delivered two production projects using PostgreSQL, GraphQL, Java. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PostgreSQL",
+        "GraphQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "resume-040",
+      "text": "Candidate delivered two production projects using Mongo, Elasticsearch, TypeScript. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MongoDB",
+        "Elasticsearch",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "resume-041",
+      "text": "Candidate delivered two production projects using Redis, TensorFlow, Golang. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Redis",
+        "TensorFlow",
+        "Go"
+      ]
+    },
+    {
+      "id": "resume-042",
+      "text": "Candidate delivered two production projects using Neo4j, PyTorch, Rust. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Neo4j",
+        "PyTorch",
+        "Rust"
+      ]
+    },
+    {
+      "id": "resume-043",
+      "text": "Candidate delivered two production projects using Kafka, RabbitMQ, FastAPI. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kafka",
+        "RabbitMQ",
+        "FastAPI"
+      ]
+    },
+    {
+      "id": "resume-044",
+      "text": "Candidate delivered two production projects using GraphQL, Python, Django. Results and responsibilities are documented.",
+      "expected_skills": [
+        "GraphQL",
+        "Python",
+        "Django"
+      ]
+    },
+    {
+      "id": "resume-045",
+      "text": "Candidate delivered two production projects using Elasticsearch, Java, React. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Elasticsearch",
+        "Java",
+        "React"
+      ]
+    },
+    {
+      "id": "resume-046",
+      "text": "Candidate delivered two production projects using TF, TypeScript, Angular. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TensorFlow",
+        "TypeScript",
+        "Angular"
+      ]
+    },
+    {
+      "id": "resume-047",
+      "text": "Candidate delivered two production projects using PyTorch, Go, Docker. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PyTorch",
+        "Go",
+        "Docker"
+      ]
+    },
+    {
+      "id": "resume-048",
+      "text": "Candidate delivered two production projects using RabbitMQ, Rust, Kubernetes. Results and responsibilities are documented.",
+      "expected_skills": [
+        "RabbitMQ",
+        "Rust",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "resume-049",
+      "text": "Candidate delivered two production projects using Python, FastAPI, Git. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Python",
+        "FastAPI",
+        "Git"
+      ]
+    },
+    {
+      "id": "resume-050",
+      "text": "Candidate delivered two production projects using Java, Django, Jenkins. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Java",
+        "Django",
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "resume-051",
+      "text": "Candidate delivered two production projects using TypeScript, React.js, MySQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TypeScript",
+        "React",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "resume-052",
+      "text": "Candidate delivered two production projects using Golang, Angular, PostgreSQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Go",
+        "Angular",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "resume-053",
+      "text": "Candidate delivered two production projects using Rust, Docker, Mongo. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Rust",
+        "Docker",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "resume-054",
+      "text": "Candidate delivered two production projects using FastAPI, K8s, Redis. Results and responsibilities are documented.",
+      "expected_skills": [
+        "FastAPI",
+        "Kubernetes",
+        "Redis"
+      ]
+    },
+    {
+      "id": "resume-055",
+      "text": "Candidate delivered two production projects using Django, Git, Neo4j. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Django",
+        "Git",
+        "Neo4j"
+      ]
+    },
+    {
+      "id": "resume-056",
+      "text": "Candidate delivered two production projects using React, Jenkins, Kafka. Results and responsibilities are documented.",
+      "expected_skills": [
+        "React",
+        "Jenkins",
+        "Kafka"
+      ]
+    },
+    {
+      "id": "resume-057",
+      "text": "Candidate delivered two production projects using Angular, MySQL, GraphQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Angular",
+        "MySQL",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "resume-058",
+      "text": "Candidate delivered two production projects using Docker, PostgreSQL, Elasticsearch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Docker",
+        "PostgreSQL",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "resume-059",
+      "text": "Candidate delivered two production projects using Kubernetes, MongoDB, TF. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kubernetes",
+        "MongoDB",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "resume-060",
+      "text": "Candidate delivered two production projects using Git, Redis, PyTorch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Git",
+        "Redis",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "resume-061",
+      "text": "Candidate delivered two production projects using Jenkins, Neo4j, RabbitMQ. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Jenkins",
+        "Neo4j",
+        "RabbitMQ"
+      ]
+    },
+    {
+      "id": "resume-062",
+      "text": "Candidate delivered two production projects using MySQL, Kafka, Python. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MySQL",
+        "Kafka",
+        "Python"
+      ]
+    },
+    {
+      "id": "resume-063",
+      "text": "Candidate delivered two production projects using PostgreSQL, GraphQL, Java. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PostgreSQL",
+        "GraphQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "resume-064",
+      "text": "Candidate delivered two production projects using Mongo, Elasticsearch, TypeScript. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MongoDB",
+        "Elasticsearch",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "resume-065",
+      "text": "Candidate delivered two production projects using Redis, TensorFlow, Golang. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Redis",
+        "TensorFlow",
+        "Go"
+      ]
+    },
+    {
+      "id": "resume-066",
+      "text": "Candidate delivered two production projects using Neo4j, PyTorch, Rust. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Neo4j",
+        "PyTorch",
+        "Rust"
+      ]
+    },
+    {
+      "id": "resume-067",
+      "text": "Candidate delivered two production projects using Kafka, RabbitMQ, FastAPI. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kafka",
+        "RabbitMQ",
+        "FastAPI"
+      ]
+    },
+    {
+      "id": "resume-068",
+      "text": "Candidate delivered two production projects using GraphQL, Python, Django. Results and responsibilities are documented.",
+      "expected_skills": [
+        "GraphQL",
+        "Python",
+        "Django"
+      ]
+    },
+    {
+      "id": "resume-069",
+      "text": "Candidate delivered two production projects using Elasticsearch, Java, React. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Elasticsearch",
+        "Java",
+        "React"
+      ]
+    },
+    {
+      "id": "resume-070",
+      "text": "Candidate delivered two production projects using TF, TypeScript, Angular. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TensorFlow",
+        "TypeScript",
+        "Angular"
+      ]
+    },
+    {
+      "id": "resume-071",
+      "text": "Candidate delivered two production projects using PyTorch, Go, Docker. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PyTorch",
+        "Go",
+        "Docker"
+      ]
+    },
+    {
+      "id": "resume-072",
+      "text": "Candidate delivered two production projects using RabbitMQ, Rust, Kubernetes. Results and responsibilities are documented.",
+      "expected_skills": [
+        "RabbitMQ",
+        "Rust",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "resume-073",
+      "text": "Candidate delivered two production projects using Python, FastAPI, Git. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Python",
+        "FastAPI",
+        "Git"
+      ]
+    },
+    {
+      "id": "resume-074",
+      "text": "Candidate delivered two production projects using Java, Django, Jenkins. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Java",
+        "Django",
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "resume-075",
+      "text": "Candidate delivered two production projects using TypeScript, React.js, MySQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TypeScript",
+        "React",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "resume-076",
+      "text": "Candidate delivered two production projects using Golang, Angular, PostgreSQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Go",
+        "Angular",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "id": "resume-077",
+      "text": "Candidate delivered two production projects using Rust, Docker, Mongo. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Rust",
+        "Docker",
+        "MongoDB"
+      ]
+    },
+    {
+      "id": "resume-078",
+      "text": "Candidate delivered two production projects using FastAPI, K8s, Redis. Results and responsibilities are documented.",
+      "expected_skills": [
+        "FastAPI",
+        "Kubernetes",
+        "Redis"
+      ]
+    },
+    {
+      "id": "resume-079",
+      "text": "Candidate delivered two production projects using Django, Git, Neo4j. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Django",
+        "Git",
+        "Neo4j"
+      ]
+    },
+    {
+      "id": "resume-080",
+      "text": "Candidate delivered two production projects using React, Jenkins, Kafka. Results and responsibilities are documented.",
+      "expected_skills": [
+        "React",
+        "Jenkins",
+        "Kafka"
+      ]
+    },
+    {
+      "id": "resume-081",
+      "text": "Candidate delivered two production projects using Angular, MySQL, GraphQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Angular",
+        "MySQL",
+        "GraphQL"
+      ]
+    },
+    {
+      "id": "resume-082",
+      "text": "Candidate delivered two production projects using Docker, PostgreSQL, Elasticsearch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Docker",
+        "PostgreSQL",
+        "Elasticsearch"
+      ]
+    },
+    {
+      "id": "resume-083",
+      "text": "Candidate delivered two production projects using Kubernetes, MongoDB, TF. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kubernetes",
+        "MongoDB",
+        "TensorFlow"
+      ]
+    },
+    {
+      "id": "resume-084",
+      "text": "Candidate delivered two production projects using Git, Redis, PyTorch. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Git",
+        "Redis",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "resume-085",
+      "text": "Candidate delivered two production projects using Jenkins, Neo4j, RabbitMQ. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Jenkins",
+        "Neo4j",
+        "RabbitMQ"
+      ]
+    },
+    {
+      "id": "resume-086",
+      "text": "Candidate delivered two production projects using MySQL, Kafka, Python. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MySQL",
+        "Kafka",
+        "Python"
+      ]
+    },
+    {
+      "id": "resume-087",
+      "text": "Candidate delivered two production projects using PostgreSQL, GraphQL, Java. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PostgreSQL",
+        "GraphQL",
+        "Java"
+      ]
+    },
+    {
+      "id": "resume-088",
+      "text": "Candidate delivered two production projects using Mongo, Elasticsearch, TypeScript. Results and responsibilities are documented.",
+      "expected_skills": [
+        "MongoDB",
+        "Elasticsearch",
+        "TypeScript"
+      ]
+    },
+    {
+      "id": "resume-089",
+      "text": "Candidate delivered two production projects using Redis, TensorFlow, Golang. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Redis",
+        "TensorFlow",
+        "Go"
+      ]
+    },
+    {
+      "id": "resume-090",
+      "text": "Candidate delivered two production projects using Neo4j, PyTorch, Rust. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Neo4j",
+        "PyTorch",
+        "Rust"
+      ]
+    },
+    {
+      "id": "resume-091",
+      "text": "Candidate delivered two production projects using Kafka, RabbitMQ, FastAPI. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Kafka",
+        "RabbitMQ",
+        "FastAPI"
+      ]
+    },
+    {
+      "id": "resume-092",
+      "text": "Candidate delivered two production projects using GraphQL, Python, Django. Results and responsibilities are documented.",
+      "expected_skills": [
+        "GraphQL",
+        "Python",
+        "Django"
+      ]
+    },
+    {
+      "id": "resume-093",
+      "text": "Candidate delivered two production projects using Elasticsearch, Java, React. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Elasticsearch",
+        "Java",
+        "React"
+      ]
+    },
+    {
+      "id": "resume-094",
+      "text": "Candidate delivered two production projects using TF, TypeScript, Angular. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TensorFlow",
+        "TypeScript",
+        "Angular"
+      ]
+    },
+    {
+      "id": "resume-095",
+      "text": "Candidate delivered two production projects using PyTorch, Go, Docker. Results and responsibilities are documented.",
+      "expected_skills": [
+        "PyTorch",
+        "Go",
+        "Docker"
+      ]
+    },
+    {
+      "id": "resume-096",
+      "text": "Candidate delivered two production projects using RabbitMQ, Rust, Kubernetes. Results and responsibilities are documented.",
+      "expected_skills": [
+        "RabbitMQ",
+        "Rust",
+        "Kubernetes"
+      ]
+    },
+    {
+      "id": "resume-097",
+      "text": "Candidate delivered two production projects using Python, FastAPI, Git. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Python",
+        "FastAPI",
+        "Git"
+      ]
+    },
+    {
+      "id": "resume-098",
+      "text": "Candidate delivered two production projects using Java, Django, Jenkins. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Java",
+        "Django",
+        "Jenkins"
+      ]
+    },
+    {
+      "id": "resume-099",
+      "text": "Candidate delivered two production projects using TypeScript, React.js, MySQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "TypeScript",
+        "React",
+        "MySQL"
+      ]
+    },
+    {
+      "id": "resume-100",
+      "text": "Candidate delivered two production projects using Golang, Angular, PostgreSQL. Results and responsibilities are documented.",
+      "expected_skills": [
+        "Go",
+        "Angular",
+        "PostgreSQL"
+      ]
+    }
+  ]
+}
