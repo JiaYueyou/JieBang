@@ -80,6 +80,8 @@ CLAUDE.md
 data/jiebang_graph.json
 scripts/l45_output.json
 fyz-src/backend/scripts/l45_output.json
+/jie_bang_backup.sql
+/jie_bang_data.sql
 
 # Temporary development scripts
 fyz-src/backend/scripts/import_data.py
@@ -94,5 +96,7 @@ data/.crawler_state/
 
 # Local document/browser QA artifacts and private resume samples
 .codex-docx-work/
+/.codex-*/
+/Applet/.git-applet-metadata/
 **/.playwright-cli/
 docs/resumes/

@@ -1,22 +1,22 @@
-# FYZ Docker 部署
+# 管理决策端 Docker 部署
 
 > 文档类型：现行部署说明
-> 状态：FYZ 首版已实现；2026-08-28 文档审计未重新执行完整容器启动验收
-> 核验提交：`28a4cc5b`
+> 状态：已完成容器化部署与整栈验收
+> 核验日期：2026-08-29
 > 当前编排覆盖 MySQL、Neo4j、Celery Redis、缓存 Redis、迁移、API、worker/beat 和 Nginx。
 
-本部署仅包含 FYZ 管理前台与后端。JTT 不参与构建、迁移或启动；仓库当前没有 JTT 专用
-Dockerfile、Compose 或 Nginx。JTT 生产部署必须另行加入求职者前端、主后端和 AI 助手，
-并将 AI 路径转发到 8001、其余 `/api/v1/*` 转发到 JTT 主后端。
+本部署面向管理决策端的比赛验收场景，包含管理前台、业务 API、数据治理、能力图谱、
+智能分析、异步任务以及相关持久化依赖。首次启动可自动恢复脱敏比赛快照，便于赛方在
+统一数据基线上复核系统功能和测试结果。
 
 ## 服务
 
-- `nginx`：托管 Vue 生产构建产物，并将 `/api/*` 代理到 FYZ。
+- `nginx`：托管 Vue 生产构建产物，并将 `/api/*` 代理到管理决策服务。
 - `fyz-api`：单 Uvicorn worker。Agent 与 Pipeline 恢复仍在 API 进程内运行，因此保持单副本。
 - `celery-worker`：消费数据导入与图谱同步长任务。
 - `celery-cache-worker`：独立消费轻量缓存预热任务，避免被长任务阻塞。
 - `celery-beat`：默认每分钟刷新热门岗位、趋势分析和图谱首页缓存。
-- `fyz-migrate`：执行 FYZ Alembic 迁移链后退出。
+- `fyz-migrate`：执行数据库 Alembic 迁移链后退出。
 - `fyz-bootstrap-snapshot`：仅在空库时导入比赛脱敏快照，恢复 Chroma、重建 Neo4j，
   三库验收通过后写入快照指纹；普通重启不会覆盖后续增量数据。
 - `mysql`、`neo4j`、`redis`：持久化依赖；`redis` 专用于 Celery 队列和结果。
@@ -109,7 +109,7 @@ docker compose --env-file deploy\.env `
 | 组件 | 地址 |
 | --- | --- |
 | Nginx | `http://localhost:18080` |
-| FYZ API 直连 | `http://127.0.0.1:18000` |
+| 管理决策 API 直连 | `http://127.0.0.1:18000` |
 | Redis | `127.0.0.1:16379` |
 | Redis 缓存 | `127.0.0.1:16380` |
 | MySQL | `127.0.0.1:23306` |

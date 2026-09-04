@@ -1,3 +1,12 @@
+from app.services.matching_service import candidate_display_name
+
+
+def test_legacy_missing_name_uses_candidate_number():
+    assert candidate_display_name(12, "姓名待补充") == "候选人12"
+    assert candidate_display_name(12, "") == "候选人12"
+    assert candidate_display_name(12, "李雷") == "李雷"
+
+
 async def _create_job(client, headers):
     response = await client.post("/api/v1/jobs", headers=headers, json={
         "title": "Python 后端工程师", "level": "mid", "department": "研发部",
@@ -123,6 +132,37 @@ async def test_recalculate_matches_covers_jobs_created_after_resume_upload(
 async def test_resume_upload_requires_authentication(client):
     response = await client.post("/api/v1/resumes", files={"file": ("resume.txt", b"Python", "text/plain")})
     assert response.status_code == 401
+
+
+async def test_resume_without_parsed_name_uses_stable_candidate_number(client, auth_headers):
+    await _create_job(client, auth_headers)
+    response = await client.post(
+        "/api/v1/resumes",
+        headers=auth_headers,
+        files={
+            "file": (
+                "anonymous.txt",
+                "熟悉 Python 和 Redis，拥有后端项目经验".encode(),
+                "text/plain",
+            )
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    created = response.json()["data"]
+    expected_name = f"候选人{created['id']}"
+    assert created["name"] == expected_name
+
+    talents = (await client.get("/api/v1/talents", headers=auth_headers)).json()["data"]
+    assert talents[0]["name"] == expected_name
+
+    details = await client.get(
+        f"/api/v1/talents/{created['id']}/details",
+        headers=auth_headers,
+    )
+    assert details.status_code == 200, details.text
+    assert details.json()["data"]["name"] == expected_name
+    assert details.json()["data"]["profile"]["name"] == expected_name
 
 
 async def test_resume_upload_extracts_profile_fields_locally(client, auth_headers):

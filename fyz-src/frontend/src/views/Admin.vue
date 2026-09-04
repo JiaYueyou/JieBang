@@ -113,9 +113,9 @@
 
       <div class="crawler-summary">
         <div><span>今日入库</span><strong>{{ pipelineSummary.todayImported }}</strong><small>数据库新增岗位</small></div>
-        <div><span>有效数据率</span><strong class="green">{{ pipelineSummary.validRate.toFixed(1) }}%</strong><small>{{ pipelineSummary.validRecords }} / {{ pipelineSummary.totalJobs }} 条正文有效</small></div>
-        <div><span>运行中任务</span><strong class="brand">{{ runningCrawlerCount }}</strong><small>共 {{ crawlers.length }} 个数据源</small></div>
-        <div><span>失败任务</span><strong class="amber">{{ pipelineSummary.failedTasks }}</strong><small>今日导入任务</small></div>
+        <div><span>有效数据率</span><strong class="summary-success">{{ pipelineSummary.validRate.toFixed(1) }}%</strong><small>{{ pipelineSummary.validRecords }} / {{ pipelineSummary.totalJobs }} 条正文有效</small></div>
+        <div><span>运行中任务</span><strong class="summary-brand">{{ runningCrawlerCount }}</strong><small>共 {{ crawlers.length }} 个数据源</small></div>
+        <div><span>失败任务</span><strong class="summary-warning">{{ pipelineSummary.failedTasks }}</strong><small>今日导入任务</small></div>
       </div>
 
       <article class="admin-card pipeline-run-card" role="status">
@@ -158,7 +158,7 @@
           <section>
             <span class="step-number">1</span>
             <div><strong>导入第一时间窗口</strong><small>AI应用开发工程师 · 2 条记录 · 2 个来源</small></div>
-            <el-button type="primary" plain :loading="competitionImporting === 'baseline'" :disabled="Boolean(competitionImporting)" @click="importCompetitionData('baseline')">导入第一时间窗口</el-button>
+            <el-button type="primary" :loading="competitionImporting === 'baseline'" :disabled="Boolean(competitionImporting)" @click="importCompetitionData('baseline')">导入第一时间窗口</el-button>
           </section>
           <section>
             <span class="step-number">2</span>
@@ -672,7 +672,9 @@
           <el-table-column label="状态" width="105">
             <template #default="{ row }"><el-tag :type="agentStatusTone(row.status)" effect="plain">{{ agentStatusLabel(row.status) }}</el-tag></template>
           </el-table-column>
-          <el-table-column prop="model" label="模型" min-width="150" show-overflow-tooltip />
+          <el-table-column label="模型" min-width="150">
+            <template #default>{{ DISPLAY_MODEL_NAME }}</template>
+          </el-table-column>
           <el-table-column prop="prompt_version" label="Prompt 版本" min-width="125" />
           <el-table-column label="耗时" width="100"><template #default="{ row }">{{ row.duration_ms === null ? "—" : `${row.duration_ms} ms` }}</template></el-table-column>
           <el-table-column label="创建时间" min-width="175"><template #default="{ row }">{{ formatLocalDate(row.created_at) }}</template></el-table-column>
@@ -734,7 +736,7 @@
           <el-descriptions-item label="运行 ID">{{ selectedAgentRun.id }}</el-descriptions-item>
           <el-descriptions-item label="Agent">{{ selectedAgentRun.agent_type }}</el-descriptions-item>
           <el-descriptions-item label="状态">{{ agentStatusLabel(selectedAgentRun.status) }}</el-descriptions-item>
-          <el-descriptions-item label="模型">{{ selectedAgentRun.provider }} / {{ selectedAgentRun.model }}</el-descriptions-item>
+          <el-descriptions-item label="模型">{{ DISPLAY_MODEL_NAME }}</el-descriptions-item>
           <el-descriptions-item label="Prompt 版本">{{ selectedAgentRun.prompt_version }}</el-descriptions-item>
           <el-descriptions-item label="输入摘要">{{ selectedAgentRun.input_summary }}</el-descriptions-item>
           <el-descriptions-item label="开始时间">{{ formatLocalDate(selectedAgentRun.started_at) }}</el-descriptions-item>
@@ -777,6 +779,7 @@ import { classifyImportFailure, errorMessage } from "@/utils/crawlerFlowError";
 
 type Section = "overview" | "crawler" | "review" | "graphReview" | "monitor";
 
+const DISPLAY_MODEL_NAME = "Spark X2";
 const activeSection = ref<Section>("overview");
 const router = useRouter();
 const logLevel = ref("");
@@ -1578,5 +1581,10 @@ function formatReviewDate(value: string | null) {
 .automation-global-mask .source-option{display:flex;align-items:center;gap:8px}.automation-global-mask .source-option i{display:grid;width:27px;height:27px;place-items:center;border-radius:7px;background:var(--color-brand-light);color:var(--color-brand);font-size:10px;font-style:normal;font-weight:700}
 .automation-global-mask .automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.automation-global-mask .automation-grid.three-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.automation-global-mask .automation-grid .el-input-number,.automation-global-mask .automation-grid .el-select{width:100%}.automation-global-mask .automation-grid .el-form-item small{display:block;margin-top:4px;color:var(--text-muted);font-size:11px}
 .automation-global-mask .automation-section-title{display:flex;align-items:baseline;gap:8px;margin:3px 0 12px;padding-top:15px;border-top:1px solid var(--color-border-light)}.automation-global-mask .automation-section-title span{font-size:13px;font-weight:700}.automation-global-mask .automation-section-title small{color:var(--text-muted);font-size:11px}.automation-global-mask .weekday-checks{display:flex;flex-wrap:wrap}
+.crawler-summary strong.summary-success{background:transparent;color:var(--color-success)}
+.crawler-summary strong.summary-brand{background:transparent;color:var(--color-brand)}
+.crawler-summary strong.summary-warning{background:transparent;color:var(--color-warning)}
+.review-grid .review-card{padding-left:17px!important}
+.review-grid .review-card::before,.review-grid .review-card.review-unverified::before,.review-grid .review-card.review-verified::before,.review-grid .review-card.review-rejected::before{display:none!important;content:none!important}
 @media(max-width:680px){.automation-global-mask .automation-grid,.automation-global-mask .automation-grid.three-columns,.automation-global-mask .source-checks{grid-template-columns:1fr}.automation-global-mask .el-overlay-dialog{padding:12px}}
 </style>

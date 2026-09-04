@@ -220,6 +220,7 @@ import Graph from "graphology";
 import Graph3DCanvas from "@/components/graph/Graph3DCanvas.vue";
 import { buildGraphFromSubgraph } from "@/data/graphBuilder";
 import { computeHighlightNodeIds } from "@/utils/graphPath";
+import { findBestMatchingNodeId } from "@/utils/graphSearch";
 import { getNodeNeighbors, getOverview, getPanorama } from "@/api/graph";
 import type { GraphSubgraph } from "@/api/graph";
 import DataState from "@/components/common/DataState.vue";
@@ -270,6 +271,7 @@ const expandedScopeVersion = ref(0);
 // 会经 reapplyExpandedScopes() 自动重新合并；仅 resetToOverview（回到概览）
 // 才显式清空。
 const expandedCache = new Map<string, GraphSubgraph>();
+let graphLoadVersion = 0;
 
 onMounted(async () => {
   graphTasks.resume();
@@ -310,11 +312,12 @@ watch(() => graphTasks.tasks.enrichment?.status, status => {
 });
 
 async function loadGraph() {
+  const loadVersion = ++graphLoadVersion;
   loading.value = true;
   error.value = "";
   try {
     if (selectedType.value === "TechPoint" || selectedType.value === "KnowledgePoint") {
-      await loadDeepLayer(selectedType.value);
+      await loadDeepLayer(selectedType.value, loadVersion);
       return;
     }
     const response = await getOverview({
@@ -324,19 +327,19 @@ async function loadGraph() {
       page_size: 24,
       max_layer: 3,
     });
+    if (loadVersion !== graphLoadVersion) return;
     masterGraph.value = buildGraphFromSubgraph(response);
     reapplyExpandedScopes();
     overviewCursor.value = response.next_cursor || null;
     hasMoreOverview.value = Boolean(response.has_more);
-    activeNode.value = null;
-    highlightedPath.value = [];
-    selectedNodeId.value = null;
+    syncSelectionWithSearch();
   } catch (e) {
+    if (loadVersion !== graphLoadVersion) return;
     error.value = e instanceof Error ? e.message : "加载失败";
     masterGraph.value = null;
     currentGraph.value = null;
   } finally {
-    loading.value = false;
+    if (loadVersion === graphLoadVersion) loading.value = false;
   }
 }
 
@@ -355,6 +358,7 @@ async function loadMoreOverview() {
     reapplyExpandedScopes();
     overviewCursor.value = response.next_cursor || null;
     hasMoreOverview.value = Boolean(response.has_more);
+    syncSelectionWithSearch();
   } catch (exception) {
     ElMessage.error(exception instanceof Error ? exception.message : "加载更多图谱失败");
   } finally {
@@ -362,7 +366,7 @@ async function loadMoreOverview() {
   }
 }
 
-async function loadDeepLayer(type: "TechPoint" | "KnowledgePoint") {
+async function loadDeepLayer(type: "TechPoint" | "KnowledgePoint", loadVersion: number) {
   const response = await getPanorama({
     node_type: type,
     keyword: keyword.value.trim() || undefined,
@@ -370,13 +374,12 @@ async function loadDeepLayer(type: "TechPoint" | "KnowledgePoint") {
     level: selectedLevel.value === "all" ? undefined : selectedLevel.value,
     limit: 1000,
   });
+  if (loadVersion !== graphLoadVersion) return;
   masterGraph.value = buildGraphFromSubgraph(response);
   reapplyExpandedScopes();
   overviewCursor.value = null;
   hasMoreOverview.value = false;
-  activeNode.value = null;
-  highlightedPath.value = [];
-  selectedNodeId.value = null;
+  syncSelectionWithSearch();
 }
 
 async function syncGraph() {
@@ -463,6 +466,20 @@ function graphNodeFromAttributes(id: string, attrs: Record<string, any>): GraphN
     y: attrs.y || 0,
     description: attrs.description || "",
   } as GraphNode;
+}
+
+function syncSelectionWithSearch() {
+  highlightedPath.value = [];
+  const nodeId = findBestMatchingNodeId(currentGraph.value, keyword.value);
+  if (!nodeId || !currentGraph.value?.hasNode(nodeId)) {
+    activeNode.value = null;
+    selectedNodeId.value = null;
+    return;
+  }
+
+  activeNode.value = graphNodeFromAttributes(nodeId, currentGraph.value.getNodeAttributes(nodeId));
+  selectedNodeId.value = nodeId;
+  focusGraphNode(nodeId);
 }
 
 function relatedNodesByDirection(direction: "parent" | "child") {

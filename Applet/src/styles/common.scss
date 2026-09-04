@@ -1,0 +1,195 @@
+/* ═══════════════════════════════════════════════════
+   全局工具类 —— 在 App.vue 中引入一次即可
+   ═══════════════════════════════════════════════════ */
+
+/* ── 玻璃拟态卡片 ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24rpx);
+  -webkit-backdrop-filter: blur(24rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+}
+
+/* ── 常规卡片 ── */
+.card {
+  background: $card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  border: 1rpx solid rgba(232, 235, 240, 0.7);
+}
+
+.card-hover {
+  transition: transform $duration-fast $ease, box-shadow $duration-fast $ease;
+  &:active {
+    transform: scale(0.975);
+    box-shadow: $shadow-md;
+  }
+}
+
+/* ── 标签 chip ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 20rpx;
+  border-radius: $radius-full;
+  font-size: 22rpx;
+  font-weight: 500;
+  background: $bg-muted;
+  color: $text-2;
+  &.brand { background: $brand-light; color: $brand; }
+  &.success { background: $success-light; color: $success; }
+  &.warning { background: $warning-light; color: $warning; }
+  &.danger { background: $danger-light; color: $danger; }
+}
+
+/* ── 主按钮 ── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  height: 92rpx;
+  border-radius: $radius-md;
+  background: linear-gradient(135deg, $brand, #7b8ff7);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8rpx 24rpx $brand-glow;
+  transition: transform $duration-fast $ease, box-shadow $duration-fast $ease;
+  &:active {
+    transform: scale(0.97);
+    box-shadow: 0 4rpx 12rpx $brand-glow;
+  }
+  &.disabled {
+    opacity: 0.55;
+    box-shadow: none;
+  }
+}
+
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92rpx;
+  border-radius: $radius-md;
+  background: $brand-light;
+  color: $brand;
+  font-size: 30rpx;
+  font-weight: 600;
+  &:active { opacity: 0.8; }
+}
+
+/* ── 分数环（conic-gradient，同 FYZ .score-ring） ── */
+.score-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: conic-gradient($brand calc(var(--pct, 0) * 1%), $bg-muted 0);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 8rpx;
+    border-radius: 50%;
+    background: $card;
+  }
+  .score-num {
+    position: relative;
+    z-index: 1;
+    font-family: $font-mono;
+    font-weight: 700;
+    color: $brand;
+  }
+  &.high { background: conic-gradient($success calc(var(--pct, 0) * 1%), $bg-muted 0); .score-num { color: $success; } }
+  &.mid { background: conic-gradient($warning calc(var(--pct, 0) * 1%), $bg-muted 0); .score-num { color: $warning; } }
+  &.low { background: conic-gradient($danger calc(var(--pct, 0) * 1%), $bg-muted 0); .score-num { color: $danger; } }
+}
+
+/* ── 骨架屏 ── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: $bg-muted;
+  border-radius: $radius-sm;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.65) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ── 入场动效（沿用 FYZ 曲线） ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-up { animation: fadeInUp $duration-slow $ease both; }
+.fade-in { animation: fadeIn $duration-slow $ease both; }
+.scale-in { animation: scaleIn $duration-normal $ease both; }
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+
+/* ── 区块标题 ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 4rpx 24rpx;
+  .section-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: $text-1;
+    letter-spacing: -0.02em;
+  }
+  .section-more {
+    display: flex;
+    align-items: center;
+    gap: 2rpx;
+    font-size: 24rpx;
+    color: $text-3;
+  }
+}
+
+/* ── 空态 ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 96rpx 40rpx;
+  .empty-title { margin-top: 20rpx; font-size: 28rpx; font-weight: 600; color: $text-2; }
+  .empty-desc { margin-top: 8rpx; font-size: 24rpx; color: $text-3; text-align: center; line-height: 1.7; }
+}
+
+/* ── 单行/多行省略 ── */
+.ellipsis { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
