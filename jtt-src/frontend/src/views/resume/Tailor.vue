@@ -33,7 +33,7 @@ onMounted(async () => {
         requiredSkills: position.value.requiredSkills.map((s: any) => s.name),
         preferredSkills: position.value.preferredSkills.map((s: any) => s.name),
       }
-      suggestions.value = await matchStore.fetchAiSuggestions(resumeId, positionCtx)
+      suggestions.value = await matchStore.fetchAiSuggestions(resumeId, positionCtx) ?? []
     }
   } catch {
     ElMessage.warning('数据加载失败，使用默认数据')
