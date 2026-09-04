@@ -1,5 +1,10 @@
 # 智联职引后端
 
+> 文档类型：现行运行说明
+> 状态：基本实现
+> 核验日期：2026-08-12（`c995a09e`）
+> 跨模块完成度、测试与风险见 [当前实现状态](../../docs/implementation-status.md)。
+
 ## 环境
 
 所有 Python 命令使用项目 Conda 环境：
@@ -46,14 +51,14 @@ alembic downgrade -1
 alembic revision --autogenerate -m "describe change"
 ```
 
-### ⚠ 当前数据库版本：`20260801_0017_graph_enrichment_workflow`
+### ⚠ 当前数据库版本：`20260809_0020_pipeline_runs`
 
 当前迁移链已经包含私有简历/匹配、来源与质量审核、Agent 审计、RAG Evidence、
-岗位标准化 v2 和 L4/L5 图谱候选工作流。更新代码后必须执行：
+岗位标准化 v2、L4/L5 图谱候选、分析基线、来源观测和自动流水线。更新代码后必须执行：
 
 ```powershell
 alembic upgrade head
-alembic current  # 应显示 20260801_0017 (head)
+alembic current  # 应显示 20260809_0020 (head)
 ```
 
 迁移完成后重启 Uvicorn，确认 `/api/v1/talents` 已注册。不要以 `alembic stamp head` 代替升级，否则会出现 API 已部署但匹配数据表缺失的问题。
@@ -70,17 +75,9 @@ alembic upgrade head
 
 ## 完整数据库迁移包
 
-需要把一台开发机的完整 MySQL 事实/审计数据、ChromaDB 预计算向量和 Neo4j
-图谱迁移到另一台机器时，使用
-[scripts/DATABASE_TRANSFER.md](scripts/DATABASE_TRANSFER.md)。推荐执行单入口：
-
-```powershell
-.\scripts\Import-TeamDatabase.ps1 -Replace
-```
-
-该流程会覆盖目标 MySQL 的现有业务数据，从 MySQL 中保存的预计算向量复原
-`jiebang-evidence-` Chroma collection（不调用外部 Embedding API），并重建
-Neo4j `namespace=jiebang`。执行前必须确认目标 `.env`。
+完整迁移设计见 [scripts/DATABASE_TRANSFER.md](scripts/DATABASE_TRANSFER.md)，但当前包固定在
+0017，与 0020 head 的 revision 校验冲突。修复前不要运行覆盖式迁移入口；新环境先使用
+空数据库执行 `alembic upgrade head`，再通过受支持的数据导入 API 建立数据。
 
 当前仍受支持的数据维护、迁移和评测脚本清单见
 [scripts/README.md](scripts/README.md)。未列入该清单的历史入口不得继续使用。
@@ -106,6 +103,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 pytest test/ -v
 ```
 
+2026-08-12 使用项目指定 Python 3.10 环境按目录拆分执行共 311 项 pytest，全部通过。
+完整单命令超过 124 秒工具上限，因此状态基线记录拆分结果；真实 MySQL、Neo4j、Redis、
+Celery 和外部模型仍需单独做集成验收。
+
 测试仍使用 SQLite 内存数据库，每条测试前通过 SQLAlchemy metadata
 重建表，不依赖 Alembic 或本地 MySQL。
 
@@ -127,7 +128,8 @@ alembic upgrade head
 - `jd_crawl2.json`
 
 批量导入由 Celery Worker 执行，Redis 默认地址为
-`redis://localhost:6379/0`：
+`redis://127.0.0.1:6379/0`；业务查询缓存默认使用数据库 3。Windows
+环境不要使用可能解析到 IPv6 `::1` 的 `localhost`，除非 Redis 同时监听 IPv6：
 
 ```powershell
 celery -A app.core.celery_app.celery_app worker --loglevel=info --pool=solo
@@ -142,6 +144,11 @@ JD Generation、Career Planning 与 Match Explanation 使用持久化 `AsyncTask
 前端轮询 `/api/v1/tasks/{task_id}`；API 重启后会恢复数据库中处于 `queued` 或
 `running` 的 Agent 任务。当前部署应保持单个 Uvicorn Worker，避免多个进程重复
 恢复同一任务。批量数据导入仍沿用上文独立的 Celery 配置，不属于 Agent 执行链路。
+
+MySQL 始终是业务状态的唯一事实源，Redis 只保存可丢弃的查询结果和任务状态投影。
+业务写入先提交 MySQL，再推进 Redis 查询代际；缓存不可用时直接回源 MySQL。
+Redis 从故障中恢复时，应用会先推进 Analysis、Dashboard、Graph 三个查询代际，
+再允许读取缓存，避免故障期间未能失效的旧值重新出现。
 
 DeepSeek 固定使用标准直连地址 `https://api.deepseek.com`，Provider 不读取系统或
 环境变量中的 HTTP 代理。模型名以当前账号可用模型为准。修改 `.env` 后必须完整

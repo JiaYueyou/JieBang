@@ -1,0 +1,50 @@
+{
+  "schema_version": "competition-ability-graph-v1",
+  "graphs": [
+    {
+      "scenario": "new_job",
+      "job": "大模型安全工程师",
+      "nodes": [
+        {"id": "job:llm-security-engineer", "type": "Job", "name": "大模型安全工程师"},
+        {"id": "skill:python", "type": "Skill", "name": "Python"},
+        {"id": "skill:machine-learning", "type": "Skill", "name": "机器学习"},
+        {"id": "skill:llm", "type": "Skill", "name": "大模型"}
+      ],
+      "edges": [
+        {"source": "job:llm-security-engineer", "target": "skill:python", "type": "REQUIRES"},
+        {"source": "job:llm-security-engineer", "target": "skill:machine-learning", "type": "REQUIRES"},
+        {"source": "job:llm-security-engineer", "target": "skill:llm", "type": "REQUIRES"}
+      ]
+    },
+    {
+      "scenario": "existing_job_two_windows",
+      "job": "AI应用开发工程师",
+      "windows": [
+        {
+          "period": "2026-05—2026-06",
+          "source_count": 2,
+          "skills": ["Python", "FastAPI", "MySQL"]
+        },
+        {
+          "period": "2026-07—2026-08",
+          "source_count": 2,
+          "skills": ["Python", "FastAPI", "MySQL", "LangChain", "RAG"]
+        }
+      ],
+      "nodes": [
+        {"id": "job:ai-application-engineer", "type": "Job", "name": "AI应用开发工程师"},
+        {"id": "area:python", "type": "SkillArea", "name": "Python 生态"},
+        {"id": "skill:python", "type": "Skill", "name": "Python"},
+        {"id": "skill:fastapi", "type": "Skill", "name": "FastAPI"},
+        {"id": "skill:langchain", "type": "Skill", "name": "LangChain"},
+        {"id": "skill:rag", "type": "Skill", "name": "RAG"},
+        {"id": "skill:mysql", "type": "Skill", "name": "MySQL"}
+      ],
+      "edges": [
+        {"source": "area:python", "target": "skill:python", "type": "CONTAINS"},
+        {"source": "area:python", "target": "skill:fastapi", "type": "CONTAINS"},
+        {"source": "area:python", "target": "skill:langchain", "type": "CONTAINS"}
+      ]
+    }
+  ]
+}

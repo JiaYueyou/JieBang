@@ -1,0 +1,86 @@
+[
+  {
+    "title": "AI应用开发工程师",
+    "company": "量子云计算有限公司",
+    "city": "北京",
+    "salary": "28K-40K",
+    "experience": "3-5年",
+    "education": "本科",
+    "jd_text": "【岗位职责】负责企业级大模型应用升级，持续使用Python和FastAPI建设服务接口，以MySQL承载业务数据，基于Python生态框架LangChain实现工作流编排，新增RAG检索增强生成链路并完成效果评测。\n【任职要求】Python和FastAPI为硬性要求，须熟练使用MySQL；具备LangChain、RAG、向量检索、提示词工程、离线评测与生产部署经验。",
+    "responsibilities": "负责企业级大模型应用升级，持续使用Python和FastAPI建设服务接口，以MySQL承载业务数据，基于Python生态框架LangChain实现工作流编排，新增RAG检索增强生成链路并完成效果评测。",
+    "requirements": "Python和FastAPI为硬性要求，须熟练使用MySQL；具备LangChain、RAG、向量检索、提示词工程、离线评测与生产部署经验。",
+    "keywords": ["Python", "FastAPI", "MySQL", "LangChain", "RAG"],
+    "posted_at": "2026-07-12 10:00:00",
+    "url": "https://competition.example.com/update/ai-app-engineer-c",
+    "source": "赛方测试招聘源C",
+    "crawled_at": "2026-08-27T16:30:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "existing_job_capability_update",
+      "snapshot_observed_at": "2026-08-27T16:30:00+08:00"
+    }
+  },
+  {
+    "title": "AI应用开发工程师",
+    "company": "智源软件技术有限公司",
+    "city": "深圳",
+    "salary": "30K-45K",
+    "experience": "3-5年",
+    "education": "本科",
+    "jd_text": "【岗位职责】迭代企业AI应用能力，继续使用Python、FastAPI和MySQL维护核心服务，在Python技术栈内引入LangChain开发智能工作流，新增RAG知识库检索、答案生成和质量评估体系。\n【任职要求】Python和FastAPI为硬性要求，熟练使用MySQL；熟悉LangChain和RAG架构，能够完成检索召回调优、提示词工程和线上监控。",
+    "responsibilities": "迭代企业AI应用能力，继续使用Python、FastAPI和MySQL维护核心服务，在Python技术栈内引入LangChain开发智能工作流，新增RAG知识库检索、答案生成和质量评估体系。",
+    "requirements": "Python和FastAPI为硬性要求，熟练使用MySQL；熟悉LangChain和RAG架构，能够完成检索召回调优、提示词工程和线上监控。",
+    "keywords": ["Python", "FastAPI", "MySQL", "LangChain", "RAG"],
+    "posted_at": "2026-08-18 10:30:00",
+    "url": "https://competition.example.com/update/ai-app-engineer-d",
+    "source": "赛方测试招聘源D",
+    "crawled_at": "2026-08-27T16:31:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "existing_job_capability_update",
+      "snapshot_observed_at": "2026-08-27T16:31:00+08:00"
+    }
+  },
+  {
+    "title": "大模型安全工程师",
+    "company": "安全智研科技有限公司",
+    "city": "北京",
+    "salary": "32K-48K",
+    "experience": "3-5年",
+    "education": "硕士",
+    "jd_text": "【岗位职责】建设大模型安全防护平台，开展提示注入与越狱攻击检测，依据OWASP LLM风险清单设计自动化红队评测，使用Python开发在线护栏服务。\n【任职要求】熟练掌握Python、机器学习和大模型安全评测，熟悉提示注入、内容安全、模型红队及安全监控。",
+    "responsibilities": "建设大模型安全防护平台，开展提示注入与越狱攻击检测，依据OWASP LLM风险清单设计自动化红队评测，使用Python开发在线护栏服务。",
+    "requirements": "熟练掌握Python、机器学习和大模型安全评测，熟悉提示注入、内容安全、模型红队及安全监控。",
+    "keywords": ["Python", "机器学习", "大模型"],
+    "posted_at": "2026-08-19 11:00:00",
+    "url": "https://competition.example.com/new/llm-security-engineer-a",
+    "source": "赛方测试招聘源A",
+    "crawled_at": "2026-08-27T16:32:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "new_job",
+      "snapshot_observed_at": "2026-08-27T16:32:00+08:00"
+    }
+  },
+  {
+    "title": "大模型安全工程师",
+    "company": "可信人工智能实验室",
+    "city": "上海",
+    "salary": "30K-46K",
+    "experience": "3-5年",
+    "education": "本科",
+    "jd_text": "【岗位职责】研发大模型安全评测与防护系统，使用Python构建提示注入、越狱攻击和有害输出测试集，结合机器学习实现风险检测与护栏策略。\n【任职要求】熟悉Python、机器学习和大模型技术，具备模型红队、内容安全、自动化安全评测与风险治理经验。",
+    "responsibilities": "研发大模型安全评测与防护系统，使用Python构建提示注入、越狱攻击和有害输出测试集，结合机器学习实现风险检测与护栏策略。",
+    "requirements": "熟悉Python、机器学习和大模型技术，具备模型红队、内容安全、自动化安全评测与风险治理经验。",
+    "keywords": ["Python", "机器学习", "大模型"],
+    "posted_at": "2026-08-20 14:00:00",
+    "url": "https://competition.example.com/new/llm-security-engineer-b",
+    "source": "赛方测试招聘源B",
+    "crawled_at": "2026-08-27T16:33:00+08:00",
+    "source_meta": {
+      "source_type": "competition_test",
+      "scenario": "new_job",
+      "snapshot_observed_at": "2026-08-27T16:33:00+08:00"
+    }
+  }
+]

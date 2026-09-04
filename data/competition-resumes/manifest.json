@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "profile": "competition-resume-assets-v1",
+  "file_count": 16,
+  "files": [
+    {"resume_id": 1, "asset_filename": "resume-01.pdf", "storage_key": "competition/resume-01.pdf", "content_type": "application/pdf", "size_bytes": 1354102, "sha256": "30217f807d59b71fcb2cb8a67470ac92e5d72ba7d63a6fa721926732f6a91e42"},
+    {"resume_id": 2, "asset_filename": "resume-02.png", "storage_key": "competition/resume-02.png", "content_type": "image/png", "size_bytes": 670363, "sha256": "4a871cf882492819f26eba79e8c45e8e2bac1e628744ca107d44292c0adbb22c"},
+    {"resume_id": 3, "asset_filename": "resume-03.png", "storage_key": "competition/resume-03.png", "content_type": "image/png", "size_bytes": 665379, "sha256": "8ee613a7203a29ae0c04fb5b6d2beb6d7238884b79a73fcbb2ec11c862e88921"},
+    {"resume_id": 4, "asset_filename": "resume-04.png", "storage_key": "competition/resume-04.png", "content_type": "image/png", "size_bytes": 492394, "sha256": "87ab68d60163ecb18a1000a08303d550f5c45b31fc56cce27a0da23904f7db27"},
+    {"resume_id": 5, "asset_filename": "resume-05.png", "storage_key": "competition/resume-05.png", "content_type": "image/png", "size_bytes": 218171, "sha256": "e64f6f3b13f34af3383da5d732297776bf0b194c7ee2f5446bd869b9fc5e8bb9"},
+    {"resume_id": 6, "asset_filename": "resume-06.jpg", "storage_key": "competition/resume-06.jpg", "content_type": "image/jpeg", "size_bytes": 1160259, "sha256": "decc1c8dde8ecf8f037ddb3f1deac0b9172dc41a780ce644974c39b4f8794c35"},
+    {"resume_id": 7, "asset_filename": "resume-07.jpg", "storage_key": "competition/resume-07.jpg", "content_type": "image/jpeg", "size_bytes": 757220, "sha256": "247b4bc563bf51e395ef9fa92dfb2c7d833e1563ab8e470f4aa5d4208b435e69"},
+    {"resume_id": 8, "asset_filename": "resume-08.jpg", "storage_key": "competition/resume-08.jpg", "content_type": "image/jpeg", "size_bytes": 902261, "sha256": "788dc804f2064052916007c2f436343a7834ef670e89999465930ab470d1f01d"},
+    {"resume_id": 9, "asset_filename": "resume-09.jpg", "storage_key": "competition/resume-09.jpg", "content_type": "image/jpeg", "size_bytes": 1217971, "sha256": "a9ddb625bd18fad78578a364a5ac6c2ab2db1649dacc574196c8849b610690bb"},
+    {"resume_id": 10, "asset_filename": "resume-10.jpg", "storage_key": "competition/resume-10.jpg", "content_type": "image/jpeg", "size_bytes": 952560, "sha256": "296ecfdfaf843cd259ac9e1d9d90cadc59b13d9f2ebd787e52783d2eacb027b0"},
+    {"resume_id": 11, "asset_filename": "resume-11.jpg", "storage_key": "competition/resume-11.jpg", "content_type": "image/jpeg", "size_bytes": 945090, "sha256": "71ae1aae9f1e8a62600507e42d2c6373c7b7a055218c4e5957b599847ef5151c"},
+    {"resume_id": 12, "asset_filename": "resume-12.jpg", "storage_key": "competition/resume-12.jpg", "content_type": "image/jpeg", "size_bytes": 822878, "sha256": "98e4414231153824d2982c44c10b9b76a4bf31263c3140af3ed36ded86f1d7da"},
+    {"resume_id": 13, "asset_filename": "resume-13.jpg", "storage_key": "competition/resume-13.jpg", "content_type": "image/jpeg", "size_bytes": 948708, "sha256": "c99ebdb25eb7dc72521ac378e55b8e055c714e18c051d09b844edac7026bfa10"},
+    {"resume_id": 14, "asset_filename": "resume-14.jpg", "storage_key": "competition/resume-14.jpg", "content_type": "image/jpeg", "size_bytes": 774932, "sha256": "664ddd6e83be2cb85649b05eb8ed9a72954e12b51bd4e4c5c502cd835e180bc7"},
+    {"resume_id": 15, "asset_filename": "resume-15.jpg", "storage_key": "competition/resume-15.jpg", "content_type": "image/jpeg", "size_bytes": 1096720, "sha256": "31d85cba52af0f80f82e66ed285f7d5c8d51c52fb85d92ee31865d6e189ca1a0"},
+    {"resume_id": 16, "asset_filename": "resume-16.jpg", "storage_key": "competition/resume-16.jpg", "content_type": "image/jpeg", "size_bytes": 1019375, "sha256": "c5d497f6c789905583432ba05940ca4fcc9aeedfd32f86a9faf3823cda992029"}
+  ]
+}

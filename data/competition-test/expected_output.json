@@ -1,0 +1,33 @@
+{
+  "schema_version": "competition-acceptance-output-v1",
+  "expected_imports": {
+    "01_existing_job_baseline.json": {
+      "total": 2,
+      "imported": 2,
+      "skill_facts_min": 6,
+      "verified_skill_facts_min": 6,
+      "affected_standard_job_count": 1
+    },
+    "02_new_job_and_existing_update_v2.json": {
+      "total": 4,
+      "imported": 4,
+      "skill_facts_min": 14,
+      "verified_skill_facts_min": 12,
+      "affected_standard_job_count": 2
+    }
+  },
+  "expected_new_job": {
+    "name": "大模型安全工程师",
+    "source_count": 2,
+    "core_skills_contains": ["Python", "机器学习", "大模型"]
+  },
+  "expected_existing_job_update": {
+    "name": "AI应用开发工程师",
+    "period": "2026-05—2026-06 对比 2026-07—2026-08",
+    "previous_sample_count_min": 2,
+    "current_sample_count_min": 2,
+    "baseline_skills": ["Python", "FastAPI", "MySQL"],
+    "current_skills": ["Python", "FastAPI", "MySQL", "LangChain", "RAG"],
+    "added_contains": ["LangChain", "RAG"]
+  }
+}

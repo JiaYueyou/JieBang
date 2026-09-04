@@ -12,7 +12,11 @@ from app.core.bootstrap import bootstrap_initial_admin
 from app.core.cache import close_cache, initialize_cache
 from app.core.exception_handlers import register_exception_handlers
 from app.core.neo4j import close_driver as close_neo4j
-from app.core.config import AUTO_PIPELINE_ENABLED, AUTO_PIPELINE_STARTUP_DELAY_SECONDS
+from app.core.config import (
+    AUTO_PIPELINE_ENABLED,
+    AUTO_PIPELINE_STARTUP_DELAY_SECONDS,
+    RECOVER_PENDING_TASKS_ON_STARTUP,
+)
 from app.schemas.common import ApiResponse
 
 from app.api.v1.auth import router as auth_router
@@ -29,11 +33,6 @@ from app.api.v1.admin import router as admin_router
 from app.api.v1.user_activity import router as user_activity_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.retrieval import router as retrieval_router
-from app.api.v1.placeholder import make_placeholder_router
-
-
-# --- 占位路由 ---
-changes_router = make_placeholder_router("changes", "能力更新", "既有岗位能力动态更新")
 logger = logging.getLogger("app.business")
 # Uvicorn 默认只配置自身 logger；显式开启 app.* 业务日志并复用其输出 handler。
 logging.getLogger("app").setLevel(logging.INFO)
@@ -58,8 +57,9 @@ async def lifespan(app: FastAPI):
     )
 
     try:
-        await recover_pending_agent_tasks()
-        await recover_pipeline_runs()
+        if RECOVER_PENDING_TASKS_ON_STARTUP:
+            await recover_pending_agent_tasks()
+            await recover_pipeline_runs()
         if AUTO_PIPELINE_ENABLED:
             await start_pipeline_scheduler(AUTO_PIPELINE_STARTUP_DELAY_SECONDS)
         # 初始化 Neo4j 驱动
@@ -122,7 +122,6 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(skills_router, prefix="/api/v1")
 app.include_router(data_imports_router, prefix="/api/v1")
-app.include_router(changes_router, prefix="/api/v1")
 app.include_router(graph_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
 app.include_router(matching_router, prefix="/api/v1")

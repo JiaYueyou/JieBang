@@ -1,0 +1,187 @@
+{
+  "generated_at": "2026-08-21T12:37:11.261337+00:00",
+  "manager_root": "E:\\Project\\jiebang-manager",
+  "health_http_status": 200,
+  "containers": [
+    {
+      "service": "celery-beat",
+      "name": "jiebang-fyz-celery-beat-1",
+      "state": "running",
+      "health": "",
+      "exit_code": 0,
+      "status": "Up 42 seconds",
+      "publishers": [
+        {
+          "URL": "",
+          "TargetPort": 8000,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "celery-cache-worker",
+      "name": "jiebang-fyz-celery-cache-worker-1",
+      "state": "running",
+      "health": "",
+      "exit_code": 0,
+      "status": "Up 42 seconds",
+      "publishers": [
+        {
+          "URL": "",
+          "TargetPort": 8000,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "celery-worker",
+      "name": "jiebang-fyz-celery-worker-1",
+      "state": "running",
+      "health": "",
+      "exit_code": 0,
+      "status": "Up 42 seconds",
+      "publishers": [
+        {
+          "URL": "",
+          "TargetPort": 8000,
+          "PublishedPort": 0,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "fyz-api",
+      "name": "jiebang-fyz-fyz-api-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 42 seconds (healthy)",
+      "publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 8000,
+          "PublishedPort": 18000,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "fyz-bootstrap-snapshot",
+      "name": "jiebang-fyz-fyz-bootstrap-snapshot-1",
+      "state": "exited",
+      "health": "",
+      "exit_code": 0,
+      "status": "Exited (0) 42 seconds ago",
+      "publishers": []
+    },
+    {
+      "service": "fyz-migrate",
+      "name": "jiebang-fyz-fyz-migrate-1",
+      "state": "exited",
+      "health": "",
+      "exit_code": 0,
+      "status": "Exited (0) 49 seconds ago",
+      "publishers": []
+    },
+    {
+      "service": "mysql",
+      "name": "jiebang-fyz-mysql-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 4 hours (healthy)",
+      "publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 3306,
+          "PublishedPort": 23306,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "neo4j",
+      "name": "jiebang-fyz-neo4j-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 4 hours (healthy)",
+      "publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 7474,
+          "PublishedPort": 17474,
+          "Protocol": "tcp"
+        },
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 7687,
+          "PublishedPort": 17687,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "nginx",
+      "name": "jiebang-fyz-nginx-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 35 seconds (healthy)",
+      "publishers": [
+        {
+          "URL": "0.0.0.0",
+          "TargetPort": 80,
+          "PublishedPort": 18080,
+          "Protocol": "tcp"
+        },
+        {
+          "URL": "::",
+          "TargetPort": 80,
+          "PublishedPort": 18080,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "redis",
+      "name": "jiebang-fyz-redis-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 4 hours (healthy)",
+      "publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 6379,
+          "PublishedPort": 16379,
+          "Protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "service": "redis-cache",
+      "name": "jiebang-fyz-redis-cache-1",
+      "state": "running",
+      "health": "healthy",
+      "exit_code": 0,
+      "status": "Up 4 hours (healthy)",
+      "publishers": [
+        {
+          "URL": "127.0.0.1",
+          "TargetPort": 6379,
+          "PublishedPort": 16380,
+          "Protocol": "tcp"
+        }
+      ]
+    }
+  ],
+  "running_services": 9,
+  "snapshot_sha256": {
+    "source": "ac54bed13bafbb2868167d81576e6fe119018b05ae24db6afaaa473a169db4c8",
+    "target": "ac54bed13bafbb2868167d81576e6fe119018b05ae24db6afaaa473a169db4c8"
+  },
+  "snapshot_unchanged": true
+}

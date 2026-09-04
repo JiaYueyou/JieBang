@@ -24,7 +24,7 @@ class RetrievalSearchRequest(BaseModel):
         max_length=5,
     )
     minimum_quality_score: float = Field(default=0.55, ge=0, le=1)
-    minimum_retrieval_score: float = Field(default=0.2, ge=0, le=1)
+    minimum_retrieval_score: float = Field(default=0.4, ge=0, le=1)
     posted_from: datetime | None = None
     top_k: int = Field(default=5, ge=1, le=50)
     index_version: str | None = Field(default=None, max_length=80)

@@ -59,6 +59,26 @@ class GraphSubgraph(BaseModel):
     query_scope: str | None = None
 
 
+class GraphRankedNode(BaseModel):
+    id: str
+    name: str
+    type: GraphNodeType
+    degree: int = 0
+    frequency: int = 0
+
+
+class GraphAnalyticsResponse(BaseModel):
+    node_count: int = 0
+    edge_count: int = 0
+    density: float = Field(default=0.0, ge=0.0, le=1.0)
+    isolated_node_count: int = 0
+    layer_counts: dict[str, int] = Field(default_factory=dict)
+    relation_counts: dict[str, int] = Field(default_factory=dict)
+    top_degree_nodes: list[GraphRankedNode] = Field(default_factory=list)
+    algorithm: str = "undirected_degree_centrality"
+    density_algorithm: str = "undirected_unique_pair_density"
+
+
 class GraphSnapshotResponse(BaseModel):
     id: str
     version: str

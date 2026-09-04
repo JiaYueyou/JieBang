@@ -1,30 +1,37 @@
 # 后端运维与评测脚本
 
+> 文档类型：脚本索引
+> 状态：现行
+> 核验日期：2026-08-12
+> 注意：`DATABASE_TRANSFER.md` 所述完整迁移包已按 0020 重导出并通过严格校验。
+> 脚本执行前先查看 [当前实现状态](../../../docs/implementation-status.md)。
+
 本目录只保留当前代码和数据库版本仍可执行的脚本。业务操作优先通过 FastAPI
 和管理端完成；脚本用于团队数据迁移、一次性结构回填以及可重复工程评测。
 
 ## 团队数据迁移
 
-推荐入口：
+推荐从 `fyz-src/backend` 使用项目指定 Python 执行：
 
 ```powershell
-cd fyz-src\backend
 .\scripts\Import-TeamDatabase.ps1 -Replace
 ```
 
 | 文件 | 用途 |
 | --- | --- |
 | `Import-TeamDatabase.ps1` | Windows 单命令迁移入口 |
-| `run_database_import.py` | 跨平台迁移编排入口 |
+| `run_database_import.py` | 跨平台迁移编排入口；任何目标连接/DDL 前先离线预检完整包 |
 | `01_prepare_mysql_schema.py` | 执行 Alembic migration |
 | `02_import_mysql_snapshot.py` | 校验并导入 MySQL 数据快照 |
 | `restore_chroma_from_mysql.py` | 从 MySQL 预计算向量复原 ChromaDB |
 | `03_rebuild_neo4j.py` | 从 MySQL 重建 Neo4j `namespace=jiebang` |
 | `04_verify_database_import.py` | 校验 MySQL、ChromaDB、Neo4j 一致性 |
 | `export_mysql_snapshot.py` | 来源方刷新团队 SQL 快照与 manifest |
+| `verify_mysql_snapshot_package.py` | 不连接数据库，严格校验 SQL/manifest/校验摘要 |
 | `db_transfer_common.py` | 上述迁移脚本的内部公共函数，不单独执行 |
 | `mysql_snapshot.sql` | 当前共享数据快照 |
 | `mysql_snapshot_manifest.json` | 快照版本、行数和 SHA-256 |
+| `mysql_snapshot_verification.json` | 当前包的独立校验摘要 |
 
 完整说明见 [DATABASE_TRANSFER.md](DATABASE_TRANSFER.md)。
 

@@ -146,7 +146,7 @@
               <div class="jd-preview-scroll">
                 <h3>{{ generated.title }}</h3>
                 <div class="jd-meta-row">
-                  <el-tag size="small" type="info">{{ generated.level }}</el-tag>
+                  <el-tag size="small" type="info">{{ levelLabel(generated.level) }}</el-tag>
                   <el-tag size="small">{{ generated.department }}</el-tag>
                   <span v-if="previewTarget === 'public'" class="jd-salary">{{ generated.salary_range }}</span>
                 </div>
@@ -545,6 +545,7 @@ import { useJobStore } from "@/stores/jobs";
 import { useHistoryStore } from "@/stores/history";
 import DataState from "@/components/common/DataState.vue";
 import { JD_DEPARTMENT_OPTIONS } from "@/config/jdOptions";
+import { levelLabel } from "@/utils/displayLabels";
 import type { CapabilityChange, EmergingJob, GeneratedJDDraft, InternalPositionStatus, JobSummary, ObservedJobDetail } from "@/domain/types";
 
 const tab = ref<"publish" | "insight" | "observed">("publish");
@@ -1002,7 +1003,7 @@ async function deleteDetail() {
 
 // ── Tab B ──
 const skillPreference = ref("");
-const insightPageSize = 3;
+const insightPageSize = 4;
 const emergingPage = ref(1);
 const capabilityPage = ref(1);
 const paginatedEmergingJobs = computed(() => {

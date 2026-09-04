@@ -4,37 +4,72 @@
 岗位能力图谱和大模型 Agent，支持岗位管理、能力趋势分析、简历解析、
 人岗匹配解释与转岗学习规划。
 
-> 新成员建议按本文顺序完成：了解目录 → 克隆代码 → 配置环境 → 初始化数据库
-> → 导入数据 → 启动服务 → 创建个人分支开发。
+> 新成员建议按本文顺序完成：了解当前状态 → 阅读文档登记表 → 克隆代码 → 配置环境
+> → 初始化数据库 → 启动所需服务 → 运行对应检查 → 创建个人分支开发。
+
+> 文档类型：项目现行入口
+> 当前阶段：核心系统基本完成，进入联调收尾、质量验收与竞赛材料编制阶段
+> 核验日期：2026-08-12；核验基线：`c995a09e` + 当前工作区审计结果
+> 模块完成度、测试结果和已知风险见 [当前实现状态](docs/implementation-status.md)。
 
 ## 1. 当前状态
 
-当前已经具备：
+核心工程已经具备：
 
 - FastAPI 认证、岗位 CRUD、岗位版本、技能抽取和数据导入接口；
 - MySQL Alembic 迁移链与初始管理员 bootstrap；
 - MySQL 事实数据到 Neo4j 能力图谱的全量/增量同步；
+- 手动/定时自动数据闭环、流水线运行持久化、历史基线与 Redis 查询/状态缓存；
 - 独立 `agent-development` 包：JD 草稿、技能补全、L4/L5 图谱补全与职业规划 Agent；
 - 可编辑草稿的 JD 生成 Agent、L4/L5 证据门槛，以及简历文本解析和转岗学习规划接口；
-- 团队完整数据迁移包：Alembic 建表、MySQL 全量 SQL、ChromaDB 预计算向量复原、
-  Neo4j 命名空间重建和三库一致性校验；
-- FYZ 管理与决策端，以及 JTT 求职者端两套 Vue 3 前端；
+- 比赛脱敏数据迁移包已按 `20260820_0025` 重新导出，并纳入 Docker 空库引导；
+- FYZ 管理与决策端、JTT 求职者端两套 Vue 3 前端，以及独立 JTT FastAPI 后端与 AI 助手服务；
 - DeepSeek 可选增强；模型不可用时 JD 与职业规划仍返回可编辑/可执行模板结果；
 - 后端测试、两套前端构建和仓库安全 CI。
 
-截至 2026-08-01，仓库内共享快照状态为：
+当前可验证的软件基线：
 
-- MySQL Alembic `20260801_0017`，38 张表、4679 行；
+- FYZ 后端 OpenAPI：91 个路径、104 个 HTTP 操作；早期无消费者的 `/changes` 占位路由
+  已移除，其能力变化需求由 Analysis 趋势与岗位版本接口覆盖；
+- FYZ 后端：343 项 pytest 通过；独立 Agent 包：16 项 pytest 通过；
+- FYZ 前端：44 项 Vitest 通过，TypeScript 与生产构建通过；
+- JTT 后端：9 项 pytest 通过；JTT 前端 TypeScript 与生产构建通过；
+- 上述结果不等同于真实 MySQL、Redis、外部模型、爬虫外站和完整浏览器 E2E 均已验收。
+
+截至 2026-08-12，代码与仓库内共享快照状态为：
+
+- FYZ Alembic 当前 head 与比赛 SQL 快照均为 `20260820_0025`；快照含 47 张表、54474 行，
+  SQL、manifest、逐表计数/摘要和独立校验摘要已通过离线严格校验；
 - ChromaDB 4 个有效 collection、646 条 3072 维预计算向量；
 - Neo4j 最近已成功图谱快照 474 个节点、817 条关系；
 - 快照包含岗位标准化、事实审核、L4/L5 候选/发布、检索索引和 Agent 审计数据。
 
-当前仍需继续开发和验收：
+交付前仍需收尾和验收：
 
-- JTT 简历、匹配、收藏、学习路径等页面需要继续对接真实后端；
-- L4/L5 Agent 的外部模型稳定性、失败重试和人工审核质量仍需持续压测；
-- 爬虫持续增量数据、岗位/技能标准化评测、图谱高级分析和比赛级评测仍需完善；
+- JTT 后端路由已实现首版，但前端默认 `/api/v1`、MSW `/api`、Vite 代理及 8000/8001
+  端口仍不一致，真实联调尚未完成；
+- FYZ 0020 团队数据库迁移包已完成重导和离线严格校验，仍需在隔离接收环境执行覆盖式导入验收；
+- L4/L5 Agent 已补齐分类重试、调用诊断、人工审核质量门槛和离线故障注入压测，真实外部模型仍需持续压测；
+- 爬虫增量检查点、岗位/技能标准化金标评测、图谱结构分析和比赛级统一门禁已实现首版，仍需真实外站与基础设施长期验收；
 - 当前共享快照含内部开发记录，对外发布前必须完成数据授权和脱敏复核。
+
+### 1.1 下一阶段：策划书与技术文档
+
+后续工作从“继续扩展功能”转向“以当前实现为依据固化项目材料”。策划书和技术文档必须
+基于 [当前实现状态](docs/implementation-status.md)、[技术文档状态登记表](docs/document-status-register.md)、
+运行时 OpenAPI、Alembic 迁移和已提交评测产物编写，不得直接复制早期计划中的未落地技术栈、
+旧接口、旧测试数量或旧数据库版本。
+
+计划形成以下正式材料：
+
+1. **项目策划书**：项目背景、目标用户、核心闭环、竞赛价值、功能边界、实施成果、风险与交付计划。
+2. **总体技术说明书**：系统拓扑、两套业务端边界、数据流、存储职责、接口与部署架构。
+3. **关键技术专项**：多源数据治理、岗位标准化、五层能力图谱、混合检索、Agent 防幻觉、匹配与趋势算法。
+4. **测试与评测说明**：测试范围、质量指标、数据集边界、覆盖率、已知限制及可复现命令。
+5. **部署与使用说明**：环境准备、启动拓扑、配置项、演示流程、故障处理和数据安全要求。
+
+材料中的状态统一使用“已实现 / 基本实现 / 部分实现 / 阻塞 / 历史规划”口径；策划目标与
+实测结果必须分栏表达。新文档遵循 [统一文档规范](docs/documentation-standard.md)。
 
 ## 2. 仓库目录
 
@@ -43,17 +78,21 @@ JieBang/
 ├── fyz-src/
 │   ├── backend/             # FastAPI、MySQL、Alembic、Neo4j、Celery、DeepSeek
 │   ├── frontend/            # FYZ 管理与决策端 Vue 3
-│   ├── FULLSTACK_PLAN.md    # 全栈功能规划
-│   └── GRAPH_ARCHITECTURE.md# 五级岗位能力图谱设计
+│   └── docs-plans/          # 历史/专项设计与实施计划
 ├── jtt-src/
 │   ├── frontend/            # JTT 求职者端 Vue 3
+│   ├── backend/             # JTT 独立 FastAPI、MySQL、Neo4j
+│   ├── ai-assistant/        # JTT 独立 AI 助手 FastAPI（默认 8001）
 │   └── docs/                # JTT 原始需求提取材料
+├── deploy/                  # FYZ Docker Compose 部署
 ├── data/                    # 允许后端导入的原始岗位 JSON 数据
 ├── data_analysis/           # 离线词典与可选模型配置，不含独立导入流水线
 ├── agent-development/       # 独立 Agent 包、接口契约、Prompt、测试与开发计划
 ├── docs/
 │   ├── team/                # 成员 A-F 独立开发指南
 │   ├── README.md            # 文档中心
+│   ├── implementation-status.md      # 当前实现、测试与风险基线
+│   ├── document-status-register.md   # 全库技术文档有效性登记
 │   ├── requirements.md      # 项目需求与验收目标
 │   ├── dev-spec.md          # 代码、API、数据库开发规范
 │   ├── database-and-runtime.md
@@ -80,7 +119,7 @@ IDE 配置或 AI 工具会话。完整规则见
 | MySQL | 8.0 | 业务事实库 |
 | Neo4j | 5.x Community | 可重建图查询模型 |
 | ChromaDB | 由 `requirements.txt` 固定 | 本地持久化向量检索索引 |
-| Redis | 7.x | Celery Broker 和结果存储 |
+| Redis | 7.x | Celery Broker/结果存储与可选查询、任务状态缓存 |
 
 本项目不依赖任何成员机器上的绝对安装路径。激活 `jiebang` 环境后直接使用
 `python`、`pip`、`alembic`、`pytest` 命令。
@@ -190,22 +229,11 @@ cd fyz-src\backend
 alembic current
 alembic upgrade head
 alembic current
-python scripts\run_database_import.py --replace
 ```
 
-该命令会用 Alembic 创建结构、导入仓库中的完整 MySQL SQL 快照，从 SQL 中
-保存的预计算向量复原 ChromaDB，再从 MySQL 事实库重建 Neo4j
-`namespace=jiebang`，最后校验三类存储。它不会重新调用 Embedding API。
-命令会覆盖目标数据库已有业务数据；仅在确认
-`fyz-src/backend/.env` 指向目标本地数据库后执行。分步命令和快照刷新方式见
-[数据库、数据导入与运行指南](docs/database-and-runtime.md)。
-
-推荐由团队成员直接使用 PowerShell 单入口：
-
-```powershell
-cd fyz-src\backend
-.\scripts\Import-TeamDatabase.ps1 -Replace
-```
+当前 `mysql_snapshot.sql`、manifest 和校验摘要均对应 `20260820_0025`。使用完整迁移入口前，
+先运行 `python scripts/verify_mysql_snapshot_package.py`；覆盖式导入会替换目标 MySQL、Chroma
+和 `namespace=jiebang` 的 Neo4j 数据，只能在已备份且确认目标的接收环境执行。
 
 如果本地数据库已经存在旧表，不要猜测版本，也不要直接执行
 `alembic stamp head`。请先阅读
@@ -250,6 +278,10 @@ npm.cmd run dev
 Vite 默认使用 5173；同时启动两套前端时，后启动的实例会自动选择其他端口。
 后端当前 CORS 默认允许 `http://localhost:5173`，联调时应明确哪套前端占用该端口。
 
+JTT 另有 `jtt-src/backend` 主后端和 `jtt-src/ai-assistant`（默认 8001）。JTT 主后端源码
+也默认 8000，不能与 FYZ 后端同时占用该端口；而 JTT 前端当前代理分流仍有已知错误。
+在修复前请不要把“两套前端都启动”理解为“两套业务都已完成真实联调”。
+
 ## 7. 导入岗位数据与构建图谱
 
 后端仅允许导入以下白名单文件：
@@ -283,19 +315,29 @@ MySQL 保存事实与审计记录，Neo4j 仅保存可重建的 `namespace=jieba
 cd fyz-src\backend
 python -m pytest test -q
 
+# 独立 Agent 包
+cd ..\..\agent-development
+python -m pytest tests -q
+
 # FYZ 前端
-cd ..\frontend
+cd ..\fyz-src\frontend
 npm.cmd run test
 npm.cmd run build
 
 # JTT 前端
 cd ..\..\jtt-src\frontend
 npm.cmd run build
+
+# JTT 后端
+cd ..\backend
+python -m pytest test -q
 ```
 
 根据改动范围至少运行对应检查；涉及共享接口、数据库或配置时运行全部检查。
 
-## 9. 六人开发指南
+## 9. 历史六人开发指南
+
+以下文件保留早期分工，不代表当前剩余任务；当前完成度以状态基线为准。
 
 | 成员 | 工作流 | 详细指南 |
 | --- | --- | --- |
@@ -314,12 +356,14 @@ npm.cmd run build
 | 文档 | 用途 |
 | --- | --- |
 | [文档中心](docs/README.md) | 所有项目文档的分类入口 |
+| [当前实现状态](docs/implementation-status.md) | 代码、测试、完成度和已知缺口 |
+| [技术文档状态登记表](docs/document-status-register.md) | 各技术文档是否仍为当前依据 |
 | [需求文档](docs/requirements.md) | 功能范围、优先级与验收指标 |
 | [开发规范](docs/dev-spec.md) | API、数据库、代码和协作规范 |
 | [数据库与运行指南](docs/database-and-runtime.md) | MySQL、Alembic、Neo4j、Redis、数据导入 |
-| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 团队 MySQL、ChromaDB、Neo4j 一键导入与一致性校验 |
-| [后端脚本清单](fyz-src/backend/scripts/README.md) | 当前可用的数据迁移、回填和工程评测脚本 |
-| [API 参考](docs/api-reference.md) | 当前真实接口、请求示例和占位状态 |
+| [完整数据迁移说明](fyz-src/backend/scripts/DATABASE_TRANSFER.md) | 0020 迁移包、离线校验与隔离接收环境覆盖式导入流程 |
+| [后端脚本清单](fyz-src/backend/scripts/README.md) | 当前脚本状态、维护入口和工程评测工具 |
+| [API 参考](docs/api-reference.md) | FYZ 当前接口、请求示例和已移除兼容入口 |
 | [Agent 开发工作区](agent-development/README.md) | 独立 Agent 包、契约、Prompt 与测试入口 |
 | [统一文档规范](docs/documentation-standard.md) | 需求、接口、迁移和 Agent 文档格式 |
 | [Git 协作指南](docs/git-workflow.md) | 分支、提交、PR、冲突和事故恢复 |

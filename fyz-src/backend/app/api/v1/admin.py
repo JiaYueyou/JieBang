@@ -75,6 +75,7 @@ async def get_overview(
             for row in source_rows
             if str((row.crawl_config or {}).get("spider_id", "")).isdigit()
         }
+        pipeline = PipelineService(db)
         for crawler in data.get("crawlers", []):
             row = source_by_spider.get(int(crawler["id"]))
             if row is None:
@@ -84,7 +85,7 @@ async def get_overview(
             crawler["nextRun"] = row.next_run_at.isoformat() if row.next_run_at else "仅手动"
             crawler["lastRunAt"] = row.last_run_at.isoformat() if row.last_run_at else None
             crawler["consecutiveFailures"] = row.consecutive_failures
-        pipeline = PipelineService(db)
+            crawler["health"] = await pipeline.source_health(int(crawler["id"]))
         runs = await pipeline.list_runs(limit=5)
         data["pipelineRuns"] = [pipeline.response(row) for row in runs]
         data["currentPipelineRun"] = next(
@@ -111,6 +112,17 @@ async def get_crawler_automation(db: AsyncSession = Depends(get_db)):
     if data.get("next_run_at"):
         data["next_run_at"] = data["next_run_at"].isoformat()
     return ApiResponse(data=data)
+
+
+@router.get("/data-sources/{spider_id}/health", response_model=ApiResponse)
+async def get_data_source_health(
+    spider_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return ApiResponse(data=await PipelineService(db).source_health(spider_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.put("/data-sources/automation", response_model=ApiResponse)

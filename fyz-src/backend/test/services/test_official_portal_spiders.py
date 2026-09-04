@@ -127,3 +127,18 @@ def test_deepseek_extracts_bundle_snapshot_and_filters_hr():
     assert technical is not None
     assert technical["posted_at"] is None
     assert hr is None
+
+
+def test_deepseek_record_cap_never_claims_a_full_snapshot(monkeypatch):
+    spider = DeepSeekSpider()
+    spider.max_records = 1
+    monkeypatch.setattr(spider, "parse", lambda _page: [
+        {"external_id": "1", "title": "A", "jd_text": "one"},
+        {"external_id": "2", "title": "B", "jd_text": "two"},
+    ])
+    monkeypatch.setattr(spider, "save", lambda: "ignored.json")
+
+    spider.run()
+
+    assert len(spider.observed_data) == 1
+    assert spider.snapshot_complete is False

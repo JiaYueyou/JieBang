@@ -610,8 +610,18 @@ describe("HTTP job and JD Agent provider contract", () => {
     await expect(httpDataProvider.internalTransfer.searchEmployeeDirectory("15018")).resolves.toEqual([employee]);
     await expect(httpDataProvider.internalTransfer.createTalentFromDirectory(18)).resolves.toEqual(talent);
 
-    expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", { params: { keyword: "15018", limit: 10 } });
+    expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", { params: { keyword: "15018", limit: 50 } });
     expect(post).toHaveBeenCalledWith("/internal-transfer/talents/from-directory/18", {});
+  });
+
+  it("limits department manager searches to the current department", async () => {
+    const get = vi.spyOn(request, "get").mockResolvedValue(response([]) as never);
+
+    await expect(httpDataProvider.internalTransfer.searchEmployeeDirectory("test", "后台开发组")).resolves.toEqual([]);
+
+    expect(get).toHaveBeenCalledWith("/internal-transfer/employee-directory", {
+      params: { keyword: "test", department: "后台开发组", limit: 50 },
+    });
   });
 
   it("maps the admin data-quality list and reversible decision contracts", async () => {

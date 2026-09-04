@@ -15,7 +15,28 @@ RETRIEVAL_DISTRIBUTION = {
     "source_quality_filter": 15,
     "conflict_filter_no_answer": 15,
     "out_of_scope_no_answer": 20,
+    "semantic_hard_negative": 15,
 }
+
+SEMANTIC_HARD_NEGATIVE_QUERIES = (
+    "量子纠错码表面码解码经验",
+    "DO-178C航空软件适航认证",
+    "核聚变托卡马克等离子体控制",
+    "超导量子芯片稀释制冷",
+    "密码芯片侧信道防护",
+    "农业无人机植保航线规划",
+    "汽车功能安全ISO 26262认证",
+    "卫星姿轨控与星敏感器标定",
+    "海洋声呐阵列信号处理",
+    "生物信息蛋白质结构预测实验",
+    "光刻机双工件台运动控制",
+    "核电站反应堆热工水力分析",
+    "航空发动机叶片气膜冷却仿真",
+    "密码学零知识证明电路审计",
+    # Deliberately ambiguous partial overlap: measures whether a familiar
+    # programming-language token can incorrectly dominate an absent topic.
+    "Python 量子",
+)
 
 SKILL_PARAPHRASES = {
     "Git": "代码版本管理、分支协作与变更追踪能力",
@@ -455,8 +476,26 @@ def build_retrieval_cases(
             note="语料库外问题不得由无关岗位证据补答。",
         )
 
+    for ordinal, query in enumerate(SEMANTIC_HARD_NEGATIVE_QUERIES):
+        split = (
+            ("development", "validation", "test")[ordinal % 3]
+            if split_ready
+            else "development"
+        )
+        add_case(
+            category="semantic_hard_negative",
+            ordinal=ordinal,
+            row=None,
+            query=query,
+            filters={},
+            expected_ids=[],
+            answer_mode="insufficient_evidence",
+            note="与岗位语料存在概念邻近或局部词面重合，但语料库没有足够原文证据。",
+        )
+        cases[-1]["split"] = split
+
     if len(cases) != sum(RETRIEVAL_DISTRIBUTION.values()):
-        raise AssertionError("Retrieval distribution does not total 120")
+        raise AssertionError("Retrieval distribution total mismatch")
     return cases
 
 
@@ -550,8 +589,9 @@ def validate_dataset(dataset: dict[str, Any]) -> None:
     retrieval_cases = dataset.get("retrieval_cases", [])
     if len(duplicate_cases) != 50:
         raise ValueError("Phase 2 requires 50 near-duplicate negative cases")
-    if len(retrieval_cases) != 120:
-        raise ValueError("Phase 2 requires 120 retrieval cases")
+    expected_count = sum(RETRIEVAL_DISTRIBUTION.values())
+    if len(retrieval_cases) != expected_count:
+        raise ValueError(f"Phase 2 requires {expected_count} retrieval cases")
     ids = [case["id"] for case in duplicate_cases + retrieval_cases]
     if len(ids) != len(set(ids)):
         raise ValueError("Case IDs must be unique")
@@ -596,7 +636,7 @@ def validate_dataset(dataset: dict[str, Any]) -> None:
                     f"Standard job {job_id} crosses evaluation splits"
                 )
     elif (
-        declared_counts["development"] != 120
+        declared_counts["development"] != sum(RETRIEVAL_DISTRIBUTION.values())
         or declared_counts["validation"] != 0
         or declared_counts["test"] != 0
     ):

@@ -165,6 +165,25 @@ class Neo4jGraphRepository:
             },
         )
 
+    def cleanup_affected_jobs(self, job_ids: list[str]) -> None:
+        """Remove stale projections owned by jobs before an incremental merge."""
+        if not job_ids:
+            return
+        parameters = {"namespace": self.namespace, "job_ids": job_ids}
+        run_write(
+            "MATCH (source:SourceDocument {namespace:$namespace})"
+            "-[support:SUPPORTS {namespace:$namespace}]->"
+            "(job:Job {namespace:$namespace}) "
+            "WHERE job.id IN $job_ids DETACH DELETE source",
+            parameters,
+        )
+        run_write(
+            "MATCH (job:Job {namespace:$namespace})-[relation]-() "
+            "WHERE job.id IN $job_ids AND relation.namespace=$namespace "
+            "DELETE relation",
+            parameters,
+        )
+
     def counts(self) -> dict:
         nodes = run_read(
             "MATCH (n {namespace:$namespace}) "
@@ -180,6 +199,83 @@ class Neo4jGraphRepository:
             {"namespace": self.namespace, "allowed_labels": sorted(GRAPH_LABELS)},
         )[0]["count"]
         return {"nodes": nodes, "edges": edges}
+
+    def analytics(self, *, limit: int = 20) -> dict:
+        """Compute portable structural analytics without requiring Neo4j GDS."""
+        parameters = {
+            "namespace": self.namespace,
+            "allowed_labels": sorted(GRAPH_LABELS),
+            "limit": limit,
+        }
+        layer_rows = run_read(
+            "MATCH (n {namespace:$namespace}) "
+            "WHERE any(label IN labels(n) WHERE label IN $allowed_labels) "
+            "RETURN head([label IN labels(n) WHERE label IN $allowed_labels]) AS type, "
+            "count(n) AS count ORDER BY type",
+            parameters,
+        )
+
+        relation_rows = run_read(
+            "MATCH (a)-[r {namespace:$namespace}]->(b) "
+            "WHERE any(label IN labels(a) WHERE label IN $allowed_labels) "
+            "AND any(label IN labels(b) WHERE label IN $allowed_labels) "
+            "RETURN type(r) AS relation, count(r) AS count ORDER BY relation",
+            parameters,
+        )
+        pair_rows = run_read(
+            "MATCH (a)-[r {namespace:$namespace}]->(b) "
+            "WHERE any(label IN labels(a) WHERE label IN $allowed_labels) "
+            "AND any(label IN labels(b) WHERE label IN $allowed_labels) "
+            "RETURN count(DISTINCT CASE WHEN a.id < b.id "
+            "THEN a.id + '|' + b.id ELSE b.id + '|' + a.id END) AS count",
+            parameters,
+        )
+        ranked_rows = run_read(
+            "MATCH (n {namespace:$namespace}) "
+            "WHERE any(label IN labels(n) WHERE label IN $allowed_labels) "
+            "OPTIONAL MATCH (n)-[r]-(neighbor {namespace:$namespace}) "
+            "WHERE r.namespace=$namespace "
+            "AND any(label IN labels(neighbor) WHERE label IN $allowed_labels) "
+            "WITH n, count(DISTINCT r) AS degree "
+            "RETURN n.id AS id, coalesce(n.name,n.id) AS name, "
+            "head([label IN labels(n) WHERE label IN $allowed_labels]) AS type, "
+            "degree, toInteger(coalesce(n.frequency,0)) AS frequency "
+            "ORDER BY degree DESC, frequency DESC, name, id LIMIT $limit",
+            parameters,
+        )
+        layer_counts = {row["type"]: int(row["count"]) for row in layer_rows}
+        relation_counts = {
+            row["relation"]: int(row["count"]) for row in relation_rows
+        }
+        node_count = sum(layer_counts.values())
+        edge_count = sum(relation_counts.values())
+        isolated_count = sum(int(row["degree"] == 0) for row in ranked_rows)
+        # The exact isolated count needs an unbounded aggregate; ranked rows are
+        # limited, so request it explicitly when the top slice cannot prove it.
+        isolated_rows = run_read(
+            "MATCH (n {namespace:$namespace}) "
+            "WHERE any(label IN labels(n) WHERE label IN $allowed_labels) "
+            "AND NOT EXISTS { MATCH (n)-[r]-(neighbor {namespace:$namespace}) "
+            "WHERE r.namespace=$namespace "
+            "AND any(label IN labels(neighbor) WHERE label IN $allowed_labels) } "
+            "RETURN count(n) AS count",
+            parameters,
+        )
+        if isolated_rows:
+            isolated_count = int(isolated_rows[0]["count"])
+        connected_pair_count = int(pair_rows[0]["count"]) if pair_rows else 0
+        possible_edges = node_count * (node_count - 1) / 2
+        return {
+            "node_count": node_count,
+            "edge_count": edge_count,
+            "density": round(connected_pair_count / possible_edges, 8) if possible_edges else 0.0,
+            "isolated_node_count": isolated_count,
+            "layer_counts": layer_counts,
+            "relation_counts": relation_counts,
+            "top_degree_nodes": ranked_rows,
+            "algorithm": "undirected_degree_centrality",
+            "density_algorithm": "undirected_unique_pair_density",
+        }
 
     def query_nodes(
         self, *, keyword: str | None = None, stack: str | None = None,

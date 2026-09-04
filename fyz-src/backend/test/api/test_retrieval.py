@@ -7,11 +7,14 @@ from app.models import (
     EvidenceChunk,
     JobSkillFact,
     RawJobRecord,
+    RetrievalIndexVersion,
     RetrievalQueryLog,
     Skill,
     SourceDocument,
     StandardJob,
 )
+from app.services.retrieval_service import RetrievalService
+from app.schemas.retrieval import RetrievalSearchRequest
 
 
 async def _seed_verified_fact() -> None:
@@ -159,6 +162,61 @@ async def test_admin_rebuilds_and_users_search_traceable_evidence(
     assert no_answer.json()["data"]["items"] == []
     assert "没有足够" in no_answer.json()["data"]["warnings"][0]
 
+    sparse_overlap = await client.post(
+        "/api/v1/retrieval/search",
+        headers=auth_headers,
+        json={"query": "Python 量子芯片光刻设备维护", "top_k": 5},
+    )
+    assert sparse_overlap.status_code == 200
+    assert sparse_overlap.json()["data"]["items"] == []
+    assert "没有足够" in sparse_overlap.json()["data"]["warnings"][0]
+
+
+async def test_local_hash_keeps_exact_authoritative_skill_match_for_short_query(
+    client,
+    auth_headers,
+):
+    await _seed_verified_fact()
+    async with async_session() as db:
+        skill = await db.scalar(select(Skill).where(Skill.canonical_name == "FastAPI"))
+        skill.name = "C"
+        skill.canonical_name = "C"
+        skill.canonical_key = "c"
+        fact = await db.scalar(select(JobSkillFact))
+        fact.evidence_text = "具备 C 语言开发经验"
+        await db.commit()
+
+    rebuild = await client.post(
+        "/api/v1/retrieval/indexes/rebuild",
+        headers=auth_headers,
+        json={"backend": "local_hash"},
+    )
+    assert rebuild.status_code == 200
+    search = await client.post(
+        "/api/v1/retrieval/search",
+        headers=auth_headers,
+        json={"query": "C", "top_k": 5},
+    )
+    assert search.status_code == 200
+    assert [item["skill_name"] for item in search.json()["data"]["items"]] == ["C"]
+
+    class ZeroHashProvider:
+        model = "signed-token-hash-v1"
+        dimension = 256
+
+        async def embed_texts(self, texts):
+            return [[0.0] * self.dimension for _ in texts]
+
+    async with async_session() as db:
+        service = RetrievalService(db, embedding_provider=ZeroHashProvider())
+        service._provider_for_index = lambda index: ZeroHashProvider()
+        result = await service.search(
+            RetrievalSearchRequest(query="C", standard_job_id=1, top_k=5),
+            user_id=1,
+            log_query=False,
+        )
+        assert [item.skill_name for item in result.items] == ["C"]
+
 
 async def test_index_rebuild_requires_admin(client):
     login = await client.post(
@@ -205,3 +263,95 @@ async def test_admin_rebuilds_chroma_index_and_searches_it(
     assert data["backend"] == "chroma"
     assert [item["skill_name"] for item in data["items"]] == ["FastAPI"]
     assert not any("Chroma 向量召回不可用" in item for item in data["warnings"])
+
+
+async def test_rebuild_rejects_an_empty_index_after_a_nonempty_ready_version():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        first = await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        fact = await db.scalar(select(JobSkillFact))
+        fact.verification_status = "unverified"
+        await db.commit()
+
+        try:
+            await RetrievalService(db).rebuild_index(
+                created_by=None, backend="local_hash"
+            )
+        except RuntimeError as exc:
+            assert "activation rejected" in str(exc)
+        else:
+            raise AssertionError("empty replacement index must fail activation")
+
+        ready = list((await db.execute(
+            select(RetrievalIndexVersion).where(
+                RetrievalIndexVersion.status == "ready"
+            )
+        )).scalars())
+        assert [row.version for row in ready] == [first.version]
+        chunk = await db.scalar(select(EvidenceChunk))
+        assert chunk.verification_status == "machine_validated"
+        fallback = await RetrievalService(db).search(
+            RetrievalSearchRequest(
+                query="FastAPI",
+                index_version=first.version,
+                top_k=5,
+            ),
+            user_id=1,
+            log_query=False,
+        )
+        assert [item.skill_name for item in fallback.items] == ["FastAPI"]
+
+
+async def test_rebuild_keeps_chunk_identity_after_evidence_span_review():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        original_chunk = await db.scalar(select(EvidenceChunk))
+        original_id = original_chunk.id
+        fact = await db.scalar(
+            select(JobSkillFact).where(
+                JobSkillFact.verification_status == "verified"
+            )
+        )
+        fact.evidence_text = "FastAPI、MySQL"
+        await db.commit()
+
+        await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+
+        chunks = list((await db.execute(select(EvidenceChunk))).scalars())
+        assert len(chunks) == 1
+        assert chunks[0].id == original_id
+        assert "FastAPI、MySQL" in chunks[0].chunk_text
+
+
+async def test_search_degrades_to_lexical_when_persisted_embedding_provider_is_offline():
+    await _seed_verified_fact()
+    async with async_session() as db:
+        built = await RetrievalService(db).rebuild_index(
+            created_by=None, backend="local_hash"
+        )
+        class OfflineEmbeddingProvider:
+            model = "text-embedding-3-large"
+
+            async def embed_texts(self, texts):
+                raise RuntimeError("offline")
+
+        service = RetrievalService(db)
+        service._provider_for_index = lambda index: OfflineEmbeddingProvider()
+
+        result = await service.search(
+            RetrievalSearchRequest(
+                query="FastAPI", index_version=built.version, top_k=5
+            ),
+            user_id=1,
+            log_query=False,
+        )
+
+        assert [item.skill_name for item in result.items] == ["FastAPI"]
+        assert any("已降级为关键词" in warning for warning in result.warnings)

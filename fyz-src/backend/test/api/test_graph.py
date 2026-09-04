@@ -29,6 +29,33 @@ async def test_sync_graph_requires_auth(client):
     assert response.status_code == 401
 
 
+async def test_graph_analytics_returns_verifiable_structural_metrics(client, auth_headers):
+    payload = {
+        "node_count": 4,
+        "edge_count": 3,
+        "density": 0.5,
+        "isolated_node_count": 1,
+        "layer_counts": {"Job": 2, "TechStack": 2},
+        "relation_counts": {"REQUIRES_AREA": 3},
+        "top_degree_nodes": [
+            {"id": "skill:1", "name": "Python", "type": "TechStack", "degree": 3, "frequency": 8}
+        ],
+        "algorithm": "undirected_degree_centrality",
+        "density_algorithm": "undirected_unique_pair_density",
+    }
+    with patch(
+        "app.api.v1.graph.GraphService.analytics",
+        new=AsyncMock(return_value=payload),
+    ) as mock_analytics:
+        response = await client.get(
+            "/api/v1/graph/analytics?limit=5", headers=auth_headers
+        )
+
+    assert response.status_code == 200
+    assert response.json()["data"] == payload
+    assert mock_analytics.await_args.kwargs == {"limit": 5}
+
+
 async def test_sync_graph_unauthenticated_detail(client):
     response = await client.post("/api/v1/graph/sync", json={"mode": "full"})
     data = response.json()

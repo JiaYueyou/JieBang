@@ -3,7 +3,7 @@
 import pytest
 import httpx
 
-from app.providers import DeepSeekProvider, MockLLMProvider
+from app.providers import DeepSeekProvider, LLMProviderError, MockLLMProvider
 import app.providers.llm as llm_module
 from app.schemas.skill import LLMDiscoveredSkill, LLMDiscoveredSkills
 
@@ -173,13 +173,57 @@ async def test_deepseek_recovers_after_transient_read_timeout(monkeypatch):
     provider = DeepSeekProvider()
     provider.api_key = "test-key"
 
+    metadata = {"max_attempts": 2}
     result = await provider.generate_structured(
         system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
-        timeout_seconds=30, metadata={"max_attempts": 2},
+        timeout_seconds=30, metadata=metadata,
     )
 
     assert result.skills == []
     assert len(calls) == 2
+    assert metadata["provider_diagnostics"]["attempts"] == 2
+    assert metadata["provider_diagnostics"]["retry_count"] == 1
+    assert metadata["provider_diagnostics"]["outcome"] == "succeeded"
+    assert metadata["provider_diagnostics"]["attempt_history"][0]["error_code"] == (
+        "provider_read_timeout"
+    )
+
+
+async def test_deepseek_does_not_retry_non_retryable_http_error(monkeypatch):
+    calls = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            calls.append(1)
+            request = httpx.Request("POST", "https://test")
+            response = httpx.Response(401, request=request)
+            raise httpx.HTTPStatusError("unauthorized", request=request, response=response)
+
+    monkeypatch.setattr(llm_module.httpx, "AsyncClient", FakeClient)
+    provider = DeepSeekProvider()
+    provider.api_key = "test-key"
+    metadata = {"max_attempts": 4}
+
+    with pytest.raises(LLMProviderError) as caught:
+        await provider.generate_structured(
+            system_prompt="", user_prompt="", response_schema=LLMDiscoveredSkills,
+            timeout_seconds=30, metadata=metadata,
+        )
+
+    assert caught.value.error_code == "provider_auth_error"
+    assert caught.value.retryable is False
+    assert caught.value.attempts == 1
+    assert len(calls) == 1
+    assert metadata["provider_diagnostics"]["outcome"] == "failed"
 
 
 async def test_deepseek_does_not_inherit_environment_proxy(monkeypatch):

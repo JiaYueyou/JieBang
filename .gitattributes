@@ -1,0 +1,3 @@
+# Snapshot package checksums are byte-exact and must survive Windows checkout.
+fyz-src/backend/scripts/mysql_snapshot.sql text eol=lf
+fyz-src/backend/scripts/mysql_snapshot_manifest.json text eol=lf

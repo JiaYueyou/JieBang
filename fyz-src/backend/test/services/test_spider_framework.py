@@ -1,6 +1,7 @@
 """Crawler snapshot versioning tests."""
 
 import sys
+import json
 import tempfile
 from pathlib import Path
 
@@ -110,3 +111,21 @@ def test_invalid_snapshot_is_rejected_before_write():
             assert "job-v1 schema validation failed" in str(exc)
         else:
             raise AssertionError("invalid snapshot should not be written")
+
+
+def test_complete_empty_snapshot_writes_manifest_and_json_array():
+    with tempfile.TemporaryDirectory(dir="test") as directory:
+        spider = BaseSpider()
+        spider.name = "empty-source"
+        spider.source_name = "空岗位测试源"
+        spider.snapshot_complete = True
+        spider.snapshot_scope = {"collector": "empty-source", "city": "all"}
+
+        path = Path(spider.save(directory))
+        manifest_path = path.with_name(path.name + ".manifest")
+
+        assert json.loads(path.read_text(encoding="utf-8")) == []
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        assert manifest["snapshot_complete"] is True
+        assert manifest["record_count"] == 0
+        assert manifest["scope"] == {"collector": "empty-source", "city": "all"}

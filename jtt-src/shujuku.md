@@ -1,7 +1,13 @@
 # 数据库设计文档
 
-> 智联职引 —— 人才分析与决策系统  
-> 数据库: **jiebang** | MySQL 8.0 | 引擎: InnoDB  
+> 文档类型：JTT 数据库时间点设计
+> 状态：历史快照（2026-07-20），非当前迁移清单
+> 核验日期：2026-08-12（`c995a09e`）
+> JTT 后端现已包含独立 Alembic 迁移链，本文“无 Alembic”已过时；当前表结构以
+> `jtt-src/backend/app/models`、`alembic/versions` 和实际数据库为准。
+
+> 智联职引 —— 人才分析与决策系统
+> 数据库: **jiebang** | MySQL 8.0 | 引擎: InnoDB
 > 版本: 0.1.0 | 更新: 2026-07-20
 
 ---
@@ -525,7 +531,7 @@ resume ──< match_result   (resume_id FK, 1对多)
 | `match_result` | `suggestions` | 优化建议 | AI 生成 + 用户接受/拒绝状态 |
 | `learning_path` | `steps` | 学习步骤 + 资源 | 嵌套结构，始终整体读写 |
 
-**优点**: 减少 JOIN 查询、灵活扩展字段、数据读写原子性。  
+**优点**: 减少 JOIN 查询、灵活扩展字段、数据读写原子性。
 **注意**: JSON 列不支持 MySQL 索引，因此不建议作为 WHERE 条件。
 
 ### 4.2 无 ORM relationship

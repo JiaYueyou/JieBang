@@ -1,20 +1,26 @@
 # 团队完整数据迁移：MySQL + ChromaDB + Neo4j
 
+> 文档类型：迁移操作说明
+> 状态：**现行 / 已按 0025 以比赛脱敏模式导出并通过离线严格校验**
+> 核验日期：2026-08-20
+> SQL、manifest 和校验摘要均固定在 `20260820_0025`。导入器会先验证三个文件的
+> revision、SQL/manifest checksum、逐表行数及逐表内容摘要，任一不一致即拒绝写库。
+
 本目录是一套可重复执行的数据迁移包。MySQL 是唯一事实源；ChromaDB 是由
 MySQL 中已保存的预计算向量物化出的检索索引；Neo4j 是由 MySQL 已验证事实
 重建的图查询模型。迁移不复制来源机器的 `.env`、Chroma 二进制目录或 Neo4j
 `data/` 目录，因此不依赖来源机器的绝对路径和数据库内部版本。
 
-## 当前快照（2026-08-01）
+## 当前快照（2026-08-20）
 
 | 项目 | 当前值 |
 | --- | --- |
-| Alembic revision | `20260801_0017` |
-| MySQL | 38 张表、4679 行 |
+| Alembic revision | `20260820_0025` |
+| MySQL | 47 张表、54474 行 |
 | SQL 文件 | `mysql_snapshot.sql` |
-| SQL SHA-256 | 见 `mysql_snapshot_manifest.json` |
-| ChromaDB | 4 个有效 collection、646 条 3072 维向量 |
-| Neo4j 最近快照 | 474 个节点、817 条关系 |
+| SQL SHA-256 | `ac54bed13bafbb2868167d81576e6fe119018b05ae24db6afaaa473a169db4c8` |
+| 完整校验摘要 | `mysql_snapshot_verification.json`（`status=passed`） |
+| ChromaDB / Neo4j | 以 manifest 内的来源库物化摘要为准，接收端仍须执行第 3–5 阶段 |
 
 `mysql_snapshot.sql` 保存全部业务表数据，包含
 `retrieval_index_entry.embedding` 中的预计算向量；数据库结构由同一 Git 版本的
@@ -70,6 +76,7 @@ python scripts/run_database_import.py --replace
 
 | 阶段 | 脚本 | 作用 |
 | --- | --- | --- |
+| 0/5 | `run_database_import.py` 内置预检 | 在任何子进程、数据库连接或 DDL 前离线校验完整迁移包 |
 | 1/5 | `01_prepare_mysql_schema.py` | 执行 Alembic upgrade，建立或升级全部表结构 |
 | 2/5 | `02_import_mysql_snapshot.py` | 校验 SQL SHA-256 和 revision，事务式替换全部 MySQL 数据并逐表核数 |
 | 3/5 | `restore_chroma_from_mysql.py` | 校验向量维度与 checksum，从 MySQL 预计算向量复原 Chroma collection |
@@ -79,13 +86,18 @@ python scripts/run_database_import.py --replace
 Chroma 复原只删除名称以 `jiebang-evidence-` 开头的 collection。Neo4j 全量同步
 只清理 `namespace=jiebang`；两者都不会删除其他项目的命名空间数据。
 
+PowerShell 入口 `Import-TeamDatabase.ps1` 只调用上述编排器，因此同样必经第 0 步。
+若 SQL、manifest 或校验摘要缺失、损坏或 revision 过期，编排器不会启动 Alembic，
+也不会连接 MySQL、Chroma 或 Neo4j。
+
 ## 来源方刷新快照
 
 当共享事实、审核状态、Agent 审计或向量索引变化后，来源方执行：
 
 ```powershell
 cd fyz-src\backend
-python scripts\export_mysql_snapshot.py
+python scripts\export_mysql_snapshot.py --publish --competition --expected-revision 20260820_0025
+python scripts\verify_mysql_snapshot_package.py
 python scripts\restore_chroma_from_mysql.py --replace
 python scripts\04_verify_database_import.py
 ```
@@ -94,17 +106,24 @@ python scripts\04_verify_database_import.py
 
 - `mysql_snapshot.sql`：全部 MySQL 数据，包括预计算向量；
 - `mysql_snapshot_manifest.json`：revision、逐表行数、Chroma/Neo4j 摘要与 SQL SHA-256；
+- `mysql_snapshot_verification.json`：manifest/SQL 配对摘要和所有离线校验结果；
 - 新增或变化的 Alembic migration；
 - 本目录导入/校验脚本和本文档。
 
 不要只提交 SQL 而遗漏 manifest 或 migration；导入器会拒绝 checksum 或 revision
 不一致的组合。
 
+导出器必须显式传入 `--publish` 才会替换仓库中的正式包。它先在同目录临时区使用
+只读、一致性快照事务导出，要求源库 revision 等于仓库 Alembic 唯一 head，并检查
+各迁移版本必需表、SQL 语法、逐表行数和逐表摘要；全部通过后才以 manifest 最后发布的
+顺序替换正式文件。若需预演，可改用 `--output-dir <空目录>`，不会触碰正式包。
+
 ## 数据与安全边界
 
-- 快照含 `user` 密码哈希，不含明文密码；仍应按内部开发数据管理。
-- 当前快照含简历、浏览、收藏、匹配、Agent 输入/输出与来源证据等开发记录；
-  对外分享前必须重新检查脱敏和授权范围。
+- 当前正式包标记为 `competition-sanitized-v1`：候选人与员工姓名使用一致化名，
+  简历原文、联系方式、查询摘要、收藏备注和来源管理员密码哈希均已脱敏。
+- 容器首次导入后必须通过 `INITIAL_ADMIN_PASSWORD` 设置比赛管理员密码；正式包内
+  的管理员哈希不可用于登录。
 - `.env`、API Key、本机 Chroma/Neo4j 数据目录、上传文件和日志不得放入迁移包。
 - MySQL 是事实源。不要直接修改 Chroma 或 Neo4j 后期待结果回写 MySQL。
 
